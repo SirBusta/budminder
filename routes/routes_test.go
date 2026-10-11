@@ -76,7 +76,6 @@ func TestAddBasicRoutes_RegistersAllExpectedRoutes(t *testing.T) {
 		{"GET", "/api/translations"},
 		{"GET", "/plants"},
 		{"GET", "/activities"},
-		{"GET", "/activities/list"},
 		{"GET", "/strains"},
 		{"GET", "/graph/:id"},
 		{"GET", "/plant/new"},

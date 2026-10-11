@@ -359,3 +359,29 @@ func TestNotebookHTTP_ExportOneRowPerDay(t *testing.T) {
 	_, disp = read(fmt.Sprintf("/activities/export/xlsx?plant_id=%d", f.Plant1))
 	assert.Contains(t, disp, "isley-notebook-plant-1-")
 }
+
+func TestNotebookHTTP_PlantPageRenders(t *testing.T) {
+	t.Parallel()
+	db, f, c, _ := notebookServer(t)
+	testutil.SeedActivityAt(t, db, f.Plant1, f.WaterID, "2026-10-01T08:00:00")
+
+	resp := c.Get(fmt.Sprintf("/plant/%d", f.Plant1))
+	body, err := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	page := string(body)
+	assert.Contains(t, page, `id="plantPage"`)
+	assert.Contains(t, page, "pp_notebook", "the page's translated strings are embedded")
+	assert.Contains(t, page, "2026-10-01", "the notebook days are embedded")
+	assert.Contains(t, page, "/static/js/plant-page.js")
+	assert.NotContains(t, page, `href="/activities"`, "the Activity Log menu item is gone")
+
+	noFollow := *c.Client
+	noFollow.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	resp, err = noFollow.Get(c.BaseURL + "/plant/99999")
+	require.NoError(t, err)
+	resp.Body.Close()
+	assert.Equal(t, http.StatusFound, resp.StatusCode)
+	assert.Equal(t, "/plants", resp.Header.Get("Location"))
+}

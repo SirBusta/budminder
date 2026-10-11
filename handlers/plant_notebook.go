@@ -977,3 +977,37 @@ func AllPlantsNotebookHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"plants": plants, "days": days})
 }
+
+// ActivitiesRedirect serves GET /activities, the old Activity Log page: the
+// notebook for all plants now lives on the Plant page's All plants view, so
+// it opens there on the most recently logged growing plant (or the Plants
+// list when there are no plants).
+func ActivitiesRedirect(c *gin.Context) {
+	db := DBFromContext(c)
+	plants, err := LoadNotebookPlants(db)
+	if err != nil || len(plants) == 0 {
+		c.Redirect(http.StatusFound, "/plants")
+		return
+	}
+	active := map[int]bool{}
+	target := plants[0].ID
+	for i := len(plants) - 1; i >= 0; i-- {
+		if plants[i].Active {
+			active[plants[i].ID] = true
+			target = plants[i].ID
+		}
+	}
+	// Highest row id = most recently logged (dates may be in mixed formats).
+	rows, err := db.Query(`SELECT plant_id FROM plant_activity GROUP BY plant_id ORDER BY MAX(id) DESC`)
+	if err == nil {
+		for rows.Next() {
+			var id int
+			if rows.Scan(&id) == nil && active[id] {
+				target = id
+				break
+			}
+		}
+		rows.Close()
+	}
+	c.Redirect(http.StatusFound, fmt.Sprintf("/plant/%d#all", target))
+}

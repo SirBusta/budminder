@@ -3211,7 +3211,7 @@ header .nav-link.active::after {
 .pp-allh .ttl { display: flex; align-items: baseline; gap: .4rem .8rem; flex-wrap: wrap; }
 .pp-allh h1 { font-size: 1.45rem; }
 .pp-hero.all.slim .pp-sub { display: none; }
-.pp-pchips { display: flex; gap: .5rem; overflow-x: auto; padding: 4px; }
+.pp-pchips { display: flex; flex-wrap: wrap; gap: .5rem; padding: 4px; }
 .pp-pchip { --sc: #64748b; display: flex; align-items: center; gap: .55rem; border: 1px solid var(--pp-line); background: var(--pp-card); color: var(--pp-ink); border-radius: 12px; padding: .35rem .75rem .35rem .45rem; text-align: left; flex: none; text-decoration: none; }
 .pp-pchip:hover { border-color: var(--pp-acc); box-shadow: 0 0 0 1px var(--pp-acc); color: var(--pp-ink); }
 .pp-pchip .av { width: 36px; height: 36px; margin: 4px; border-radius: 50%; background: var(--pp-seg) center/cover; display: grid; place-items: center; color: var(--pp-faint); flex: none; box-shadow: 0 0 0 2px var(--pp-card), 0 0 0 4px var(--sc); }
@@ -3379,4 +3379,5 @@ header .nav-link.active::after {
     .pp-toolbar .lbl-t { display: none; }
     .pp-right { margin-left: 0; }
     .pp-srch { width: 100%; order: 5; }
+    .pp-pchips { flex-wrap: nowrap; overflow-x: auto; }
 }

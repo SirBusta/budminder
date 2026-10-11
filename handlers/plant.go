@@ -401,24 +401,24 @@ func GetPlant(db *sql.DB, id string) types.Plant {
 	// missing field.
 	query := fmt.Sprintf(`
 		SELECT p.id, p.name, p.description, p.clone, p.start_dt,
-			   COALESCE(s.name, '') AS strain_name, COALESCE(b.name, '') AS breeder_name, COALESCE(z.name, '') AS zone_name, z.id AS zone_id,
-			   (SELECT ps.status
+			   COALESCE(s.name, '') AS strain_name, COALESCE(b.name, '') AS breeder_name, COALESCE(z.name, '') AS zone_name, COALESCE(z.id, 0) AS zone_id,
+			   COALESCE((SELECT ps.status
 				FROM plant_status_log psl
 				LEFT OUTER JOIN plant_status ps ON psl.status_id = ps.id
 				WHERE psl.plant_id = p.id
 				ORDER BY %s DESC
-				LIMIT 1) AS current_status,
-			   (SELECT ps.id
+				LIMIT 1), '') AS current_status,
+			   COALESCE((SELECT ps.id
 				FROM plant_status_log psl
 				LEFT OUTER JOIN plant_status ps ON psl.status_id = ps.id
 				WHERE psl.plant_id = p.id
 				ORDER BY %s DESC
-				LIMIT 1) AS status_id,
-			   p.sensors, s.id, p.harvest_weight,
+				LIMIT 1), 0) AS status_id,
+			   p.sensors, COALESCE(s.id, 0), COALESCE(p.harvest_weight, 0),
 			   COALESCE(s.cycle_time, 0),
 			   COALESCE(s.cycle_time_min, 0),
 			   COALESCE(s.url, ''),
-			   s.autoflower,
+			   COALESCE(s.autoflower, false),
 			   COALESCE(p.parent_plant_id, 0),
 			   COALESCE(p2.name, '') AS parent_name
 		FROM plant p

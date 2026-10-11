@@ -2,7 +2,6 @@ package integration
 
 import (
 	"database/sql"
-	"encoding/json"
 	"io"
 	"net/http"
 	"strconv"
@@ -12,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"isley/handlers"
 	"isley/tests/testutil"
 )
 
@@ -246,151 +244,41 @@ func TestActivity_MultiPlantRejectsEmptyList(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// GET /activities/list  (basic / session-gated)
+// GET /activities  (the old Activity Log page → All plants notebook)
 // ---------------------------------------------------------------------------
 
-func TestActivity_ListPaginated(t *testing.T) {
+func TestActivity_LogPageRedirectsToAllPlants(t *testing.T) {
 	t.Parallel()
 
 	db := testutil.NewTestDB(t)
 	server := testutil.NewTestServer(t, db)
-	fix := seedActivityHTTP(t, db)
-
-	// 3 activity rows.
-	for i, dt := range []string{"2026-04-10", "2026-04-12", "2026-04-15"} {
-		_, err := db.Exec(
-			`INSERT INTO plant_activity (plant_id, activity_id, note, date) VALUES ($1, $2, $3, $4)`,
-			fix.PlantID, fix.WaterID, "row "+strconv.Itoa(i), dt,
-		)
+	testutil.SeedAdmin(t, db, "redirect-pw")
+	c := server.LoginAsAdmin(t, "redirect-pw")
+	noFollow := *c.Client
+	noFollow.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	location := func() string {
+		resp, err := noFollow.Get(c.BaseURL + "/activities")
 		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusFound, resp.StatusCode)
+		return resp.Header.Get("Location")
 	}
 
-	testutil.SeedAdmin(t, db, "act-pw")
-	c := server.LoginAsAdmin(t, "act-pw")
+	assert.Equal(t, "/plants", location(), "no plants yet")
 
-	resp := c.Get("/activities/list?page=1&page_size=2")
-	defer resp.Body.Close()
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-
-	var got struct {
-		Entries  []handlers.ActivityLogEntry `json:"entries"`
-		Total    int                         `json:"total"`
-		Page     int                         `json:"page"`
-		PageSize int                         `json:"page_size"`
-	}
-	require.NoError(t, json.NewDecoder(resp.Body).Decode(&got))
-	assert.Equal(t, 3, got.Total)
-	assert.Len(t, got.Entries, 2, "page_size=2 returns at most 2 entries")
-	assert.Equal(t, 1, got.Page)
-}
-
-// TestActivity_ListPaginationCap exercises the page_size guard in
-// ListAllActivities. The SPA-style activities page requests
-// page_size=10000 to render the full log client-side; the cap was
-// raised from 1000 to 100000 to support that without removing the
-// defense-in-depth ceiling.
-func TestActivity_ListPaginationCap(t *testing.T) {
-	t.Parallel()
-
-	db := testutil.NewTestDB(t)
-	server := testutil.NewTestServer(t, db)
 	fix := seedActivityHTTP(t, db)
+	other := testutil.SeedPlant(t, db, "Plant 2", 1, 1)
+	var veg, dead int
+	require.NoError(t, db.QueryRow(`SELECT id FROM plant_status WHERE status = 'Veg'`).Scan(&veg))
+	require.NoError(t, db.QueryRow(`SELECT id FROM plant_status WHERE status = 'Dead'`).Scan(&dead))
+	testutil.MustExec(t, db, `INSERT INTO plant_status_log (plant_id, status_id, date) VALUES ($1, $2, '2026-01-02')`, fix.PlantID, veg)
+	testutil.MustExec(t, db, `INSERT INTO plant_status_log (plant_id, status_id, date) VALUES ($1, $2, '2026-01-02')`, other, veg)
+	testutil.SeedActivityAt(t, db, int(fix.PlantID), fix.WaterID, "2026-01-05T08:00:00")
+	testutil.SeedActivityAt(t, db, other, fix.WaterID, "2026-01-03T08:00:00")
+	assert.Equal(t, "/plant/"+strconv.Itoa(other)+"#all", location(), "most recently logged growing plant")
 
-	// Seed a small number of rows; we're testing the page_size guard,
-	// not pagination behavior at scale.
-	for i := 0; i < 5; i++ {
-		_, err := db.Exec(
-			`INSERT INTO plant_activity (plant_id, activity_id, note, date) VALUES ($1, $2, $3, $4)`,
-			fix.PlantID, fix.WaterID, "row "+strconv.Itoa(i), "2026-04-10",
-		)
-		require.NoError(t, err)
-	}
-
-	testutil.SeedAdmin(t, db, "cap-pw")
-	c := server.LoginAsAdmin(t, "cap-pw")
-
-	type listResp struct {
-		Entries  []handlers.ActivityLogEntry `json:"entries"`
-		Total    int                         `json:"total"`
-		Page     int                         `json:"page"`
-		PageSize int                         `json:"page_size"`
-	}
-
-	cases := []struct {
-		name         string
-		query        string
-		wantPageSize int
-	}{
-		// Within the new ceiling — request honored.
-		{"under_new_ceiling", "?page_size=5000", 5000},
-		// At the SPA's typical request size — honored.
-		{"spa_request_size", "?page_size=10000", 10000},
-		// Above the new ceiling — falls back to default.
-		{"above_ceiling", "?page_size=200000", 100},
-		// Zero — falls back to default (n > 0 guard).
-		{"zero", "?page_size=0", 100},
-		// Negative — falls back to default.
-		{"negative", "?page_size=-5", 100},
-		// Pre-existing small value — unchanged.
-		{"small_value", "?page_size=50", 50},
-		// Unset — default applies.
-		{"unset", "", 100},
-	}
-
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			resp := c.Get("/activities/list" + tc.query)
-			defer resp.Body.Close()
-			require.Equal(t, http.StatusOK, resp.StatusCode)
-
-			var got listResp
-			require.NoError(t, json.NewDecoder(resp.Body).Decode(&got))
-			assert.Equal(t, tc.wantPageSize, got.PageSize,
-				"page_size=%q should report PageSize=%d", tc.query, tc.wantPageSize)
-			assert.Equal(t, 5, got.Total, "all 5 seeded rows should be counted")
-		})
-	}
-}
-
-func TestActivity_ListFilterByPlantID(t *testing.T) {
-	t.Parallel()
-
-	db := testutil.NewTestDB(t)
-	server := testutil.NewTestServer(t, db)
-	fix := seedActivityHTTP(t, db)
-
-	// Add a second plant + activity so the filter has something to drop.
-	res, err := db.Exec(
-		`INSERT INTO plant (name, zone_id, strain_id, description, clone, start_dt, sensors)
-		 VALUES ('Plant 2', 1, 1, '', 0, '2026-01-01', '[]')`,
-	)
-	require.NoError(t, err)
-	plant2, _ := res.LastInsertId()
-
-	_, _ = db.Exec(
-		`INSERT INTO plant_activity (plant_id, activity_id, note, date) VALUES ($1, $2, 'p1', '2026-04-10')`,
-		fix.PlantID, fix.WaterID,
-	)
-	_, _ = db.Exec(
-		`INSERT INTO plant_activity (plant_id, activity_id, note, date) VALUES ($1, $2, 'p2', '2026-04-10')`,
-		plant2, fix.WaterID,
-	)
-
-	testutil.SeedAdmin(t, db, "filter-pw")
-	c := server.LoginAsAdmin(t, "filter-pw")
-
-	resp := c.Get("/activities/list?plant_id=" + strconv.FormatInt(fix.PlantID, 10))
-	defer resp.Body.Close()
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-
-	var got struct {
-		Entries []handlers.ActivityLogEntry `json:"entries"`
-		Total   int                         `json:"total"`
-	}
-	require.NoError(t, json.NewDecoder(resp.Body).Decode(&got))
-	assert.Equal(t, 1, got.Total)
-	assert.Equal(t, "p1", got.Entries[0].Note)
+	testutil.MustExec(t, db, `INSERT INTO plant_status_log (plant_id, status_id, date) VALUES ($1, $2, '2026-01-06')`, other, dead)
+	assert.Equal(t, "/plant/"+strconv.FormatInt(fix.PlantID, 10)+"#all", location(), "dead plants are skipped")
 }
 
 // ---------------------------------------------------------------------------

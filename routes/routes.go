@@ -6,7 +6,6 @@ import (
 	"isley/model"
 	"isley/utils"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -66,53 +65,8 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 		})
 	})
 
-	r.GET("/activities", func(c *gin.Context) {
-		lang := utils.GetLanguage(c)
-		translations := utils.TranslationService.GetTranslations(lang)
-		currentPath, _ := c.Get("currentPath")
-
-		db := handlers.DBFromContext(c)
-		filters, err := handlers.ParseActivityLogFilters(c)
-		if err != nil {
-			// Bad filter input — render the page with empty filters but flag
-			// the error to the user via a query param check in the template.
-			filters = handlers.ActivityLogFilters{Order: "date_desc"}
-		}
-
-		page := 1
-		if v := c.Query("page"); v != "" {
-			if n, perr := strconv.Atoi(v); perr == nil && n > 0 {
-				page = n
-			}
-		}
-
-		pageCtx, err := handlers.BuildActivityLogPageContext(db, filters, page, c.Request.URL.Query())
-		if err != nil {
-			pageCtx = handlers.ActivityLogPageContext{}
-		}
-
-		store := handlers.ConfigStoreFromContext(c)
-		activities := store.Activities()
-		c.HTML(http.StatusOK, "views/activities.html", gin.H{
-			"title":           "Activity Log",
-			"currentPath":     currentPath,
-			"version":         version,
-			"zones":           store.Zones(),
-			"strains":         store.Strains(),
-			"breeders":        store.Breeders(),
-			"activityTypes":   activities,
-			"activityCtx":     pageCtx,
-			"plants":          handlers.GetLivingPlants(handlers.DBFromContext(c)),
-			"activities":      activities,
-			"loggedIn":        sessions.Default(c).Get("logged_in"),
-			"lcl":             translations,
-			"languages":       utils.AvailableLanguages,
-			"currentLanguage": lang,
-			"csrfToken":       c.GetString("csrf_token"),
-			"cspNonce":        c.GetString("cspNonce"),
-		})
-	})
-	r.GET("/activities/list", handlers.ListAllActivities)
+	// The old Activity Log page: now the All plants view of the Plant page.
+	r.GET("/activities", handlers.ActivitiesRedirect)
 
 	r.GET("/strains", func(c *gin.Context) {
 		lang := utils.GetLanguage(c)

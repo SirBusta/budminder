@@ -963,6 +963,8 @@
         });
         window.isleyUploadDefaultDate = () => selected || TODAY;
         if (allMode) { allMode = false; setMode(true); }
+        // A link to this page's #all (or back) switches without a reload.
+        window.addEventListener("hashchange", () => { if ((location.hash === "#all") !== allMode) setMode(location.hash === "#all"); });
     }
     init();
 })();
