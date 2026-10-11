@@ -71,7 +71,7 @@ func TestStrainStock_EditFollowsSeedCount(t *testing.T) {
 	assert.Equal(t, "2024-04-20", added.String)
 
 	page := e.getBody(t, "/strain/"+strconv.Itoa(e.strainID))
-	assert.Contains(t, page, "April 2024", "seeds added shown as month and year")
+	assert.Contains(t, page, "April 20, 2024", "seeds added written out")
 	assert.Regexp(t, `\(\d+ (mo|yr \d+ mo)\)`, page, "shows how old the seeds are")
 
 	assert.Equal(t, http.StatusBadRequest, e.put(t, map[string]any{"seed_count": 9, "seeds_added_on": "20/04/2024"}))

@@ -192,7 +192,7 @@
                             <span class="strain-info-label"><i class="fa-solid fa-calendar-plus me-2"></i>{{ .lcl.seeds_added_on }}</span>
                             <span class="strain-info-value">
                                 {{ with .strain.SeedsAddedOn }}
-                                    {{ monthYear . $.lcl }}
+                                    {{ longDate . $.lcl }}
                                     {{ with seedAge . }}{{ if .OK }}<small class="text-muted">({{ template "common/seed-age" (dict "a" . "lcl" $.lcl) }})</small>{{ end }}{{ end }}
                                 {{ else }}
                                     <span class="text-muted">{{ $.lcl.seeds_added_on_unknown }}</span>

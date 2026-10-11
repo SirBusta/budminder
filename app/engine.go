@@ -416,9 +416,9 @@ func buildFuncMap(store *config.Store) template.FuncMap {
 		// in the measurement system chosen in Settings.
 		"showHeight": func(text string) string { return utils.ShowHeight(text, store.Units()) },
 		"showYield":  func(text string) string { return utils.ShowYield(text, store.Units()) },
-		// monthYear shows a "2006-01-02" date as month and year
-		// ("March 2025"), with the month name from the page's translations.
-		"monthYear": utils.MonthYear,
+		// longDate shows a "2006-01-02" date written out ("March 14,
+		// 2025"), in the page's language.
+		"longDate": utils.LongDate,
 		// dict builds a map from key/value pairs so a shared sub-template
 		// can take several arguments: {{ template "x" (dict "k" v ...) }}.
 		"dict": func(pairs ...any) (map[string]any, error) {

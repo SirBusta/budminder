@@ -177,10 +177,11 @@ func ShowYield(text, units string) string {
 	return formatAmount(lo, hi, a.single, 0, "g/plant")
 }
 
-// MonthYear shows a "2006-01-02" date as month and year, e.g. "March 2025",
-// taking the month name from translations ("month_1".."month_12") when
-// present. Text that isn't such a date is returned unchanged.
-func MonthYear(date string, lcl map[string]string) string {
+// LongDate shows a "2006-01-02" date written out, e.g. "March 14, 2025".
+// The month name ("month_1".."month_12") and the word order ("date_long",
+// with {month}, {day} and {year}) come from translations when present.
+// Text that isn't such a date is returned unchanged.
+func LongDate(date string, lcl map[string]string) string {
 	t, err := time.Parse(LayoutDate, date)
 	if err != nil {
 		return date
@@ -189,5 +190,13 @@ func MonthYear(date string, lcl map[string]string) string {
 	if name == "" {
 		name = t.Month().String()
 	}
-	return name + " " + strconv.Itoa(t.Year())
+	layout := lcl["date_long"]
+	if layout == "" {
+		layout = "{month} {day}, {year}"
+	}
+	return strings.NewReplacer(
+		"{month}", name,
+		"{day}", strconv.Itoa(t.Day()),
+		"{year}", strconv.Itoa(t.Year()),
+	).Replace(layout)
 }

@@ -60,15 +60,16 @@ func TestShowYield(t *testing.T) {
 	}
 }
 
-func TestMonthYear(t *testing.T) {
+func TestLongDate(t *testing.T) {
 	t.Parallel()
-	if got := MonthYear("2025-03-14", nil); got != "March 2025" {
-		t.Errorf("MonthYear default = %q", got)
+	if got := LongDate("2025-03-04", nil); got != "March 4, 2025" {
+		t.Errorf("LongDate default = %q", got)
 	}
-	if got := MonthYear("2025-03-14", map[string]string{"month_3": "März"}); got != "März 2025" {
-		t.Errorf("MonthYear translated = %q", got)
+	de := map[string]string{"month_3": "März", "date_long": "{day}. {month} {year}"}
+	if got := LongDate("2025-03-14", de); got != "14. März 2025" {
+		t.Errorf("LongDate translated = %q", got)
 	}
-	if got := MonthYear("sometime", nil); got != "sometime" {
-		t.Errorf("MonthYear unreadable = %q", got)
+	if got := LongDate("sometime", nil); got != "sometime" {
+		t.Errorf("LongDate unreadable = %q", got)
 	}
 }
