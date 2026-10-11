@@ -1007,3 +1007,5 @@ pp_logging_several: "Bei mehreren Pflanzen wird es bei jeder Pflanze gespeichert
 pp_pick_plant: "Wähle mindestens eine Pflanze."
 upload_date_from_photo: "Datum aus dem Foto übernommen"
 upload_no_date_in_photo: "Kein Datum im Foto – bitte prüfen"
+activity_icon: "Symbol"
+activity_color: "Farbe"

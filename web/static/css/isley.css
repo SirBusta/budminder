@@ -3382,3 +3382,12 @@ header .nav-link.active::after {
     .pp-srch { width: 100%; order: 5; }
     .pp-pchips { flex-wrap: nowrap; overflow-x: auto; }
 }
+
+/* Settings > Activities: icon + color per activity type */
+.act-look { --act-c: #64748b; }
+.act-icons, .act-colors { display: flex; flex-wrap: wrap; gap: .3rem; }
+.act-pick { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--color-card-border); background: var(--color-card); color: var(--act-c); display: grid; place-items: center; padding: 0; }
+.act-pick.on { background: var(--act-c); color: #fff; border-color: var(--act-c); }
+.act-swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--color-card); background: var(--c); box-shadow: 0 0 0 1px var(--color-card-border); padding: 0; }
+.act-swatch.on { box-shadow: 0 0 0 2px var(--color-fg); }
+.act-chip { --c: #64748b; display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; background: color-mix(in srgb, var(--c) 15%, transparent); color: var(--c); font-size: .72rem; margin-right: .35rem; }

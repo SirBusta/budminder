@@ -961,3 +961,5 @@ pp_logging_several: "Logging for several plants saves it on each plant; here it 
 pp_pick_plant: "Pick at least one plant."
 upload_date_from_photo: "Date taken from the photo"
 upload_no_date_in_photo: "No date in this photo — please check"
+activity_icon: "Icon"
+activity_color: "Color"

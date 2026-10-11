@@ -1005,3 +1005,5 @@ pp_logging_several: "Al registrar varias plantas se guarda en cada una; aquí ap
 pp_pick_plant: "Elige al menos una planta."
 upload_date_from_photo: "Fecha tomada de la foto"
 upload_no_date_in_photo: "Esta foto no tiene fecha: compruébala"
+activity_icon: "Icono"
+activity_color: "Color"

@@ -384,7 +384,7 @@ color: #0d6efd; /* Primary color */
                         <tbody>
                         {{ range .activities }}
                         <tr class="clickable-row activity-row" data-activity='{{ json . }}'>
-                            <td>{{ .Name }}</td>
+                            <td><span class="act-chip" style="--c:{{ .Color }}"><i class="fa-solid {{ .Icon }}"></i></span> {{ .Name }}</td>
                             <td>{{ len .Metrics }}</td>
                         </tr>
                         {{ end }}
@@ -837,6 +837,14 @@ color: #0d6efd; /* Primary color */
                         <input class="form-check-input" type="checkbox" id="activityIsFeeding">
                         <label class="form-check-label" for="activityIsFeeding">{{ .lcl.activity_flag_feeding }}</label>
                     </div>
+                    <div class="mb-3 act-look">
+                        <label class="form-label">{{ .lcl.activity_icon }}</label>
+                        <div class="act-icons" data-input="activityIcon">{{ range .activityIcons }}<button type="button" class="act-pick" data-val="{{ . }}" title="{{ . }}" aria-label="{{ . }}"><i class="fa-solid {{ . }}"></i></button>{{ end }}</div>
+                        <input type="hidden" id="activityIcon" value="fa-tag">
+                        <label class="form-label mt-2">{{ .lcl.activity_color }}</label>
+                        <div class="act-colors" data-input="activityColor">{{ range .activityColors }}<button type="button" class="act-swatch" data-val="{{ . }}" style="--c:{{ . }}" title="{{ . }}" aria-label="{{ . }}"></button>{{ end }}</div>
+                        <input type="hidden" id="activityColor" value="#64748b">
+                    </div>
 
                     <div class="mb-3">
                         <label for="activityRequiredMetrics" class="form-label">{{ .lcl.activity_required_metrics }}</label>
@@ -1028,6 +1036,14 @@ color: #0d6efd; /* Primary color */
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" id="editActivityIsFeeding">
                         <label class="form-check-label" for="editActivityIsFeeding">{{ .lcl.activity_flag_feeding }}</label>
+                    </div>
+                    <div class="mb-3 act-look">
+                        <label class="form-label">{{ .lcl.activity_icon }}</label>
+                        <div class="act-icons" data-input="editActivityIcon">{{ range .activityIcons }}<button type="button" class="act-pick" data-val="{{ . }}" title="{{ . }}" aria-label="{{ . }}"><i class="fa-solid {{ . }}"></i></button>{{ end }}</div>
+                        <input type="hidden" id="editActivityIcon" value="fa-tag">
+                        <label class="form-label mt-2">{{ .lcl.activity_color }}</label>
+                        <div class="act-colors" data-input="editActivityColor">{{ range .activityColors }}<button type="button" class="act-swatch" data-val="{{ . }}" style="--c:{{ . }}" title="{{ . }}" aria-label="{{ . }}"></button>{{ end }}</div>
+                        <input type="hidden" id="editActivityColor" value="#64748b">
                     </div>
                     <div class="mb-3">
                         <label for="editActivityRequiredMetrics" class="form-label">{{ .lcl.activity_required_metrics }}</label>
@@ -1529,6 +1545,25 @@ color: #0d6efd; /* Primary color */
         });
     });
 
+    // Activity type icon + color pickers (add and edit windows).
+    function setActivityPick(box, val) {
+        document.getElementById(box.dataset.input).value = val;
+        box.querySelectorAll("[data-val]").forEach(x => x.classList.toggle("on", x.dataset.val === val));
+        if (box.classList.contains("act-colors")) box.closest(".act-look").style.setProperty("--act-c", val);
+    }
+    function setActivityLook(prefix, icon, color) {
+        document.querySelectorAll('[data-input="' + prefix + 'Icon"]').forEach(b => setActivityPick(b, icon || "fa-tag"));
+        document.querySelectorAll('[data-input="' + prefix + 'Color"]').forEach(b => setActivityPick(b, color || "#64748b"));
+    }
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll(".act-icons, .act-colors").forEach(box => box.addEventListener("click", e => {
+            const b = e.target.closest("[data-val]");
+            if (b) setActivityPick(box, b.dataset.val);
+        }));
+        const addModal = document.getElementById("addActivityModal");
+        if (addModal) addModal.addEventListener("show.bs.modal", () => setActivityLook("activity", "fa-tag", "#64748b"));
+    });
+
     document.addEventListener("DOMContentLoaded", () => {
         const form = document.getElementById("addActivityForm");
         const addActivityModal = document.getElementById("addActivityModal");
@@ -1564,6 +1599,8 @@ color: #0d6efd; /* Primary color */
                 activity_name: activityName,
                 is_watering: isWatering,
                 is_feeding: isFeeding,
+                icon: document.getElementById("activityIcon").value,
+                color: document.getElementById("activityColor").value,
                 activity_metrics: buildActivityMetricsPayload("activityRequiredMetrics", "activityOptionalMetrics"),
             };
 
@@ -1636,6 +1673,7 @@ color: #0d6efd; /* Primary color */
                 document.getElementById("editActivityIsFeeding").checked = !!activityData.is_feeding;
                 setSelectedOptions("editActivityRequiredMetrics", requiredMetricIDs);
                 setSelectedOptions("editActivityOptionalMetrics", optionalMetricIDs);
+                setActivityLook("editActivity", activityData.icon, activityData.color);
 
                 editActivityModal.show();
             });
@@ -1648,6 +1686,8 @@ color: #0d6efd; /* Primary color */
                 activity_name: document.getElementById("editActivityName").value,
                 is_watering: document.getElementById("editActivityIsWatering").checked,
                 is_feeding: document.getElementById("editActivityIsFeeding").checked,
+                icon: document.getElementById("editActivityIcon").value,
+                color: document.getElementById("editActivityColor").value,
                 activity_metrics: buildActivityMetricsPayload("editActivityRequiredMetrics", "editActivityOptionalMetrics"),
             };
 
@@ -1656,7 +1696,7 @@ color: #0d6efd; /* Primary color */
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             })
-                .then(response => response.json())
+                .then(response => { if (!response.ok) throw new Error(); return response.json(); })
                 .then(() => location.reload())
                 .catch(err => uiMessages.showToast(uiMessages.t('failed_to_update_activity'), 'danger'));
         });

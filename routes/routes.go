@@ -464,6 +464,8 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 			"currentPath":     currentPath,
 			"version":         version,
 			"settings":        handlers.GetSettings(db),
+			"activityIcons":   handlers.ActivityIcons,
+			"activityColors":  handlers.ActivityColors,
 			"zones":           store.Zones(),
 			"statuses":        store.Statuses(),
 			"sensors":         handlers.GetSensors(db),

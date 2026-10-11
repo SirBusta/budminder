@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -532,12 +533,44 @@ func saveActivityMetricLinks(tx *sql.Tx, activityID int, metrics []activityMetri
 	return err
 }
 
+// ActivityIcons are the Font Awesome icons offered for activity types in
+// Settings (shown in the Plant page notebook); the handlers accept only
+// these. ActivityColors are the offered swatches (any #rrggbb is accepted).
+var ActivityIcons = []string{
+	"fa-droplet", "fa-flask", "fa-note-sticky", "fa-ruler", "fa-hand", "fa-scissors",
+	"fa-seedling", "fa-leaf", "fa-bug", "fa-spray-can", "fa-temperature-half", "fa-sun",
+	"fa-fan", "fa-bucket", "fa-faucet-drip", "fa-shower", "fa-vial", "fa-mortar-pestle",
+	"fa-scale-balanced", "fa-wind", "fa-recycle", "fa-eye", "fa-camera", "fa-tag",
+}
+
+var ActivityColors = []string{
+	"#2f80ed", "#0ea5e9", "#27ae60", "#16a34a", "#ca8a04", "#e67e22",
+	"#e11d48", "#9b59b6", "#92400e", "#64748b",
+}
+
+const (
+	defaultActivityIcon  = "fa-tag"
+	defaultActivityColor = "#64748b"
+)
+
+var hexColorRe = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
+
+func validActivityLook(icon, color string) bool {
+	known := false
+	for _, i := range ActivityIcons {
+		known = known || i == icon
+	}
+	return known && hexColorRe.MatchString(color)
+}
+
 func AddActivityHandler(c *gin.Context) {
 	fieldLogger := logger.Log.WithField("func", "AddActivityHandler")
 	var activity struct {
 		Name       string                `json:"activity_name"`
 		IsWatering bool                  `json:"is_watering"`
 		IsFeeding  bool                  `json:"is_feeding"`
+		Icon       string                `json:"icon"`
+		Color      string                `json:"color"`
 		Metrics    []activityMetricInput `json:"activity_metrics"`
 	}
 	if err := c.ShouldBindJSON(&activity); err != nil {
@@ -550,10 +583,21 @@ func AddActivityHandler(c *gin.Context) {
 		return
 	}
 
-	//Reserved names can't be added "Water", "Feed", "Note"
-	if activity.Name == "Water" || activity.Name == "Feed" || activity.Name == "Note" {
+	//Reserved names can't be added "Water", "Feed", "Note", "Height"
+	if activity.Name == "Water" || activity.Name == "Feed" || activity.Name == "Note" || activity.Name == "Height" {
 		fieldLogger.Error("Failed to add activity")
 		apiBadRequest(c, "api_activity_name_reserved")
+		return
+	}
+
+	if activity.Icon == "" {
+		activity.Icon = defaultActivityIcon
+	}
+	if activity.Color == "" {
+		activity.Color = defaultActivityColor
+	}
+	if !validActivityLook(activity.Icon, activity.Color) {
+		apiBadRequest(c, "api_invalid_payload")
 		return
 	}
 
@@ -570,9 +614,9 @@ func AddActivityHandler(c *gin.Context) {
 	// Insert new activity and return new id
 	var id int
 	err = tx.QueryRow(`
-		INSERT INTO activity (name, is_watering, is_feeding)
-		VALUES ($1, $2, $3)
-		RETURNING id`, activity.Name, activity.IsWatering, activity.IsFeeding).Scan(&id)
+		INSERT INTO activity (name, is_watering, is_feeding, icon, color)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id`, activity.Name, activity.IsWatering, activity.IsFeeding, activity.Icon, activity.Color).Scan(&id)
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to add activity")
 		apiInternalError(c, "api_failed_to_add_activity")
@@ -766,6 +810,8 @@ func UpdateActivityHandler(c *gin.Context) {
 		Name       string                `json:"activity_name"`
 		IsWatering bool                  `json:"is_watering"`
 		IsFeeding  bool                  `json:"is_feeding"`
+		Icon       string                `json:"icon"`
+		Color      string                `json:"color"`
 		Metrics    []activityMetricInput `json:"activity_metrics"`
 	}
 	if err := c.ShouldBindJSON(&activity); err != nil {
@@ -775,6 +821,13 @@ func UpdateActivityHandler(c *gin.Context) {
 	}
 	if err := utils.ValidateRequiredString("activity_name", activity.Name, utils.MaxNameLength); err != nil {
 		apiBadRequest(c, err.Error())
+		return
+	}
+
+	// Icon and color are optional on update (empty = keep the current one).
+	if (activity.Icon != "" && !validActivityLook(activity.Icon, defaultActivityColor)) ||
+		(activity.Color != "" && !validActivityLook(defaultActivityIcon, activity.Color)) {
+		apiBadRequest(c, "api_invalid_payload")
 		return
 	}
 
@@ -800,8 +853,9 @@ func UpdateActivityHandler(c *gin.Context) {
 	// Perform the update
 	_, err = tx.Exec(`
 		UPDATE activity
-		SET name = $1, is_watering = $2, is_feeding = $3
-		WHERE id = $4`, activity.Name, activity.IsWatering, activity.IsFeeding, id)
+		SET name = $1, is_watering = $2, is_feeding = $3,
+		    icon = COALESCE(NULLIF($5, ''), icon), color = COALESCE(NULLIF($6, ''), color)
+		WHERE id = $4`, activity.Name, activity.IsWatering, activity.IsFeeding, id, activity.Icon, activity.Color)
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to update activity")
 		apiInternalError(c, "api_failed_to_update_activity")
