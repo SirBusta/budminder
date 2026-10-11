@@ -175,31 +175,40 @@ func PlantsPageData(c *gin.Context, loggedIn bool, lang string, translations map
 			t[k] = v
 		}
 	}
-	// Stages in their order, with the translated names.
-	type stage struct {
-		Name  string `json:"name"`
-		Label string `json:"label"`
-	}
-	stages := []stage{}
-	if rows, err := DBFromContext(c).Query(`SELECT status FROM plant_status ORDER BY status_order`); err == nil {
-		for rows.Next() {
-			var st stage
-			if rows.Scan(&st.Name) == nil {
-				st.Label = st.Name
-				if l := translations[strings.ToLower(st.Name)+"_label"]; l != "" {
-					st.Label = l
-				}
-				stages = append(stages, st)
-			}
-		}
-		rows.Close()
-	}
 	return gin.H{
 		"plants":    plants,
-		"stages":    stages,
+		"stages":    plantStages(DBFromContext(c), translations),
 		"today":     time.Now().Format(dayLayout),
 		"logged_in": loggedIn,
 		"lang":      lang,
 		"t":         t,
 	}
+}
+
+// stageLabel is a plant stage with its name in the page's language.
+type stageLabel struct {
+	Name  string `json:"name"`
+	Label string `json:"label"`
+}
+
+// plantStages lists the plant stages in their order with translated names
+// (the "<stage>_label" keys, falling back to the stored name).
+func plantStages(db *sql.DB, translations map[string]string) []stageLabel {
+	stages := []stageLabel{}
+	rows, err := db.Query(`SELECT status FROM plant_status ORDER BY status_order`)
+	if err != nil {
+		return stages
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var st stageLabel
+		if rows.Scan(&st.Name) == nil {
+			st.Label = st.Name
+			if l := translations[strings.ToLower(st.Name)+"_label"]; l != "" {
+				st.Label = l
+			}
+			stages = append(stages, st)
+		}
+	}
+	return stages
 }

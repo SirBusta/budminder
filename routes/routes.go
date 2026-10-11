@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"database/sql"
+	"fmt"
 	"isley/handlers"
 	"isley/logger"
 	"isley/model"
@@ -16,22 +18,26 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 		lang := utils.GetLanguage(c)
 		translations := utils.TranslationService.GetTranslations(lang)
 		currentPath, _ := c.Get("currentPath")
-		store := handlers.ConfigStoreFromContext(c)
+		loggedIn := sessions.Default(c).Get("logged_in") != nil
+		pageData, err := handlers.HomePageData(c, loggedIn, lang, translations)
+		if err != nil {
+			pageData = gin.H{"plants": []any{}, "tents": []any{}, "recent": []any{}, "logged_in": loggedIn, "t": gin.H{}}
+		}
 		c.HTML(http.StatusOK, "views/index.html", gin.H{
-			"title":           "Dashboard",
+			"pageData":        pageData,
+			"hasCamera":       homeHasCamera(pageData),
+			"title":           "Today",
 			"currentPath":     currentPath,
 			"version":         version,
-			"plants":          handlers.GetLivingPlants(handlers.DBFromContext(c)),
-			"activities":      store.Activities(),
 			"loggedIn":        sessions.Default(c).Get("logged_in"),
 			"lcl":             translations,
 			"languages":       utils.AvailableLanguages,
 			"currentLanguage": lang,
 			"csrfToken":       c.GetString("csrf_token"),
 			"cspNonce":        c.GetString("cspNonce"),
-			"pollInterval":    store.PollingInterval(),
 		})
 	})
+	r.GET("/home/data", handlers.HomeDataHandler)
 
 	// Translations API - returns JSON map of translations for the requested language
 	r.GET("/api/translations", func(c *gin.Context) {
@@ -88,25 +94,16 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 		})
 	})
 
+	// The old per-sensor chart page: the Environment page shows every
+	// reading of the sensor's tent now.
 	r.GET("/graph/:id", func(c *gin.Context) {
-		lang := utils.GetLanguage(c)
-		translations := utils.TranslationService.GetTranslations(lang)
-		currentPath, _ := c.Get("currentPath")
-		store := handlers.ConfigStoreFromContext(c)
-		c.HTML(http.StatusOK, "views/graph.html", gin.H{
-			"title":           "Sensor Graphs",
-			"currentPath":     currentPath,
-			"version":         version,
-			"SensorID":        c.Param("id"),
-			"plants":          handlers.GetLivingPlants(handlers.DBFromContext(c)),
-			"activities":      store.Activities(),
-			"loggedIn":        sessions.Default(c).Get("logged_in"),
-			"lcl":             translations,
-			"languages":       utils.AvailableLanguages,
-			"currentLanguage": lang,
-			"csrfToken":       c.GetString("csrf_token"),
-			"cspNonce":        c.GetString("cspNonce"),
-		})
+		var zone sql.NullInt64
+		_ = handlers.DBFromContext(c).QueryRow(`SELECT zone_id FROM sensors WHERE id = $1`, c.Param("id")).Scan(&zone)
+		if zone.Valid && zone.Int64 > 0 {
+			c.Redirect(http.StatusFound, fmt.Sprintf("/sensors#zone=%d", zone.Int64))
+			return
+		}
+		c.Redirect(http.StatusFound, "/sensors")
 	})
 
 	r.GET("/plant/new", func(c *gin.Context) {
@@ -536,4 +533,19 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 	// to /login by AuthMiddleware).  Filters mirror the /activities page.
 	r.GET("/activities/export/csv", handlers.ExportActivitiesCSV)
 	r.GET("/activities/export/xlsx", handlers.ExportActivitiesXLSX)
+}
+
+// homeHasCamera reports whether the Home page shows a camera tile (the
+// video player script is only loaded then).
+func homeHasCamera(data gin.H) bool {
+	tents, ok := data["tents"].([]handlers.HomeTent)
+	if !ok {
+		return false
+	}
+	for _, t := range tents {
+		if len(t.Cameras) > 0 {
+			return true
+		}
+	}
+	return false
 }
