@@ -1,0 +1,2 @@
+-- No-op: the Postgres trigger function (002) already reads only the
+-- latest 16 readings (LIMIT 16 OFFSET 1); the SQLite fix is in 033 there.
