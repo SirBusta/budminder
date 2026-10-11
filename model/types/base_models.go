@@ -20,6 +20,8 @@ type Activity struct {
 	Name       string               `json:"name"`
 	IsWatering bool                 `json:"is_watering"`
 	IsFeeding  bool                 `json:"is_feeding"`
+	Icon       string               `json:"icon"`
+	Color      string               `json:"color"`
 	Metrics    []ActivityMetricLink `json:"metrics"`
 }
 
@@ -79,6 +81,8 @@ type Plant struct {
 	CycleTime      int                  `json:"cycle_time"`
 	StrainUrl      string               `json:"strain_url"`
 	EstHarvestDate time.Time            `json:"est_harvest_date"`
+	EstHarvestMin  time.Time            `json:"est_harvest_min"`
+	CycleTimeMin   int                  `json:"cycle_time_min"`
 	Autoflower     bool                 `json:"autoflower"`
 	ParentID       uint                 `json:"parent_id"`
 	ParentName     string               `json:"parent_name"`
@@ -244,9 +248,9 @@ type Strain struct {
 	Autoflower       bool   `json:"autoflower"`
 	Description      string `json:"description"`
 	SeedCount        int    `json:"seed_count"`
-	SeedLocation     string `json:"seed_location,omitempty"` // where the seeds are kept, e.g. "Jar 1"
-	SeedType         string `json:"seed_type,omitempty"`     // "clone", "feminized", "regular", or "" (not set)
-	Wanted           bool   `json:"wanted"`                  // on the wish list (only while seed_count is 0)
+	SeedLocation     string `json:"seed_location,omitempty"`  // where the seeds are kept, e.g. "Jar 1"
+	SeedType         string `json:"seed_type,omitempty"`      // "clone", "feminized", "regular", or "" (not set)
+	Wanted           bool   `json:"wanted"`                   // on the wish list (only while seed_count is 0)
 	SeedsAddedOn     string `json:"seeds_added_on,omitempty"` // "2006-01-02" the current seeds were stocked; "" if unknown
 	CycleTime        int    `json:"cycle_time"`               // days; the long end of a range
 	CycleTimeMin     int    `json:"cycle_time_min,omitempty"` // days; short end of a range, 0 = single value

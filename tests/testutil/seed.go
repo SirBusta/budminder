@@ -165,3 +165,13 @@ func SeedActivity(t *testing.T, db *sql.DB, plantID, activityID int, when time.T
 		plantID, activityID, when.Format("2006-01-02 15:04:05"),
 	)
 }
+
+// SeedActivityAt is SeedActivity with the date given as stored text (e.g.
+// "2026-10-07T10:00:00"), for tests that care about the exact format.
+func SeedActivityAt(t *testing.T, db *sql.DB, plantID, activityID int, when string) int {
+	t.Helper()
+	return insertReturnID(t, db,
+		`INSERT INTO plant_activity (plant_id, activity_id, note, date) VALUES ($1, $2, '', $3)`,
+		plantID, activityID, when,
+	)
+}

@@ -145,6 +145,42 @@ func TestGetPlant_PopulatesFields(t *testing.T) {
 	assert.False(t, got.IsClone, "default clone=0 should map to false")
 }
 
+// The estimated harvest is a range from the strain's flowering time
+// (cycle_time_min to cycle_time days); an unset end stays the zero time so
+// the page shows "Not set" instead of formatting it (the "0000-12-31" bug).
+func TestGetPlant_EstimatedHarvestRange(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	plantID := seedPlantTree(t, db)
+	_, err := db.Exec(`INSERT INTO plant_status_log (plant_id, status_id, date) VALUES ($1, $2, '2026-01-15')`,
+		plantID, statusIDByName(t, db, "Veg"))
+	require.NoError(t, err)
+
+	// Autoflower, no flowering time: nothing to estimate.
+	_, err = db.Exec(`UPDATE strain SET autoflower = 1, cycle_time = 0, cycle_time_min = NULL`)
+	require.NoError(t, err)
+	got := handlers.GetPlant(db, idStr(plantID))
+	assert.True(t, got.EstHarvestDate.IsZero())
+	assert.True(t, got.EstHarvestMin.IsZero())
+
+	// Autoflower, 56-70 days from start.
+	_, err = db.Exec(`UPDATE strain SET cycle_time = 70, cycle_time_min = 56`)
+	require.NoError(t, err)
+	got = handlers.GetPlant(db, idStr(plantID))
+	assert.Equal(t, 70, got.CycleTime)
+	assert.Equal(t, 56, got.CycleTimeMin)
+	assert.Equal(t, got.StartDT.AddDate(0, 0, 70), got.EstHarvestDate)
+	assert.Equal(t, got.StartDT.AddDate(0, 0, 56), got.EstHarvestMin)
+
+	// Only the long end known: no range start.
+	_, err = db.Exec(`UPDATE strain SET cycle_time_min = NULL`)
+	require.NoError(t, err)
+	got = handlers.GetPlant(db, idStr(plantID))
+	assert.False(t, got.EstHarvestDate.IsZero())
+	assert.True(t, got.EstHarvestMin.IsZero())
+}
+
 func TestGetPlant_UnknownIDReturnsZeroValue(t *testing.T) {
 	t.Parallel()
 

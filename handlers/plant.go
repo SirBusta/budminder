@@ -166,6 +166,8 @@ func GetActivities(db *sql.DB) []types.Activity {
 			a.name,
 			a.is_watering,
 			a.is_feeding,
+			a.icon,
+			a.color,
 			am.metric_id,
 			am.required
 		FROM activity a
@@ -185,12 +187,13 @@ func GetActivities(db *sql.DB) []types.Activity {
 			activityName string
 			isWatering   bool
 			isFeeding    bool
+			icon, color  string
 			// Use Null types for optional metric fields
 			metricID sql.NullInt64
 			required sql.NullBool
 		)
 
-		err = rows.Scan(&activityID, &activityName, &isWatering, &isFeeding, &metricID, &required)
+		err = rows.Scan(&activityID, &activityName, &isWatering, &isFeeding, &icon, &color, &metricID, &required)
 		if err != nil {
 			fieldLogger.WithError(err).Error("Failed to scan activity")
 			return nil
@@ -203,6 +206,8 @@ func GetActivities(db *sql.DB) []types.Activity {
 				Name:       activityName,
 				IsWatering: isWatering,
 				IsFeeding:  isFeeding,
+				Icon:       icon,
+				Color:      color,
 				Metrics:    []types.ActivityMetricLink{},
 			})
 			idx = len(activities) - 1
@@ -410,6 +415,7 @@ func GetPlant(db *sql.DB, id string) types.Plant {
 				LIMIT 1) AS status_id,
 			   p.sensors, s.id, p.harvest_weight,
 			   COALESCE(s.cycle_time, 0),
+			   COALESCE(s.cycle_time_min, 0),
 			   COALESCE(s.url, ''),
 			   s.autoflower,
 			   COALESCE(p.parent_plant_id, 0),
@@ -425,13 +431,13 @@ func GetPlant(db *sql.DB, id string) types.Plant {
 	var name, description, strainName, breederName, zoneName, status, sensors, strainURL, parentName string
 	var isClone, autoflower bool
 	var startDT time.Time
-	var zoneID, statusID, strainID, cycleTime int
+	var zoneID, statusID, strainID, cycleTime, cycleTimeMin int
 	var harvestWeight float64
 	var parentID uint
 
 	err := db.QueryRow(query, id).Scan(&plantID, &name, &description, &isClone, &startDT,
 		&strainName, &breederName, &zoneName, &zoneID, &status, &statusID,
-		&sensors, &strainID, &harvestWeight, &cycleTime, &strainURL,
+		&sensors, &strainID, &harvestWeight, &cycleTime, &cycleTimeMin, &strainURL,
 		&autoflower, &parentID, &parentName)
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to query plant")
@@ -456,6 +462,7 @@ func GetPlant(db *sql.DB, id string) types.Plant {
 	lastWaterDate, lastFeedDate := deriveActivityDates(activities)
 	harvestDate := deriveHarvestDate(statusHistory)
 	estHarvestDate := deriveEstimatedHarvestDate(statusHistory, startDT, cycleTime, autoflower)
+	estHarvestMin := deriveEstimatedHarvestDate(statusHistory, startDT, cycleTimeMin, autoflower)
 
 	plant = types.Plant{
 		ID: plantID, Name: name, Description: description, Status: status,
@@ -470,6 +477,7 @@ func GetPlant(db *sql.DB, id string) types.Plant {
 		IsClone: isClone, StartDT: startDT, HarvestWeight: harvestWeight,
 		HarvestDate: harvestDate, CycleTime: cycleTime, StrainUrl: strainURL,
 		EstHarvestDate: estHarvestDate, Autoflower: autoflower,
+		EstHarvestMin: estHarvestMin, CycleTimeMin: cycleTimeMin,
 		ParentID: parentID, ParentName: parentName,
 	}
 	return plant
@@ -868,7 +876,11 @@ func deriveHarvestDate(history []types.Status) time.Time {
 }
 
 // deriveEstimatedHarvestDate calculates the estimated harvest date based on
-// cycle time and strain type (autoflower vs photosensitive).
+// cycle time and strain type (autoflower vs photosensitive). It returns the
+// zero time when there's nothing to estimate from (no cycle time set, or a
+// photoperiod plant that hasn't reached Flower) — callers must show "not set"
+// rather than format it (formatting the zero time gave "0000-12-31"). Called
+// once with cycle_time and once with cycle_time_min for a range.
 func deriveEstimatedHarvestDate(history []types.Status, startDT time.Time, cycleTime int, autoflower bool) time.Time {
 	if cycleTime <= 0 {
 		return time.Time{}
