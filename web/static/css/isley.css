@@ -3538,3 +3538,10 @@ header .nav-link.active::after {
     .sp-dest label { flex-direction: row; gap: .5rem; text-align: left; }
     .sp-btn { padding: .4rem .6rem; }
 }
+
+/* Our own icons (outline style, drawn for Isley), used like Font Awesome:
+   <i class="ic-vault"></i> takes the text color and font size. */
+.ic-vault { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.2em; background-color: currentColor;
+    -webkit-mask: url(/static/img/icons/vault.svg) center / contain no-repeat; mask: url(/static/img/icons/vault.svg) center / contain no-repeat; }
+.sp-tab .ic .ic-vault { font-size: 1.1rem; }
+.sp-empty .ic-vault { margin: 0 auto .5rem; }

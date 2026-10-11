@@ -19,6 +19,8 @@
         if (vars) for (const k of Object.keys(vars)) s = s.split("{" + k + "}").join(vars[k]);
         return s;
     }
+    // Icons: Font Awesome names, or our own "ic-" icons (CSS masks, e.g. the vault).
+    const iconHTML = (name, extra = "") => `<i class="${name.startsWith("ic-") ? name : "fa-solid " + name}${extra ? " " + extra : ""}"></i>`;
     const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
     const toast = (msg, level) => window.uiMessages ? uiMessages.showToast(msg, level || "success") : null;
 
@@ -100,7 +102,7 @@
     let STRAINS = [];
     let loaded = false;
     const TABS = {
-        vault: { icon: "fa-vault", label: "sp_tab_vault", desc: "sp_tab_vault_desc", pred: inVault },
+        vault: { icon: "ic-vault", label: "sp_tab_vault", desc: "sp_tab_vault_desc", pred: inVault },
         wanted: { icon: "fa-star", label: "sp_tab_wanted", desc: "sp_tab_wanted_desc", pred: isWanted },
         all: { icon: "fa-book", label: "sp_tab_all", desc: "sp_tab_all_desc", pred: () => true },
     };
@@ -182,7 +184,7 @@
         const counts = { vault: STRAINS.filter(inVault).length, wanted: STRAINS.filter(isWanted).length, all: STRAINS.length };
         $("spTabs").innerHTML = Object.entries(TABS).map(([k, t]) => `
             <button class="sp-tab ${k === tab ? "on" : ""}" data-tab="${k}" role="tab" aria-selected="${k === tab}">
-                <span class="ic"><i class="fa-solid ${t.icon}"></i></span>
+                <span class="ic">${iconHTML(t.icon)}</span>
                 <span><b>${esc(tr(t.label))}</b><small>${esc(tr(t.desc))}</small></span><span class="n">${loaded ? counts[k] : ""}</span></button>`).join("");
     }
 
@@ -200,7 +202,7 @@
         if (!loaded) { out.innerHTML = `<div class="sp-empty"><span class="spinner-border spinner-border-sm"></span></div>`; return; }
         if (!list.length) {
             const anyFilter = filter.q || filter.breeder || filter.type || filter.seedType;
-            out.innerHTML = `<div class="sp-empty"><i class="fa-solid ${TABS[tab].icon}"></i>${esc(tr(anyFilter ? "sp_no_match" : tab === "vault" ? "sp_empty_vault" : tab === "wanted" ? "sp_empty_wanted" : "sp_empty_all"))}</div>`;
+            out.innerHTML = `<div class="sp-empty">${iconHTML(TABS[tab].icon)}${esc(tr(anyFilter ? "sp_no_match" : tab === "vault" ? "sp_empty_vault" : tab === "wanted" ? "sp_empty_wanted" : "sp_empty_all"))}</div>`;
             return;
         }
         out.innerHTML = layout === "cards" ? `<div class="sp-grid">${list.map(card).join("")}</div>` : table(list);
@@ -244,8 +246,8 @@
         const dest = tab === "all" ? "library" : tab;
         return `<label class="form-label small fw-semibold mb-1">${esc(tr("sp_add_it_to"))}</label>
             <div class="sp-dest" role="radiogroup">
-                ${[["vault", "fa-vault", "sp_tab_vault", "sp_dest_vault"], ["wanted", "fa-star", "sp_tab_wanted", "sp_dest_wanted"], ["library", "fa-book", "sp_library_only", "sp_dest_library"]]
-                    .map(([v, i, t, d]) => `<label class="${v === dest ? "on" : ""}"><input type="radio" name="spDest" value="${v}" ${v === dest ? "checked" : ""}><i class="fa-solid ${i}"></i><b>${esc(tr(t))}</b><small>${esc(tr(d))}</small></label>`).join("")}
+                ${[["vault", "ic-vault", "sp_tab_vault", "sp_dest_vault"], ["wanted", "fa-star", "sp_tab_wanted", "sp_dest_wanted"], ["library", "fa-book", "sp_library_only", "sp_dest_library"]]
+                    .map(([v, i, t, d]) => `<label class="${v === dest ? "on" : ""}"><input type="radio" name="spDest" value="${v}" ${v === dest ? "checked" : ""}>${iconHTML(i)}<b>${esc(tr(t))}</b><small>${esc(tr(d))}</small></label>`).join("")}
             </div>
             <div class="sp-vault-fields ${dest === "vault" ? "" : "d-none"}"><div class="row g-2 mt-1">
                 <div class="col-4"><label class="form-label small mb-0">${esc(tr("sp_seeds"))}</label><input type="number" min="1" value="5" class="form-control form-control-sm" data-k="seeds"></div>
