@@ -404,12 +404,6 @@
                     </label>
                     {{ end }}
                     <div class="st-row">
-                        <div class="st-row-l"><label for="maxBackupSizeMB">{{ .lcl.backup_max_upload_label }}</label><small>{{ .lcl.backup_max_upload_hint }}</small></div>
-                        <div class="st-row-r"><div class="input-group input-group-sm st-num">
-                            <input type="number" class="form-control" id="maxBackupSizeMB" min="100" step="100" value="{{ if .settings.MaxBackupSizeMB }}{{ .settings.MaxBackupSizeMB }}{{ else }}5120{{ end }}" data-autosave>
-                            <span class="input-group-text">MB</span></div></div>
-                    </div>
-                    <div class="st-row">
                         <div class="st-row-l"></div>
                         <div class="st-row-r"><button type="button" class="btn btn-warning btn-sm" id="importBackupBtn" disabled><i class="fa fa-upload me-1"></i>{{ .lcl.backup_restore_btn }}</button></div>
                     </div>
@@ -419,6 +413,15 @@
                         <div id="restoreDetailText" class="text-muted small mt-1"></div>
                     </div>
                     <div id="backupResult" class="mt-2" style="display:none"></div>
+                    <details class="st-adv mt-2">
+                        <summary>{{ .lcl.st_advanced }}</summary>
+                        <div class="st-row">
+                            <div class="st-row-l"><label for="maxBackupSizeMB">{{ .lcl.backup_max_upload_label }}</label><small>{{ .lcl.backup_max_upload_hint }}</small></div>
+                            <div class="st-row-r"><div class="input-group input-group-sm st-num">
+                                <input type="number" class="form-control" id="maxBackupSizeMB" min="100" step="100" value="{{ if .settings.MaxBackupSizeMB }}{{ .settings.MaxBackupSizeMB }}{{ else }}5120{{ end }}" data-autosave>
+                                <span class="input-group-text">MB</span></div></div>
+                        </div>
+                    </details>
                 </div>
 
                 <div class="st-card">
