@@ -520,6 +520,10 @@ func buildFuncMap(store *config.Store) template.FuncMap {
 		"linebreaks": func(s string) template.HTML {
 			return template.HTML(strings.ReplaceAll(template.HTMLEscapeString(s), "\n", "<br>"))
 		},
+		// simpleHTML shows a translated string that uses <strong>, <em> or
+		// <b>: everything is escaped, then only those plain tags (no
+		// attributes) are turned back into formatting.
+		"simpleHTML": simpleHTML,
 		"formatStringDate": func(s string) string {
 			for _, layout := range []string{time.RFC3339, utils.LayoutDB, utils.LayoutDateTimeLocal, utils.LayoutDate} {
 				if t, err := time.Parse(layout, s); err == nil {
@@ -595,4 +599,15 @@ func seedAgeFrom(added string, now time.Time) seedAgeInfo {
 		months = 0
 	}
 	return seedAgeInfo{OK: true, Total: months, Years: months / 12, Months: months % 12}
+}
+
+// simpleTags are the formatting tags simpleHTML lets through.
+var simpleTags = strings.NewReplacer(
+	"&lt;strong&gt;", "<strong>", "&lt;/strong&gt;", "</strong>",
+	"&lt;em&gt;", "<em>", "&lt;/em&gt;", "</em>",
+	"&lt;b&gt;", "<b>", "&lt;/b&gt;", "</b>",
+)
+
+func simpleHTML(s string) template.HTML {
+	return template.HTML(simpleTags.Replace(template.HTMLEscapeString(s)))
 }

@@ -383,10 +383,10 @@
                 </div>
 
                 <div class="st-card">
-                    <div class="st-card-h"><i class="fa-solid fa-rotate-left"></i><div><h3>{{ .lcl.backup_restore_title }}</h3><p>{{ .lcl.backup_restore_warning }}</p></div></div>
+                    <div class="st-card-h"><i class="fa-solid fa-rotate-left"></i><div><h3>{{ .lcl.backup_restore_title }}</h3><p>{{ simpleHTML .lcl.backup_restore_warning }}</p></div></div>
                     {{ if eq .dbDriver "sqlite" }}
                     <div class="alert alert-warning py-2 small mb-3">
-                        <i class="fa fa-exclamation-triangle me-1"></i><strong>{{ .lcl.backup_sqlite_perf_note }}</strong> {{ .lcl.backup_sqlite_perf_desc }}
+                        <i class="fa fa-exclamation-triangle me-1"></i><strong>{{ .lcl.backup_sqlite_perf_note }}</strong> {{ simpleHTML .lcl.backup_sqlite_perf_desc }}
                     </div>
                     {{ end }}
                     <div id="backupDropArea" class="st-drop">

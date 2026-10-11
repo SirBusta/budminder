@@ -11,8 +11,8 @@ func TestSeedAgeFrom(t *testing.T) {
 	t.Parallel()
 	now := time.Date(2026, 10, 3, 12, 0, 0, 0, time.UTC)
 	cases := []struct {
-		added                 string
-		ok                    bool
+		added                string
+		ok                   bool
 		total, years, months int
 	}{
 		{"2026-09-20", true, 0, 0, 0},
@@ -53,5 +53,20 @@ func TestShowHeightFollowsUnitsSetting(t *testing.T) {
 	store.SetUnits("metric")
 	if got := showHeight("90-150cm"); got != "90-150cm" {
 		t.Errorf("metric = %q", got)
+	}
+}
+
+func TestSimpleHTML(t *testing.T) {
+	t.Parallel()
+	cases := map[string]string{
+		"<strong>Warning:</strong> replaces <em>all</em>": "<strong>Warning:</strong> replaces <em>all</em>",
+		"Use <b>Skip</b> & go":                            "Use <b>Skip</b> &amp; go",
+		`<strong onclick="x">no</strong>`:                 "&lt;strong onclick=&#34;x&#34;&gt;no</strong>",
+		"<script>alert(1)</script>":                       "&lt;script&gt;alert(1)&lt;/script&gt;",
+	}
+	for in, want := range cases {
+		if got := string(simpleHTML(in)); got != want {
+			t.Errorf("simpleHTML(%q) = %q, want %q", in, got, want)
+		}
 	}
 }
