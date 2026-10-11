@@ -163,7 +163,9 @@
         return stages.map((s, i) => {
             const [icon, color] = stageStyle(s.status);
             const isCur = i === curIdx;
-            const cls = isCur ? "cur" : (reached.has(s.id) && i < curIdx ? "done" : "");
+            // Every stage before the current one counts as passed, even if it
+            // was never logged (e.g. Planted skipped); days only when logged.
+            const cls = isCur ? "cur" : (i < curIdx ? "done" : "");
             const days = reached.has(s.id) ? durations[s.id] : null;
             const title = !LOGGED_IN ? s.label : reached.has(s.id) ? tr("pp_change_stage_date", { stage: s.label }) : tr("pp_move_to", { stage: s.label });
             return `<div class="pp-stg ${cls}" style="--sc:${color}">
