@@ -19,45 +19,19 @@
         set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private window */ } },
     };
     const MIN = 60000;
-    const imperial = P.units !== "metric";
     const locale = P.lang || undefined;
 
-    // ---------- What each sensor is ----------
-    const isPort = s => /^ACIP\./.test(s.type);
-    const isOutside = s => /outside|outdoor/i.test(s.name) || /^ACI\.\d+\.[4-7]$/.test(s.type);
-    function kind(s) {
-        const u = (s.unit || "").toLowerCase(), ty = s.type + " " + s.name;
-        if (u.includes("°") || /temp/i.test(ty) && !u.includes("%")) return "temp";
-        if (u === "kpa" || /vpd/i.test(ty)) return "vpd";
-        if (u === "ppm" || /co2|co₂/i.test(ty)) return "co2";
-        if (/soil|moist/i.test(ty)) return "soil";
-        if (u === "%" || /hum/i.test(ty)) return "hum";
-        return "other";
-    }
-    const ORDER = { temp: 0, hum: 1, vpd: 2, co2: 3, soil: 4, other: 5 };
+    // ---------- What each sensor is (shared: sensor-kinds.js) ----------
+    const K = window.SensorKinds;
+    const isPort = K.isPort, isOutside = K.isOutside;
+    const ORDER = { temp: 0, hum: 1, vpd: 2, co2: 3, soil: 4, ec: 5, other: 6 };
     const OTHER_COLORS = ["#0ea5e9", "#14b8a6", "#64748b", "#eab308", "#ec4899"];
     function look(s, i) {
-        const k = kind(s), out = isOutside(s);
-        const color = { temp: out ? "#f97316" : "#ef4444", hum: out ? "#a78bfa" : "#6366f1", vpd: "#10b981", co2: "#d946ef", soil: "#a16207" }[k] || OTHER_COLORS[i % OTHER_COLORS.length];
-        const dp = { temp: 1, hum: 1, vpd: 2, co2: 0, soil: 1 }[k] ?? 1;
-        let unit = s.unit || "", conv = v => v;
-        if (k === "temp") {
-            const isC = /c/i.test(unit), isF = /f/i.test(unit);
-            if (imperial && isC) { conv = v => v * 9 / 5 + 32; unit = "°F"; }
-            else if (!imperial && isF) { conv = v => (v - 32) * 5 / 9; unit = "°C"; }
-        }
+        const k = K.kind(s), out = isOutside(s);
+        const color = { temp: out ? "#f97316" : "#ef4444", hum: out ? "#a78bfa" : "#6366f1", vpd: "#10b981", co2: "#d946ef", soil: "#a16207", ec: "#0d9488" }[k] || OTHER_COLORS[i % OTHER_COLORS.length];
+        const { unit, conv } = K.display(s, P.units);
         const span = { temp: unit === "°C" ? 2 : 4, hum: 10, vpd: 0.4, co2: 80, soil: 10 }[k] || 0;
-        return { k, color, dp, unit, conv, span };
-    }
-    function portIcon(name) {
-        const n = (name || "").toLowerCase();
-        if (/light|led|lamp|sun|bloom|veg|fc\d/.test(n)) return "fa-lightbulb";
-        if (/dehum/.test(n)) return "fa-wind";
-        if (/humid|mist/.test(n)) return "fa-droplet";
-        if (/heat/.test(n)) return "fa-fire";
-        if (/fan|exhaust|inline|blower|clip/.test(n)) return "fa-fan";
-        if (/pump|water/.test(n)) return "fa-faucet";
-        return "fa-plug";
+        return { k, color, dp: K.decimals(s), unit, conv, span };
     }
 
     // ---------- Formatting ----------
@@ -85,7 +59,7 @@
         const env = list.filter(s => !isPort(s)).map((s, i) => ({ ...s, ...look(s, i) }))
             .sort((a, b) => (isOutside(a) - isOutside(b)) || (ORDER[a.k] - ORDER[b.k]) || a.name.localeCompare(b.name));
         const devices = list.filter(isPort).sort((a, b) => a.type.localeCompare(b.type, undefined, { numeric: true }))
-            .map(s => ({ ...s, icon: portIcon(s.name) }));
+            .map(s => ({ ...s, icon: K.portIcon(s.name) }));
         return { env, devices };
     }
 

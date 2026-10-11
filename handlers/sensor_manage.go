@@ -132,7 +132,11 @@ func AddScannedSensorHandler(c *gin.Context) {
 		}
 	}
 	SensorCacheServiceFromContext(c).GroupedReset()
-	c.JSON(http.StatusOK, gin.H{"id": id})
+	zoneID := 0
+	if input.ZoneID != nil {
+		zoneID = *input.ZoneID
+	}
+	c.JSON(http.StatusOK, gin.H{"id": id, "zone_id": zoneID})
 }
 
 func zoneExists(db *sql.DB, id int) bool {

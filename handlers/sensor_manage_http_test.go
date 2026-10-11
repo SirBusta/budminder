@@ -306,7 +306,7 @@ func TestSensorPages_Render(t *testing.T) {
 	e.exec(t, `UPDATE sensors SET zone_id = $1, name = 'Page temp', unit = '°F' WHERE id = $2`, zone, sid)
 	e.exec(t, `INSERT INTO sensor_data (sensor_id, value) VALUES ($1, 71.5)`, sid)
 
-	for _, path := range []string{"/sensors"} {
+	for _, path := range []string{"/sensors", "/sensors/manage"} {
 		resp := e.client.Get(path)
 		body, err := io.ReadAll(resp.Body)
 		testutil.DrainAndClose(resp)
