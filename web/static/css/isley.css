@@ -118,6 +118,20 @@ header .nav-item {
 header .nav-link {
     padding: 7px 12px;
 }
+/* Top-menu icons in the new look's green (was Bootstrap blue). */
+header .nav-pills {
+    --bs-nav-link-color: #16a34a;
+    --bs-nav-link-hover-color: #15803d;
+    --bs-nav-pills-link-active-bg: #16a34a;
+    --bs-nav-pills-link-active-color: #fff;
+}
+[data-bs-theme="dark"] header .nav-pills {
+    --bs-nav-link-color: #4ade80;
+    --bs-nav-link-hover-color: #86efac;
+}
+header .nav-pills .nav-link:focus-visible {
+    box-shadow: 0 0 0 .25rem rgba(22, 163, 74, .3);
+}
 header #languageDropdown {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
@@ -740,8 +754,11 @@ header .nav-link.active::after {
     left: 25%;
     width: 50%;
     height: 3px;
-    background: var(--color-accent);
+    background: #166534;
     border-radius: 999px;
+}
+[data-bs-theme="dark"] header .nav-link.active::after {
+    background: #4ade80;
 }
 
 /* ===== Breadcrumbs ===== */
