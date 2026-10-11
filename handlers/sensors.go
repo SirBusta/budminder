@@ -79,6 +79,7 @@ func ScanACInfinitySensors(c *gin.Context) {
 	var input struct {
 		ZoneID  *int   `json:"zone_id"`  // Pointer to allow null values
 		NewZone string `json:"new_zone"` // Optional new zone name
+		Preview bool   `json:"preview"`  // list new sensors only, save nothing
 	}
 	fieldLogger = fieldLogger.WithField("input", input)
 	fieldLogger.Info("Scanning AC Infinity sensors")
@@ -96,18 +97,6 @@ func ScanACInfinitySensors(c *gin.Context) {
 	db := DBFromContext(c)
 	store := ConfigStoreFromContext(c)
 
-	if input.ZoneID == nil && input.NewZone != "" {
-		// Insert a new zone into the database
-		zoneID, err := CreateNewZone(db, store, input.NewZone)
-		if err != nil {
-			fieldLogger.WithError(err).Error("Failed to create new zone")
-			apiInternalError(c, "api_zone_creation_failed")
-			return
-		}
-		input.ZoneID = &zoneID // Set the created zone ID
-	}
-
-	// Query settings table and write result to console
 	aciToken := store.ACIToken()
 	url := "https://www.acinfinityserver.com/api/user/devInfoListAll?userId=" + aciToken
 	reqBody := bytes.NewBuffer([]byte(""))
@@ -147,88 +136,22 @@ func ScanACInfinitySensors(c *gin.Context) {
 		return
 	}
 
-	if len(jsonResponse.Data) > 0 {
-		for _, deviceData := range jsonResponse.Data {
-			device := deviceData.DevCode
-			source := "acinfinity"
-			sensorType := "ACI.tempF"
-			name := "AC Infinity (" + device + ") Temp"
-			unit := "°F"
-
-			//Check to see if exists by type / device / source combo
-			checkInsertSensor(db, source, device, sensorType, name, input.ZoneID, unit)
-
-			sensorType = "ACI.humidity"
-			name = "AC Infinity (" + device + ") Humidity"
-			unit = "%"
-			checkInsertSensor(db, source, device, sensorType, name, input.ZoneID, unit)
-
-			sensorType = "ACI.tempC"
-			name = "AC Infinity (" + device + ") Temp"
-			unit = "°C"
-			checkInsertSensor(db, source, device, sensorType, name, input.ZoneID, unit)
-
-			for _, sensor := range deviceData.DeviceInfo.Sensors {
-				sensorType := fmt.Sprintf("ACI.%d.%d", sensor.AccessPort, sensor.SensorType)
-				switch sensor.SensorType {
-				case 0: //Inside Temp
-					name := "ACI (" + device + ") inside temp"
-					unit := "\u00b0F"
-					checkInsertSensor(db, source, device, sensorType, name, input.ZoneID, unit)
-				case 2: //Inside Humidity
-					name := "ACI (" + device + ") inside humidity"
-					unit := "%"
-					checkInsertSensor(db, source, device, sensorType, name, input.ZoneID, unit)
-				case 3: //Inside VPD
-					name := "ACI (" + device + ") inside VPD"
-					unit := "kPa"
-					checkInsertSensor(db, source, device, sensorType, name, input.ZoneID, unit)
-				case 4: //Outside Temp
-					name := "ACI (" + device + ") outside temp"
-					unit := "\u00b0F"
-					checkInsertSensor(db, source, device, sensorType, name, input.ZoneID, unit)
-				case 6: //Outside Humidity
-					name := "ACI (" + device + ") outside humidity"
-					unit := "%"
-					checkInsertSensor(db, source, device, sensorType, name, input.ZoneID, unit)
-				case 7: //Outside VPD
-					name := "ACI (" + device + ") outside VPD"
-					unit := "kPa"
-					checkInsertSensor(db, source, device, sensorType, name, input.ZoneID, unit)
-				default:
-					// Unknown sensorType: create a generic sensor so users can see and rename it.
-					// Determine a reasonable default unit:
-					unit := ""
-					// If device-level unit is present: 0 = °F, 1 = °C
-					switch deviceData.DeviceInfo.Unit {
-					case 0:
-						// Fahrenheit default for temperature-like types
-						if isTemperatureSensor(sensor.SensorType) {
-							unit = "\u00b0F"
-						}
-					case 1:
-						if isTemperatureSensor(sensor.SensorType) {
-							unit = "\u00b0C"
-						}
-					}
-					// Known percent/humidity-like types
-					if isHumiditySensor(sensor.SensorType) {
-						unit = "%"
-					}
-					name := fmt.Sprintf("ACI (%s) sensor %d.%d", device, sensor.AccessPort, sensor.SensorType)
-					// Log for analytics so we can update mappings later
-					logger.Log.WithFields(logrus.Fields{"device": device, "accessPort": sensor.AccessPort, "sensorType": sensor.SensorType, "sensorUnit": sensor.SensorUnit}).Info("Discovered unknown ACI sensor type - inserting generic sensor")
-					checkInsertSensor(db, source, device, sensorType, name, input.ZoneID, unit)
-				}
-			}
-
-			for _, port := range deviceData.DeviceInfo.Ports {
-				sensorType := fmt.Sprintf("ACIP.%d", port.Port)
-				name := port.PortName
-				unit := "%"
-				checkInsertSensor(db, source, device, sensorType, name, input.ZoneID, unit)
-			}
+	found := aciFoundSensors(jsonResponse)
+	if input.Preview {
+		c.JSON(http.StatusOK, gin.H{"sensors": newSensorsOnly(db, found)})
+		return
+	}
+	if input.ZoneID == nil && input.NewZone != "" {
+		zoneID, err := CreateNewZone(db, store, input.NewZone)
+		if err != nil {
+			fieldLogger.WithError(err).Error("Failed to create new zone")
+			apiInternalError(c, "api_zone_creation_failed")
+			return
 		}
+		input.ZoneID = &zoneID
+	}
+	for _, f := range found {
+		checkInsertSensor(db, f.Source, f.Device, f.Type, f.Name, input.ZoneID, f.Unit)
 	}
 
 	apiOK(c, "api_ac_infinity_sensors_scanned")
@@ -460,6 +383,7 @@ func ScanEcoWittSensors(c *gin.Context) {
 		ZoneID        *int   `json:"zone_id"`  // Pointer to allow null values
 		NewZone       string `json:"new_zone"` // Optional new zone name
 		ServerAddress string `json:"server_address"`
+		Preview       bool   `json:"preview"` // list new sensors only, save nothing
 	}
 	// Bind the JSON payload to the input struct
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -478,17 +402,6 @@ func ScanEcoWittSensors(c *gin.Context) {
 	}
 	db := DBFromContext(c)
 	store := ConfigStoreFromContext(c)
-
-	if input.ZoneID == nil && input.NewZone != "" {
-		// Insert a new zone into the database
-		zoneID, err := CreateNewZone(db, store, input.NewZone)
-		if err != nil {
-			fieldLogger.WithError(err).Error("Failed to create new zone")
-			apiInternalError(c, "api_zone_creation_failed")
-			return
-		}
-		input.ZoneID = &zoneID // Set the created zone ID
-	}
 
 	// Validate the input server address before constructing the request URL
 	if !ValidateServerAddress(input.ServerAddress) {
@@ -531,26 +444,149 @@ func ScanEcoWittSensors(c *gin.Context) {
 		return
 	}
 
-	//Add EcoWitt sensors to db
+	found := ecowittFoundSensors(input.ServerAddress, apiResponse)
+	if input.Preview {
+		c.JSON(http.StatusOK, gin.H{"sensors": newSensorsOnly(db, found)})
+		return
+	}
+	if input.ZoneID == nil && input.NewZone != "" {
+		zoneID, err := CreateNewZone(db, store, input.NewZone)
+		if err != nil {
+			fieldLogger.WithError(err).Error("Failed to create new zone")
+			apiInternalError(c, "api_zone_creation_failed")
+			return
+		}
+		input.ZoneID = &zoneID
+	}
+	for _, f := range found {
+		checkInsertSensor(db, f.Source, f.Device, f.Type, f.Name, input.ZoneID, f.Unit)
+	}
+
+	//Update ECOWitt sensors
+	//Set ECDevices
+	strECDevices, err := LoadEcDevices(db)
+	if err == nil {
+		store.SetECDevices(strECDevices)
+	} else {
+		fieldLogger.WithError(err).Error("Error loading EC devices")
+	}
+
+	apiOK(c, "api_ecowitt_sensors_scanned")
+}
+
+// aciFoundSensors lists the sensors and ports an AC Infinity account
+// reports (one devInfoListAll response), without touching the database.
+func aciFoundSensors(jsonResponse types.ACIResponse) []foundSensor {
+	var found sensorCollector
+	if len(jsonResponse.Data) > 0 {
+		for _, deviceData := range jsonResponse.Data {
+			device := deviceData.DevCode
+			source := "acinfinity"
+			sensorType := "ACI.tempF"
+			name := "AC Infinity (" + device + ") Temp"
+			unit := "°F"
+
+			//Check to see if exists by type / device / source combo
+			found.add(source, device, sensorType, name, unit)
+
+			sensorType = "ACI.humidity"
+			name = "AC Infinity (" + device + ") Humidity"
+			unit = "%"
+			found.add(source, device, sensorType, name, unit)
+
+			sensorType = "ACI.tempC"
+			name = "AC Infinity (" + device + ") Temp"
+			unit = "°C"
+			found.add(source, device, sensorType, name, unit)
+
+			for _, sensor := range deviceData.DeviceInfo.Sensors {
+				sensorType := fmt.Sprintf("ACI.%d.%d", sensor.AccessPort, sensor.SensorType)
+				switch sensor.SensorType {
+				case 0: //Inside Temp
+					name := "ACI (" + device + ") inside temp"
+					unit := "\u00b0F"
+					found.add(source, device, sensorType, name, unit)
+				case 2: //Inside Humidity
+					name := "ACI (" + device + ") inside humidity"
+					unit := "%"
+					found.add(source, device, sensorType, name, unit)
+				case 3: //Inside VPD
+					name := "ACI (" + device + ") inside VPD"
+					unit := "kPa"
+					found.add(source, device, sensorType, name, unit)
+				case 4: //Outside Temp
+					name := "ACI (" + device + ") outside temp"
+					unit := "\u00b0F"
+					found.add(source, device, sensorType, name, unit)
+				case 6: //Outside Humidity
+					name := "ACI (" + device + ") outside humidity"
+					unit := "%"
+					found.add(source, device, sensorType, name, unit)
+				case 7: //Outside VPD
+					name := "ACI (" + device + ") outside VPD"
+					unit := "kPa"
+					found.add(source, device, sensorType, name, unit)
+				default:
+					// Unknown sensorType: create a generic sensor so users can see and rename it.
+					// Determine a reasonable default unit:
+					unit := ""
+					// If device-level unit is present: 0 = °F, 1 = °C
+					switch deviceData.DeviceInfo.Unit {
+					case 0:
+						// Fahrenheit default for temperature-like types
+						if isTemperatureSensor(sensor.SensorType) {
+							unit = "\u00b0F"
+						}
+					case 1:
+						if isTemperatureSensor(sensor.SensorType) {
+							unit = "\u00b0C"
+						}
+					}
+					// Known percent/humidity-like types
+					if isHumiditySensor(sensor.SensorType) {
+						unit = "%"
+					}
+					name := fmt.Sprintf("ACI (%s) sensor %d.%d", device, sensor.AccessPort, sensor.SensorType)
+					// Log for analytics so we can update mappings later
+					logger.Log.WithFields(logrus.Fields{"device": device, "accessPort": sensor.AccessPort, "sensorType": sensor.SensorType, "sensorUnit": sensor.SensorUnit}).Info("Discovered unknown ACI sensor type - inserting generic sensor")
+					found.add(source, device, sensorType, name, unit)
+				}
+			}
+
+			for _, port := range deviceData.DeviceInfo.Ports {
+				sensorType := fmt.Sprintf("ACIP.%d", port.Port)
+				name := port.PortName
+				unit := "%"
+				found.add(source, device, sensorType, name, unit)
+			}
+		}
+	}
+	return found
+}
+
+// ecowittFoundSensors lists the sensors an Ecowitt gateway at address
+// reports (one get_livedata_info response), without touching the database.
+func ecowittFoundSensors(address string, apiResponse types.ECWAPIResponse) []foundSensor {
+	var found sensorCollector
 	sensorType := "WH25.InTemp"
-	device := input.ServerAddress
+	device := address
 	source := "ecowitt"
-	name := "EC (" + input.ServerAddress + ") InTemp"
+	name := "EC (" + address + ") InTemp"
 	unit := "°F"
-	checkInsertSensor(db, source, device, sensorType, name, input.ZoneID, unit)
+	found.add(source, device, sensorType, name, unit)
 
 	sensorType = "WH25.InHumi"
-	name = "EC (" + input.ServerAddress + ") InHumi"
+	name = "EC (" + address + ") InHumi"
 	unit = "%"
-	checkInsertSensor(db, source, device, sensorType, name, input.ZoneID, unit)
+	found.add(source, device, sensorType, name, unit)
 
 	for _, ch := range apiResponse.CHSoil {
 		sensorType := "Soil." + ch.Channel
-		device := input.ServerAddress
+		device := address
 		source := "ecowitt"
 		name := ch.Name
 		unit := "%"
-		checkInsertSensor(db, source, device, sensorType, name, input.ZoneID, unit)
+		found.add(source, device, sensorType, name, unit)
 	}
 
 	for _, ch := range apiResponse.CHAisle {
@@ -559,11 +595,11 @@ func ScanEcoWittSensors(c *gin.Context) {
 		if ch.Unit == "C" {
 			unit = "°C"
 		}
-		checkInsertSensor(db, source, device, sensorType,
-			"EC ("+device+") Ch"+ch.Channel+" Temp", input.ZoneID, unit)
+		found.add(source, device, sensorType,
+			"EC ("+device+") Ch"+ch.Channel+" Temp", unit)
 		sensorType = "Aisle." + ch.Channel + ".Humi"
-		checkInsertSensor(db, source, device, sensorType,
-			"EC ("+device+") Ch"+ch.Channel+" Humi", input.ZoneID, "%")
+		found.add(source, device, sensorType,
+			"EC ("+device+") Ch"+ch.Channel+" Humi", "%")
 	}
 
 	for _, ch := range apiResponse.CHEc {
@@ -571,12 +607,12 @@ func ScanEcoWittSensors(c *gin.Context) {
 		if ch.Unit == "C" {
 			tempUnit = "°C"
 		}
-		checkInsertSensor(db, source, device, "SoilEC."+ch.Channel+".Moisture",
-			"EC ("+device+") Ch"+ch.Channel+" Soil Moisture", input.ZoneID, "%")
-		checkInsertSensor(db, source, device, "SoilEC."+ch.Channel+".Temp",
-			"EC ("+device+") Ch"+ch.Channel+" Soil Temp", input.ZoneID, tempUnit)
-		checkInsertSensor(db, source, device, "SoilEC."+ch.Channel+".EC",
-			"EC ("+device+") Ch"+ch.Channel+" Soil EC", input.ZoneID, "mS/cm")
+		found.add(source, device, "SoilEC."+ch.Channel+".Moisture",
+			"EC ("+device+") Ch"+ch.Channel+" Soil Moisture", "%")
+		found.add(source, device, "SoilEC."+ch.Channel+".Temp",
+			"EC ("+device+") Ch"+ch.Channel+" Soil Temp", tempUnit)
+		found.add(source, device, "SoilEC."+ch.Channel+".EC",
+			"EC ("+device+") Ch"+ch.Channel+" Soil EC", "mS/cm")
 	}
 
 	for _, item := range apiResponse.CommonList {
@@ -593,20 +629,10 @@ func ScanEcoWittSensors(c *gin.Context) {
 		} else if item.Unit == "C" {
 			unit = "°C"
 		}
-		checkInsertSensor(db, source, device, meta.TypeKey,
-			fmt.Sprintf(meta.Name, device), input.ZoneID, unit)
+		found.add(source, device, meta.TypeKey,
+			fmt.Sprintf(meta.Name, device), unit)
 	}
-
-	//Update ECOWitt sensors
-	//Set ECDevices
-	strECDevices, err := LoadEcDevices(db)
-	if err == nil {
-		store.SetECDevices(strECDevices)
-	} else {
-		fieldLogger.WithError(err).Error("Error loading EC devices")
-	}
-
-	apiOK(c, "api_ecowitt_sensors_scanned")
+	return found
 }
 
 // sensorUpsertMu serializes the SELECT-then-INSERT pair used to look up
