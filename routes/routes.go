@@ -73,7 +73,9 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 		translations := utils.TranslationService.GetTranslations(lang)
 		currentPath, _ := c.Get("currentPath")
 		store := handlers.ConfigStoreFromContext(c)
+		loggedIn := sessions.Default(c).Get("logged_in") != nil
 		c.HTML(http.StatusOK, "views/strains.html", gin.H{
+			"pageData":             handlers.StrainsPageData(c, loggedIn, lang, translations),
 			"title":                "Strains",
 			"currentPath":          currentPath,
 			"version":              version,

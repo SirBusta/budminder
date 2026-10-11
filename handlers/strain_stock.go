@@ -227,3 +227,16 @@ func AddStrainSeedsHandler(c *gin.Context) {
 	fieldLogger.WithFields(map[string]interface{}{"strain_id": id, "added": req.Count, "seed_count": count}).Info("Seeds added")
 	c.JSON(http.StatusOK, gin.H{"seed_count": count, "seeds_added_on": stock.AddedOn, "wanted": stock.Wanted == 1})
 }
+
+// StrainsPageData is the Strains page's data attribute: who's logged in,
+// today's date (the configured timezone, as for seed dates), the language,
+// and the page's own translated strings ("sp_" keys).
+func StrainsPageData(c *gin.Context, loggedIn bool, lang string, translations map[string]string) gin.H {
+	t := map[string]string{}
+	for k, v := range translations {
+		if strings.HasPrefix(k, "sp_") {
+			t[k] = v
+		}
+	}
+	return gin.H{"logged_in": loggedIn, "today": stockToday(c), "lang": lang, "t": t}
+}

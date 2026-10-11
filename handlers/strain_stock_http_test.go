@@ -294,3 +294,14 @@ func TestImportReview_Destination(t *testing.T) {
 	page = with(url.Values{"dest": {"vault"}, "seed_count": {"lots"}, "seed_type": {"bogus"}, "seeds_added_on": {"soon"}})
 	assert.Contains(t, page, `id="editSeedCount" min="0" value="1"`, "bad values fall back")
 }
+
+func TestStrainsPage_Renders(t *testing.T) {
+	t.Parallel()
+	e := newStrainEditEnv(t)
+	page := e.getBody(t, "/strains")
+	assert.Contains(t, page, `id="strainsPage"`)
+	assert.Contains(t, page, "sp_tab_vault", "the page's translated strings are embedded")
+	assert.Contains(t, page, `id="spManual"`, "Enter manually window for a logged-in user")
+	assert.Contains(t, page, "/static/js/strains-page.js")
+	assert.NotContains(t, page, "straincompassImportModal", "the old import window is gone")
+}

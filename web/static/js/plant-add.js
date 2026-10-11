@@ -171,4 +171,11 @@ document.addEventListener("DOMContentLoaded", () => {
             uiMessages.showToast(uiMessages.t('failed_to_add_plant') || 'Failed to add plant. Try again.', 'danger');
         });
     });
+
+    // "Start a grow" from the Strains page: ?strain_id=&name=&use_seed=1
+    // pre-fill the strain, the plant's name and "use one seed".
+    const params = new URLSearchParams(location.search);
+    if (params.get("strain_id")) strainAC.setValue(params.get("strain_id"));
+    if (params.get("name")) document.getElementById("plantName").value = params.get("name");
+    if (params.get("use_seed") === "1") document.getElementById("decrementSeedCount").checked = true;
 });
