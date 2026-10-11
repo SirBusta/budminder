@@ -466,7 +466,10 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 		currentPath, _ := c.Get("currentPath")
 		store := handlers.ConfigStoreFromContext(c)
 		db := handlers.DBFromContext(c)
+		zonePlants, zoneSensors := handlers.ZoneCounts(db)
 		c.HTML(http.StatusOK, "views/settings.html", gin.H{
+			"zonePlants":      zonePlants,
+			"zoneSensors":     zoneSensors,
 			"title":           "Settings",
 			"currentPath":     currentPath,
 			"version":         version,

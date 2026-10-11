@@ -3,10 +3,13 @@
 {{ template "common/header.html" .}}
 {{ template "common/header2.html" .}}
 
-<!-- Manage sensors (mockup "Manage sensors"; becomes Settings → Sensors &
-     devices when Settings is rebuilt): scan and add, tents, where each
+<!-- Manage sensors (mockup "Manage sensors"), shown as Settings → Sensors &
+     devices with the Settings side menu: scan and add, tents, where each
      reading shows. Drawn by /static/js/sensors-manage.js. -->
-<div class="container-xxl sx sm" id="smPage" data-page='{{ json .pageData }}'>
+<div class="container-xxl sx sm st" id="smPage" data-page='{{ json .pageData }}'>
+  <div class="st-layout">
+    {{ template "common/settings-nav.html" (dict "lcl" .lcl "page" "sensors") }}
+    <main class="st-main">
     <a class="sm-crumb" href="/sensors"><i class="fa-solid fa-arrow-left me-1"></i>{{ .lcl.sm_back }}</a>
     <div class="sx-top">
         <div>
@@ -34,6 +37,8 @@
         <span class="sm-chip plant">{{ .lcl.sm_chip_plant }}</span> {{ .lcl.sm_note_plant }}
         {{ .lcl.sm_note_hidden }}</div>
     <div class="sm-trouble"><button type="button" class="sx-link" id="smDumpOpen"><i class="fa-solid fa-code me-1"></i>{{ .lcl.sm_raw_aci }}</button></div>
+    </main>
+  </div>
 </div>
 
 <!-- Edit a sensor -->

@@ -55,7 +55,7 @@
         const card = (cls, icon, title, status, statusCls, meta) => `<div class="sm-ic">
             <div class="logo ${cls}"><i class="fa-solid ${icon}"></i></div>
             <div class="sm-ic-b"><h3>${esc(title)}</h3><div class="st ${statusCls}"><i class="fa-solid fa-circle"></i>${esc(status)}</div><div class="meta">${meta}</div></div>
-            <div class="acts"><a href="/settings">${esc(t("sm_settings_link"))}</a></div></div>`;
+            <div class="acts"><a href="/settings#integrations">${esc(t("sm_settings_link"))}</a></div></div>`;
         const A = P.aci || {}, E = P.ecowitt || {};
         const aciStatus = !A.enabled ? ["sm_status_off", "off"] : A.token_set ? ["sm_status_connected", "ok"] : ["sm_status_no_token", "warn"];
         const aciLast = last(aci), ecoLast = last(eco);

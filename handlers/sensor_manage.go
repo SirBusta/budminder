@@ -659,3 +659,29 @@ func SensorsPageData(c *gin.Context, prefix string, lang string, translations ma
 	}
 	return data
 }
+
+// ZoneCounts returns, per zone id, how many living plants and how many
+// sensors it has (Settings → Grow setup → Zones).
+func ZoneCounts(db *sql.DB) (plants, sensors map[uint]int) {
+	plants, sensors = map[uint]int{}, map[uint]int{}
+	if list, err := loadActivePlantLinks(db); err == nil {
+		for _, p := range list {
+			if p.ZoneID > 0 {
+				plants[uint(p.ZoneID)]++
+			}
+		}
+	}
+	rows, err := db.Query(`SELECT zone_id, COUNT(*) FROM sensors WHERE zone_id IS NOT NULL GROUP BY zone_id`)
+	if err != nil {
+		logger.Log.WithField("func", "ZoneCounts").WithError(err).Error("Error counting sensors")
+		return plants, sensors
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var zone, n int
+		if rows.Scan(&zone, &n) == nil && zone > 0 {
+			sensors[uint(zone)] = n
+		}
+	}
+	return plants, sensors
+}

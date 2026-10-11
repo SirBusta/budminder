@@ -1,749 +1,506 @@
 {{ define "views/settings.html"}}
-<!--settings.html-->
-
-<!--Embed the header.html template at this location-->
+<!--settings.html: Settings (mockup ST1): side menu + search, sections of
+    cards, every change saved straight away (js/settings-page.js). The
+    card markup keeps the element ids the scripts below rely on. -->
 
 {{ template "common/header.html" .}}
-<style nonce="{{ .cspNonce }}">
-.nav-tabs .nav-link.active {
-background-color: #0d6efd; /* Primary color */
-color: #fff; /* Text color */
-border-color: #0d6efd #0d6efd #fff; /* Adjust border for seamless look */
-}
-
-.nav-tabs .nav-link {
-color: #0d6efd; /* Primary color */
-}
-
-.border-start.border-4 { border-left-width: 4px !important; }
-.card-table .card-body { padding: 0; }
-.card-table .table { margin-bottom: 0; }
-</style>
 {{ template "common/header2.html" .}}
-<div class="container">
-    <h1 class="visually-hidden">{{ .lcl.title_settings }}</h1>
-    <!-- Tabs Navigation -->
-    <ul class="nav nav-tabs d-flex align-items-center" id="settingsTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-content" type="button" role="tab" aria-controls="settings-content" aria-selected="true">
-                &#9881; {{ .lcl.title_settings }}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tables-tab" data-bs-toggle="tab" data-bs-target="#tables-content" type="button" role="tab" aria-controls="tables-content" aria-selected="false">
-                &#128203; {{ .lcl.title_tables }}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="logo-tab" data-bs-toggle="tab" data-bs-target="#logo-content" type="button" role="tab" aria-controls="logo-content" aria-selected="false">
-                &#128444; {{ .lcl.set_logo_image }}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="streams-tab" data-bs-toggle="tab" data-bs-target="#streams-content" type="button" role="tab" aria-controls="streams-content" aria-selected="false">
-                &#128249; {{ .lcl.title_streams }}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs-content" type="button" role="tab" aria-controls="logs-content" aria-selected="false">
-                &#128220; Logs
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="backup-tab" data-bs-toggle="tab" data-bs-target="#backup-content" type="button" role="tab" aria-controls="backup-content" aria-selected="false">
-                &#128230; {{ .lcl.backup_tab }}
-            </button>
-        </li>
-        <li class="nav-item ms-auto" role="presentation">
-            <a class="btn btn-sm btn-outline-secondary" href="/change-password">&#128274; {{ .lcl.change_password }}</a>
-        </li>
-    </ul>
+<div class="container-xxl sx st" id="stPage"
+     data-token-set="{{ .lcl.token_set }}"
+     data-time-seconds="{{ .lcl.time_seconds }}"
+     data-search-results="{{ .lcl.st_search_results }}"
+     data-search-count="{{ .lcl.st_search_count }}"
+     data-search-count-one="{{ .lcl.st_search_count_one }}"
+     data-log-nothing="{{ .lcl.st_log_nothing }}"
+     data-save-failed="{{ .lcl.failed_to_save_settings }}">
+    <div class="st-layout">
+        {{ template "common/settings-nav.html" (dict "lcl" .lcl "page" "settings") }}
 
-    <!-- Tabs Content -->
-    <div class="tab-content" id="settingsTabsContent">
-        <!-- Settings Tab -->
-        <div class="tab-pane fade show active" id="settings-content" role="tabpanel" aria-labelledby="settings-tab">
-            <form id="settingsForm" class="mt-4">
-                <!-- AC Infinity Section -->
-                <div class="card mb-4 shadow-sm border-start border-4 border-primary">
-                    <div class="card-header bg-themed">
-                        <h2 class="h5 card-title mb-0"><i class="fa fa-microchip me-2"></i>{{ .lcl.settings_ac_infinity }}</h2>
+        <main class="st-main">
+            <div class="st-head">
+                <h1 id="stTitle">{{ .lcl.title_settings }}</h1>
+                <span class="st-saved" id="stSaved" aria-live="polite"><i class="fa-solid fa-check me-1"></i>{{ .lcl.st_saved }}</span>
+                <p id="stDesc"></p>
+            </div>
+            <div class="st-none d-none" id="stNone"><i class="fa-solid fa-magnifying-glass"></i>{{ .lcl.st_search_none }}</div>
+
+            <!-- ============================ General ============================ -->
+            <section class="st-sec" data-sec="general" data-title="{{ .lcl.st_sec_general }}" data-desc="{{ .lcl.st_sec_general_desc }}">
+                <h2 class="st-sec-h"><i class="fa-solid fa-sliders"></i>{{ .lcl.st_sec_general }}<a href="#general" data-goto="general">{{ .lcl.st_go_to_section }} <i class="fa-solid fa-arrow-right"></i></a></h2>
+
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-globe"></i><div><h3>{{ .lcl.st_card_region }}</h3><p>{{ .lcl.st_card_region_desc }}</p></div></div>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="timezone">{{ .lcl.timezone_label }}</label><small>{{ .lcl.timezone_desc }}</small></div>
+                        <div class="st-row-r st-nosearch"><select class="form-select form-select-sm" id="timezone" data-saved="{{ .settings.Timezone }}" data-autosave>
+                            <option value="">{{ .lcl.timezone_use_system }}</option>
+                        </select></div>
                     </div>
-                    <div class="card-body">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="aciEnabled" {{ if .settings.ACI.Enabled }}checked{{ end }}>
-                            <label class="form-check-label" for="aciEnabled">{{ .lcl.aci_enabled_info }}</label>
-                        </div>
-                        <div class="d-flex align-items-center mt-3">
-                    <span id="tokenSetBadge" class="badge bg-{{ if .settings.ACI.TokenSet }}success{{ else }}danger{{ end }} me-2">
-                        {{ if .settings.ACI.TokenSet }}{{ .lcl.token_set }}{{ else }}{{ .lcl.token_not_set }}{{ end }}
-                    </span>
-                            <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#aciLoginModal">
-                                {{ .lcl.retrieve_token }}
-                            </button>
-                        </div>
-                        <small class="text-muted d-block mt-2">
-                            {{ .lcl.retrieve_token_desc }}
-                        </small>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="units">{{ .lcl.units_label }}</label><small>{{ .lcl.units_desc }}</small></div>
+                        <div class="st-row-r"><select class="form-select form-select-sm" id="units" data-autosave>
+                            <option value="imperial" {{ if ne .settings.Units "metric" }}selected{{ end }}>{{ .lcl.units_imperial }}</option>
+                            <option value="metric" {{ if eq .settings.Units "metric" }}selected{{ end }}>{{ .lcl.units_metric }}</option>
+                        </select></div>
+                    </div>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="stLang">{{ .lcl.st_language }}</label><small>{{ .lcl.st_language_desc }}</small></div>
+                        <div class="st-row-r"><select class="form-select form-select-sm" id="stLang">
+                            {{ range .languages }}<option value="{{ . }}" {{ if eq . $.currentLanguage }}selected{{ end }}>{{ upper . }}</option>{{ end }}
+                        </select></div>
+                    </div>
+                    <div class="st-row">
+                        <div class="st-row-l"><span class="st-label">{{ .lcl.st_theme }}</span><small>{{ .lcl.st_theme_desc }}</small></div>
+                        <div class="st-row-r"><div class="sx-seg" id="stTheme" role="group" aria-label="{{ .lcl.st_theme }}">
+                            <button type="button" data-theme="auto">{{ .lcl.st_theme_auto }}</button>
+                            <button type="button" data-theme="light">{{ .lcl.st_theme_light }}</button>
+                            <button type="button" data-theme="dark">{{ .lcl.st_theme_dark }}</button>
+                        </div></div>
                     </div>
                 </div>
 
-                <!-- EcoWitt Section -->
-                <div class="card mb-4 shadow-sm border-start border-4 border-success">
-                    <div class="card-header bg-themed">
-                        <h2 class="h5 card-title mb-0"><i class="fa fa-leaf me-2"></i>{{ .lcl.settings_ecowitt }}</h2>
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-eye"></i><div><h3>{{ .lcl.st_card_guest }}</h3><p>{{ .lcl.guest_mode_desc }}</p></div></div>
+                    <label class="st-row st-switch">
+                        <div class="st-row-l"><span class="st-label">{{ .lcl.guest_mode_info }}</span></div>
+                        <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="guestMode" data-autosave {{ if .settings.GuestMode }}checked{{ end }}></div>
+                    </label>
+                </div>
+
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-lock"></i><div><h3>{{ .lcl.st_card_password }}</h3><p>{{ .lcl.st_card_password_desc }}</p></div></div>
+                    <div class="st-row">
+                        <div class="st-row-l"></div>
+                        <div class="st-row-r"><a class="st-btn light" href="/change-password"><i class="fa-solid fa-key me-1"></i>{{ .lcl.change_password }}</a></div>
                     </div>
-                    <div class="card-body">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="ecEnabled" {{ if .settings.EC.Enabled }}checked{{ end }}>
-                            <label class="form-check-label" for="ecEnabled">{{ .lcl.ecowitt_enabled_info }}</label>
+                </div>
+            </section>
+
+            <!-- ========================== Integrations ========================== -->
+            <section class="st-sec" data-sec="integrations" data-title="{{ .lcl.st_sec_integrations }}" data-desc="{{ .lcl.st_sec_integrations_desc }}">
+                <h2 class="st-sec-h"><i class="fa-solid fa-plug"></i>{{ .lcl.st_sec_integrations }}<a href="#integrations" data-goto="integrations">{{ .lcl.st_go_to_section }} <i class="fa-solid fa-arrow-right"></i></a></h2>
+
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-fan"></i><div><h3>{{ .lcl.settings_ac_infinity }}</h3><p>{{ .lcl.st_card_aci_desc }}</p></div></div>
+                    <div class="st-row">
+                        <div class="st-row-l">
+                            <span id="tokenSetBadge" class="badge bg-{{ if .settings.ACI.TokenSet }}success{{ else }}danger{{ end }} align-self-start">{{ if .settings.ACI.TokenSet }}{{ .lcl.token_set }}{{ else }}{{ .lcl.token_not_set }}{{ end }}</span>
+                            <small>{{ .lcl.retrieve_token_desc }}</small>
                         </div>
-                        <small class="text-muted d-block mt-2">
-                            {{ .lcl.ecowitt_enabled_desc }}
-                        </small>
+                        <div class="st-row-r"><button type="button" class="st-btn light" data-bs-toggle="modal" data-bs-target="#aciLoginModal"><i class="fa-solid fa-right-to-bracket me-1"></i>{{ .lcl.retrieve_token }}</button></div>
+                    </div>
+                    <label class="st-row st-switch">
+                        <div class="st-row-l"><span class="st-label">{{ .lcl.aci_enabled_info }}</span></div>
+                        <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="aciEnabled" data-autosave {{ if .settings.ACI.Enabled }}checked{{ end }}></div>
+                    </label>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="pollingInterval">{{ .lcl.polling_interval }}: <span id="pollingValue" class="fw-bold">{{ .settings.PollingInterval }} {{ .lcl.time_seconds }}</span></label><small>{{ .lcl.polling_interval_desc }}</small></div>
+                        <div class="st-row-r st-range"><input type="range" class="form-range" id="pollingInterval" min="15" max="300" step="5" value="{{ .settings.PollingInterval }}" data-autosave></div>
                     </div>
                 </div>
 
-                <!-- CannaDB Section -->
-                <div class="card mb-4 shadow-sm border-start border-4 border-secondary">
-                    <div class="card-header bg-themed">
-                        <h2 class="h5 card-title mb-0"><i class="fa fa-database me-2"></i>{{ .lcl.settings_cannadb }}</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="cannadbEnabled" {{ if .settings.Cannadb.Enabled }}checked{{ end }}>
-                            <label class="form-check-label" for="cannadbEnabled">{{ .lcl.cannadb_enabled_info }}</label>
-                        </div>
-                        <small class="text-muted d-block mt-2">
-                            {{ .lcl.cannadb_enabled_desc }}
-                        </small>
-
-                        <hr class="my-3">
-                        <label for="cannadbBaseUrl" class="form-label">{{ .lcl.cannadb_base_url_label }}</label>
-                        <input type="text" class="form-control" id="cannadbBaseUrl" style="max-width:420px"
-                               placeholder="https://api.cannadb.net/xrpc/" value="{{ .settings.Cannadb.BaseURL }}">
-                        <small class="text-muted d-block mt-2">
-                            {{ .lcl.cannadb_base_url_desc }}
-                        </small>
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-satellite-dish"></i><div><h3>{{ .lcl.settings_ecowitt }}</h3><p>{{ .lcl.ecowitt_enabled_desc }}</p></div></div>
+                    <label class="st-row st-switch">
+                        <div class="st-row-l"><span class="st-label">{{ .lcl.ecowitt_enabled_info }}</span></div>
+                        <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="ecEnabled" data-autosave {{ if .settings.EC.Enabled }}checked{{ end }}></div>
+                    </label>
+                    <div class="st-row">
+                        <div class="st-row-l"><small>{{ .lcl.st_eco_manage_desc }}</small></div>
+                        <div class="st-row-r"><a class="st-btn light" href="/sensors/manage"><i class="fa-solid fa-temperature-half me-1"></i>{{ .lcl.st_sec_sensors }}</a></div>
                     </div>
                 </div>
 
-                <!-- StrainCompass Section -->
-                <div class="card mb-4 shadow-sm border-start border-4 border-secondary">
-                    <div class="card-header bg-themed">
-                        <h2 class="h5 card-title mb-0"><i class="fa fa-flask me-2"></i>{{ .lcl.settings_straincompass }}</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="straincompassEnabled" {{ if .settings.Straincompass.Enabled }}checked{{ end }}>
-                            <label class="form-check-label" for="straincompassEnabled">{{ .lcl.straincompass_enabled_info }}</label>
-                        </div>
-                        <small class="text-muted d-block mt-2">
-                            {{ .lcl.straincompass_enabled_desc }}
-                        </small>
-
-                        <hr class="my-3">
-                        <label for="straincompassApiKey" class="form-label">{{ .lcl.straincompass_api_key_label }}</label>
-                        <div class="d-flex align-items-center gap-2" style="max-width:420px">
-                            <input type="password" class="form-control" id="straincompassApiKey"
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-compass"></i><div><h3>{{ .lcl.settings_straincompass }}</h3><p>{{ .lcl.straincompass_enabled_desc }}</p></div></div>
+                    <label class="st-row st-switch">
+                        <div class="st-row-l"><span class="st-label">{{ .lcl.straincompass_enabled_info }}</span></div>
+                        <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="straincompassEnabled" data-autosave {{ if .settings.Straincompass.Enabled }}checked{{ end }}></div>
+                    </label>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="straincompassApiKey">{{ .lcl.straincompass_api_key_label }}</label><small>{{ .lcl.straincompass_api_key_desc }}</small></div>
+                        <div class="st-row-r d-flex align-items-center gap-2">
+                            <input type="password" class="form-control form-control-sm" id="straincompassApiKey" autocomplete="off" data-autosave
                                    placeholder="{{ if .settings.Straincompass.APIKeySet }}••••••••{{ else }}{{ .lcl.straincompass_api_key_placeholder }}{{ end }}">
-                            {{ if .settings.Straincompass.APIKeySet }}
-                            <span class="badge bg-success">{{ .lcl.token_set }}</span>
-                            {{ else }}
-                            <span class="badge bg-secondary">{{ .lcl.straincompass_key_optional }}</span>
-                            {{ end }}
+                            <span class="badge {{ if .settings.Straincompass.APIKeySet }}bg-success{{ else }}bg-secondary{{ end }}" id="straincompassKeyBadge">{{ if .settings.Straincompass.APIKeySet }}{{ .lcl.token_set }}{{ else }}{{ .lcl.straincompass_key_optional }}{{ end }}</span>
                         </div>
-                        <small class="text-muted d-block mt-2">
-                            {{ .lcl.straincompass_api_key_desc }}
-                        </small>
-
-                        <hr class="my-3">
-                        <label for="straincompassBaseUrl" class="form-label">{{ .lcl.straincompass_base_url_label }}</label>
-                        <input type="text" class="form-control" id="straincompassBaseUrl" style="max-width:420px"
-                               placeholder="https://straincompass.com/api/" value="{{ .settings.Straincompass.BaseURL }}">
-                        <small class="text-muted d-block mt-2">
-                            {{ .lcl.straincompass_base_url_desc }}
-                        </small>
                     </div>
+                    <details class="st-adv">
+                        <summary>{{ .lcl.st_advanced }}</summary>
+                        <div class="st-row">
+                            <div class="st-row-l"><label for="straincompassBaseUrl">{{ .lcl.straincompass_base_url_label }}</label><small>{{ .lcl.straincompass_base_url_desc }}</small></div>
+                            <div class="st-row-r"><input type="text" class="form-control form-control-sm" id="straincompassBaseUrl" placeholder="https://straincompass.com/api/" value="{{ .settings.Straincompass.BaseURL }}" data-autosave></div>
+                        </div>
+                    </details>
                 </div>
 
-                <!-- Breeder suggestions (reference list) -->
-                <div class="card mb-4 shadow-sm border-start border-4 border-secondary" id="breederListCard"
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-database"></i><div><h3>{{ .lcl.settings_cannadb }}</h3><p>{{ .lcl.cannadb_enabled_desc }}</p></div></div>
+                    <label class="st-row st-switch">
+                        <div class="st-row-l"><span class="st-label">{{ .lcl.cannadb_enabled_info }}</span></div>
+                        <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="cannadbEnabled" data-autosave {{ if .settings.Cannadb.Enabled }}checked{{ end }}></div>
+                    </label>
+                    <details class="st-adv">
+                        <summary>{{ .lcl.st_advanced }}</summary>
+                        <div class="st-row">
+                            <div class="st-row-l"><label for="cannadbBaseUrl">{{ .lcl.cannadb_base_url_label }}</label><small>{{ .lcl.cannadb_base_url_desc }}</small></div>
+                            <div class="st-row-r"><input type="text" class="form-control form-control-sm" id="cannadbBaseUrl" placeholder="https://api.cannadb.net/xrpc/" value="{{ .settings.Cannadb.BaseURL }}" data-autosave></div>
+                        </div>
+                    </details>
+                </div>
+
+                <div class="st-card" id="breederListCard"
                      data-status-bundled="{{ .lcl.breeder_list_status_bundled }}"
                      data-status-refreshed="{{ .lcl.breeder_list_status_refreshed }}"
                      data-last-checked="{{ .lcl.breeder_list_last_checked }}"
                      data-last-error="{{ .lcl.breeder_list_last_error }}"
                      data-refreshing="{{ .lcl.breeder_list_refreshing }}">
-                    <div class="card-header bg-themed">
-                        <h2 class="h5 card-title mb-0"><i class="fa fa-list me-2"></i>{{ .lcl.settings_breeder_list }}</h2>
+                    <div class="st-card-h"><i class="fa-solid fa-list"></i><div><h3>{{ .lcl.settings_breeder_list }}</h3><p>{{ .lcl.breeder_list_desc }}</p></div></div>
+                    <div class="st-row">
+                        <div class="st-row-l"><span class="st-label" id="breederListStatus"></span><small id="breederListChecked"></small><small class="text-warning" id="breederListError"></small></div>
+                        <div class="st-row-r"><button type="button" class="st-btn light" id="breederListRefreshBtn"><i class="fa-solid fa-rotate me-1"></i><span>{{ .lcl.breeder_list_refresh_now }}</span></button></div>
                     </div>
-                    <div class="card-body">
-                        <small class="text-muted d-block mb-3">{{ .lcl.breeder_list_desc }}</small>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="breederListAutoRefresh">
-                            <label class="form-check-label" for="breederListAutoRefresh">{{ .lcl.breeder_list_auto_refresh }}</label>
-                        </div>
-                        <div class="mt-3 small" id="breederListStatus"></div>
-                        <div class="small text-muted" id="breederListChecked"></div>
-                        <div class="small text-warning" id="breederListError"></div>
-                        <button type="button" class="btn btn-sm btn-outline-secondary mt-3" id="breederListRefreshBtn">
-                            <i class="fa fa-rotate me-1"></i><span>{{ .lcl.breeder_list_refresh_now }}</span>
-                        </button>
-                    </div>
+                    <label class="st-row st-switch">
+                        <div class="st-row-l"><span class="st-label">{{ .lcl.breeder_list_auto_refresh }}</span></div>
+                        <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="breederListAutoRefresh"></div>
+                    </label>
                 </div>
 
-                <!-- General Settings -->
-                <div class="card mb-4 shadow-sm border-start border-4 border-info">
-                    <div class="card-header bg-themed">
-                        <h2 class="h5 card-title mb-0"><i class="fa fa-sliders me-2"></i>{{ .lcl.title_settings }}</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="guestMode" {{ if .settings.GuestMode }}checked{{ end }}>
-                            <label class="form-check-label" for="guestMode">{{ .lcl.guest_mode_info }}</label>
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-key"></i><div><h3>{{ .lcl.st_card_api }}</h3><p>{{ .lcl.st_card_api_desc }}</p></div></div>
+                    <div class="st-row">
+                        <div class="st-row-l">
+                            <span class="st-label">{{ .lcl.api_key_label }}</span>
+                            <div id="apiKeyStatus">
+                                {{ if eq .settings.APIKey "********" }}
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-success me-2"><i class="fa fa-check"></i></span>
+                                    <span class="text-success fw-semibold">API key is configured.</span>
+                                </div>
+                                {{ else }}
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-secondary me-2"><i class="fa fa-minus"></i></span>
+                                    <span class="text-muted">No API key configured.</span>
+                                </div>
+                                {{ end }}
+                            </div>
+                            <small>{{ linebreaks .lcl.api_key_desc }}</small>
                         </div>
-                        <small class="text-muted d-block mt-2">
-                            {{ .lcl.guest_mode_desc }}
-                        </small>
-
-                        <hr class="my-3">
-
-                        <label for="pollingInterval" class="form-label">{{ .lcl.polling_interval }}:
-                            <span id="pollingValue" class="fw-bold">{{ .settings.PollingInterval }} {{ .lcl.time_seconds }}</span>
-                        </label>
-                        <input type="range" class="form-range" id="pollingInterval"
-                               min="15" max="300" step="5" value="{{ .settings.PollingInterval }}">
-                        <small class="text-muted d-block mt-2">
-                            {{ .lcl.polling_interval_desc }}
-                        </small>
-
-                        <hr class="my-3">
-                        <label for="logLevel" class="form-label">{{ .lcl.settings_log_level }}</label>
-                        <select class="form-select" id="logLevel" style="width:160px">
-                            <option value="debug" {{ if eq .settings.LogLevel "debug" }}selected{{ end }}>{{ .lcl.settings_log_level_debug }}</option>
-                            <option value="info" {{ if or (eq .settings.LogLevel "info") (eq .settings.LogLevel "") }}selected{{ end }}>{{ .lcl.settings_log_level_info }}</option>
-                            <option value="warn" {{ if eq .settings.LogLevel "warn" }}selected{{ end }}>{{ .lcl.settings_log_level_warn }}</option>
-                            <option value="error" {{ if eq .settings.LogLevel "error" }}selected{{ end }}>{{ .lcl.settings_log_level_error }}</option>
-                        </select>
-                        <small class="text-muted d-block mt-2">
-                            {{ .lcl.settings_log_level_desc }}
-                        </small>
-
-                        <hr class="my-3">
-                        <label for="timezone" class="form-label">{{ if .lcl.timezone_label }}{{ .lcl.timezone_label }}{{ else }}Timezone{{ end }}</label>
-                        <select class="form-select" id="timezone" style="width:320px" data-saved="{{ .settings.Timezone }}">
-                            <option value="">{{ if .lcl.timezone_use_system }}{{ .lcl.timezone_use_system }}{{ else }}Use system default{{ end }}</option>
-                        </select>
-                        <small class="text-muted d-block mt-2">
-                            {{ if .lcl.timezone_desc }}{{ .lcl.timezone_desc }}{{ else }}Set your local timezone. This ensures dates and times display correctly regardless of where the server is running.{{ end }}
-                        </small>
-
-                        <hr class="my-3">
-                        <label for="units" class="form-label">{{ .lcl.units_label }}</label>
-                        <select class="form-select" id="units" style="width:320px">
-                            <option value="imperial" {{ if ne .settings.Units "metric" }}selected{{ end }}>{{ .lcl.units_imperial }}</option>
-                            <option value="metric" {{ if eq .settings.Units "metric" }}selected{{ end }}>{{ .lcl.units_metric }}</option>
-                        </select>
-                        <small class="text-muted d-block mt-2">{{ .lcl.units_desc }}</small>
-                    </div>
-                </div>
-
-                <!-- API Settings -->
-                <div class="card mb-4 shadow-sm border-start border-4 border-warning">
-                    <div class="card-header bg-themed">
-                        <h2 class="h5 card-title mb-0">
-                            <i class="fa fa-key me-2"></i>{{ .lcl.api }} {{ .lcl.title_settings }}
-                        </h2>
-                    </div>
-                    <div class="card-body">
-                        <label class="form-label">{{ .lcl.api_key_label }}</label>
-
-                        <!-- Status indicator: key configured or not -->
-                        <div id="apiKeyStatus">
+                        <div class="st-row-r" id="apiKeyActions">
                             {{ if eq .settings.APIKey "********" }}
-                            <div class="d-flex align-items-center mb-2">
-                                <span class="badge bg-success me-2"><i class="fa fa-check"></i></span>
-                                <span class="text-success fw-semibold">API key is configured.</span>
-                            </div>
+                            <button class="btn btn-outline-warning btn-sm" type="button" id="btnGenerateAPIKey"><i class="fa fa-sync me-1"></i> Regenerate API Key</button>
                             {{ else }}
-                            <div class="d-flex align-items-center mb-2">
-                                <span class="badge bg-secondary me-2"><i class="fa fa-minus"></i></span>
-                                <span class="text-muted">No API key configured.</span>
-                            </div>
+                            <button class="btn btn-primary btn-sm" type="button" id="btnGenerateAPIKey"><i class="fa fa-key me-1"></i> Generate API Key</button>
                             {{ end }}
                         </div>
-
-                        <!-- Generate / Regenerate button -->
-                        <div id="apiKeyActions">
-                            {{ if eq .settings.APIKey "********" }}
-                            <button class="btn btn-outline-warning btn-sm" type="button" id="btnGenerateAPIKey">
-                                <i class="fa fa-sync me-1"></i> Regenerate API Key
-                            </button>
-                            {{ else }}
-                            <button class="btn btn-primary btn-sm" type="button" id="btnGenerateAPIKey">
-                                <i class="fa fa-key me-1"></i> Generate API Key
-                            </button>
-                            {{ end }}
+                    </div>
+                    <div id="apiKeyReveal" class="d-none st-reveal">
+                        <div class="alert alert-warning py-2 mb-2">
+                            <i class="fa fa-exclamation-triangle me-1"></i>
+                            <strong>Copy your key now.</strong> It will not be shown again.
                         </div>
-
-                        <!-- One-time key display (hidden by default, shown after generation) -->
-                        <div id="apiKeyReveal" class="d-none mt-3">
-                            <div class="alert alert-warning py-2 mb-2">
-                                <i class="fa fa-exclamation-triangle me-1"></i>
-                                <strong>Copy your key now.</strong> It will not be shown again.
-                            </div>
-                            <div class="input-group">
-                                <input type="text" class="form-control font-monospace" id="apiKeyDisplay" readonly>
-                                <button class="btn btn-outline-secondary" type="button" id="btnCopyAPIKey" aria-label="{{ .lcl.copy }}">
-                                    <i class="fa fa-clipboard me-1"></i> Copy
-                                </button>
-                            </div>
-                            <small class="text-muted d-block mt-1" id="apiKeyCopyStatus"></small>
+                        <div class="input-group">
+                            <input type="text" class="form-control font-monospace" id="apiKeyDisplay" readonly>
+                            <button class="btn btn-outline-secondary" type="button" id="btnCopyAPIKey" aria-label="{{ .lcl.copy }}"><i class="fa fa-clipboard me-1"></i> Copy</button>
                         </div>
-
-                        <small class="text-muted d-block mt-2">
-                            {{ linebreaks .lcl.api_key_desc }}
-                        </small>
-
-                        <!-- Disable API Ingest -->
-                        <div class="form-check form-switch mt-3">
-                            <input class="form-check-input" type="checkbox" id="disableApiIngest" name="disable_api_ingest" {{ if .settings.APIIngestEnabled }}{{ else }}checked{{ end }}>
-                            <label class="form-check-label" for="disableApiIngest">{{ .lcl.disable_api_ingest }}</label>
-                        </div>
-                        <small class="text-muted d-block mt-2">
-                            {{ .lcl.disable_api_ingest_desc }}
-                        </small>
+                        <small class="text-muted d-block mt-1" id="apiKeyCopyStatus"></small>
                     </div>
+                    <label class="st-row st-switch">
+                        <div class="st-row-l"><span class="st-label">{{ .lcl.disable_api_ingest }}</span><small>{{ .lcl.disable_api_ingest_desc }}</small></div>
+                        <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="disableApiIngest" name="disable_api_ingest" data-autosave {{ if .settings.APIIngestEnabled }}{{ else }}checked{{ end }}></div>
+                    </label>
                 </div>
+            </section>
 
-                <!-- Data Retention -->
-                <div class="card mb-4 shadow-sm border-start border-4 border-warning">
-                    <div class="card-header bg-themed">
-                        <h2 class="h5 card-title mb-0"><i class="fa fa-database me-2"></i>{{ .lcl.settings_data_retention }}</h2>
-                    </div>
-                    <div class="card-body">
-                        <label for="sensorRetentionDays" class="form-label">{{ .lcl.settings_sensor_retention_label }}</label>
-                        <input type="number" class="form-control" id="sensorRetentionDays" min="0" max="3650"
-                               value="{{ .settings.SensorRetentionDays }}" style="width:160px">
-                        <small class="text-muted d-block mt-2">
-                            {{ .lcl.settings_sensor_retention_desc }}
-                        </small>
-                    </div>
-                </div>
+            <!-- ========================== Grow setup ========================== -->
+            <section class="st-sec" data-sec="grow" data-title="{{ .lcl.st_sec_grow }}" data-desc="{{ .lcl.st_sec_grow_desc }}">
+                <h2 class="st-sec-h"><i class="fa-solid fa-seedling"></i>{{ .lcl.st_sec_grow }}<a href="#grow" data-goto="grow">{{ .lcl.st_go_to_section }} <i class="fa-solid fa-arrow-right"></i></a></h2>
 
-                <!-- Save Button -->
-                <div class="text-end">
-                    <button type="submit" class="btn btn-primary px-4">{{ .lcl.save_settings }}</button>
-                </div>
-            </form>
-        </div>
-
-
-        <!-- Customization Tab -->
-        <div class="tab-pane fade" id="tables-content" role="tabpanel" aria-labelledby="tables-tab">
-            <!-- Zones -->
-            <div class="card mb-4 shadow-sm card-table mt-4">
-                <div class="card-header bg-themed d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="h5 mb-0">&#128205; {{ .lcl.title_zones }}</h2>
-                        <small class="text-muted">{{ .lcl.settings_zones_desc }}</small>
-                    </div>
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addZoneModal">
-                        <i class="fa-solid fa-plus"></i> {{ .lcl.add_zone }}
-                    </button>
-                </div>
-                <div class="card-body">
-                    <table class="table table-striped table-hover mb-0">
-                        <thead class="bg-themed">
-                        <tr>
-                            <th>{{ .lcl.title_zone }}</th>
-                        </tr>
-                        </thead>
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-tent"></i><div><h3>{{ .lcl.title_zones }}</h3><p>{{ .lcl.settings_zones_desc }}</p></div>
+                        <button type="button" class="st-btn" data-bs-toggle="modal" data-bs-target="#addZoneModal"><i class="fa-solid fa-plus me-1"></i>{{ .lcl.add_zone }}</button></div>
+                    <table class="st-list st-nosearch-rows">
+                        <thead><tr><th>{{ .lcl.title_zone }}</th><th>{{ .lcl.st_col_plants }}</th><th>{{ .lcl.st_col_sensors }}</th><th></th></tr></thead>
                         <tbody>
                         {{ range .zones }}
                         <tr class="clickable-row zone-row" data-zone='{{ json . }}'>
-                            <td>{{ .Name }}</td>
+                            <td><i class="fa-solid {{ if or (eq (lower .Name) "outdoor") (eq (lower .Name) "outside") }}fa-tree{{ else }}fa-tent{{ end }} st-zone-ic"></i><b>{{ .Name }}</b></td>
+                            <td>{{ index $.zonePlants .ID }}</td>
+                            <td>{{ index $.zoneSensors .ID }}</td>
+                            <td class="text-end"><i class="fa-solid fa-pen st-row-edit" aria-hidden="true"></i></td>
                         </tr>
                         {{ end }}
                         </tbody>
                     </table>
                 </div>
-            </div>
 
-            <!-- Activities -->
-            <div class="card mb-4 shadow-sm card-table">
-                <div class="card-header bg-themed d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="h5 mb-0">&#9997; {{ .lcl.title_activities }}</h2>
-                        <small class="text-muted">{{ .lcl.settings_activities_desc }}</small>
-                    </div>
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addActivityModal">
-                        <i class="fa-solid fa-plus"></i> {{ .lcl.add_activity }}
-                    </button>
-                </div>
-                <div class="card-body">
-                    <table class="table table-striped table-hover mb-0">
-                        <thead class="bg-themed">
-                        <tr>
-                            <th>{{ .lcl.title_activity }}</th>
-                            <th>{{ .lcl.title_metrics }}</th>
-                        </tr>
-                        </thead>
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-list-check"></i><div><h3>{{ .lcl.title_activities }}</h3><p>{{ .lcl.settings_activities_desc }}</p></div>
+                        <button type="button" class="st-btn" data-bs-toggle="modal" data-bs-target="#addActivityModal"><i class="fa-solid fa-plus me-1"></i>{{ .lcl.add_activity }}</button></div>
+                    <table class="st-list">
+                        <thead><tr><th>{{ .lcl.title_activity }}</th><th>{{ .lcl.st_col_counts_as }}</th><th>{{ .lcl.title_metrics }}</th><th></th></tr></thead>
                         <tbody>
                         {{ range .activities }}
                         <tr class="clickable-row activity-row" data-activity='{{ json . }}'>
-                            <td><span class="act-chip" style="--c:{{ .Color }}"><i class="fa-solid {{ .Icon }}"></i></span> {{ .Name }}</td>
-                            <td>{{ len .Metrics }}</td>
+                            <td><span class="act-chip" style="--c:{{ .Color }}"><i class="fa-solid {{ .Icon }}"></i></span><b>{{ .Name }}</b></td>
+                            <td>{{ if and .IsWatering .IsFeeding }}{{ $.lcl.activity_flag_watering }}, {{ $.lcl.activity_flag_feeding }}{{ else if .IsWatering }}{{ $.lcl.activity_flag_watering }}{{ else if .IsFeeding }}{{ $.lcl.activity_flag_feeding }}{{ else }}—{{ end }}</td>
+                            <td class="st-act-metrics" data-ids="{{ range $i, $m := .Metrics }}{{ if $i }},{{ end }}{{ $m.MetricID }}{{ end }}">—</td>
+                            <td class="text-end"><i class="fa-solid fa-pen st-row-edit" aria-hidden="true"></i></td>
                         </tr>
                         {{ end }}
                         </tbody>
                     </table>
                 </div>
-            </div>
 
-            <!-- Metrics -->
-            <div class="card mb-4 shadow-sm card-table">
-                <div class="card-header bg-themed d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="h5 mb-0">&#128200; {{ .lcl.title_metrics }}</h2>
-                        <small class="text-muted">{{ .lcl.settings_metrics_desc }}</small>
-                    </div>
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addMetricModal">
-                        <i class="fa-solid fa-plus"></i> {{ .lcl.add_metric }}
-                    </button>
-                </div>
-                <div class="card-body">
-                    <table class="table table-striped table-hover mb-0">
-                        <thead class="bg-themed">
-                        <tr>
-                            <th>{{ .lcl.title_metric }}</th>
-                            <th>{{ .lcl.title_unit }}</th>
-                        </tr>
-                        </thead>
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-ruler"></i><div><h3>{{ .lcl.title_metrics }}</h3><p>{{ .lcl.settings_metrics_desc }}</p></div>
+                        <button type="button" class="st-btn" data-bs-toggle="modal" data-bs-target="#addMetricModal"><i class="fa-solid fa-plus me-1"></i>{{ .lcl.add_metric }}</button></div>
+                    <table class="st-list">
+                        <thead><tr><th>{{ .lcl.title_metric }}</th><th>{{ .lcl.title_unit }}</th><th></th></tr></thead>
                         <tbody>
                         {{ range .metrics }}
                         <tr class="clickable-row metric-row" data-metric='{{ json . }}'>
-                            <td>{{ .Name }}</td>
-                            <td>{{ .Unit }}</td>
+                            <td><b>{{ .Name }}</b></td>
+                            <td>{{ if .Unit }}{{ .Unit }}{{ else }}—{{ end }}</td>
+                            <td class="text-end"><i class="fa-solid fa-pen st-row-edit" aria-hidden="true"></i></td>
                         </tr>
                         {{ end }}
                         </tbody>
                     </table>
                 </div>
-            </div>
 
-            <!-- Breeders -->
-            <div class="card mb-4 shadow-sm card-table">
-                <div class="card-header bg-themed d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="h5 mb-0">&#127807; {{ .lcl.breeders }}</h2>
-                        <small class="text-muted">{{ .lcl.settings_breeders_desc }}</small>
-                    </div>
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBreederModal">
-                        <i class="fa-solid fa-plus"></i> {{ .lcl.add_breeder }}
-                    </button>
-                </div>
-                <div class="card-body">
-                    <table class="table table-striped table-hover mb-0">
-                        <thead class="bg-themed">
-                        <tr>
-                            <th>{{ .lcl.breeder }}</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {{ range .breeders }}
-                        <tr class="clickable-row breeder-row" data-breeder='{{ json . }}'>
-                            <td>{{ .Name }}</td>
-                        </tr>
-                        {{ end }}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- VPD Stage Ranges -->
-            <div class="card mb-4 shadow-sm card-table">
-                <div class="card-header bg-themed">
-                    <h2 class="h5 mb-0">&#127807; VPD Stage Ranges</h2>
-                    <small class="text-muted">Set the ideal VPD range (kPa) for each growth stage. Leave blank to disable the indicator.</small>
-                </div>
-                <div class="card-body">
-                    <table class="table table-sm mb-0" id="vpdStageTable">
-                        <thead class="bg-themed"><tr><th>Stage</th><th>Low (kPa)</th><th>High (kPa)</th><th></th></tr></thead>
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-cloud"></i><div><h3>{{ .lcl.st_card_vpd }}</h3><p>{{ .lcl.st_card_vpd_desc }}</p></div></div>
+                    <table class="st-list" id="vpdStageTable">
+                        <thead><tr><th>{{ .lcl.st_col_stage }}</th><th>{{ .lcl.st_col_low }}</th><th>{{ .lcl.st_col_high }}</th><th></th></tr></thead>
                         <tbody id="vpdStageTableBody"></tbody>
                     </table>
                 </div>
-            </div>
-        </div>
 
-        <!-- Appearance Tab -->
-        <div class="tab-pane fade" id="logo-content" role="tabpanel" aria-labelledby="logo-tab">
-            <div class="card mb-4 shadow-sm mt-4">
-                <div class="card-header bg-themed">
-                    <h2 class="h5 card-title mb-0"><i class="fa fa-image me-2"></i>{{ .lcl.set_logo_image }}</h2>
-                </div>
-                <div class="card-body">
-                    <small class="text-muted d-block mb-3">
-                        {{ .lcl.add_logo_info }}
-                        <p class="mt-2">{{ .lcl.add_logo_note }}</p>
-                    </small>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadImagesModal">
-                        <i class="fa-solid fa-upload"></i> {{ .lcl.add_logo }}
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Streams Tab -->
-        <div class="tab-pane fade" id="streams-content" role="tabpanel" aria-labelledby="streams-tab">
-            <!-- Stream Capture Settings (inputs linked to settingsForm via form attribute) -->
-            <div class="card mb-4 shadow-sm border-start border-4 border-primary mt-4">
-                <div class="card-header bg-themed">
-                    <h2 class="h5 card-title mb-0"><i class="fa fa-camera me-2"></i>&#128249; Stream Capture Settings</h2>
-                </div>
-                <div class="card-body">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="streamGrabEnabled" form="settingsForm" {{ if .settings.StreamGrabEnabled }}checked{{ end }}>
-                        <label class="form-check-label" for="streamGrabEnabled">{{ .lcl.stream_grab_enabled }}</label>
-                    </div>
-                    <small class="text-muted d-block mt-2">
-                        {{ .lcl.stream_grab_enabled_desc }}
-                    </small>
-
-                    <hr class="my-3">
-
-                    <label for="streamGrabInterval" class="form-label">{{ .lcl.stream_grab_interval }}:
-                        <span id="streamGrabIntervalValue" class="fw-bold">{{ div .settings.StreamGrabInterval 60 }} {{ .lcl.time_minutes }}</span>
-                    </label>
-                    <input type="range" class="form-range" id="streamGrabInterval" form="settingsForm"
-                           min="5" max="60" step="5" value="{{ div .settings.StreamGrabInterval 60 }}">
-                    <small class="text-muted d-block mt-2">
-                        {{ .lcl.stream_grab_interval_desc }}
-                    </small>
-
-                    <div class="text-end mt-3">
-                        <button type="submit" form="settingsForm" class="btn btn-primary px-4">{{ .lcl.save_settings }}</button>
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-building"></i><div><h3>{{ .lcl.breeders }}</h3><p>{{ .lcl.settings_breeders_desc }}</p></div>
+                        <button type="button" class="st-btn" data-bs-toggle="modal" data-bs-target="#addBreederModal"><i class="fa-solid fa-plus me-1"></i>{{ .lcl.add_breeder }}</button></div>
+                    <div class="st-chips">
+                        {{ range .breeders }}
+                        <button type="button" class="st-chip clickable-row breeder-row" data-breeder='{{ json . }}'>{{ .Name }}<i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+                        {{ end }}
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Streams Table -->
-            <div class="card mb-4 shadow-sm card-table">
-                <div class="card-header bg-themed d-flex justify-content-between align-items-center">
-                    <h2 class="h5 mb-0">&#128249; {{ .lcl.title_streams }}</h2>
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addStreamModal">
-                        <i class="fa-solid fa-plus"></i> {{ .lcl.add_stream }}
-                    </button>
+            <!-- ========================== Appearance ========================== -->
+            <section class="st-sec" data-sec="appearance" data-title="{{ .lcl.st_sec_appearance }}" data-desc="{{ .lcl.st_sec_appearance_desc }}">
+                <h2 class="st-sec-h"><i class="fa-solid fa-palette"></i>{{ .lcl.st_sec_appearance }}<a href="#appearance" data-goto="appearance">{{ .lcl.st_go_to_section }} <i class="fa-solid fa-arrow-right"></i></a></h2>
+
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-image"></i><div><h3>{{ .lcl.st_card_logo }}</h3><p>{{ .lcl.add_logo_info }}</p></div></div>
+                    <div class="st-row">
+                        <div class="st-row-l"><small>{{ .lcl.add_logo_note }}</small></div>
+                        <div class="st-row-r"><button type="button" class="st-btn light" data-bs-toggle="modal" data-bs-target="#uploadImagesModal"><i class="fa-solid fa-upload me-1"></i>{{ .lcl.add_logo }}</button></div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <table class="table table-striped table-hover mb-0">
-                        <thead class="bg-themed">
-                        <tr>
-                            <th>{{ .lcl.stream_name }}</th>
-                            <th>{{ .lcl.stream_zone }}</th>
-                            <th>{{ .lcl.stream_url }}</th>
-                        </tr>
-                        </thead>
+
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-swatchbook"></i><div><h3>{{ .lcl.st_card_colors }}</h3><p>{{ .lcl.st_card_colors_desc }}</p></div></div>
+                </div>
+            </section>
+
+            <!-- ============================ Cameras ============================ -->
+            <section class="st-sec" data-sec="cameras" data-title="{{ .lcl.st_sec_cameras }}" data-desc="{{ .lcl.st_sec_cameras_desc }}">
+                <h2 class="st-sec-h"><i class="fa-solid fa-video"></i>{{ .lcl.st_sec_cameras }}<a href="#cameras" data-goto="cameras">{{ .lcl.st_go_to_section }} <i class="fa-solid fa-arrow-right"></i></a></h2>
+
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-video"></i><div><h3>{{ .lcl.title_streams }}</h3><p>{{ .lcl.st_card_streams_desc }}</p></div>
+                        <button type="button" class="st-btn" data-bs-toggle="modal" data-bs-target="#addStreamModal"><i class="fa-solid fa-plus me-1"></i>{{ .lcl.add_stream }}</button></div>
+                    <table class="st-list">
+                        <thead><tr><th>{{ .lcl.stream_name }}</th><th>{{ .lcl.stream_zone }}</th><th>{{ .lcl.stream_url }}</th><th></th></tr></thead>
                         <tbody>
                         {{ range .streams }}
                         <tr class="clickable-row stream-row" data-stream='{{ json . }}'>
-                            <td>{{ .Name }}</td>
+                            <td><b>{{ .Name }}</b></td>
                             <td>{{ .ZoneName }}</td>
-                            <td>{{ .URL }}</td>
+                            <td><code class="st-url">{{ .URL }}</code></td>
+                            <td class="text-end"><i class="fa-solid fa-pen st-row-edit" aria-hidden="true"></i></td>
                         </tr>
                         {{ end }}
                         </tbody>
                     </table>
                 </div>
-            </div>
-        </div>
 
-        <!-- Logs Tab -->
-        <!-- Backup Tab -->
-        <div class="tab-pane fade" id="backup-content" role="tabpanel" aria-labelledby="backup-tab">
-            <!-- Create Backup Card -->
-            <div class="card mb-4 shadow-sm mt-4 border-start border-4 border-primary">
-                <div class="card-header bg-themed">
-                    <h2 class="h5 card-title mb-0"><i class="fa fa-plus-circle me-2"></i>{{ .lcl.backup_create_title }}</h2>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3 align-items-end mb-3">
-                        <div class="col-auto">
-                            <label class="form-label fw-semibold">{{ .lcl.backup_sensor_history }}</label>
-                            <select id="backupSensorDays" class="form-select form-select-sm" style="width:auto">
-                                <option value="-1">{{ .lcl.backup_sensor_none }}</option>
-                                <option value="7">{{ .lcl.backup_sensor_7 }}</option>
-                                <option value="30">{{ .lcl.backup_sensor_30 }}</option>
-                                <option value="90">{{ .lcl.backup_sensor_90 }}</option>
-                                <option value="0" selected>{{ .lcl.backup_sensor_all }}</option>
-                            </select>
-                        </div>
-                        <div class="col-auto">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="backupIncludeImages">
-                                <label class="form-check-label" for="backupIncludeImages">{{ .lcl.backup_include_images }}</label>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <button class="btn btn-primary" id="createBackupBtn">
-                                <i class="fa fa-archive me-1"></i> {{ .lcl.backup_create_btn }}
-                            </button>
-                        </div>
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-camera"></i><div><h3>{{ .lcl.st_card_snapshots }}</h3><p>{{ .lcl.st_card_snapshots_desc }}</p></div></div>
+                    <label class="st-row st-switch">
+                        <div class="st-row-l"><span class="st-label">{{ .lcl.stream_grab_enabled }}</span><small>{{ .lcl.stream_grab_enabled_desc }}</small></div>
+                        <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="streamGrabEnabled" data-autosave {{ if .settings.StreamGrabEnabled }}checked{{ end }}></div>
+                    </label>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="streamGrabInterval">{{ .lcl.stream_grab_interval }}: <span id="streamGrabIntervalValue" class="fw-bold">{{ div .settings.StreamGrabInterval 60 }} {{ .lcl.time_minutes }}</span></label><small>{{ .lcl.stream_grab_interval_desc }}</small></div>
+                        <div class="st-row-r st-range"><input type="range" class="form-range" id="streamGrabInterval" min="5" max="60" step="5" value="{{ div .settings.StreamGrabInterval 60 }}" data-autosave></div>
                     </div>
-                    <div id="createBackupStatus" style="display:none">
-                        <div class="progress mb-2">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:100%">{{ .lcl.backup_creating }}</div>
-                        </div>
-                    </div>
-                    <small class="text-muted">{{ .lcl.backup_create_hint }}</small>
                 </div>
-            </div>
+            </section>
 
-            <!-- Backup Files Card -->
-            <div class="card mb-4 shadow-sm border-start border-4 border-success">
-                <div class="card-header bg-themed d-flex justify-content-between align-items-center">
-                    <h2 class="h5 card-title mb-0"><i class="fa fa-archive me-2"></i>{{ .lcl.backup_list_title }}</h2>
-                    <button class="btn btn-sm btn-outline-secondary" id="refreshBackupsBtn">
-                        <i class="fa fa-sync"></i>
-                    </button>
-                </div>
-                <div class="card-body p-0">
-                    <div id="backupListLoading" class="text-center p-3"><em>{{ .lcl.backup_loading }}</em></div>
-                    <table class="table table-sm table-hover mb-0" id="backupListTable" style="display:none">
-                        <thead class="bg-themed">
-                            <tr>
-                                <th>{{ .lcl.backup_col_filename }}</th>
-                                <th>{{ .lcl.backup_col_size }}</th>
-                                <th>{{ .lcl.backup_col_created }}</th>
-                                <th style="width:140px">{{ .lcl.backup_col_actions }}</th>
-                            </tr>
-                        </thead>
-                        <tbody id="backupListBody"></tbody>
-                    </table>
-                    <div id="backupListEmpty" class="text-center text-muted p-3" style="display:none">{{ .lcl.backup_no_backups }}</div>
-                </div>
-            </div>
+            <!-- ========================= Backup & data ========================= -->
+            <section class="st-sec" data-sec="backup" data-title="{{ .lcl.st_sec_backup }}" data-desc="{{ .lcl.st_sec_backup_desc }}">
+                <h2 class="st-sec-h"><i class="fa-solid fa-box-archive"></i>{{ .lcl.st_sec_backup }}<a href="#backup" data-goto="backup">{{ .lcl.st_go_to_section }} <i class="fa-solid fa-arrow-right"></i></a></h2>
 
-            <!-- Import Card -->
-            <div class="card mb-4 shadow-sm border-start border-4 border-warning">
-                <div class="card-header bg-themed">
-                    <h2 class="h5 card-title mb-0"><i class="fa fa-upload me-2"></i>{{ .lcl.backup_restore_title }}</h2>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3 align-items-end mb-3">
-                        <div class="col-auto">
-                            <label for="maxBackupSizeMB" class="form-label fw-semibold">{{ .lcl.backup_max_upload_label }}</label>
-                            <input type="number" class="form-control form-control-sm" id="maxBackupSizeMB"
-                                   min="100" step="100"
-                                   value="{{ if .settings.MaxBackupSizeMB }}{{ .settings.MaxBackupSizeMB }}{{ else }}5120{{ end }}"
-                                   style="width:140px">
-                            <small class="text-muted d-block mt-1">{{ .lcl.backup_max_upload_hint }}</small>
-                        </div>
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-box-archive"></i><div><h3>{{ .lcl.backup_create_title }}</h3><p>{{ .lcl.backup_create_hint }}</p></div></div>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="backupSensorDays">{{ .lcl.backup_sensor_history }}</label></div>
+                        <div class="st-row-r"><select id="backupSensorDays" class="form-select form-select-sm">
+                            <option value="-1">{{ .lcl.backup_sensor_none }}</option>
+                            <option value="7">{{ .lcl.backup_sensor_7 }}</option>
+                            <option value="30">{{ .lcl.backup_sensor_30 }}</option>
+                            <option value="90">{{ .lcl.backup_sensor_90 }}</option>
+                            <option value="0" selected>{{ .lcl.backup_sensor_all }}</option>
+                        </select></div>
                     </div>
-                    <p class="text-muted mb-3">{{ .lcl.backup_restore_warning }}</p>
+                    <label class="st-row st-switch">
+                        <div class="st-row-l"><span class="st-label">{{ .lcl.backup_include_images }}</span></div>
+                        <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="backupIncludeImages"></div>
+                    </label>
+                    <div class="st-row">
+                        <div class="st-row-l"><div id="createBackupStatus" style="display:none">
+                            <div class="progress" style="height:8px"><div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width:100%"></div></div>
+                            <small>{{ .lcl.backup_creating }}</small>
+                        </div></div>
+                        <div class="st-row-r"><button type="button" class="st-btn" id="createBackupBtn"><i class="fa-solid fa-box-archive me-1"></i>{{ .lcl.backup_create_btn }}</button></div>
+                    </div>
+                </div>
+
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-folder-open"></i><div><h3>{{ .lcl.backup_list_title }}</h3><p>{{ .lcl.st_card_backups_desc }}</p></div>
+                        <button type="button" class="st-btn light" id="refreshBackupsBtn" title="{{ .lcl.settings_refresh }}" aria-label="{{ .lcl.settings_refresh }}"><i class="fa-solid fa-rotate"></i></button></div>
+                    <div class="st-nosearch">
+                        <div id="backupListLoading" class="st-empty"><em>{{ .lcl.backup_loading }}</em></div>
+                        <table class="st-list" id="backupListTable" style="display:none">
+                            <thead><tr><th>{{ .lcl.backup_col_filename }}</th><th>{{ .lcl.backup_col_size }}</th><th>{{ .lcl.backup_col_created }}</th><th style="width:140px">{{ .lcl.backup_col_actions }}</th></tr></thead>
+                            <tbody id="backupListBody"></tbody>
+                        </table>
+                        <div id="backupListEmpty" class="st-empty" style="display:none">{{ .lcl.backup_no_backups }}</div>
+                    </div>
+                </div>
+
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-rotate-left"></i><div><h3>{{ .lcl.backup_restore_title }}</h3><p>{{ .lcl.backup_restore_warning }}</p></div></div>
                     {{ if eq .dbDriver "sqlite" }}
-                    <div class="alert alert-warning alert-sm mb-3">
-                        <i class="fa fa-exclamation-triangle me-1"></i>
-                        <strong>{{ .lcl.backup_sqlite_perf_note }}</strong> {{ .lcl.backup_sqlite_perf_desc }}
+                    <div class="alert alert-warning py-2 small mb-3">
+                        <i class="fa fa-exclamation-triangle me-1"></i><strong>{{ .lcl.backup_sqlite_perf_note }}</strong> {{ .lcl.backup_sqlite_perf_desc }}
                     </div>
                     {{ end }}
-                    <div id="backupDropArea" class="border border-warning rounded p-4 text-center mb-3" style="cursor:pointer;border-style:dashed!important">
-                        <p class="mb-1"><i class="fa fa-file-archive fa-2x text-warning"></i></p>
-                        <p class="mb-0">{{ .lcl.backup_drop_text }}</p>
+                    <div id="backupDropArea" class="st-drop">
+                        <i class="fa-solid fa-file-zipper fa-lg me-2"></i>{{ .lcl.backup_drop_text }}
                         <input type="file" id="backupFileInput" accept=".zip" style="display:none">
                     </div>
-                    <div id="backupFileInfo" class="mb-3" style="display:none">
+                    <div id="backupFileInfo" class="mb-2" style="display:none">
                         <span class="badge bg-secondary" id="backupFileName"></span>
                         <button type="button" class="btn btn-sm btn-link text-danger" id="backupClearBtn">{{ .lcl.backup_clear }}</button>
                     </div>
                     {{ if eq .dbDriver "sqlite" }}
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="skipSensorData">
-                        <label class="form-check-label" for="skipSensorData">
-                            {{ .lcl.backup_skip_sensor }} <span class="text-muted small">({{ .lcl.backup_skip_sensor_hint }})</span>
-                        </label>
-                    </div>
+                    <label class="st-row st-switch">
+                        <div class="st-row-l"><span class="st-label">{{ .lcl.backup_skip_sensor }}</span><small>{{ .lcl.backup_skip_sensor_hint }}</small></div>
+                        <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="skipSensorData"></div>
+                    </label>
                     {{ end }}
-                    <button class="btn btn-warning" id="importBackupBtn" disabled>
-                        <i class="fa fa-upload me-1"></i> {{ .lcl.backup_restore_btn }}
-                    </button>
-                    <div id="backupProgress" class="mt-3" style="display:none">
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="maxBackupSizeMB">{{ .lcl.backup_max_upload_label }}</label><small>{{ .lcl.backup_max_upload_hint }}</small></div>
+                        <div class="st-row-r"><div class="input-group input-group-sm st-num">
+                            <input type="number" class="form-control" id="maxBackupSizeMB" min="100" step="100" value="{{ if .settings.MaxBackupSizeMB }}{{ .settings.MaxBackupSizeMB }}{{ else }}5120{{ end }}" data-autosave>
+                            <span class="input-group-text">MB</span></div></div>
+                    </div>
+                    <div class="st-row">
+                        <div class="st-row-l"></div>
+                        <div class="st-row-r"><button type="button" class="btn btn-warning btn-sm" id="importBackupBtn" disabled><i class="fa fa-upload me-1"></i>{{ .lcl.backup_restore_btn }}</button></div>
+                    </div>
+                    <div id="backupProgress" class="mt-2" style="display:none">
                         <div id="restorePhaseText" class="text-muted small mb-1"></div>
-                        <div class="progress">
-                            <div id="restoreProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-warning" role="progressbar" style="width:100%">{{ .lcl.backup_restoring }}</div>
-                        </div>
+                        <div class="progress"><div id="restoreProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-warning" role="progressbar" style="width:100%">{{ .lcl.backup_restoring }}</div></div>
                         <div id="restoreDetailText" class="text-muted small mt-1"></div>
                     </div>
-                    <div id="backupResult" class="mt-3" style="display:none"></div>
+                    <div id="backupResult" class="mt-2" style="display:none"></div>
                 </div>
-            </div>
 
-            {{ if eq .dbDriver "sqlite" }}
-            <!-- SQLite File Transfer Card -->
-            <div class="card mb-4 shadow-sm border-start border-4 border-info">
-                <div class="card-header bg-themed">
-                    <h2 class="h5 card-title mb-0"><i class="fa fa-database me-2"></i>{{ .lcl.backup_sqlite_title }}</h2>
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-clock-rotate-left"></i><div><h3>{{ .lcl.settings_data_retention }}</h3><p>{{ .lcl.settings_sensor_retention_desc }}</p></div></div>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="sensorRetentionDays">{{ .lcl.settings_sensor_retention_label }}</label></div>
+                        <div class="st-row-r"><input type="number" class="form-control form-control-sm st-num" id="sensorRetentionDays" min="0" max="3650" value="{{ .settings.SensorRetentionDays }}" data-autosave></div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <p class="text-muted mb-3">{{ .lcl.backup_sqlite_desc }}</p>
-                    <div class="row">
-                        <div class="col-md-6 mb-3 mb-md-0">
-                            <h3 class="h6">{{ .lcl.backup_sqlite_download_title }}</h3>
+
+                {{ if eq .dbDriver "sqlite" }}
+                <details class="st-card st-adv-card">
+                    <summary><i class="fa-solid fa-database me-2"></i><b>{{ .lcl.st_advanced }}: {{ .lcl.backup_sqlite_title }}</b></summary>
+                    <p class="st-note mt-2">{{ .lcl.backup_sqlite_desc }}</p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <h4 class="h6">{{ .lcl.backup_sqlite_download_title }}</h4>
                             <p class="text-muted small">{{ .lcl.backup_sqlite_download_desc }}</p>
-                            <a class="btn btn-outline-info" href="/settings/backup/sqlite/download">
-                                <i class="fa fa-download me-1"></i> {{ .lcl.backup_sqlite_download_btn }}
-                            </a>
+                            <a class="st-btn light" href="/settings/backup/sqlite/download"><i class="fa fa-download me-1"></i>{{ .lcl.backup_sqlite_download_btn }}</a>
                         </div>
                         <div class="col-md-6">
-                            <h3 class="h6">{{ .lcl.backup_sqlite_upload_title }}</h3>
+                            <h4 class="h6">{{ .lcl.backup_sqlite_upload_title }}</h4>
                             <p class="text-muted small">{{ .lcl.backup_sqlite_upload_desc }}</p>
-                            <div id="sqliteDropArea" class="border border-info rounded p-3 text-center mb-2" style="cursor:pointer;border-style:dashed!important">
-                                <p class="mb-0 small"><i class="fa fa-database me-1 text-info"></i> {{ .lcl.backup_sqlite_drop_text }}</p>
+                            <div id="sqliteDropArea" class="st-drop small">
+                                <i class="fa fa-database me-1"></i>{{ .lcl.backup_sqlite_drop_text }}
                                 <input type="file" id="sqliteFileInput" accept=".db" style="display:none">
                             </div>
                             <div id="sqliteFileInfo" class="mb-2" style="display:none">
                                 <span class="badge bg-secondary" id="sqliteFileName"></span>
                                 <button type="button" class="btn btn-sm btn-link text-danger" id="sqliteClearBtn">{{ .lcl.backup_clear }}</button>
                             </div>
-                            <button class="btn btn-info" id="uploadSqliteBtn" disabled>
-                                <i class="fa fa-upload me-1"></i> {{ .lcl.backup_sqlite_replace_btn }}
-                            </button>
+                            <button type="button" class="btn btn-info btn-sm" id="uploadSqliteBtn" disabled><i class="fa fa-upload me-1"></i>{{ .lcl.backup_sqlite_replace_btn }}</button>
                             <div id="sqliteResult" class="mt-2" style="display:none"></div>
                         </div>
                     </div>
-                </div>
-            </div>
-            {{ end }}
-        </div>
+                </details>
+                {{ end }}
+            </section>
 
-        <div class="tab-pane fade" id="logs-content" role="tabpanel" aria-labelledby="logs-tab">
-            <div class="card mb-4 shadow-sm mt-4">
-                <div class="card-header bg-themed d-flex justify-content-between align-items-center">
-                    <h2 class="h5 card-title mb-0"><i class="fa fa-file-alt me-2"></i>&#128220; {{ .lcl.settings_app_logs }}</h2>
-                    <div class="d-flex gap-2 align-items-center">
-                        <select id="logFileSelect" class="form-select form-select-sm" style="width:auto">
+            <!-- ============================== Logs ============================== -->
+            <section class="st-sec" data-sec="logs" data-title="{{ .lcl.st_sec_logs }}" data-desc="{{ .lcl.st_sec_logs_desc }}">
+                <h2 class="st-sec-h"><i class="fa-solid fa-file-lines"></i>{{ .lcl.st_sec_logs }}<a href="#logs" data-goto="logs">{{ .lcl.st_go_to_section }} <i class="fa-solid fa-arrow-right"></i></a></h2>
+
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-file-lines"></i><div><h3>{{ .lcl.settings_app_logs }}</h3><p>{{ .lcl.st_card_logs_desc }}</p></div></div>
+                    <div class="st-log-tools">
+                        <select id="logFileSelect" class="form-select form-select-sm" aria-label="{{ .lcl.settings_app_logs }}">
                             <option value="app" selected>{{ .lcl.settings_app_log }}</option>
                             <option value="access">{{ .lcl.settings_access_log }}</option>
                         </select>
-                        <select id="logLineCount" class="form-select form-select-sm" style="width:auto">
-                            <option value="100">Last 100 lines</option>
-                            <option value="200" selected>Last 200 lines</option>
-                            <option value="500">Last 500 lines</option>
-                            <option value="1000">Last 1000 lines</option>
+                        <select id="logLineCount" class="form-select form-select-sm" aria-label="{{ .lcl.st_log_lines }}">
+                            <option value="100">{{ .lcl.st_log_last_100 }}</option>
+                            <option value="200" selected>{{ .lcl.st_log_last_200 }}</option>
+                            <option value="500">{{ .lcl.st_log_last_500 }}</option>
+                            <option value="1000">{{ .lcl.st_log_last_1000 }}</option>
                         </select>
-                        <button class="btn btn-sm btn-outline-secondary" id="refreshLogsBtn">
-                            <i class="fa fa-sync"></i> {{ .lcl.settings_refresh }}
-                        </button>
-                        <a class="btn btn-sm btn-outline-primary" id="downloadLogsBtn" href="/settings/logs/download">
-                            <i class="fa fa-download"></i> {{ .lcl.settings_download }}
-                        </a>
+                        <div class="sx-seg" id="stLogLevel" role="group" aria-label="{{ .lcl.st_log_level_filter }}">
+                            <button type="button" data-lvl="" class="on">{{ .lcl.st_log_all }}</button>
+                            <button type="button" data-lvl="warn">{{ .lcl.st_log_warnings }}</button>
+                            <button type="button" data-lvl="error">{{ .lcl.st_log_errors }}</button>
+                        </div>
+                        <input type="search" class="form-control form-control-sm st-log-q" id="stLogQ" placeholder="{{ .lcl.st_log_search }}" aria-label="{{ .lcl.st_log_search }}">
+                        <button type="button" class="st-btn light" id="refreshLogsBtn"><i class="fa-solid fa-rotate me-1"></i>{{ .lcl.settings_refresh }}</button>
+                        <a class="st-btn light" id="downloadLogsBtn" href="/settings/logs/download"><i class="fa-solid fa-download me-1"></i>{{ .lcl.settings_download }}</a>
+                    </div>
+                    <pre id="logOutput" class="st-log st-nosearch">…</pre>
+                </div>
+
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-sliders"></i><div><h3>{{ .lcl.st_card_log_detail }}</h3><p>{{ .lcl.settings_log_level_desc }}</p></div></div>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="logLevel">{{ .lcl.settings_log_level }}</label></div>
+                        <div class="st-row-r"><select class="form-select form-select-sm" id="logLevel" data-autosave>
+                            <option value="debug" {{ if eq .settings.LogLevel "debug" }}selected{{ end }}>{{ .lcl.settings_log_level_debug }}</option>
+                            <option value="info" {{ if or (eq .settings.LogLevel "info") (eq .settings.LogLevel "") }}selected{{ end }}>{{ .lcl.settings_log_level_info }}</option>
+                            <option value="warn" {{ if eq .settings.LogLevel "warn" }}selected{{ end }}>{{ .lcl.settings_log_level_warn }}</option>
+                            <option value="error" {{ if eq .settings.LogLevel "error" }}selected{{ end }}>{{ .lcl.settings_log_level_error }}</option>
+                        </select></div>
                     </div>
                 </div>
-                <div class="card-body p-0">
-                    <pre id="logOutput" class="mb-0 p-3" style="max-height:600px;overflow-y:auto;background:#1e1e1e;color:#d4d4d4;font-size:0.8rem;white-space:pre-wrap;word-break:break-all;">Loading...</pre>
-                </div>
-            </div>
-        </div>
+            </section>
+        </main>
     </div>
 </div>
 
@@ -1233,7 +990,7 @@ color: #0d6efd; /* Primary color */
 
         // Update display when slider is adjusted
         pollingSlider.addEventListener("input", () => {
-            pollingValue.textContent = `${pollingSlider.value} seconds`;
+            pollingValue.textContent = `${pollingSlider.value} {{ .lcl.time_seconds }}`;
         });
 
         const streamGrabSlider = document.getElementById("streamGrabInterval");
@@ -1495,63 +1252,6 @@ color: #0d6efd; /* Primary color */
             }
         })();
 
-        const form = document.getElementById("settingsForm");
-
-        form.addEventListener("submit", (e) => {
-            e.preventDefault();
-
-            // Get stream grab interval and convert to seconds
-            const streamGrabInterval = document.getElementById("streamGrabInterval").value * 60;
-
-            // Gather form data
-            const settings = {
-                aci: {
-                    enabled: document.getElementById("aciEnabled").checked,
-                },
-                ec: {
-                    enabled: document.getElementById("ecEnabled").checked,
-                },
-                cannadb: {
-                    enabled: document.getElementById("cannadbEnabled").checked,
-                    base_url: document.getElementById("cannadbBaseUrl").value.trim(),
-                },
-                straincompass: {
-                    enabled: document.getElementById("straincompassEnabled").checked,
-                    base_url: document.getElementById("straincompassBaseUrl").value.trim(),
-                    api_key: document.getElementById("straincompassApiKey").value.trim(),
-                },
-                polling_interval: document.getElementById("pollingInterval").value,
-                guest_mode: document.getElementById("guestMode").checked,
-                stream_grab_enabled: document.getElementById("streamGrabEnabled").checked,
-                stream_grab_interval: streamGrabInterval.toString(),
-                api_key: "",
-                disable_api_ingest: document.getElementById("disableApiIngest").checked,
-                sensor_retention_days: document.getElementById("sensorRetentionDays").value,
-                log_level: document.getElementById("logLevel").value,
-                max_backup_size_mb: document.getElementById("maxBackupSizeMB").value,
-                timezone: document.getElementById("timezone").value,
-                units: document.getElementById("units").value,
-            };
-
-            // Send POST request to save settings
-            fetch("/settings", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(settings),
-            })
-                .then((response) => {
-                    if (!response.ok) {
-                        throw new Error("{{ .lcl.failed_to_save_settings }}");
-                    }
-                    uiMessages.showToast(uiMessages.t('save_settings') || 'Settings saved', 'success');
-                })
-                .catch((error) => {
-                    console.error("Error:", error);
-                    uiMessages.showToast(uiMessages.t('failed_to_save_settings'), 'danger');
-                });
-        });
     });
 
     // Activity type icon + color pickers (add and edit windows).
@@ -2052,13 +1752,7 @@ color: #0d6efd; /* Primary color */
         });
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
-        // Clear any previously stored tab so the page always starts on the Settings tab
-        localStorage.removeItem('activeSettingsTab');
-    });
-
     document.addEventListener("DOMContentLoaded", () => {
-        const logsTab = document.getElementById("logs-tab");
         const refreshBtn = document.getElementById("refreshLogsBtn");
         const logOutput = document.getElementById("logOutput");
         const logLineCount = document.getElementById("logLineCount");
@@ -2076,15 +1770,17 @@ color: #0d6efd; /* Primary color */
             fetch(`/settings/logs?lines=${encodeURIComponent(lines)}&file=${encodeURIComponent(file)}`)
                 .then(r => r.json())
                 .then(data => {
+                    logOutput._raw = data.lines || "";
                     logOutput.textContent = data.lines || "(empty)";
                     logOutput.scrollTop = logOutput.scrollHeight;
+                    document.dispatchEvent(new Event("st:logs-loaded"));
                 })
                 .catch(() => {
                     logOutput.textContent = "Failed to load logs.";
                 });
         }
 
-        logsTab.addEventListener("shown.bs.tab", loadLogs);
+        document.addEventListener("st:section", e => { if (e.detail === "logs") loadLogs(); });
         refreshBtn.addEventListener("click", loadLogs);
         logLineCount.addEventListener("change", loadLogs);
         logFileSelect.addEventListener("change", () => { updateDownloadHref(); loadLogs(); });
@@ -2233,8 +1929,7 @@ color: #0d6efd; /* Primary color */
 
         refreshBtn.addEventListener("click", loadBackupList);
         // Load list when backup tab is shown
-        const backupTab = document.getElementById("backup-tab");
-        backupTab.addEventListener("shown.bs.tab", loadBackupList);
+        document.addEventListener("st:section", e => { if (e.detail === "backup") loadBackupList(); });
 
         // --- Import / Restore ---
         const dropArea = document.getElementById("backupDropArea");
@@ -2557,6 +2252,8 @@ color: #0d6efd; /* Primary color */
         });
     });
 </script>
+
+<script src="/static/js/settings-page.js" defer></script>
 
 <!--Embed the footer.html template at this location-->
 {{ template "common/footer.html" .}}
