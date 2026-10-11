@@ -95,9 +95,10 @@ func TestDeletePlantById_RemovesChildren(t *testing.T) {
 	exec(`INSERT INTO plant_activity (plant_id, activity_id, note, date) VALUES ($1, 1, '', '2026-01-16')`, plantID)
 	exec(`INSERT INTO plant_measurements (plant_id, metric_id, value, date) VALUES ($1, 1, 12.5, '2026-01-16')`, plantID)
 	exec(`INSERT INTO plant_images (plant_id, image_path, image_description, image_order, image_date) VALUES ($1, '/x.jpg', 'desc', 0, '2026-01-16')`, plantID)
+	exec(`INSERT INTO plant_day_entry (plant_id, entry_date, note) VALUES ($1, '2026-01-16', 'n')`, plantID)
 
 	// Sanity: each child table has at least one row pointing at the plant.
-	for _, table := range []string{"plant_status_log", "plant_activity", "plant_measurements", "plant_images"} {
+	for _, table := range []string{"plant_status_log", "plant_activity", "plant_measurements", "plant_images", "plant_day_entry"} {
 		require.Equal(t, 1, childCount(t, db, table, plantID),
 			"%s should have one row before delete", table)
 	}
@@ -110,7 +111,7 @@ func TestDeletePlantById_RemovesChildren(t *testing.T) {
 	assert.Zero(t, n, "plant row must be deleted")
 
 	// Each child table now empty for this plant.
-	for _, table := range []string{"plant_status_log", "plant_activity", "plant_measurements", "plant_images"} {
+	for _, table := range []string{"plant_status_log", "plant_activity", "plant_measurements", "plant_images", "plant_day_entry"} {
 		assert.Zerof(t, childCount(t, db, table, plantID),
 			"%s should have no rows for the deleted plant", table)
 	}

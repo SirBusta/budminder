@@ -172,6 +172,12 @@ func (c *Client) SessionPutJSON(t *testing.T, path, csrfToken string, body inter
 	return c.sessionJSON(t, http.MethodPut, path, csrfToken, body)
 }
 
+// SessionDeleteJSON is SessionPostJSON for DELETE endpoints (body may be nil).
+func (c *Client) SessionDeleteJSON(t *testing.T, path, csrfToken string, body interface{}) *http.Response {
+	t.Helper()
+	return c.sessionJSON(t, http.MethodDelete, path, csrfToken, body)
+}
+
 func (c *Client) sessionJSON(t *testing.T, method, path, csrfToken string, body interface{}) *http.Response {
 	t.Helper()
 	req, err := http.NewRequest(method, c.BaseURL+path, JSONBody(t, body))

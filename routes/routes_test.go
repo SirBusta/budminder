@@ -85,6 +85,8 @@ func TestAddBasicRoutes_RegistersAllExpectedRoutes(t *testing.T) {
 		{"GET", "/strain/:id"},
 		{"GET", "/listFonts"},
 		{"GET", "/listLogos"},
+		{"GET", "/plant/:id/notebook"},
+		{"GET", "/notebook"},
 		{"GET", "/plants/living"},
 		{"GET", "/plants/harvested"},
 		{"GET", "/plants/dead"},
@@ -130,6 +132,9 @@ func TestAddProtectedApiRoutes_RegistersAllExpectedRoutes(t *testing.T) {
 		{"POST", "/plantActivity"},
 		{"POST", "/plantActivity/edit"},
 		{"DELETE", "/plantActivity/delete/:id"},
+		{"PUT", "/plant/:id/day/:date"},
+		{"DELETE", "/plant/:id/day/:date"},
+		{"POST", "/plants/day"},
 
 		// Sensors
 		{"POST", "/sensors/scanACI"},

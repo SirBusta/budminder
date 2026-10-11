@@ -274,6 +274,8 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 	r.GET("/listFonts", utils.ListFontsHandler)
 	r.GET("/listLogos", utils.ListLogosHandler)
 
+	r.GET("/plant/:id/notebook", handlers.PlantNotebookHandler)
+	r.GET("/notebook", handlers.AllPlantsNotebookHandler)
 	r.GET("/plants/living", handlers.LivingPlantsHandler)
 	r.GET("/plants/harvested", handlers.HarvestedPlantsHandler)
 	r.GET("/plants/dead", handlers.DeadPlantsHandler)
@@ -312,6 +314,9 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.POST("/plantActivity", func(c *gin.Context) { handlers.CreatePlantActivity(c) })
 	r.POST("/plantActivity/edit", handlers.EditActivity)
 	r.DELETE("/plantActivity/delete/:id", handlers.DeleteActivity)
+	r.PUT("/plant/:id/day/:date", handlers.SavePlantDayHandler)
+	r.DELETE("/plant/:id/day/:date", handlers.DeletePlantDayHandler)
+	r.POST("/plants/day", handlers.LogPlantsDayHandler)
 	r.POST("/plant/:plantID/images/upload", handlers.UploadPlantImages)
 	r.DELETE("/plant/images/:imageID/delete", handlers.DeletePlantImage)
 

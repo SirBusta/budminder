@@ -48,6 +48,9 @@ func TestBackup_RoundTrip(t *testing.T) {
 	strainID := testutil.SeedStrain(t, db, breederID, "Roundtrip Strain")
 	zoneID := testutil.SeedZone(t, db, "Roundtrip Zone")
 	plantID := testutil.SeedPlant(t, db, "Roundtrip Plant", strainID, zoneID)
+	// Notebook day note (migration 032) and a customized activity icon.
+	testutil.MustExec(t, db, `INSERT INTO plant_day_entry (plant_id, entry_date, note) VALUES ($1, '2026-10-05', 'Roundtrip note')`, plantID)
+	testutil.MustExec(t, db, `UPDATE activity SET icon = 'fa-bug', color = '#e11d48' WHERE name = 'Note'`)
 
 	c := server.NewClient(t)
 
@@ -126,6 +129,14 @@ func TestBackup_RoundTrip(t *testing.T) {
 
 	require.NoError(t, db.QueryRow(`SELECT name FROM zones WHERE id = $1`, zoneID).Scan(&name))
 	assert.Equal(t, "Roundtrip Zone", name, "zones.name should round-trip")
+
+	var note string
+	require.NoError(t, db.QueryRow(`SELECT note FROM plant_day_entry WHERE plant_id = $1 AND entry_date = '2026-10-05'`, plantID).Scan(&note))
+	assert.Equal(t, "Roundtrip note", note, "plant_day_entry should round-trip")
+	var icon, color string
+	require.NoError(t, db.QueryRow(`SELECT icon, color FROM activity WHERE name = 'Note'`).Scan(&icon, &color))
+	assert.Equal(t, "fa-bug", icon, "activity icon should round-trip")
+	assert.Equal(t, "#e11d48", color, "activity color should round-trip")
 }
 
 // ---------------------------------------------------------------------------

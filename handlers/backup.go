@@ -41,31 +41,32 @@ type BackupManifest struct {
 // inside the archive. Each key is a table name mapped to a slice of
 // row-maps so the format is driver-agnostic.
 type BackupPayload struct {
-	Manifest       BackupManifest           `json:"manifest"`
-	Settings       []map[string]interface{} `json:"settings"`
-	Zones          []map[string]interface{} `json:"zones"`
-	Breeders       []map[string]interface{} `json:"breeder"`
-	Sensors        []map[string]interface{} `json:"sensors"`
-	SensorData     []map[string]interface{} `json:"sensor_data"`
-	RollingAvgs    []map[string]interface{} `json:"rolling_averages"`
-	Strains        []map[string]interface{} `json:"strain"`
-	StrainLineage  []map[string]interface{} `json:"strain_lineage"`
+	Manifest      BackupManifest           `json:"manifest"`
+	Settings      []map[string]interface{} `json:"settings"`
+	Zones         []map[string]interface{} `json:"zones"`
+	Breeders      []map[string]interface{} `json:"breeder"`
+	Sensors       []map[string]interface{} `json:"sensors"`
+	SensorData    []map[string]interface{} `json:"sensor_data"`
+	RollingAvgs   []map[string]interface{} `json:"rolling_averages"`
+	Strains       []map[string]interface{} `json:"strain"`
+	StrainLineage []map[string]interface{} `json:"strain_lineage"`
 	// Strain attributes (migration 022). Absent from backups made before
 	// they were included, which restore as "no attributes".
 	StrainEffects     []map[string]interface{} `json:"strain_effect"`
 	StrainFlavors     []map[string]interface{} `json:"strain_flavor"`
 	StrainTerpenes    []map[string]interface{} `json:"strain_terpene"`
 	StrainMedicalUses []map[string]interface{} `json:"strain_medical_use"`
-	PlantStatuses  []map[string]interface{} `json:"plant_status"`
-	Plants         []map[string]interface{} `json:"plant"`
-	PlantStatusLog []map[string]interface{} `json:"plant_status_log"`
-	Metrics        []map[string]interface{} `json:"metric"`
-	ActivityMetric []map[string]interface{} `json:"activity_metric"`
-	PlantMeasure   []map[string]interface{} `json:"plant_measurements"`
-	Activities     []map[string]interface{} `json:"activity"`
-	PlantActivity  []map[string]interface{} `json:"plant_activity"`
-	PlantImages    []map[string]interface{} `json:"plant_images"`
-	Streams        []map[string]interface{} `json:"streams"`
+	PlantStatuses     []map[string]interface{} `json:"plant_status"`
+	Plants            []map[string]interface{} `json:"plant"`
+	PlantStatusLog    []map[string]interface{} `json:"plant_status_log"`
+	Metrics           []map[string]interface{} `json:"metric"`
+	ActivityMetric    []map[string]interface{} `json:"activity_metric"`
+	PlantMeasure      []map[string]interface{} `json:"plant_measurements"`
+	Activities        []map[string]interface{} `json:"activity"`
+	PlantActivity     []map[string]interface{} `json:"plant_activity"`
+	PlantDayEntry     []map[string]interface{} `json:"plant_day_entry"`
+	PlantImages       []map[string]interface{} `json:"plant_images"`
+	Streams           []map[string]interface{} `json:"streams"`
 }
 
 // BackupFileInfo is returned by the list endpoint.
@@ -601,6 +602,7 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 	// Tables in deletion order (children first) to satisfy FK constraints.
 	truncateOrder := []string{
 		"plant_activity",
+		"plant_day_entry",
 		"plant_measurements",
 		"plant_status_log",
 		"plant_images",
@@ -649,6 +651,7 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 		{"plant_status_log", payload.PlantStatusLog},
 		{"plant_measurements", payload.PlantMeasure},
 		{"plant_activity", payload.PlantActivity},
+		{"plant_day_entry", payload.PlantDayEntry},
 		{"plant_images", payload.PlantImages},
 		{"streams", payload.Streams},
 	}
@@ -831,7 +834,7 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 			"strain", "strain_lineage", "strain_effect", "strain_flavor", "strain_terpene", "strain_medical_use",
 			"plant_status", "plant",
 			"plant_status_log", "metric", "plant_measurements",
-			"activity", "activity_metric", "plant_activity", "plant_images", "streams",
+			"activity", "activity_metric", "plant_activity", "plant_day_entry", "plant_images", "streams",
 		}
 		for _, tbl := range seqTables {
 			q := fmt.Sprintf(

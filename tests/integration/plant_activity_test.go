@@ -422,6 +422,6 @@ func TestActivity_ExportCSV(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	csv := string(body)
-	assert.Contains(t, csv, "Date,Plant,Strain,Zone,Activity,Note", "header row")
+	assert.Contains(t, csv, "Date,Plant,Strain,Zone,Activities,Measurements,Note", "header row")
 	assert.Contains(t, csv, "csv test row", "seeded note must appear")
 }

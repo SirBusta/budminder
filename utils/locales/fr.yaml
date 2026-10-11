@@ -896,3 +896,8 @@ straincompass_verified: "Vérifié"
 straincompass_verified_desc: "Les données de cette variété ont été vérifiées par StrainCompass."
 view_on_straincompass: "Voir sur StrainCompass"
 
+api_plant_not_found: "Plante introuvable"
+api_invalid_date: "Date invalide"
+api_measurement_required: "Veuillez saisir la valeur de chaque activité cochée qui en demande une"
+api_day_saved: "Enregistré"
+api_day_deleted: "Journée supprimée"

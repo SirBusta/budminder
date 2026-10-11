@@ -92,6 +92,7 @@ func BuildBackupArchive(db *sql.DB, opts BuildArchiveOptions) ([]byte, BackupMan
 		{"plant_status_log", &payload.PlantStatusLog},
 		{"plant_measurements", &payload.PlantMeasure},
 		{"plant_activity", &payload.PlantActivity},
+		{"plant_day_entry", &payload.PlantDayEntry},
 		{"plant_images", &payload.PlantImages},
 		{"streams", &payload.Streams},
 	}
@@ -242,6 +243,7 @@ func ApplyBackupToDB(ctx context.Context, db *sql.DB, payload BackupPayload) err
 	// Tables in deletion order (children first) to satisfy FK constraints.
 	truncateOrder := []string{
 		"plant_activity",
+		"plant_day_entry",
 		"plant_measurements",
 		"plant_status_log",
 		"plant_images",
@@ -298,6 +300,7 @@ func ApplyBackupToDB(ctx context.Context, db *sql.DB, payload BackupPayload) err
 		{"plant_status_log", payload.PlantStatusLog},
 		{"plant_measurements", payload.PlantMeasure},
 		{"plant_activity", payload.PlantActivity},
+		{"plant_day_entry", payload.PlantDayEntry},
 		{"plant_images", payload.PlantImages},
 		{"streams", payload.Streams},
 	}
@@ -358,7 +361,7 @@ func ApplyBackupToDB(ctx context.Context, db *sql.DB, payload BackupPayload) err
 			"strain", "strain_lineage", "strain_effect", "strain_flavor", "strain_terpene", "strain_medical_use",
 			"plant_status", "plant",
 			"plant_status_log", "metric", "plant_measurements",
-			"activity", "activity_metric", "plant_activity", "plant_images", "streams",
+			"activity", "activity_metric", "plant_activity", "plant_day_entry", "plant_images", "streams",
 		}
 		for _, tbl := range seqTables {
 			q := fmt.Sprintf(

@@ -363,6 +363,7 @@ func DeletePlantById(db *sql.DB, id string) error {
 		{"plant_images", "DELETE FROM plant_images WHERE plant_id = $1"},
 		{"plant_measurements", "DELETE FROM plant_measurements WHERE plant_id = $1"},
 		{"plant_activity", "DELETE FROM plant_activity WHERE plant_id = $1"},
+		{"plant_day_entry", "DELETE FROM plant_day_entry WHERE plant_id = $1"},
 		{"plant_status_log", "DELETE FROM plant_status_log WHERE plant_id = $1"},
 		{"plant", "DELETE FROM plant WHERE id = $1"},
 	}
