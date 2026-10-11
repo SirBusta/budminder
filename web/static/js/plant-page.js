@@ -964,6 +964,14 @@
         });
         window.isleyUploadDefaultDate = () => selected || TODAY;
         if (allMode) { allMode = false; setMode(true); }
+        // Links from the Plants page: #log opens Add activity, #upload the
+        // photo upload window.
+        if (LOGGED_IN && (location.hash === "#log" || location.hash === "#upload")) {
+            const want = location.hash;
+            history.replaceState(null, "", location.pathname + location.search);
+            if (want === "#log") openDay();
+            else { const el = $("uploadImagesModal"); if (el) bootstrap.Modal.getOrCreateInstance(el).show(); }
+        }
         // A link to this page's #all (or back) switches without a reload.
         window.addEventListener("hashchange", () => { if ((location.hash === "#all") !== allMode) setMode(location.hash === "#all"); });
     }

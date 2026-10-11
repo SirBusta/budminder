@@ -44,18 +44,12 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 		lang := utils.GetLanguage(c)
 		translations := utils.TranslationService.GetTranslations(lang)
 		currentPath, _ := c.Get("currentPath")
-		store := handlers.ConfigStoreFromContext(c)
+		loggedIn := sessions.Default(c).Get("logged_in") != nil
 		c.HTML(http.StatusOK, "views/plants.html", gin.H{
+			"pageData":        handlers.PlantsPageData(c, loggedIn, lang, translations),
 			"title":           "Plants",
 			"currentPath":     currentPath,
 			"version":         version,
-			"zones":           store.Zones(),
-			"strains":         store.Strains(),
-			"statuses":        store.Statuses(),
-			"measurements":    store.Metrics(),
-			"breeders":        store.Breeders(),
-			"plants":          handlers.GetLivingPlants(handlers.DBFromContext(c)),
-			"activities":      store.Activities(),
 			"loggedIn":        sessions.Default(c).Get("logged_in"),
 			"lcl":             translations,
 			"languages":       utils.AvailableLanguages,
