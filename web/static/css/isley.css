@@ -835,16 +835,16 @@ header .nav-link.active::after {
 
 /* Strain type badges */
 .strain-badge-auto {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: #fff;
+    background: #fef3c7;
+    color: #92400e;
     font-size: 0.85rem;
     padding: 0.4em 1em;
     border-radius: 999px;
     font-weight: 600;
 }
 .strain-badge-photo {
-    background: linear-gradient(135deg, #10b981, #059669);
-    color: #fff;
+    background: #e0f2fe;
+    color: #075985;
     font-size: 0.85rem;
     padding: 0.4em 1em;
     border-radius: 999px;
@@ -3545,3 +3545,53 @@ header .nav-link.active::after {
     -webkit-mask: url(/static/img/icons/vault.svg) center / contain no-repeat; mask: url(/static/img/icons/vault.svg) center / contain no-repeat; }
 .sp-tab .ic .ic-vault { font-size: 1.1rem; }
 .sp-empty .ic-vault { margin: 0 auto .5rem; }
+
+/* Type badges: the yellow/orange sun on Photoperiod (as on the new pages). */
+.strain-badge-photo i { color: #f59e0b; }
+
+/* =====================================================================
+   Older pages in the new look until each is redesigned (Add/Edit plant,
+   strain page, Add/Edit strain): green instead of blue, bold headings,
+   softer cards. Wrap the page's container in .ns.
+   ===================================================================== */
+.ns {
+    --color-accent: #16a34a;
+    --color-accent-hover: #15803d;
+    --bs-primary: #16a34a;
+    --bs-primary-rgb: 22, 163, 74;
+    --bs-link-color: #15803d;
+    --bs-link-color-rgb: 21, 128, 61;
+    --bs-link-hover-color: #166534;
+    --bs-link-hover-color-rgb: 22, 101, 52;
+}
+[data-bs-theme="dark"] .ns {
+    --color-accent: #16a34a;
+    --color-accent-hover: #22c55e;
+    --bs-link-color: #4ade80;
+    --bs-link-color-rgb: 74, 222, 128;
+    --bs-link-hover-color: #86efac;
+    --bs-link-hover-color-rgb: 134, 239, 172;
+}
+.ns h1.text-primary, .ns .card-title.text-primary, .ns h2.text-primary, .ns h3.text-primary { color: var(--color-fg) !important; }
+.ns .card-title i, .ns h1 > i:first-child { color: #16a34a; }
+.ns h1, .ns .display-5 { font-weight: 800; letter-spacing: -.01em; }
+.ns .display-5 { font-size: 1.9rem; line-height: 1.15; }
+.ns h1.h3 { font-size: 1.5rem; }
+.ns .card-title { font-weight: 800; }
+.ns .card { border: 0; border-radius: 14px; box-shadow: 0 1px 3px rgba(15, 40, 35, .08); }
+[data-bs-theme="dark"] .ns .card { box-shadow: 0 1px 3px rgba(0, 0, 0, .4); }
+.ns .btn-primary {
+    --bs-btn-bg: #16a34a; --bs-btn-border-color: #16a34a;
+    --bs-btn-hover-bg: #15803d; --bs-btn-hover-border-color: #15803d;
+    --bs-btn-active-bg: #166534; --bs-btn-active-border-color: #166534;
+    --bs-btn-disabled-bg: #16a34a; --bs-btn-disabled-border-color: #16a34a;
+}
+.ns .btn-outline-primary {
+    --bs-btn-color: #16a34a; --bs-btn-border-color: #16a34a;
+    --bs-btn-hover-bg: #16a34a; --bs-btn-hover-border-color: #16a34a; --bs-btn-hover-color: #fff;
+    --bs-btn-active-bg: #15803d; --bs-btn-active-border-color: #15803d;
+}
+.ns .form-control:focus, .ns .form-select:focus, .ns .form-check-input:focus {
+    border-color: #4ade80; box-shadow: 0 0 0 .25rem rgba(22, 163, 74, .2);
+}
+.ns .form-check-input:checked { background-color: #16a34a; border-color: #16a34a; }

@@ -1,4 +1,15 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // Start date: only the day is shown; the stored time of day is kept.
+    const startInput = document.getElementById("startDate");
+    const storedStart = (startInput && startInput.dataset.stored) || "";
+    if (startInput && !startInput.value) startInput.value = storedStart.slice(0, 10);
+    function startDateValue() {
+        const day = startInput.value;
+        if (!day) return "";
+        const time = storedStart.length >= 16 ? storedStart.slice(10) : "T00:00:00";
+        return day + (time.length === 6 ? time + ":00" : time);
+    }
+
     const editPlantForm = document.getElementById("editPlantForm");
     const zoneSelect = document.getElementById("zoneSelect");
     const newZoneInput = document.getElementById("newZoneInput");
@@ -64,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 new_breeder: breederSelect && breederSelect.value === "new" ? newBreederName.value : null
             } : null,
             clone: document.getElementById("cloneCheckbox").checked,
-            start_date: document.getElementById("startDate").value,
+            start_date: startDateValue(),
             harvest_weight: parseFloat(document.getElementById("harvestWeight").value) || 0,
         };
 

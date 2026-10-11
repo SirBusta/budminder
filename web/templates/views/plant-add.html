@@ -2,7 +2,7 @@
 
 {{ template "common/header.html" .}}
 {{ template "common/header2.html" .}}
-<div class="container">
+<div class="container ns">
     <!-- Breadcrumbs -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -21,9 +21,8 @@
     </div>
 
     <form id="addPlantForm">
-        <div class="row g-4">
-            <!-- Left column: Form fields -->
-            <div class="col-lg-7">
+        <div class="row g-4 justify-content-center">
+            <div class="col-lg-8">
                 <!-- Basic info card -->
                 <div class="card mb-4">
                     <div class="card-body">
@@ -124,8 +123,8 @@
                             <!-- Date Picker -->
                             <div class="col-md-6">
                                 <label for="startDate" class="form-label required">{{ .lcl.start_date }}</label>
-                                <input type="datetime-local" step="1" class="form-control" id="startDate" required>
-                                <script>formHelpers.setDateTimeNow("startDate");</script>
+                                <!-- Date only; the time of day is recorded automatically. -->
+                                <input type="date" class="form-control" id="startDate" required>
                             </div>
 
                             <div class="col-md-6"></div>
@@ -166,20 +165,6 @@
                 </div>
             </div>
 
-            <!-- Right column: Preview -->
-            <div class="col-lg-5">
-                <div class="card plant-infobox sticky-top" style="top: 1rem;">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary text-center mb-3">
-                            <i class="fa-solid fa-eye me-1"></i> Preview
-                        </h2>
-                        <div id="plantPreview" class="text-center text-muted">
-                            <i class="fa-solid fa-seedling fa-3x mb-3" style="opacity: 0.3"></i>
-                            <p>Fill in the form to see a preview</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </form>
 </div>

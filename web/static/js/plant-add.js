@@ -9,7 +9,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const parentPlantDropdown = document.getElementById("parentPlantDropdown");
     const parentPlantSelect = document.getElementById("parentPlantSelect");
     const isClone = document.getElementById("isClone");
-    const plantPreview = document.getElementById("plantPreview");
+
+    // Start date: the day is chosen, the time of day is recorded silently.
+    const pad = n => String(n).padStart(2, "0");
+    const now = new Date();
+    const startDate = document.getElementById("startDate");
+    startDate.max = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    if (!startDate.value) startDate.value = startDate.max;
+    function withTimeNow(day) {
+        const t = new Date();
+        return `${day}T${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+    }
 
     // Initialize autocomplete on strain and zone selects
     const zoneAC = new IsleyAutocomplete(zoneSelect, {
@@ -44,59 +54,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 })
                 .catch(() => {});
         }
-        updatePreview();
     });
 
     // Show/Hide Parent Plant Dropdown
     isClone.addEventListener("change", () => {
         parentPlantDropdown.classList.toggle("d-none", !isClone.checked);
     });
-
-    // Live preview update
-    function updatePreview() {
-        const name = document.getElementById("plantName").value || "Untitled Plant";
-        const zone = zoneSelect.value === "new"
-            ? (document.getElementById("newZoneName").value || "New Zone")
-            : (zoneAC.input ? zoneAC.input.value : "—") || "—";
-        const strain = strainSelect.value === "new"
-            ? (document.getElementById("newStrainName").value || "New Strain")
-            : (strainAC.input ? strainAC.input.value : "—") || "—";
-
-        plantPreview.innerHTML = `
-            <div class="text-start">
-                <h4 class="text-primary mb-2">${esc(name)}</h4>
-                <ul class="list-unstyled strain-info-list">
-                    <li>
-                        <span class="strain-info-label"><i class="fa-solid fa-cannabis me-2"></i>Strain</span>
-                        <span class="strain-info-value">${esc(strain)}</span>
-                    </li>
-                    <li>
-                        <span class="strain-info-label"><i class="fa-solid fa-location-dot me-2"></i>Zone</span>
-                        <span class="strain-info-value">${esc(zone)}</span>
-                    </li>
-                    <li>
-                        <span class="strain-info-label"><i class="fa-solid fa-clone me-2"></i>Clone</span>
-                        <span class="strain-info-value">${isClone.checked ? "Yes" : "No"}</span>
-                    </li>
-                </ul>
-            </div>
-        `;
-    }
-
-    function esc(str) {
-        if (!str) return "";
-        const d = document.createElement("div");
-        d.textContent = str;
-        return d.innerHTML;
-    }
-
-    // Attach preview updates to form inputs
-    document.getElementById("plantName").addEventListener("input", updatePreview);
-    zoneSelect.addEventListener("change", updatePreview);
-    strainSelect.addEventListener("change", updatePreview);
-    isClone.addEventListener("change", updatePreview);
-    document.getElementById("newZoneName")?.addEventListener("input", updatePreview);
-    document.getElementById("newStrainName")?.addEventListener("input", updatePreview);
 
     // Form submission
     addPlantForm.addEventListener("submit", (e) => {
@@ -142,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 new_breeder: breederSelect.value === "new" ? newBreederName.value : null
             } : null,
             status_id: parseInt(document.getElementById("statusSelect").value, 10),
-            date: document.getElementById("startDate").value,
+            date: withTimeNow(document.getElementById("startDate").value),
             clone: isClone.checked ? 1 : 0,
             parent_id: parseInt(parentPlantSelect.value, 10),
             decrement_seed_count: document.getElementById("decrementSeedCount").checked,

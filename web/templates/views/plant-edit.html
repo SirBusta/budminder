@@ -2,7 +2,7 @@
 
 {{ template "common/header.html" .}}
 {{ template "common/header2.html" .}}
-<div class="container">
+<div class="container ns">
     <!-- Breadcrumbs -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -80,7 +80,7 @@
                             <!-- Start Date -->
                             <div class="col-md-6">
                                 <label for="startDate" class="form-label">{{ .lcl.start_date }}</label>
-                                <input type="datetime-local" step="1" class="form-control" id="startDate" value="{{ .plant.StartDT | formatDateTimeLocal }}">
+                                <input type="date" class="form-control" id="startDate" data-stored="{{ .plant.StartDT | formatDateTimeLocal }}">
                             </div>
                         </div>
                     </div>
