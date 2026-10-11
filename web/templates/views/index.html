@@ -1,30 +1,69 @@
 {{ define "views/index.html"}}
-<!--index.html - Dashboard-->
 
 {{ template "common/header.html" .}}
-<script src="/static/vendor/video-js/video.min.js"></script>
-<link rel="stylesheet" href="/static/vendor/video-js/video-js.min.css">
 {{ template "common/header2.html" .}}
 
-<div class="container" data-poll-interval="{{ .pollInterval }}">
-    <h1 class="visually-hidden">{{ .lcl.title_dashboard }}</h1>
+<!-- Home / Today (mockup H1): what needs attention, each tent with its
+     readings, camera tile and plant cards, and recent activity. Drawn by
+     /static/js/home-page.js from the JSON in data-page. -->
+<div class="container-xxl hm" id="homePage" data-page='{{ json .pageData }}'>
+    <div class="hm-top">
+        <div>
+            <h1>{{ .lcl.hm_title }}</h1>
+            <p id="hmSub"></p>
+        </div>
+        {{ if .loggedIn }}
+        <div class="hm-top-acts">
+            <button type="button" class="hm-btn" data-log=""><i class="fa-solid fa-plus me-1"></i>{{ .lcl.hm_log_activity }}</button>
+            <button type="button" class="hm-btn light" data-photos=""><i class="fa-solid fa-camera me-1"></i>{{ .lcl.hm_add_photos }}</button>
+        </div>
+        {{ end }}
+    </div>
 
-    <!-- Summary Bar -->
-    <div id="dashSummary" class="dash-summary"></div>
+    {{ if .loggedIn }}
+    <div class="hm-sec-h"><h2><i class="fa-solid fa-bell me-2"></i>{{ .lcl.hm_attention }}</h2><span class="n" id="hmAlertCount"></span></div>
+    <div class="hm-alerts" id="hmAlerts"></div>
+    {{ end }}
 
-    <!-- Zone Sections -->
-    <div id="dashZones"></div>
+    <div id="hmTents"></div>
 
-    <!-- Empty state -->
-    <div id="dashEmpty" class="dash-empty" style="display:none;">
-        <i class="fa-solid fa-seedling"></i>
-        <p>{{ .lcl.no_plants_yet }}</p>
+    <div class="hm-sec-h"><h2>{{ .lcl.hm_recent }}</h2><span class="n">{{ .lcl.hm_all_plants }}</span>
+        <a href="/activities" class="hm-link">{{ .lcl.hm_open_notebook }} <i class="fa-solid fa-arrow-right ms-1"></i></a></div>
+    <div class="hm-recent" id="hmRecent"></div>
+</div>
+
+{{ if .loggedIn }}
+<!-- Log activity: one or several plants, the day's activities, measurements
+     they ask for (e.g. Water amount) and a note. -->
+<div class="modal fade" id="hmLog" tabindex="-1" aria-labelledby="hmLogTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content hm-dialog">
+            <div class="modal-header">
+                <h5 class="modal-title" id="hmLogTitle"><i class="fa-solid fa-plus me-2"></i>{{ .lcl.hm_log_activity }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ .lcl.title_close }}"></button>
+            </div>
+            <div class="modal-body" id="hmLogBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ .lcl.hm_cancel }}</button>
+                <button type="button" class="btn btn-success" id="hmLogSave"><i class="fa-solid fa-check me-1"></i>{{ .lcl.hm_save }}</button>
+            </div>
+        </div>
     </div>
 </div>
 
-<script src="/static/js/main.js"></script>
+<!-- Add photos: the shared upload window, with a plant picker added on top. -->
+<input type="hidden" id="plantId" value="">
+{{ template "modals/upload-images-modal.html" . }}
+<script src="/static/vendor/exif-js/exif.min.js"></script>
+{{ end }}
 
-<!--Embed the footer.html template at this location-->
+{{ if .hasCamera }}
+<link rel="stylesheet" href="/static/vendor/video-js/video-js.min.css">
+<script src="/static/vendor/video-js/video.min.js" defer></script>
+{{ end }}
+<script src="/static/js/sensor-kinds.js"></script>
+<script src="/static/js/home-page.js" defer></script>
+
 {{ template "common/footer.html" .}}
 
 {{ end }}

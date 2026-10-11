@@ -5,6 +5,7 @@ package handlers_test
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -197,4 +198,31 @@ func TestGraphPageForwardsToEnvironment(t *testing.T) {
 	}
 	check(sid, "/sensors#zone="+strconv.Itoa(zone))
 	check(loose, "/sensors")
+}
+
+// The page itself: logged in it carries the Log window and the upload window;
+// for guests it renders read-only, without them.
+func TestHomePage_Renders(t *testing.T) {
+	t.Parallel()
+	page := func(c *testutil.Client) string {
+		resp := c.Get("/")
+		defer testutil.DrainAndClose(resp)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		return string(body)
+	}
+
+	e := newSensorEnv(t)
+	html := page(e.client)
+	assert.Contains(t, html, `id="homePage"`)
+	assert.Contains(t, html, `id="hmLog"`, "logged in: Log activity window")
+	assert.Contains(t, html, `id="uploadImagesModal"`, "logged in: Add photos window")
+	assert.NotContains(t, html, "video.min.js", "no camera, no player")
+
+	guest := testutil.NewTestServer(t, testutil.NewTestDB(t), testutil.WithGuestMode())
+	html = page(guest.NewClient(t))
+	assert.Contains(t, html, `id="homePage"`)
+	assert.NotContains(t, html, `id="hmLog"`, "guests are read-only")
+	assert.NotContains(t, html, `id="uploadImagesModal"`)
 }
