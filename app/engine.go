@@ -412,6 +412,13 @@ func buildFuncMap(store *config.Store) template.FuncMap {
 			}
 			return seedAgeFrom(added, now)
 		},
+		// showHeight / showYield show a strain's free-text height or yield
+		// in the measurement system chosen in Settings.
+		"showHeight": func(text string) string { return utils.ShowHeight(text, store.Units()) },
+		"showYield":  func(text string) string { return utils.ShowYield(text, store.Units()) },
+		// monthYear shows a "2006-01-02" date as month and year
+		// ("March 2025"), with the month name from the page's translations.
+		"monthYear": utils.MonthYear,
 		// dict builds a map from key/value pairs so a shared sub-template
 		// can take several arguments: {{ template "x" (dict "k" v ...) }}.
 		"dict": func(pairs ...any) (map[string]any, error) {

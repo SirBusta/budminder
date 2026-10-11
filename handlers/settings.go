@@ -260,6 +260,17 @@ func SaveSettings(c *gin.Context) {
 		captureTimezoneMetadata(db, store, settings.Timezone)
 	}
 
+	// Measurement units: only when sent, so an older form can't reset it.
+	if settings.Units != "" {
+		units := utils.NormalizeUnits(settings.Units)
+		if err = UpdateSetting(db, store, "units", units); err != nil {
+			fieldLogger.WithError(err).Error("Failed to save units setting")
+			apiInternalError(c, "api_failed_to_save_settings")
+			return
+		}
+		store.SetUnits(units)
+	}
+
 	//Load Settings
 	LoadSettings(db, store)
 
@@ -390,6 +401,8 @@ func GetSettings(db *sql.DB) types.SettingsData {
 			settingsData.MaxBackupSizeMB, _ = strconv.Atoi(value)
 		case "timezone":
 			settingsData.Timezone = value
+		case "units":
+			settingsData.Units = utils.NormalizeUnits(value)
 		default:
 			fieldLogger.WithField("name", name).Debug("Unrecognised setting skipped")
 		}
@@ -1406,6 +1419,10 @@ func LoadSettings(db *sql.DB, store *config.Store) {
 	strTimezone, err := GetSetting(db, "timezone")
 	if err == nil && strTimezone != "" {
 		store.SetTimezone(strTimezone)
+	}
+
+	if strUnits, err := GetSetting(db, "units"); err == nil && strUnits != "" {
+		store.SetUnits(utils.NormalizeUnits(strUnits))
 	}
 
 	strCannadbEnabled, err := GetSetting(db, "cannadb.enabled")

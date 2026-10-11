@@ -39,6 +39,7 @@ type Store struct {
 	logLevel             string
 	maxBackupSize        int64
 	timezone             string
+	units                string
 	cannadbEnabled       int
 	cannadbBaseURL       string
 	straincompassEnabled int
@@ -285,6 +286,20 @@ func (s *Store) SetTimezone(v string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.timezone = v
+}
+
+// Units is the measurement system ("imperial" or "metric") used to show
+// strain height and yield; empty means the default (imperial).
+func (s *Store) Units() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.units
+}
+
+func (s *Store) SetUnits(v string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.units = v
 }
 
 // ----------------------------------------------------------------------

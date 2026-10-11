@@ -192,7 +192,7 @@
                             <span class="strain-info-label"><i class="fa-solid fa-calendar-plus me-2"></i>{{ .lcl.seeds_added_on }}</span>
                             <span class="strain-info-value">
                                 {{ with .strain.SeedsAddedOn }}
-                                    {{ . }}
+                                    {{ monthYear . $.lcl }}
                                     {{ with seedAge . }}{{ if .OK }}<small class="text-muted">({{ template "common/seed-age" (dict "a" . "lcl" $.lcl) }})</small>{{ end }}{{ end }}
                                 {{ else }}
                                     <span class="text-muted">{{ $.lcl.seeds_added_on_unknown }}</span>
@@ -209,25 +209,25 @@
                         {{ with .strain.HeightIndoor }}
                         <li>
                             <span class="strain-info-label"><i class="fa-solid fa-ruler-vertical me-2"></i>{{ $.lcl.height_indoor }}</span>
-                            <span class="strain-info-value">{{ . }}</span>
+                            <span class="strain-info-value">{{ showHeight . }}</span>
                         </li>
                         {{ end }}
                         {{ with .strain.HeightOutdoor }}
                         <li>
                             <span class="strain-info-label"><i class="fa-solid fa-ruler-vertical me-2"></i>{{ $.lcl.height_outdoor }}</span>
-                            <span class="strain-info-value">{{ . }}</span>
+                            <span class="strain-info-value">{{ showHeight . }}</span>
                         </li>
                         {{ end }}
                         {{ with .strain.YieldIndoor }}
                         <li>
                             <span class="strain-info-label"><i class="fa-solid fa-scale-balanced me-2"></i>{{ $.lcl.yield_indoor }}</span>
-                            <span class="strain-info-value">{{ . }}</span>
+                            <span class="strain-info-value">{{ showYield . }}</span>
                         </li>
                         {{ end }}
                         {{ with .strain.YieldOutdoor }}
                         <li>
                             <span class="strain-info-label"><i class="fa-solid fa-scale-balanced me-2"></i>{{ $.lcl.yield_outdoor }}</span>
-                            <span class="strain-info-value">{{ . }}</span>
+                            <span class="strain-info-value">{{ showYield . }}</span>
                         </li>
                         {{ end }}
                     </ul>

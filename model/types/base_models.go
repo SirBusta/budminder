@@ -189,6 +189,7 @@ type Settings struct {
 	LogLevel            string `json:"log_level"`
 	MaxBackupSizeMB     string `json:"max_backup_size_mb"`
 	Timezone            string `json:"timezone"`
+	Units               string `json:"units"` // "imperial" or "metric"; empty leaves it unchanged
 }
 
 type ACInfinitySettings struct {
@@ -227,6 +228,7 @@ type SettingsData struct {
 	LogLevel            string `json:"log_level"`
 	MaxBackupSizeMB     int    `json:"max_backup_size_mb"`
 	Timezone            string `json:"timezone"`
+	Units               string `json:"units"`
 }
 
 type Status struct {

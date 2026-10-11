@@ -42,3 +42,16 @@ func TestDaysToWeeks(t *testing.T) {
 		}
 	}
 }
+
+func TestShowHeightFollowsUnitsSetting(t *testing.T) {
+	t.Parallel()
+	store := config.NewStore()
+	showHeight := buildFuncMap(store)["showHeight"].(func(string) string)
+	if got := showHeight("90-150cm"); got != "35-59 in" {
+		t.Errorf("default (imperial) = %q", got)
+	}
+	store.SetUnits("metric")
+	if got := showHeight("90-150cm"); got != "90-150cm" {
+		t.Errorf("metric = %q", got)
+	}
+}
