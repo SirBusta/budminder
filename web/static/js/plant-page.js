@@ -32,7 +32,8 @@
     const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
 
     async function api(method, url, body) {
-        const opts = { method, headers: { "Accept": "application/json" } };
+        // no-store: a Back navigation must not replay a stale notebook.
+        const opts = { method, cache: "no-store", headers: { "Accept": "application/json" } };
         if (body !== undefined) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
         const resp = await fetch(url, opts);
         const data = await resp.json().catch(() => ({}));
