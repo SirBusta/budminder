@@ -815,16 +815,17 @@ func LogPlantsDayHandler(c *gin.Context) {
 // the plant chips: stage history (for "Flower · Wk 2 · Day 72" on any day),
 // tent, and latest photo.
 type NotebookPlant struct {
-	ID      int             `json:"id"`
-	Name    string          `json:"name"`
-	Strain  string          `json:"strain"`
-	Zone    string          `json:"zone"`
-	ZoneID  int             `json:"zone_id"`
-	Start   string          `json:"start"` // YYYY-MM-DD, "" if unknown
-	Status  string          `json:"status"`
-	Active  bool            `json:"active"` // still growing (current stage is an active one)
-	Photo   string          `json:"photo"`
-	History []NotebookStage `json:"history"` // oldest first
+	ID       int             `json:"id"`
+	Name     string          `json:"name"`
+	Strain   string          `json:"strain"`
+	StrainID int             `json:"strain_id"`
+	Zone     string          `json:"zone"`
+	ZoneID   int             `json:"zone_id"`
+	Start    string          `json:"start"` // YYYY-MM-DD, "" if unknown
+	Status   string          `json:"status"`
+	Active   bool            `json:"active"` // still growing (current stage is an active one)
+	Photo    string          `json:"photo"`
+	History  []NotebookStage `json:"history"` // oldest first
 }
 
 // NotebookStage is one stage change.
@@ -839,7 +840,7 @@ func LoadNotebookPlants(db *sql.DB) ([]NotebookPlant, error) {
 	byID := map[int]*NotebookPlant{}
 	var out []*NotebookPlant
 	rows, err := db.Query(`
-		SELECT p.id, p.name, COALESCE(s.name, ''), COALESCE(z.name, ''), COALESCE(p.zone_id, 0), p.start_dt
+		SELECT p.id, p.name, COALESCE(s.name, ''), COALESCE(p.strain_id, 0), COALESCE(z.name, ''), COALESCE(p.zone_id, 0), p.start_dt
 		FROM plant p
 		LEFT OUTER JOIN strain s ON s.id = p.strain_id
 		LEFT OUTER JOIN zones z ON z.id = p.zone_id`)
@@ -849,7 +850,7 @@ func LoadNotebookPlants(db *sql.DB) ([]NotebookPlant, error) {
 	for rows.Next() {
 		p := &NotebookPlant{History: []NotebookStage{}}
 		var start sql.NullTime
-		if err := rows.Scan(&p.ID, &p.Name, &p.Strain, &p.Zone, &p.ZoneID, &start); err != nil {
+		if err := rows.Scan(&p.ID, &p.Name, &p.Strain, &p.StrainID, &p.Zone, &p.ZoneID, &start); err != nil {
 			rows.Close()
 			return nil, fmt.Errorf("scan plant: %w", err)
 		}

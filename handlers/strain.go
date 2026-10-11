@@ -823,25 +823,63 @@ func DeleteStrainHandler(c *gin.Context) {
 	apiOK(c, "api_strain_deleted")
 }
 
-// The Strains page's three views: seeds on hand, the wish list, and
-// everything else with no seeds.
+// Strain list views: seeds on hand, the wish list, everything else with no
+// seeds, and all of them (the Strains page splits "all" into its tabs).
 const (
 	strainViewInStock    = "s.seed_count > 0"
 	strainViewWanted     = "s.seed_count = 0 AND s.wanted = 1"
 	strainViewOutOfStock = "s.seed_count = 0 AND s.wanted = 0"
+	strainViewAll        = "1 = 1"
 )
 
 func InStockStrainsHandler(c *gin.Context)    { strainViewHandler(c, strainViewInStock) }
 func WantedStrainsHandler(c *gin.Context)     { strainViewHandler(c, strainViewWanted) }
 func OutOfStockStrainsHandler(c *gin.Context) { strainViewHandler(c, strainViewOutOfStock) }
+func AllStrainsHandler(c *gin.Context)        { strainViewHandler(c, strainViewAll) }
 
 func strainViewHandler(c *gin.Context, where string) {
-	strains, err := getStrainsByView(DBFromContext(c), where)
+	db := DBFromContext(c)
+	strains, err := getStrainsByView(db, where)
+	if err == nil {
+		err = addGrowCounts(db, strains)
+	}
 	if err != nil {
 		apiInternalError(c, "api_failed_to_fetch_strains")
 		return
 	}
+	if strains == nil {
+		strains = []types.Strain{}
+	}
 	c.JSON(http.StatusOK, strains)
+}
+
+// addGrowCounts fills in how many plants of each strain are growing now
+// (current stage is an active one) and how many were grown (harvested or
+// dead), using the same current-stage rule as the All plants notebook.
+func addGrowCounts(db *sql.DB, strains []types.Strain) error {
+	if len(strains) == 0 {
+		return nil
+	}
+	plants, err := LoadNotebookPlants(db)
+	if err != nil {
+		return err
+	}
+	growing, grown := map[int]int{}, map[int]int{}
+	for _, p := range plants {
+		switch {
+		case p.Status == "":
+			// No stage logged yet: not counted either way.
+		case p.Active:
+			growing[p.StrainID]++
+		default:
+			grown[p.StrainID]++
+		}
+	}
+	for i := range strains {
+		strains[i].GrowingCount = growing[strains[i].ID]
+		strains[i].GrownCount = grown[strains[i].ID]
+	}
+	return nil
 }
 
 // getStrainsByView lists the strains matching one of the strainView*

@@ -254,6 +254,8 @@ type Strain struct {
 	SeedsAddedOn     string `json:"seeds_added_on,omitempty"` // "2006-01-02" the current seeds were stocked; "" if unknown
 	CycleTime        int    `json:"cycle_time"`               // days; the long end of a range
 	CycleTimeMin     int    `json:"cycle_time_min,omitempty"` // days; short end of a range, 0 = single value
+	GrowingCount     int    `json:"growing_count"`            // plants of this strain still growing (list views)
+	GrownCount       int    `json:"grown_count"`              // harvested or dead plants of this strain (list views)
 	Url              string `json:"url"`
 	ShortDescription string `json:"short_desc"`
 	Lineage          string `json:"lineage,omitempty"`

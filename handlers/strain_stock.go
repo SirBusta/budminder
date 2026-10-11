@@ -143,3 +143,87 @@ func SetStrainWantedHandler(c *gin.Context) {
 	ConfigStoreFromContext(c).SetStrains(GetStrains(db))
 	c.JSON(http.StatusOK, gin.H{"wanted": stored == 1})
 }
+
+// AddStrainSeedsHandler adds seeds to a strain's stock (the Strains page's
+// "+ Seeds"): the count goes up, and the type, storage spot and date are
+// set. Stock rules as everywhere else (resolveStrainStock): Wanted is
+// cleared, a strain restocked from zero is dated today unless a date is
+// given, and existing stock keeps its date unless a new one is given.
+// POST /strains/:id/seeds  {"count": 5, "seed_type": "feminized",
+// "seeds_added_on": "2026-10-10", "seed_location": "Jar 1"}
+func AddStrainSeedsHandler(c *gin.Context) {
+	fieldLogger := logger.Log.WithField("handler", "AddStrainSeedsHandler")
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		apiBadRequest(c, "api_invalid_strain_id")
+		return
+	}
+	var req struct {
+		Count        int     `json:"count"`
+		SeedType     *string `json:"seed_type"`
+		SeedsAddedOn *string `json:"seeds_added_on"`
+		SeedLocation *string `json:"seed_location"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.Count < 1 || req.Count > 100000 {
+		apiBadRequest(c, "api_invalid_request_payload")
+		return
+	}
+	if req.SeedType != nil {
+		v, ok := normalizeSeedType(*req.SeedType)
+		if !ok {
+			apiBadRequest(c, "api_invalid_seed_type")
+			return
+		}
+		req.SeedType = &v
+	}
+	if req.SeedLocation != nil {
+		v := strings.TrimSpace(*req.SeedLocation)
+		if err := utils.ValidateStringLength("seed_location", v, utils.MaxNameLength); err != nil {
+			apiBadRequest(c, err.Error())
+			return
+		}
+		req.SeedLocation = &v
+	}
+
+	db := DBFromContext(c)
+	tx, err := db.Begin()
+	if err != nil {
+		apiInternalError(c, "api_failed_to_start_tx")
+		return
+	}
+	defer tx.Rollback()
+	prev, err := loadStrainStock(tx, id)
+	if err == sql.ErrNoRows {
+		apiNotFound(c, "api_strain_not_found")
+		return
+	}
+	if err != nil {
+		fieldLogger.WithError(err).Error("Failed to load strain stock")
+		apiInternalError(c, "api_failed_to_update_strain")
+		return
+	}
+	count := prev.Count + req.Count
+	if prev.Count < 0 {
+		count = req.Count
+	}
+	notWanted := false
+	stock, err := resolveStrainStock(count, &notWanted, req.SeedsAddedOn, prev, stockToday(c))
+	if err != nil {
+		apiBadRequest(c, err.Error())
+		return
+	}
+	if _, err := tx.Exec(`UPDATE strain SET seed_count = $1, wanted = $2, seeds_added_on = $3,
+		seed_type = COALESCE($4, seed_type), seed_location = COALESCE($5, seed_location) WHERE id = $6`,
+		count, stock.Wanted, stock.AddedOn, req.SeedType, req.SeedLocation, id); err != nil {
+		fieldLogger.WithError(err).Error("Failed to add seeds")
+		apiInternalError(c, "api_failed_to_update_strain")
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		apiInternalError(c, "api_failed_to_commit_tx")
+		return
+	}
+	ConfigStoreFromContext(c).SetStrains(GetStrains(db))
+	fieldLogger.WithFields(map[string]interface{}{"strain_id": id, "added": req.Count, "seed_count": count}).Info("Seeds added")
+	c.JSON(http.StatusOK, gin.H{"seed_count": count, "seeds_added_on": stock.AddedOn, "wanted": stock.Wanted == 1})
+}

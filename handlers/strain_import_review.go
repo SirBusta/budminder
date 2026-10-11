@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"isley/logger"
 	"isley/model/types"
@@ -210,8 +211,10 @@ func buildImportReview(ctx context.Context, db *sql.DB, cannadbOn bool, s import
 		parentNames = mergeWithExisting(db, &r, parentNames)
 	}
 	if r.ExistingID == 0 {
-		// Importing a strain you don't have yet usually means you want it.
+		// Importing a strain you don't have yet usually means you want it,
+		// unless the Strains page said where it goes.
 		r.Strain.Wanted = true
+		applyImportDestination(&r.Strain, q)
 	}
 	r.Draft.Parents = linkParents(db, parentNames, r.ExistingID)
 
@@ -639,4 +642,32 @@ func replaceStrainLineageTx(tx *sql.Tx, strainID int, parents []importParent) er
 		}
 	}
 	return nil
+}
+
+// applyImportDestination presets a new import's stock from the Strains
+// page's "Add it to" choice: dest=vault (+ seed_count, seed_type,
+// seeds_added_on), dest=wanted, or dest=library. Anything missing or
+// invalid falls back to the defaults; the review page shows the result
+// before anything is saved.
+func applyImportDestination(s *types.Strain, q url.Values) {
+	switch q.Get("dest") {
+	case "vault":
+		n, err := strconv.Atoi(q.Get("seed_count"))
+		if err != nil || n < 1 {
+			n = 1
+		}
+		s.SeedCount, s.Wanted = n, false
+		if t, ok := normalizeSeedType(q.Get("seed_type")); ok {
+			s.SeedType = t
+		}
+		if d := q.Get("seeds_added_on"); d != "" {
+			if _, err := time.Parse(utils.LayoutDate, d); err == nil {
+				s.SeedsAddedOn = d
+			}
+		}
+	case "library":
+		s.Wanted = false
+	case "wanted":
+		s.Wanted = true
+	}
 }

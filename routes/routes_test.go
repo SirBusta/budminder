@@ -94,6 +94,7 @@ func TestAddBasicRoutes_RegistersAllExpectedRoutes(t *testing.T) {
 		{"GET", "/sensors/grouped"},
 		{"GET", "/strains/:id"},
 		{"GET", "/strains/in-stock"},
+		{"GET", "/strains/all"},
 		{"GET", "/strains/out-of-stock"},
 		{"POST", "/decorateImage"},
 		{"GET", "/streams"},
@@ -144,6 +145,7 @@ func TestAddProtectedApiRoutes_RegistersAllExpectedRoutes(t *testing.T) {
 
 		// Strains and breeders
 		{"POST", "/strains"},
+		{"POST", "/strains/:id/seeds"},
 		{"PUT", "/strains/:id"},
 		{"DELETE", "/strains/:id"},
 		{"POST", "/breeders"},
