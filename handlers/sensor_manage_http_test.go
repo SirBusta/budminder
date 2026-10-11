@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"testing"
@@ -295,4 +296,36 @@ func TestScanPreview_ListsOnlyNewSensorsAndSavesNothing(t *testing.T) {
 	assert.Contains(t, eco, "ecowitt|192.168.1.40|Soil.2")
 
 	assert.Equal(t, before, count(), "a preview saves nothing")
+}
+
+func TestSensorPages_Render(t *testing.T) {
+	t.Parallel()
+	e := newSensorEnv(t)
+	zone := testutil.SeedZone(t, e.db, "Page Tent")
+	sid := testutil.SeedSensor(t, e.db, "acinfinity", "DEV1", "ACI.1.0")
+	e.exec(t, `UPDATE sensors SET zone_id = $1, name = 'Page temp', unit = '°F' WHERE id = $2`, zone, sid)
+	e.exec(t, `INSERT INTO sensor_data (sensor_id, value) VALUES ($1, 71.5)`, sid)
+
+	for _, path := range []string{"/sensors"} {
+		resp := e.client.Get(path)
+		body, err := io.ReadAll(resp.Body)
+		testutil.DrainAndClose(resp)
+		require.NoError(t, err)
+		require.Equalf(t, http.StatusOK, resp.StatusCode, path)
+		assert.Containsf(t, string(body), "Page temp", "%s carries the sensor list", path)
+		assert.Containsf(t, string(body), "71.5", "%s carries the latest reading", path)
+	}
+	page := func(path string) string {
+		resp := e.client.Get(path)
+		defer testutil.DrainAndClose(resp)
+		b, _ := io.ReadAll(resp.Body)
+		return string(b)
+	}
+	assert.Contains(t, page("/sensors"), `id="envPage"`)
+	assert.Contains(t, page("/sensors"), "sensors-page.js")
+
+	anon := e.server.NewClient(t)
+	resp := anon.Get("/sensors")
+	defer testutil.DrainAndClose(resp)
+	assert.NotContains(t, []int{http.StatusOK}, resp.StatusCode, "the Environment page needs a login")
 }

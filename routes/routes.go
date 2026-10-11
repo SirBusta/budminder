@@ -491,13 +491,34 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 		})
 	})
 
+	// Environment: charts per tent (Sensors in the menu).
 	r.GET("/sensors", func(c *gin.Context) {
 		lang := utils.GetLanguage(c)
 		translations := utils.TranslationService.GetTranslations(lang)
 		currentPath, _ := c.Get("currentPath")
-		store := handlers.ConfigStoreFromContext(c)
 		c.HTML(http.StatusOK, "views/sensors.html", gin.H{
-			"title":           "Sensors",
+			"pageData":        handlers.SensorsPageData(c, "en_", lang, translations),
+			"title":           "Environment",
+			"currentPath":     currentPath,
+			"version":         version,
+			"loggedIn":        sessions.Default(c).Get("logged_in"),
+			"lcl":             translations,
+			"languages":       utils.AvailableLanguages,
+			"currentLanguage": lang,
+			"csrfToken":       c.GetString("csrf_token"),
+			"cspNonce":        c.GetString("cspNonce"),
+		})
+	})
+
+	// Manage sensors: scan, tents, where each reading shows.
+	r.GET("/sensors/manage", func(c *gin.Context) {
+		lang := utils.GetLanguage(c)
+		translations := utils.TranslationService.GetTranslations(lang)
+		currentPath, _ := c.Get("currentPath")
+		store := handlers.ConfigStoreFromContext(c)
+		c.HTML(http.StatusOK, "views/sensors-manage.html", gin.H{
+			"pageData":        handlers.SensorsPageData(c, "sm_", lang, translations),
+			"title":           "Manage sensors",
 			"currentPath":     currentPath,
 			"version":         version,
 			"settings":        handlers.GetSettings(handlers.DBFromContext(c)),

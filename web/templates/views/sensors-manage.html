@@ -1,0 +1,813 @@
+{{ define "views/sensors-manage.html"}}
+
+{{ template "common/header.html" .}}
+{{ template "common/header2.html" .}}
+
+<div class="container">
+    <h1 class="visually-hidden">{{ .lcl.title_sensors }}</h1>
+
+    <!-- Top Controls Bar -->
+    <div class="sensors-controls">
+        <!-- Search + action buttons row -->
+        <div class="sensors-controls-row">
+            <div class="sensors-search-wrap">
+                <i class="fa-solid fa-search sensors-search-icon"></i>
+                <input type="text" class="form-control form-control-sm" id="searchSensors"
+                       placeholder="{{ .lcl.search_sensors }}...">
+            </div>
+
+            {{ if .loggedIn }}
+            <div class="sensors-action-buttons">
+                {{ if .settings.ACI.Enabled }}
+                <button class="btn btn-sm btn-primary" id="scanACI">
+                    <i class="fa-solid fa-search me-1"></i> {{ .lcl.aci_scan_add }}
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" id="dumpACI">
+                    <i class="fa-solid fa-file-code me-1"></i> {{ .lcl.aci_dump_json }}
+                </button>
+                {{ end }}
+
+                {{ if .settings.EC.Enabled }}
+                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#ecScanModal" id="scanEC">
+                    <i class="fa-solid fa-search me-1"></i> {{ .lcl.ecowitt_scan_add }}
+                </button>
+                {{ end }}
+            </div>
+            {{ end }}
+        </div>
+
+        <!-- Filters row -->
+        <div class="sensors-filters-row">
+            <div class="sensors-filter-group">
+                <label class="sensors-filter-label">{{ .lcl.title_zone }}</label>
+                <select id="filterZone" class="form-select form-select-sm">
+                    <option value="">{{ .lcl.filter_all }}</option>
+                </select>
+            </div>
+            <div class="sensors-filter-group">
+                <label class="sensors-filter-label">{{ .lcl.title_source }}</label>
+                <select id="filterSource" class="form-select form-select-sm">
+                    <option value="">{{ .lcl.filter_all }}</option>
+                </select>
+            </div>
+            <div class="sensors-filter-group">
+                <label class="sensors-filter-label">{{ .lcl.title_visibility }}</label>
+                <select id="filterVisibility" class="form-select form-select-sm">
+                    <option value="">{{ .lcl.filter_all }}</option>
+                    <option value="zone_plant">{{ .lcl.vis_zone_plant }}</option>
+                    <option value="zone">{{ .lcl.vis_zone }}</option>
+                    <option value="plant">{{ .lcl.vis_plant }}</option>
+                    <option value="hide">{{ .lcl.title_hide }}</option>
+                </select>
+            </div>
+            <div class="sensors-filter-group">
+                <label class="sensors-filter-label">{{ .lcl.sort_by }}</label>
+                <select id="sortBy" class="form-select form-select-sm">
+                    <option value="name-asc">{{ .lcl.sort_name_asc }}</option>
+                    <option value="name-desc">{{ .lcl.sort_name_desc }}</option>
+                    <option value="zone-asc">{{ .lcl.sort_zone_asc }}</option>
+                    <option value="source-asc">{{ .lcl.sort_source_asc }}</option>
+                    <option value="type-asc">{{ .lcl.sort_type_asc }}</option>
+                    <option value="updated-desc">{{ .lcl.sort_recently_updated }}</option>
+                </select>
+            </div>
+            <div class="sensors-filter-group">
+                <button id="clearFilters" class="btn btn-sm btn-outline-secondary" title="{{ .lcl.filter_clear_all }}">
+                    <i class="fa-solid fa-filter-circle-xmark me-1"></i> {{ .lcl.filter_clear }}
+                </button>
+            </div>
+            <div class="sensors-result-count ms-auto">
+                <span id="resultCount" class="text-muted"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sensors Table -->
+    <div id="sensorsTable" class="sensors-table-wrap">
+        <table class="table table-hover sensors-table">
+            <thead>
+                <tr>
+                    <th class="sn-th-name sn-sortable" data-sort="name">{{ .lcl.title_name }} <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
+                    <th class="sn-th-zone sn-sortable" data-sort="zone">{{ .lcl.title_zone }} <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
+                    <th class="sn-th-source sn-sortable" data-sort="source">{{ .lcl.title_source }} <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
+                    <th class="sn-th-device sn-sortable" data-sort="device">{{ .lcl.title_device }} <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
+                    <th class="sn-th-type sn-sortable" data-sort="type">{{ .lcl.title_type }} <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
+                    <th class="sn-th-unit sn-sortable" data-sort="unit">{{ .lcl.title_unit }} <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
+                    <th class="sn-th-visibility sn-sortable" data-sort="visibility">{{ .lcl.title_visibility }} <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
+                </tr>
+            </thead>
+            <tbody id="sensorsTableBody">
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Empty state -->
+    <div id="emptyState" class="sensors-empty" style="display:none;">
+        <i class="fa-solid fa-thermometer-half fa-3x text-muted mb-3"></i>
+        <p class="text-muted" id="emptyMessage">{{ .lcl.no_sensors_yet }}</p>
+    </div>
+</div>
+
+
+<!-- EcoWitt Scan Modal -->
+<div class="modal fade" id="ecScanModal" tabindex="-1" aria-labelledby="ecScanModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ecScanModalLabel">{{ .lcl.ecowitt_scan }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="ecScanForm">
+                    <!-- Server Address -->
+                    <div class="mb-3">
+                        <label for="serverAddress" class="form-label required">{{ .lcl.server_address }}</label>
+                        <input type="text" class="form-control" id="serverAddress" placeholder="{{ .lcl.server_address_placeholder }}" required>
+                    </div>
+                    <!-- Zone Selection -->
+                    <div class="mb-3">
+                        <label for="ecZoneSelect" class="form-label required">{{ .lcl.title_zone }}</label>
+                        <select class="form-select" id="ecZoneSelect" required>
+                            {{ range .zones }}
+                            <option value="{{ .ID }}">{{ .Name }}</option>
+                            {{ end }}
+                            <option value="new">{{ .lcl.add_new_zone }}</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 d-none" id="ecNewZoneInput">
+                        <label for="ecNewZoneName" class="form-label">{{ .lcl.new_zone_name }}</label>
+                        <input type="text" class="form-control" id="ecNewZoneName" placeholder="{{ .lcl.enter_zone_name }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary">{{ .lcl.scan_sensors }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Zone Selection Modal -->
+<div class="modal fade" id="zoneModal" tabindex="-1" aria-labelledby="zoneModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="zoneModalLabel">{{ .lcl.select_zone }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ .lcl.title_close }}"></button>
+            </div>
+            <div class="modal-body">
+                <form id="zoneForm">
+                    <div class="mb-3">
+                        <label for="zoneSelect" class="form-label required">{{ .lcl.title_zone }}</label>
+                        <select class="form-select" id="zoneSelect" required>
+                            {{ range .zones }}
+                            <option value="{{ .ID }}">{{ .Name }}</option>
+                            {{ end }}
+                            <option value="new">{{ .lcl.add_new_zone }}</option>
+                        </select>
+                        <div class="form-text" id="noZoneHelp" style="display: none;">
+                            {{ .lcl.no_zones_available }}
+                        </div>
+                    </div>
+                    <div class="mb-3 d-none" id="newZoneInput">
+                        <label for="newZoneName" class="form-label">{{ .lcl.new_zone_name }}</label>
+                        <input type="text" class="form-control" id="newZoneName" placeholder="{{ .lcl.enter_zone_name }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary">{{ .lcl.title_proceed }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal for Edit Sensor -->
+<div class="modal fade" id="editSensorModal" tabindex="-1" aria-labelledby="editSensorModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editSensorModalLabel">{{ .lcl.edit_sensor }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ .lcl.title_close }}"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editSensorForm">
+                    <!-- Sensor ID (Hidden) -->
+                    <input type="hidden" id="sensorId">
+
+                    <!-- Sensor Name -->
+                    <div class="mb-3">
+                        <label for="sensorName" class="form-label required">{{ .lcl.sensor_name }}</label>
+                        <input type="text" class="form-control" id="sensorName" required>
+                    </div>
+
+                    <!-- Sensor Identity (read-only) -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted">{{ .lcl.title_source }} / {{ .lcl.title_device }} / {{ .lcl.title_type }}</label>
+                        <div class="form-control bg-body-secondary" id="sensorIdentity" style="cursor: default; opacity: 0.8;" readonly></div>
+                        <p class="form-text">{{ .lcl.sensor_identity_info }}</p>
+                    </div>
+
+                    <!-- Visibility -->
+                    <div class="mb-3">
+                        <label for="sensorVisibility" class="form-label required">{{ .lcl.title_visibility }}</label>
+                        <select class="form-select" id="sensorVisibility" required>
+                            <option value="zone_plant">{{ .lcl.vis_zone_plant }}</option>
+                            <option value="zone">{{ .lcl.vis_zone }}</option>
+                            <option value="plant">{{ .lcl.vis_plant }}</option>
+                            <option value="hide">{{ .lcl.title_hide }}</option>
+                        </select>
+                    </div>
+
+                    <!-- Zone Dropdown -->
+                    <div class="mb-3">
+                        <label for="sensorZone" class="form-label required">{{ .lcl.title_zone }}</label>
+                        <select class="form-select" id="sensorZone" required>
+                            {{ range .zones }}
+                            <option value="{{ .ID }}">{{ .Name }}</option>
+                            {{ end }}
+                        </select>
+                    </div>
+
+                    <!-- Unit -->
+                    <div class="mb-3">
+                        <label for="sensorUnit" class="form-label required">{{ .lcl.title_unit }}</label>
+                        <input type="text" class="form-control" id="sensorUnit" required>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> {{ .lcl.save_changes }}</button>
+                        <button type="button" class="btn btn-danger" id="deleteSensor">
+                            <span id="deleteSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <i class="fa-solid fa-trash"></i> {{ .lcl.delete_sensor }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal to display raw AC Infinity JSON -->
+<div class="modal fade" id="dumpACIModal" tabindex="-1" aria-labelledby="dumpACIModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dumpACIModalLabel">{{ .lcl.aci_dump_json }}</h5>
+                <!-- Added Refresh and Copy buttons for convenience -->
+                <div class="btn-group ms-2" role="group" aria-label="ACI dump actions">
+                    <button type="button" class="btn btn-sm btn-outline-secondary btn-icon-action" id="dumpACIRefresh" title="Refresh JSON"><i class="fa-solid fa-arrows-rotate"></i></button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary btn-icon-action" id="dumpACICopy" title="Copy JSON"><i class="fa-regular fa-copy"></i></button>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="dumpACIStatus" class="mb-2"></div>
+                <p class="small text-muted">{{ .lcl.aci_dump_json_desc }}</p>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" value="1" id="dumpACIRedact" checked>
+                    <label class="form-check-label" for="dumpACIRedact">
+                        {{ .lcl.aci_redact_label }}
+                    </label>
+                </div>
+                <p class="small text-muted text-warning">{{ .lcl.aci_dump_json_caution }}</p>
+                 <pre id="dumpACIContent" style="max-height:60vh; overflow:auto; padding:1rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Segoe UI Mono', monospace; background: inherit; color: inherit; border: 1px solid rgba(0,0,0,0.08); border-radius: .25rem;"></pre>
+             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Embed sensor data for client-side rendering (hidden div so browser decodes HTML entities cleanly) -->
+<div id="sensorData" hidden>{{ json .sensors }}</div>
+
+<script nonce="{{ .cspNonce }}">
+document.addEventListener("DOMContentLoaded", () => {
+    const tableBody = document.getElementById("sensorsTableBody");
+    const emptyState = document.getElementById("emptyState");
+    const emptyMessage = document.getElementById("emptyMessage");
+    const searchInput = document.getElementById("searchSensors");
+    const filterZone = document.getElementById("filterZone");
+    const filterSource = document.getElementById("filterSource");
+    const filterVisibility = document.getElementById("filterVisibility");
+    const sortBy = document.getElementById("sortBy");
+    const clearBtn = document.getElementById("clearFilters");
+    const resultCount = document.getElementById("resultCount");
+
+    let allSensors = [];
+    let tableSort = { key: null, asc: true };
+
+    // Visibility label map (injected from server-side locale)
+    const visLabels = {
+        "zone_plant": "{{ .lcl.vis_zone_plant }}",
+        "zone": "{{ .lcl.vis_zone }}",
+        "plant": "{{ .lcl.vis_plant }}",
+        "hide": "{{ .lcl.title_hide }}"
+    };
+
+    // ----- Load sensor data from embedded JSON -----
+    function loadSensors() {
+        try {
+            const raw = document.getElementById("sensorData").textContent.trim();
+            allSensors = (raw && raw !== "null") ? (JSON.parse(raw) || []) : [];
+        } catch (e) {
+            allSensors = [];
+        }
+        populateFilters();
+        applyFilters();
+    }
+
+    // ----- Populate filter dropdowns from data -----
+    function populateFilters() {
+        const zones = [...new Set(allSensors.map(s => s.zone).filter(Boolean))].sort();
+        const sources = [...new Set(allSensors.map(s => s.source).filter(Boolean))].sort();
+
+        const currentZone = filterZone.value;
+        filterZone.innerHTML = '<option value="">All</option>';
+        zones.forEach(z => {
+            const opt = document.createElement("option");
+            opt.value = z;
+            opt.textContent = z;
+            if (z === currentZone) opt.selected = true;
+            filterZone.appendChild(opt);
+        });
+
+        const currentSource = filterSource.value;
+        filterSource.innerHTML = '<option value="">All</option>';
+        sources.forEach(s => {
+            const opt = document.createElement("option");
+            opt.value = s;
+            opt.textContent = s;
+            if (s === currentSource) opt.selected = true;
+            filterSource.appendChild(opt);
+        });
+    }
+
+    // ----- Filter + Sort -----
+    function applyFilters() {
+        let data = [...allSensors];
+        const query = searchInput.value.toLowerCase().trim();
+        const zone = filterZone.value;
+        const source = filterSource.value;
+        const visibility = filterVisibility.value;
+        const sort = sortBy.value;
+
+        if (query) {
+            data = data.filter(s =>
+                (s.name || "").toLowerCase().includes(query) ||
+                (s.zone || "").toLowerCase().includes(query) ||
+                (s.source || "").toLowerCase().includes(query) ||
+                (s.device || "").toLowerCase().includes(query) ||
+                (s.type || "").toLowerCase().includes(query) ||
+                (s.unit || "").toLowerCase().includes(query)
+            );
+        }
+        if (zone) {
+            data = data.filter(s => s.zone === zone);
+        }
+        if (source) {
+            data = data.filter(s => s.source === source);
+        }
+        if (visibility) {
+            data = data.filter(s => s.visibility === visibility);
+        }
+
+        // Use table header sort if active, otherwise use dropdown
+        let key, asc;
+        if (tableSort.key) {
+            key = tableSort.key;
+            asc = tableSort.asc;
+        } else {
+            const [k, d] = sort.split("-");
+            key = k;
+            asc = d === "asc";
+        }
+
+        data.sort((a, b) => {
+            let va, vb;
+            switch (key) {
+                case "name":
+                    va = (a.name || "").toLowerCase();
+                    vb = (b.name || "").toLowerCase();
+                    return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+                case "zone":
+                    va = (a.zone || "").toLowerCase();
+                    vb = (b.zone || "").toLowerCase();
+                    return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+                case "source":
+                    va = (a.source || "").toLowerCase();
+                    vb = (b.source || "").toLowerCase();
+                    return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+                case "device":
+                    va = (a.device || "").toLowerCase();
+                    vb = (b.device || "").toLowerCase();
+                    return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+                case "type":
+                    va = (a.type || "").toLowerCase();
+                    vb = (b.type || "").toLowerCase();
+                    return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+                case "unit":
+                    va = (a.unit || "").toLowerCase();
+                    vb = (b.unit || "").toLowerCase();
+                    return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+                case "visibility":
+                    va = (a.visibility || "").toLowerCase();
+                    vb = (b.visibility || "").toLowerCase();
+                    return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+                case "updated":
+                    va = a.update_dt || "";
+                    vb = b.update_dt || "";
+                    return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+                default:
+                    return 0;
+            }
+        });
+
+        resultCount.textContent = `${data.length} sensor${data.length !== 1 ? "s" : ""}`;
+
+        if (data.length === 0) {
+            tableBody.innerHTML = "";
+            document.getElementById("sensorsTable").style.display = "none";
+            emptyState.style.display = "flex";
+            emptyMessage.textContent = allSensors.length === 0
+                ? "{{ .lcl.no_sensors_yet }}"
+                : "{{ .lcl.no_sensors_match }}";
+            return;
+        }
+        emptyState.style.display = "none";
+        document.getElementById("sensorsTable").style.display = "";
+        renderTable(data);
+    }
+
+    // ----- Render table -----
+    function renderTable(data) {
+        tableBody.innerHTML = data.map(s => {
+            const visLabel = visLabels[s.visibility] || s.visibility;
+            const visBadgeClass = s.visibility === "hide" ? "bg-secondary" :
+                                  s.visibility === "zone_plant" ? "bg-success" :
+                                  s.visibility === "zone" ? "bg-info" : "bg-warning";
+
+            return `<tr class="sn-row" data-sensor='${esc(JSON.stringify(s))}' style="cursor:pointer">
+                <td>
+                    <span class="sn-sensor-name">${esc(s.name)}</span>
+                </td>
+                <td class="sn-cell-zone">${esc(s.zone || "")}</td>
+                <td class="sn-cell-source">${esc(s.source || "")}</td>
+                <td class="sn-cell-device">${esc(s.device || "")}</td>
+                <td class="sn-cell-type">${esc(s.type || "")}</td>
+                <td class="sn-cell-unit">${esc(s.unit || "")}</td>
+                <td><span class="badge ${visBadgeClass}">${esc(visLabel)}</span></td>
+            </tr>`;
+        }).join("");
+
+        // Attach row click handlers for edit modal
+        tableBody.querySelectorAll(".sn-row").forEach(row => {
+            row.addEventListener("click", () => {
+                const sensorData = JSON.parse(row.getAttribute("data-sensor"));
+                openEditModal(sensorData);
+            });
+        });
+    }
+
+    // ----- Helpers -----
+    function esc(str) {
+        if (!str) return "";
+        const d = document.createElement("div");
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
+    function debounce(fn, ms) {
+        let t;
+        return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+    }
+
+    // ----- Table header sort click -----
+    document.querySelectorAll(".sn-sortable").forEach(th => {
+        th.style.cursor = "pointer";
+        th.addEventListener("click", () => {
+            const sortKey = th.dataset.sort;
+            if (tableSort.key === sortKey) {
+                tableSort.asc = !tableSort.asc;
+            } else {
+                tableSort.key = sortKey;
+                tableSort.asc = true;
+            }
+            // Update sort icons
+            document.querySelectorAll(".sn-sortable i").forEach(icon => {
+                icon.className = "fa-solid fa-sort ms-1 text-muted";
+            });
+            const icon = th.querySelector("i");
+            if (icon) icon.className = `fa-solid fa-sort-${tableSort.asc ? "up" : "down"} ms-1`;
+
+            // Sync dropdown sort value if there's a matching option
+            const mappedSort = {
+                "name": tableSort.asc ? "name-asc" : "name-desc",
+                "zone": tableSort.asc ? "zone-asc" : null,
+                "source": tableSort.asc ? "source-asc" : null,
+                "type": tableSort.asc ? "type-asc" : null,
+            }[sortKey];
+            if (mappedSort && sortBy.querySelector(`option[value="${mappedSort}"]`)) {
+                sortBy.value = mappedSort;
+            }
+            applyFilters();
+        });
+    });
+
+    // ----- Event listeners -----
+    searchInput.addEventListener("input", debounce(applyFilters, 200));
+    filterZone.addEventListener("change", applyFilters);
+    filterSource.addEventListener("change", applyFilters);
+    filterVisibility.addEventListener("change", applyFilters);
+    sortBy.addEventListener("change", () => {
+        tableSort = { key: null, asc: true };
+        document.querySelectorAll(".sn-sortable i").forEach(icon => {
+            icon.className = "fa-solid fa-sort ms-1 text-muted";
+        });
+        applyFilters();
+    });
+
+    clearBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        filterZone.value = "";
+        filterSource.value = "";
+        filterVisibility.value = "";
+        sortBy.value = "name-asc";
+        tableSort = { key: null, asc: true };
+        document.querySelectorAll(".sn-sortable i").forEach(icon => {
+            icon.className = "fa-solid fa-sort ms-1 text-muted";
+        });
+        applyFilters();
+    });
+
+    // ----- Edit Sensor Modal -----
+    const editSensorModal = new bootstrap.Modal(document.getElementById("editSensorModal"));
+    const sensorForm = document.getElementById("editSensorForm");
+    const deleteButton = document.getElementById("deleteSensor");
+    let currentSensor = null;
+
+    function openEditModal(sensorData) {
+        currentSensor = sensorData;
+        document.getElementById("sensorId").value = sensorData.id;
+        document.getElementById("sensorName").value = sensorData.name;
+        document.getElementById("sensorIdentity").textContent = sensorData.source + " / " + sensorData.device + " / " + sensorData.type;
+        document.getElementById("sensorVisibility").value = sensorData.visibility || "zone_plant";
+        document.getElementById("sensorUnit").value = sensorData.unit;
+        document.getElementById("sensorZone").value = sensorData.zone_id;
+        editSensorModal.show();
+    }
+
+    // Save changes
+    sensorForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const payload = {
+            id: parseInt(document.getElementById("sensorId").value, 10),
+            name: document.getElementById("sensorName").value,
+            visibility: document.getElementById("sensorVisibility").value,
+            zone_id: parseInt(document.getElementById("sensorZone").value, 10),
+            unit: document.getElementById("sensorUnit").value,
+        };
+
+        fetch("/sensors/edit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        })
+            .then(response => {
+                if (!response.ok) throw new Error("{{ .lcl.failed_save_changes }}");
+                return response.json();
+            })
+            .then(data => {
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                uiMessages.showToast(uiMessages.t('failed_update_sensor') || '{{ .lcl.failed_update_sensor }}', 'danger');
+            });
+    });
+
+    // Delete sensor
+    deleteButton.addEventListener("click", () => {
+        uiMessages.showConfirm(uiMessages.t('confirm_delete_sensor') || '{{ .lcl.confirm_delete_sensor }}').then(confirmed => {
+            if (!confirmed) return;
+            const spinner = document.getElementById('deleteSpinner');
+            const saveBtn = sensorForm.querySelector('button[type="submit"]');
+            deleteButton.disabled = true;
+            if (saveBtn) saveBtn.disabled = true;
+            if (spinner) spinner.classList.remove('d-none');
+
+            fetch(`/sensors/delete/${currentSensor.id}`, { method: "DELETE" })
+                .then(response => {
+                    if (!response.ok) throw new Error("{{ .lcl.failed_delete_sensor }}");
+                    window.location.reload();
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    if (spinner) spinner.classList.add('d-none');
+                    deleteButton.disabled = false;
+                    if (saveBtn) saveBtn.disabled = false;
+                    uiMessages.showToast(uiMessages.t('failed_delete_sensor') || '{{ .lcl.failed_delete_sensor }}', 'danger');
+                });
+        });
+    });
+
+    // ----- Scan Modal Logic -----
+    let currentScanEndpoint = "";
+
+    document.getElementById("scanACI")?.addEventListener("click", () => {
+        currentScanEndpoint = "/sensors/scanACI";
+        showZoneModal();
+    });
+
+    document.getElementById("scanEC")?.addEventListener("click", () => {
+        currentScanEndpoint = "/sensors/scanEC";
+        showEcoWittZoneModal();
+    });
+
+    // ACI Modal: Handle Zone Dropdown Change
+    document.getElementById("zoneSelect")?.addEventListener("change", (e) => {
+        const newZoneInput = document.getElementById("newZoneInput");
+        if (e.target.value === "new") {
+            newZoneInput.classList.remove("d-none");
+        } else {
+            newZoneInput.classList.add("d-none");
+        }
+    });
+
+    // EcoWitt Modal: Handle Zone Dropdown Change
+    document.getElementById("ecZoneSelect")?.addEventListener("change", (e) => {
+        const ecNewZoneInput = document.getElementById("ecNewZoneInput");
+        if (e.target.value === "new") {
+            ecNewZoneInput.classList.remove("d-none");
+        } else {
+            ecNewZoneInput.classList.add("d-none");
+        }
+    });
+
+    const showZoneModal = () => {
+        const zoneSelect = document.getElementById("zoneSelect");
+        const newZoneInput = document.getElementById("newZoneInput");
+        const noZoneHelp = document.getElementById("noZoneHelp");
+        zoneSelect.value = "";
+        newZoneInput.classList.add("d-none");
+        noZoneHelp.style.display = "none";
+        if (zoneSelect.options.length <= 1) {
+            zoneSelect.value = "new";
+            newZoneInput.classList.remove("d-none");
+            noZoneHelp.style.display = "block";
+        }
+        const modal = new bootstrap.Modal(document.getElementById("zoneModal"));
+        modal.show();
+    };
+
+    const showEcoWittZoneModal = () => {
+        const ecZoneSelect = document.getElementById("ecZoneSelect");
+        const ecNewZoneInput = document.getElementById("ecNewZoneInput");
+        const ecNewZoneName = document.getElementById("ecNewZoneName");
+        ecZoneSelect.value = "";
+        ecNewZoneInput.classList.add("d-none");
+        ecNewZoneName.value = "";
+        if (ecZoneSelect.options.length <= 1) {
+            ecZoneSelect.value = "new";
+            ecNewZoneInput.classList.remove("d-none");
+        }
+        const modal = new bootstrap.Modal(document.getElementById("ecScanModal"));
+        modal.show();
+    };
+
+    // Handle Zone Form Submission
+    document.getElementById("zoneForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const zoneSelect = document.getElementById("zoneSelect");
+        const newZoneName = document.getElementById("newZoneName").value;
+        const payload = {
+            zone_id: zoneSelect.value === "new" ? null : parseInt(zoneSelect.value, 10),
+            new_zone: zoneSelect.value === "new" ? newZoneName : null,
+        };
+        if (!currentScanEndpoint) {
+            uiMessages.showToast('No scan endpoint defined.', 'warning');
+            return;
+        }
+        fetch(currentScanEndpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        })
+            .then((response) => {
+                if (!response.ok) throw new Error("{{ .lcl.failed_sensor_scan }}");
+                return response.json();
+            })
+            .then(() => { window.location.reload(); })
+            .catch((error) => {
+                console.error("Error:", error);
+                uiMessages.showToast(uiMessages.t('failed_sensor_scan') || '{{ .lcl.failed_sensor_scan }}', 'danger');
+            });
+    });
+
+    // Handle EcoWitt-specific Zone Form Submission
+    document.getElementById("ecScanForm")?.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const ecZoneSelect = document.getElementById("ecZoneSelect");
+        const ecNewZoneName = document.getElementById("ecNewZoneName").value;
+        const serverAddress = document.getElementById("serverAddress").value;
+        const payload = {
+            zone_id: ecZoneSelect.value === "new" ? null : parseInt(ecZoneSelect.value, 10),
+            new_zone: ecZoneSelect.value === "new" ? ecNewZoneName : null,
+            server_address: serverAddress,
+        };
+        if (!currentScanEndpoint) {
+            uiMessages.showToast(uiMessages.t('no_scan_endppoint') || '{{ .lcl.no_scan_endppoint }}', 'warning');
+            return;
+        }
+        fetch(currentScanEndpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        })
+            .then((response) => {
+                if (!response.ok) throw new Error("{{ .lcl.failed_sensor_scan }}");
+                return response.json();
+            })
+            .then(() => { window.location.reload(); })
+            .catch((error) => {
+                console.error("Error:", error);
+                uiMessages.showToast(uiMessages.t('failed_sensor_scan') || '{{ .lcl.failed_sensor_scan }}', 'danger');
+            });
+    });
+
+    // ----- ACI Dump Logic -----
+    const fetchDumpACI = async (showModal = false) => {
+        const statusEl = document.getElementById('dumpACIStatus');
+        const contentEl = document.getElementById('dumpACIContent');
+        const redactCheckbox = document.getElementById('dumpACIRedact');
+        const redact = redactCheckbox && redactCheckbox.checked ? 'true' : 'false';
+        statusEl.innerHTML = 'Fetching...';
+        contentEl.textContent = '';
+        try {
+            const resp = await fetch('/sensors/dumpACI?redact=' + redact, { method: 'GET' });
+            if (!resp.ok) throw new Error('Failed to fetch AC Infinity JSON');
+            const text = await resp.text();
+            contentEl.textContent = text;
+            statusEl.innerHTML = '';
+            if (showModal) {
+                const modal = new bootstrap.Modal(document.getElementById('dumpACIModal'));
+                modal.show();
+            }
+        } catch (err) {
+            statusEl.innerHTML = '<div class="text-danger">Error fetching AC Infinity JSON</div>';
+            console.error(err);
+        }
+    };
+
+    document.getElementById("dumpACI")?.addEventListener("click", async () => {
+        await fetchDumpACI(true);
+    });
+
+    document.getElementById("dumpACIRefresh")?.addEventListener("click", async () => {
+        await fetchDumpACI(false);
+    });
+
+    document.getElementById('dumpACIRedact')?.addEventListener('change', async (e) => {
+        const modalEl = document.getElementById('dumpACIModal');
+        if (modalEl.classList.contains('show')) {
+            await fetchDumpACI(false);
+        }
+    });
+
+    document.getElementById('dumpACICopy')?.addEventListener('click', async () => {
+        const contentEl = document.getElementById('dumpACIContent');
+        const statusEl = document.getElementById('dumpACIStatus');
+        const text = contentEl.textContent || '';
+        if (!text) {
+            statusEl.innerHTML = '<div class="text-muted">Nothing to copy</div>';
+            setTimeout(() => statusEl.innerHTML = '', 1500);
+            return;
+        }
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                textarea.remove();
+            }
+            statusEl.innerHTML = '<div class="text-success">Copied to clipboard</div>';
+            setTimeout(() => statusEl.innerHTML = '', 1500);
+        } catch (err) {
+            console.error('Copy failed', err);
+            statusEl.innerHTML = '<div class="text-danger">Failed to copy</div>';
+            setTimeout(() => statusEl.innerHTML = '', 2000);
+        }
+    });
+
+    // ----- Initial load -----
+    loadSensors();
+});
+</script>
+
+<!--Embed the footer.html template at this location-->
+{{ template "common/footer.html" .}}
+
+{{ end }}
