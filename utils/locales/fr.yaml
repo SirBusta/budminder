@@ -1003,3 +1003,5 @@ pp_untick_hint: "Noté pour {n} plantes. Décochez une plante pour ne le modifie
 pp_everything_in: "Tout dans {zone}"
 pp_logging_several: "Pour plusieurs plantes, c'est enregistré sur chacune ; ici, cela apparaît comme une seule entrée."
 pp_pick_plant: "Choisissez au moins une plante."
+upload_date_from_photo: "Date lue dans la photo"
+upload_no_date_in_photo: "Pas de date dans cette photo — vérifiez-la"

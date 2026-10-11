@@ -71,17 +71,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 // Read EXIF metadata
                 EXIF.getData(file, function () {
+                    // No date stored in the photo: use the day selected on the
+                    // page (Plant page), else today, and flag it for checking.
+                    // The file's last-modified date is often just the copy date.
                     const _now = new Date();
-                    let imageDate = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`; // Default to current local date
+                    const today = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
+                    let imageDate = (typeof window.isleyUploadDefaultDate === "function" && window.isleyUploadDefaultDate()) || today;
+                    let fromPhoto = false;
 
-                    // Try to get the DateTimeOriginal tag from EXIF
-                    const exifDate = EXIF.getTag(this, "DateTimeOriginal");
+                    const exifDate = EXIF.getTag(this, "DateTimeOriginal") || EXIF.getTag(this, "DateTime");
                     if (exifDate) {
                         const parsedDate = parseExifDate(exifDate);
-                        if (parsedDate) imageDate = parsedDate;
+                        if (parsedDate) { imageDate = parsedDate; fromPhoto = true; }
                     }
 
-                    addImagePreview(file, fileData, imageDate);
+                    addImagePreview(file, fileData, imageDate, fromPhoto);
                 });
             };
 
@@ -103,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 // Add image preview with default or EXIF date
-    function addImagePreview(file, src, imageDate) {
+    function addImagePreview(file, src, imageDate, fromPhoto) {
         const col = document.createElement("div");
         col.className = "col-12 col-md-6 col-lg-4";
 
@@ -117,7 +121,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
                 <div class="mb-3">
                     <label class="form-label">${uiMessages.t('title_date') || 'Date'}</label>
-                    <input type="date" class="form-control image-date" value="${imageDate}">
+                    <input type="date" class="form-control image-date${fromPhoto ? "" : " border-warning"}" value="${imageDate}">
+                    ${fromPhoto
+                        ? `<small class="text-muted"><i class="fa-solid fa-camera me-1"></i>${uiMessages.t('upload_date_from_photo') || 'Date taken from the photo'}</small>`
+                        : `<small class="text-warning-emphasis"><i class="fa-solid fa-triangle-exclamation me-1"></i>${uiMessages.t('upload_no_date_in_photo') || 'No date in this photo — please check'}</small>`}
                 </div>
             </div>
         </div>

@@ -3363,6 +3363,7 @@ header .nav-link.active::after {
     .pp-row.all .ics { grid-column: 3; grid-row: 1; justify-content: flex-end; max-width: none; }
     .pp-row.all .tx { grid-column: 1 / -1; grid-row: 2; }
     .pp-row.all .edit { grid-column: 3; grid-row: 3; justify-self: end; }
+    .pp-row.all:not(.is-selected) .edit { display: none; }
 }
 @media (max-width: 575px) {
     .pp-hero { grid-template-columns: 1fr; height: auto; }

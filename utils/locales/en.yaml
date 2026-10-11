@@ -959,3 +959,5 @@ pp_untick_hint: "Logged for {n} plants. Untick a plant to change it for the othe
 pp_everything_in: "Everything in the {zone}"
 pp_logging_several: "Logging for several plants saves it on each plant; here it shows as one entry."
 pp_pick_plant: "Pick at least one plant."
+upload_date_from_photo: "Date taken from the photo"
+upload_no_date_in_photo: "No date in this photo — please check"
