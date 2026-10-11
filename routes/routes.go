@@ -2,6 +2,7 @@ package routes
 
 import (
 	"isley/handlers"
+	"isley/logger"
 	"isley/model"
 	"isley/utils"
 	"net/http"
@@ -195,8 +196,19 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 		db := handlers.DBFromContext(c)
 		idStr := c.Param("id")
 		plant := handlers.GetPlant(db, idStr)
+		if plant.ID == 0 {
+			c.Redirect(http.StatusFound, "/plants")
+			return
+		}
 		prevPlantID, nextPlantID := handlers.GetAdjacentPlantIDs(db, int(plant.ID))
+		loggedIn := sessions.Default(c).Get("logged_in") != nil
+		pageData, err := handlers.BuildPlantPageData(db, plant, loggedIn, lang, translations)
+		if err != nil {
+			logger.Log.WithError(err).WithField("plant_id", plant.ID).Error("Failed to build plant page data")
+		}
+		pageData.Prev, pageData.Next = prevPlantID, nextPlantID
 		c.HTML(http.StatusOK, "views/plant.html", gin.H{
+			"pageData":        pageData,
 			"title":           "Plant Details",
 			"currentPath":     currentPath,
 			"version":         version,

@@ -182,6 +182,24 @@ func TestGetPlant_EstimatedHarvestRange(t *testing.T) {
 	assert.True(t, got.EstHarvestMin.IsZero())
 }
 
+// start_dt is stored as naive local time; GetPlant must keep its calendar
+// day (it used to call .Local(), which showed the previous day west of UTC
+// and let the Edit plant form save that earlier date back).
+func TestGetPlant_StartDateKeepsItsDay(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	plantID := seedPlantTree(t, db)
+	_, err := db.Exec(`UPDATE plant SET start_dt = '2026-10-01' WHERE id = $1`, plantID)
+	require.NoError(t, err)
+	_, err = db.Exec(`INSERT INTO plant_status_log (plant_id, status_id, date) VALUES ($1, $2, '2026-10-02')`, plantID, statusIDByName(t, db, "Veg"))
+	require.NoError(t, err)
+
+	got := handlers.GetPlant(db, idStr(plantID))
+	assert.Equal(t, "2026-10-01", got.StartDT.Format("2006-01-02"))
+	assert.Equal(t, 0, got.StartDT.Hour())
+}
+
 func TestGetPlant_UnknownIDReturnsZeroValue(t *testing.T) {
 	t.Parallel()
 

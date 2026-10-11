@@ -444,7 +444,9 @@ func GetPlant(db *sql.DB, id string) types.Plant {
 		fieldLogger.WithError(err).Error("Failed to query plant")
 		return plant
 	}
-	startDT = startDT.Local()
+	// Stored as naive local time: keep the wall-clock date (.Local() would
+	// treat it as UTC and show the previous day west of UTC).
+	startDT = utils.AsLocal(startDT)
 
 	// Calculate current day and week
 	diff := time.Now().Sub(startDT)
