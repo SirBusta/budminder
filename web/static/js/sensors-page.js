@@ -98,6 +98,7 @@
         const all = [...env, ...devices];
         if (!all.length) return;
         const my = ++reqNo;
+        if (markX != null && (markX < r.from || markX > r.to)) markX = null;
         loading = true; failed = false; render();
         try {
             const series = await fetchSeries(all.map(s => s.id), r.from, r.to);
@@ -139,16 +140,50 @@
     }
 
     // ---------- Drawing ----------
-    let charts = [], lane = null, hoverX = null;
-    const crosshair = {
-        id: "sxCrosshair",
+    let charts = [], lane = null;
+    // The marked moment (click a chart; drag the line to move it). Mouse
+    // movement alone never moves it, like the AC Infinity app.
+    let markX = null;
+    function tag(ctx, text, x, y, color, area) {
+        ctx.font = "600 11px system-ui, -apple-system, Segoe UI, sans-serif";
+        const w = ctx.measureText(text).width + 12, h = 18;
+        let left = x + 7;
+        if (left + w > area.right) left = x - 7 - w;
+        const top = Math.max(area.top, Math.min(area.bottom - h, y - h / 2));
+        ctx.fillStyle = cssVar("--sx-card", "#fff");
+        ctx.strokeStyle = color; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(left, top, w, h, 4) : ctx.rect(left, top, w, h); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = cssVar("--sx-ink", "#172322"); ctx.textBaseline = "middle";
+        ctx.fillText(text, left + 6, top + h / 2 + 0.5);
+    }
+    const marker = {
+        id: "sxMarker",
         afterDraw(chart) {
-            if (hoverX == null) return;
-            const x = chart.scales.x.getPixelForValue(hoverX);
-            if (x < chart.chartArea.left || x > chart.chartArea.right) return;
+            const o = chart.$sx;
+            if (markX == null) return;
+            const area = chart.chartArea, x = chart.scales.x.getPixelForValue(markX);
+            if (x < area.left || x > area.right) return;
             const ctx = chart.ctx;
-            ctx.save(); ctx.strokeStyle = "rgba(22,163,74,.75)"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
-            ctx.beginPath(); ctx.moveTo(x, chart.chartArea.top); ctx.lineTo(x, chart.chartArea.bottom); ctx.stroke(); ctx.restore();
+            ctx.save();
+            ctx.strokeStyle = "#16a34a"; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(x, area.top); ctx.lineTo(x, area.bottom); ctx.stroke();
+            if (o && o.series) {
+                const s = o.series, v = valueAt(data[s.id], markX);
+                if (v != null) {
+                    const y = chart.scales.y.getPixelForValue(v);
+                    ctx.fillStyle = s.color; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
+                    tag(ctx, `${fmt(v, s.dp)} ${s.unit}`, x, y, s.color, area);
+                }
+            }
+            if (o && o.devices) {
+                o.devices.forEach((d, i) => {
+                    const v = valueAt(data[d.id], markX);
+                    if (v == null) return;
+                    const y = chart.scales.y.getPixelForValue(o.devices.length - 1 - i + 0.4);
+                    tag(ctx, v > 0 ? Math.round(v) + "%" : t("en_off"), x, y, d.color, area);
+                });
+            }
+            ctx.restore();
         },
     };
     // Tick spacing by range length, so the grid stays readable (charts
@@ -171,7 +206,7 @@
     });
     const zoomOpts = {
         zoom: {
-            drag: { enabled: true, backgroundColor: "rgba(22,163,74,.12)", borderColor: "#16a34a", borderWidth: 1 }, mode: "x",
+            drag: { enabled: true, threshold: 6, backgroundColor: "rgba(22,163,74,.12)", borderColor: "#16a34a", borderWidth: 1 }, mode: "x",
             onZoomComplete: ({ chart }) => {
                 const from = chart.scales.x.min, to = chart.scales.x.max;
                 if (to - from < MIN) return;
@@ -181,17 +216,21 @@
         },
     };
 
-    function setHover(x) {
-        hoverX = x;
+    function showMarker() {
         charts.forEach(c => c.draw());
         if (lane) lane.draw();
         zoneSensors(zoneId).env.filter(s => !hidden.has(s.id)).forEach(s => {
             const el = root.querySelector(`[data-v="${s.id}"]`), w = root.querySelector(`[data-w="${s.id}"]`);
             if (!el) return;
-            const v = x == null ? nowValue(s) : valueAt(data[s.id], x);
+            const v = markX == null ? nowValue(s) : valueAt(data[s.id], markX);
             el.innerHTML = `${fmt(v, s.dp)}<small>${esc(s.unit)}</small>`;
-            w.textContent = x == null ? t("en_now") : fmtHover(x);
+            w.textContent = markX == null ? t("en_now") : fmtHover(markX);
         });
+        const chip = document.getElementById("sxMark");
+        if (chip) {
+            chip.hidden = markX == null;
+            if (markX != null) document.getElementById("sxMarkTime").textContent = fmtHover(markX);
+        }
     }
 
     function renderZones() {
@@ -217,6 +256,7 @@
             <button type="button" class="sx-step" data-step="1" ${r.to >= now - MIN ? "disabled" : ""} aria-label="${esc(t("en_later"))}" title="${esc(t("en_later"))}"><i class="fa-solid fa-chevron-right"></i></button>
             <div class="sx-seg">${SPANS.map(([k, m]) => `<button type="button" data-span="${m}" class="${r.span === m && !r.custom && !r.zoomed ? "on" : ""}">${esc(t(k))}</button>`).join("")}<button type="button" data-custom class="${r.custom ? "on" : ""}">${esc(t("en_custom"))}</button></div>
             ${r.zoomed ? `<button type="button" class="sx-link" data-resetzoom><i class="fa-solid fa-magnifying-glass-minus me-1"></i>${esc(t("en_reset_zoom"))}</button>` : ""}
+            <span class="sx-mark" id="sxMark" ${markX == null ? "hidden" : ""}><i class="fa-solid fa-location-crosshairs"></i><span id="sxMarkTime" title="${esc(t("en_marker"))}"></span><button type="button" data-clearmark aria-label="${esc(t("en_marker_clear"))}" title="${esc(t("en_marker_clear"))}"><i class="fa-solid fa-xmark"></i></button></span>
         </div>
         <div class="sx-custom ${r.custom ? "" : "d-none"}">
             <label>${esc(t("en_from"))} <input type="datetime-local" id="sxFrom" value="${toLocalInput(r.from)}"></label>
@@ -268,17 +308,15 @@
                 const c = new Chart(document.getElementById("sxc_" + s.id), {
                     type: "line",
                     data: { datasets: [{ data: pts, borderColor: s.color, backgroundColor: s.color + "22", fill: true, borderWidth: 1.8, pointRadius: 0, tension: .3 }] },
-                    plugins: [crosshair],
+                    plugins: [marker],
                     options: {
                         animation: false, maintainAspectRatio: false, parsing: false, normalized: true,
-                        events: ["mousemove", "mouseout", "mousedown", "mouseup", "touchstart", "touchmove"],
                         plugins: { legend: { display: false }, tooltip: { enabled: false }, zoom: zoomOpts },
                         // No y numbers: keeps every chart and the device lane lined up; min/max/avg are in the label column.
                         scales: { x: timeScale(r.from, r.to, i === vis.length - 1), y: { min: mid - half, max: mid + half, display: false } },
-                        onHover: (e, els, chart) => setHover(chart.scales.x.getValueForPixel(e.x)),
                     },
                 });
-                c.canvas.addEventListener("mouseleave", () => setHover(null));
+                c.$sx = { series: s };
                 charts.push(c);
             });
         }
@@ -295,6 +333,7 @@
             document.getElementById("sxLaneBox").style.height = (devices.length * 28 + 8) + "px";
             const n = devices.length;
             const colors = ["#eab308", "#0ea5e9", "#6366f1", "#f97316", "#14b8a6", "#64748b", "#ec4899", "#94a3b8"];
+            devices.forEach((d, i) => { d.color = colors[i % colors.length]; });
             lane = new Chart(document.getElementById("sxLaneCanvas"), {
                 type: "line",
                 data: { datasets: devices.map((d, i) => {
@@ -303,20 +342,18 @@
                         borderWidth: 1.5, pointRadius: 0,
                         data: (data[d.id] || []).map(p => ({ x: p.x, y: base + Math.max(0, Math.min(100, p.y)) / 100 * 0.78, raw: p.y })) };
                 }) },
-                plugins: [crosshair],
+                plugins: [marker],
                 options: {
                     animation: false, maintainAspectRatio: false, parsing: false,
-                    interaction: { mode: "index", intersect: false },
-                    plugins: { legend: { display: false }, zoom: zoomOpts,
-                        tooltip: { callbacks: { title: items => items.length ? fmtHover(items[0].parsed.x) : "", label: c => ` ${c.dataset.label}: ${Math.round(c.raw.raw)}%` } } },
+                    plugins: { legend: { display: false }, zoom: zoomOpts, tooltip: { enabled: false } },
                     scales: { x: { ...timeScale(r.from, r.to, false), grid: { color: "rgba(100,116,139,.08)" } }, y: { min: 0, max: n, display: false } },
                     layout: { padding: { top: 2, bottom: 2 } },
-                    onHover: (e, els, chart) => setHover(chart.scales.x.getValueForPixel(e.x)),
                 },
             });
-            lane.canvas.addEventListener("mouseleave", () => setHover(null));
+            lane.$sx = { devices };
             root.querySelectorAll(".sx-dev").forEach((el, i) => el.style.setProperty("--c", colors[i % colors.length]));
         }
+        if (markX != null) showMarker();
     }
 
     // ---------- Events ----------
@@ -334,6 +371,7 @@
         if (z) { if (+z.dataset.zone !== zoneId) selectZone(+z.dataset.zone); return; }
         const tg = e.target.closest("[data-toggle]");
         if (tg) { const id = +tg.dataset.toggle; hidden.has(id) ? hidden.delete(id) : hidden.add(id); saveHidden(); render(); return; }
+        if (e.target.closest("[data-clearmark]")) { markX = null; showMarker(); return; }
         const b = e.target.closest("[data-span],[data-step],[data-custom],[data-applycustom],[data-resetzoom]");
         if (!b) return;
         if (b.dataset.span) { r = newRange(+b.dataset.span); store.set("isley.env.span", b.dataset.span); load(); }
@@ -348,6 +386,62 @@
             load();
         }
     });
+    // Click (or tap) a chart to mark that moment; grab the line to drag it.
+    // Dragging anywhere else is left to the zoom plugin (drag to zoom).
+    const card = document.getElementById("sxCard");
+    const GRAB = 8;   // px either side of the line that count as grabbing it
+    const chartAt = target => {
+        const canvas = target && target.closest && target.closest(".sx-m-chart canvas, .sx-lane-chart canvas");
+        return canvas ? Chart.getChart(canvas) : null;
+    };
+    const pxIn = (chart, clientX) => clientX - chart.canvas.getBoundingClientRect().left;
+    const nearLine = (chart, clientX) => markX != null && Math.abs(pxIn(chart, clientX) - chart.scales.x.getPixelForValue(markX)) <= GRAB;
+    function moveMarkTo(chart, clientX) {
+        const area = chart.chartArea, px = Math.max(area.left, Math.min(area.right, pxIn(chart, clientX)));
+        markX = chart.scales.x.getValueForPixel(px);
+        showMarker();
+    }
+    let dragging = null, down = null;
+    card.addEventListener("mousedown", e => {
+        const chart = chartAt(e.target);
+        if (!chart || e.button !== 0) return;
+        if (nearLine(chart, e.clientX)) {
+            dragging = chart;
+            e.stopPropagation(); e.preventDefault();   // keeps the zoom plugin from starting a zoom
+        } else down = { chart, x: e.clientX, y: e.clientY };
+    }, true);
+    document.addEventListener("mousemove", e => {
+        if (dragging) { moveMarkTo(dragging, e.clientX); return; }
+        const chart = chartAt(e.target);
+        if (chart) chart.canvas.style.cursor = nearLine(chart, e.clientX) ? "ew-resize" : "crosshair";
+    });
+    document.addEventListener("mouseup", e => {
+        if (dragging) { dragging = null; return; }
+        if (down && Math.abs(e.clientX - down.x) < 5 && Math.abs(e.clientY - down.y) < 5) {
+            const area = down.chart.chartArea, px = pxIn(down.chart, e.clientX);
+            if (px >= area.left && px <= area.right) moveMarkTo(down.chart, e.clientX);
+        }
+        down = null;
+    });
+    // Touch: tap to mark, drag the line with a finger.
+    let touch = null;
+    card.addEventListener("touchstart", e => {
+        const chart = chartAt(e.target), p = e.touches[0];
+        if (!chart || e.touches.length !== 1) return;
+        touch = { chart, x: p.clientX, y: p.clientY, drag: nearLine(chart, p.clientX), moved: false };
+    }, { passive: true });
+    card.addEventListener("touchmove", e => {
+        if (!touch) return;
+        const p = e.touches[0];
+        if (Math.abs(p.clientX - touch.x) > 5 || Math.abs(p.clientY - touch.y) > 5) touch.moved = true;
+        if (touch.drag) { e.preventDefault(); moveMarkTo(touch.chart, p.clientX); }
+    }, { passive: false });
+    card.addEventListener("touchend", () => {
+        if (touch && !touch.drag && !touch.moved) moveMarkTo(touch.chart, touch.x);
+        touch = null;
+    });
+    document.addEventListener("keydown", e => { if (e.key === "Escape" && markX != null) { markX = null; showMarker(); } });
+
     window.addEventListener("hashchange", () => { const h = hashZone(); if (h && h !== zoneId && zones.some(z => z.id === h)) selectZone(h); });
 
     // Live: while the range ends now, follow new readings.

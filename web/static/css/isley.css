@@ -3668,6 +3668,12 @@ header .nav-link.active::after {
 .sx-when { display: flex; gap: .5rem; align-items: center; font-size: .85rem; flex: 1; min-width: 0; flex-wrap: wrap; color: var(--sx-ink); }
 .sx-when span { color: var(--sx-faint); }
 .sx-zoomed { font-size: .68rem; font-weight: 700; color: #166534 !important; background: #dcfce7; padding: .05rem .45rem; border-radius: 99px; }
+.sx-mark { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; font-weight: 700; color: #166534; background: #dcfce7; border-radius: 99px; padding: .15rem .25rem .15rem .6rem; white-space: nowrap; }
+.sx-mark[hidden] { display: none; }
+.sx-mark button { border: 0; background: transparent; color: inherit; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: .72rem; padding: 0; }
+.sx-mark button:hover { background: rgba(22, 101, 52, .15); }
+[data-bs-theme="dark"] .sx-mark { background: rgba(22, 163, 74, .2); color: #86efac; }
+.sx-m-chart canvas, .sx-lane-chart canvas { cursor: crosshair; }
 .sx-step { border: 0; width: 30px; height: 30px; border-radius: 8px; background: var(--sx-seg); color: var(--sx-ink); flex: none; }
 .sx-step:disabled { opacity: .35; }
 .sx-custom { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; padding: .5rem .7rem; border-bottom: 1px solid var(--sx-line); font-size: .82rem; background: var(--sx-soft); color: var(--sx-ink); }
