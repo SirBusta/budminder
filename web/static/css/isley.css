@@ -2834,6 +2834,11 @@ th, td {
 .sp-b { display: inline-flex; align-items: center; gap: .3rem; font-size: .72rem; font-weight: 600; padding: .14rem .5rem; border-radius: 99px; white-space: nowrap; }
 .sp-b i { font-size: .68rem; }
 .sp-b.seeds { background: #dcfce7; color: #166534; }
+.sp-step { display: inline-flex; align-items: center; gap: .2rem; }
+.sp-step button { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--sp-line); background: var(--sp-card); color: var(--sp-muted); font-size: .85rem; line-height: 1; padding: 0; display: inline-grid; place-items: center; }
+.sp-step button:hover:not(:disabled) { border-color: #16a34a; color: #16a34a; }
+.sp-step button:disabled { opacity: .5; }
+.sp-step .sp-step-n { min-width: 1.4em; text-align: center; }
 .sp-b.wanted { background: #fef3c7; color: #92400e; }
 .sp-b.none { background: var(--sp-seg); color: var(--sp-faint); }
 .sp-b.muted { background: var(--sp-seg); color: var(--sp-muted); }

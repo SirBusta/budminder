@@ -73,12 +73,18 @@
     function stock(s) {
         if (inVault(s)) {
             const old = isOld(s);
-            return `<span class="sp-b seeds"><i class="fa-solid fa-seedling"></i>${esc(tr(s.seed_count === 1 ? "sp_one_seed" : "sp_n_seeds", { n: s.seed_count }))}</span>` +
+            const badge = `<span class="sp-b seeds"><i class="fa-solid fa-seedling"></i>${esc(tr(s.seed_count === 1 ? "sp_one_seed" : "sp_n_seeds", { n: s.seed_count }))}</span>`;
+            return seedStepper(s, badge) +
                 (s.seed_type && SEEDTYPE[s.seed_type] ? `<span class="sp-b muted">${esc(SEEDTYPE[s.seed_type])}</span>` : "") +
                 (s.seeds_added_on ? `<span class="sp-b ${old ? "old" : "muted"}" title="${esc(tr("sp_seeds_added", { date: fmtDate(s.seeds_added_on) }))}"><i class="fa-${old ? "solid fa-hourglass-half" : "regular fa-calendar"}"></i>${esc(ageText(s.seeds_added_on))}</span>` : "");
         }
         if (isWanted(s)) return `<span class="sp-b wanted"><i class="fa-solid fa-star"></i>${esc(tr("sp_wanted"))}</span>`;
         return `<span class="sp-b none">${esc(tr("sp_no_seeds"))}</span>${s.seed_type === "clone" ? `<span class="sp-b muted">${esc(SEEDTYPE.clone)}</span>` : ""}`;
+    }
+    // − / + one seed around the count (Seed Vault cards and list), logged in only.
+    function seedStepper(s, inner) {
+        if (!LOGGED_IN) return inner;
+        return `<span class="sp-step"><button type="button" data-seedstep="-1" data-id="${s.id}" title="${esc(tr("sp_one_fewer"))}" aria-label="${esc(tr("sp_one_fewer"))}">−</button>${inner}<button type="button" data-seedstep="1" data-id="${s.id}" title="${esc(tr("sp_one_more"))}" aria-label="${esc(tr("sp_one_more"))}">+</button></span>`;
     }
     const grows = s => (s.growing_count ? `<span class="sp-b grow"><i class="fa-solid fa-cannabis"></i>${esc(tr("sp_growing_now", { n: s.growing_count }))}</span>` : "") +
         (s.grown_count ? `<span class="sp-b muted"><i class="fa-solid fa-clock-rotate-left"></i>${esc(tr("sp_grown_n", { n: s.grown_count }))}</span>` : "");
@@ -174,7 +180,7 @@
                 <td class="sp-lin-c" title="${esc(s.lineage)}">${esc(s.lineage) || "—"}</td>
                 <td>${typeBadge(s)}</td>
                 <td class="text-nowrap">${esc(floweringText(s)) || "—"}</td>
-                <td class="text-nowrap">${inVault(s) ? `<b>${s.seed_count}</b> <span class="text-muted small">${esc(SEEDTYPE[s.seed_type] || "")}</span>`
+                <td class="text-nowrap">${inVault(s) ? `${seedStepper(s, `<b class="sp-step-n">${s.seed_count}</b>`)} <span class="text-muted small">${esc(SEEDTYPE[s.seed_type] || "")}</span>`
                     : isWanted(s) ? `<span class="sp-b wanted"><i class="fa-solid fa-star"></i>${esc(tr("sp_wanted"))}</span>` : `<span class="text-muted">0</span>`}</td>
                 <td class="text-nowrap">${inVault(s) && s.seeds_added_on ? `${esc(fmtMonth(s.seeds_added_on))}<div class="small ${isOld(s) ? "sp-age-o" : "text-muted"}">${esc(ageText(s.seeds_added_on))}</div>` : "—"}</td>
                 <td>${grows(s) || `<span class="text-muted">—</span>`}</td>
@@ -428,6 +434,24 @@
         } catch (e) { toast(e.message, "danger"); }
     }
 
+    async function stepSeeds(btn) {
+        const s = STRAINS.find(x => x.id === +btn.dataset.id);
+        if (!s || btn.disabled) return;
+        const up = btn.dataset.seedstep === "1";
+        btn.closest(".sp-step").querySelectorAll("button").forEach(b => { b.disabled = true; });
+        try {
+            const res = await api("POST", `/strains/${s.id}/seeds${up ? "" : "/use"}`, { count: 1 });
+            s.seed_count = res.seed_count;
+            s.seeds_added_on = res.seeds_added_on || "";
+            s.wanted = !!res.wanted;
+            if (!s.seed_count) toast(tr("sp_last_seed_used", { name: s.name }), "info");
+            render();
+        } catch (e) {
+            toast(e.message, "danger");
+            render();
+        }
+    }
+
     // ---------- Events ----------
     document.addEventListener("click", e => {
         const t = e.target;
@@ -439,6 +463,8 @@
         if (th) { const k = th.dataset.sort; filter.sort = PAIR[k] && filter.sort === k ? PAIR[k] : k; renderFilters(); renderList(); return; }
         const ly = t.closest("[data-layout]");
         if (ly) { layout = ly.dataset.layout; store.set("sp-layout", layout); renderList(); return; }
+        const ss = t.closest("[data-seedstep]");
+        if (ss) { stepSeeds(ss); return; }
         const sd = t.closest("[data-seeds]");
         if (sd) {
             e.preventDefault();
