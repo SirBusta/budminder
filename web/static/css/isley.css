@@ -3026,7 +3026,6 @@ th, td {
 .sx-range { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; padding: .55rem .7rem; border-bottom: 1px solid var(--sx-line); }
 .sx-when { display: flex; gap: .5rem; align-items: center; font-size: .85rem; flex: 1; min-width: 0; flex-wrap: wrap; color: var(--sx-ink); }
 .sx-when span { color: var(--sx-faint); }
-.sx-zoomed { font-size: .68rem; font-weight: 700; color: #166534 !important; background: #dcfce7; padding: .05rem .45rem; border-radius: 99px; }
 .sx-mark { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; font-weight: 700; color: #166534; background: #dcfce7; border-radius: 99px; padding: .15rem .25rem .15rem .6rem; white-space: nowrap; }
 .sx-mark[hidden] { display: none; }
 .sx-mark button { border: 0; background: transparent; color: inherit; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: .72rem; padding: 0; }
@@ -3575,7 +3574,6 @@ th, td {
 [data-bs-theme="dark"] .sp-b.grow { background: rgba(192, 132, 252, .15); color: #d8b4fe; }
 [data-bs-theme="dark"] .sp-b.photo { background: rgba(56, 189, 248, .14); color: #7dd3fc; }
 [data-bs-theme="dark"] .sp-btn.on { background: rgba(251, 191, 36, .14); border-color: rgba(251, 191, 36, .35); color: #fcd34d; }
-[data-bs-theme="dark"] .sx-zoomed { background: rgba(22, 163, 74, .2); color: #86efac !important; }
 [data-bs-theme="dark"] .sm-ic .logo.aci { background: rgba(56, 189, 248, .14); color: #7dd3fc; }
 [data-bs-theme="dark"] .sm-ic .logo.eco { background: rgba(251, 191, 36, .14); color: #fcd34d; }
 [data-bs-theme="dark"] .sm-chip.env { background: rgba(74, 222, 128, .14); color: #86efac; }

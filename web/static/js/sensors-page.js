@@ -1,6 +1,6 @@
 // Environment page (views/sensors.html), from mockup E4: one tent at a time,
 // a readings strip (click to show/hide a chart), stacked charts that share
-// a hover line and drag-to-zoom, and the AC Infinity device lane. Data:
+// one marker line (click or drag on any chart), and the AC Infinity device lane. Data:
 // the JSON in #envPage[data-page] plus GET /sensors/series.
 (function () {
     "use strict";
@@ -76,13 +76,13 @@
 
     // ---------- Time range ----------
     const SPANS = [["en_span_1h", 60], ["en_span_6h", 360], ["en_span_24h", 1440], ["en_span_7d", 10080]];
-    const newRange = span => { const to = Date.now(); return { span, from: to - span * MIN, to, live: true, custom: false, zoomed: false }; };
+    const newRange = span => { const to = Date.now(); return { span, from: to - span * MIN, to, live: true, custom: false }; };
     let r = newRange(+(store.get("isley.env.span") || 1440));
     function stepRange(dir) {
         const w = r.to - r.from, now = Date.now();
         let from = r.from + dir * w, to = r.to + dir * w, live = false;
         if (to >= now) { to = now; from = to - w; live = true; }
-        r = { ...r, from, to, live, zoomed: false, baseFrom: undefined, baseTo: undefined };
+        r = { ...r, from, to, live };
     }
 
     // ---------- Data ----------
@@ -204,18 +204,6 @@
         ticks: { stepSize: tickUnit(to - from).stepSize, display: showTicks, maxRotation: 0, autoSkipPadding: 18, align: "inner", color: cssVar("--sx-muted", "#64748b"), font: { size: 11 } },
         grid: { color: "rgba(100,116,139,.13)" },
     });
-    const zoomOpts = {
-        zoom: {
-            drag: { enabled: true, threshold: 6, backgroundColor: "rgba(22,163,74,.12)", borderColor: "#16a34a", borderWidth: 1 }, mode: "x",
-            onZoomComplete: ({ chart }) => {
-                const from = chart.scales.x.min, to = chart.scales.x.max;
-                if (to - from < MIN) return;
-                r = { ...r, baseFrom: r.baseFrom ?? r.from, baseTo: r.baseTo ?? r.to, from, to, zoomed: true, live: false };
-                load();
-            },
-        },
-    };
-
     function showMarker() {
         charts.forEach(c => c.draw());
         if (lane) lane.draw();
@@ -252,10 +240,9 @@
         const now = Date.now();
         document.getElementById("sxRange").innerHTML = `<div class="sx-range">
             <button type="button" class="sx-step" data-step="-1" aria-label="${esc(t("en_earlier"))}" title="${esc(t("en_earlier"))}"><i class="fa-solid fa-chevron-left"></i></button>
-            <div class="sx-when"><b>${fmtTime(r.from)}</b><span>–</span><b>${r.live ? esc(t("en_now")) : fmtTime(r.to)}</b>${r.zoomed ? `<span class="sx-zoomed">${esc(t("en_zoomed"))}</span>` : ""}${loading ? `<span class="spinner-border spinner-border-sm text-success ms-1" role="status" aria-label="${esc(t("en_loading"))}"></span>` : ""}</div>
+            <div class="sx-when"><b>${fmtTime(r.from)}</b><span>–</span><b>${r.live ? esc(t("en_now")) : fmtTime(r.to)}</b>${loading ? `<span class="spinner-border spinner-border-sm text-success ms-1" role="status" aria-label="${esc(t("en_loading"))}"></span>` : ""}</div>
             <button type="button" class="sx-step" data-step="1" ${r.to >= now - MIN ? "disabled" : ""} aria-label="${esc(t("en_later"))}" title="${esc(t("en_later"))}"><i class="fa-solid fa-chevron-right"></i></button>
-            <div class="sx-seg">${SPANS.map(([k, m]) => `<button type="button" data-span="${m}" class="${r.span === m && !r.custom && !r.zoomed ? "on" : ""}">${esc(t(k))}</button>`).join("")}<button type="button" data-custom class="${r.custom ? "on" : ""}">${esc(t("en_custom"))}</button></div>
-            ${r.zoomed ? `<button type="button" class="sx-link" data-resetzoom><i class="fa-solid fa-magnifying-glass-minus me-1"></i>${esc(t("en_reset_zoom"))}</button>` : ""}
+            <div class="sx-seg">${SPANS.map(([k, m]) => `<button type="button" data-span="${m}" class="${r.span === m && !r.custom ? "on" : ""}">${esc(t(k))}</button>`).join("")}<button type="button" data-custom class="${r.custom ? "on" : ""}">${esc(t("en_custom"))}</button></div>
             <span class="sx-mark" id="sxMark" ${markX == null ? "hidden" : ""}><i class="fa-solid fa-location-crosshairs"></i><span id="sxMarkTime" title="${esc(t("en_marker"))}"></span><button type="button" data-clearmark aria-label="${esc(t("en_marker_clear"))}" title="${esc(t("en_marker_clear"))}"><i class="fa-solid fa-xmark"></i></button></span>
         </div>
         <div class="sx-custom ${r.custom ? "" : "d-none"}">
@@ -311,7 +298,7 @@
                     plugins: [marker],
                     options: {
                         animation: false, maintainAspectRatio: false, parsing: false, normalized: true,
-                        plugins: { legend: { display: false }, tooltip: { enabled: false }, zoom: zoomOpts },
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } },
                         // No y numbers: keeps every chart and the device lane lined up; min/max/avg are in the label column.
                         scales: { x: timeScale(r.from, r.to, i === vis.length - 1), y: { min: mid - half, max: mid + half, display: false } },
                     },
@@ -345,7 +332,7 @@
                 plugins: [marker],
                 options: {
                     animation: false, maintainAspectRatio: false, parsing: false,
-                    plugins: { legend: { display: false }, zoom: zoomOpts, tooltip: { enabled: false } },
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
                     scales: { x: { ...timeScale(r.from, r.to, false), grid: { color: "rgba(100,116,139,.08)" } }, y: { min: 0, max: n, display: false } },
                     layout: { padding: { top: 2, bottom: 2 } },
                 },
@@ -363,7 +350,7 @@
         history.replaceState(null, "", "#zone=" + id);
         loadHidden();
         data = {};
-        r = r.live || r.zoomed ? newRange(r.span) : r;
+        r = r.live ? newRange(r.span) : r;
         load();
     }
     root.addEventListener("click", e => {
@@ -372,72 +359,56 @@
         const tg = e.target.closest("[data-toggle]");
         if (tg) { const id = +tg.dataset.toggle; hidden.has(id) ? hidden.delete(id) : hidden.add(id); saveHidden(); render(); return; }
         if (e.target.closest("[data-clearmark]")) { markX = null; showMarker(); return; }
-        const b = e.target.closest("[data-span],[data-step],[data-custom],[data-applycustom],[data-resetzoom]");
+        const b = e.target.closest("[data-span],[data-step],[data-custom],[data-applycustom]");
         if (!b) return;
         if (b.dataset.span) { r = newRange(+b.dataset.span); store.set("isley.env.span", b.dataset.span); load(); }
         else if (b.dataset.step) { stepRange(+b.dataset.step); load(); }
         else if (b.hasAttribute("data-custom")) { r = { ...r, custom: !r.custom }; render(); }
         else if (b.hasAttribute("data-applycustom")) {
             const f = new Date(document.getElementById("sxFrom").value).getTime(), to = new Date(document.getElementById("sxTo").value).getTime();
-            if (f < to) { const now = Date.now(); r = { ...r, from: f, to: Math.min(to, now), live: to >= now, custom: true, zoomed: false }; load(); }
-        } else if (b.hasAttribute("data-resetzoom")) {
-            r = { ...r, from: r.baseFrom ?? r.from, to: r.baseTo ?? r.to, zoomed: false, baseFrom: undefined, baseTo: undefined };
-            if (!r.custom && r.to >= Date.now() - 2 * MIN) r = newRange(r.span);
-            load();
+            if (f < to) { const now = Date.now(); r = { ...r, from: f, to: Math.min(to, now), live: to >= now, custom: true }; load(); }
         }
     });
-    // Click (or tap) a chart to mark that moment; grab the line to drag it.
-    // Dragging anywhere else is left to the zoom plugin (drag to zoom).
+    // Press anywhere on a chart to put the marker line there and drag to move
+    // it; the line stays put when the button is let go (moving the mouse alone
+    // never moves it). On a touch screen a sideways drag moves the line and an
+    // up-and-down swipe still scrolls the page.
     const card = document.getElementById("sxCard");
-    const GRAB = 8;   // px either side of the line that count as grabbing it
     const chartAt = target => {
         const canvas = target && target.closest && target.closest(".sx-m-chart canvas, .sx-lane-chart canvas");
         return canvas ? Chart.getChart(canvas) : null;
     };
     const pxIn = (chart, clientX) => clientX - chart.canvas.getBoundingClientRect().left;
-    const nearLine = (chart, clientX) => markX != null && Math.abs(pxIn(chart, clientX) - chart.scales.x.getPixelForValue(markX)) <= GRAB;
+    const inArea = (chart, clientX) => { const a = chart.chartArea, px = pxIn(chart, clientX); return px >= a.left && px <= a.right; };
     function moveMarkTo(chart, clientX) {
         const area = chart.chartArea, px = Math.max(area.left, Math.min(area.right, pxIn(chart, clientX)));
         markX = chart.scales.x.getValueForPixel(px);
         showMarker();
     }
-    let dragging = null, down = null;
+    let dragging = null;
     card.addEventListener("mousedown", e => {
         const chart = chartAt(e.target);
-        if (!chart || e.button !== 0) return;
-        if (nearLine(chart, e.clientX)) {
-            dragging = chart;
-            e.stopPropagation(); e.preventDefault();   // keeps the zoom plugin from starting a zoom
-        } else down = { chart, x: e.clientX, y: e.clientY };
-    }, true);
-    document.addEventListener("mousemove", e => {
-        if (dragging) { moveMarkTo(dragging, e.clientX); return; }
-        const chart = chartAt(e.target);
-        if (chart) chart.canvas.style.cursor = nearLine(chart, e.clientX) ? "ew-resize" : "crosshair";
+        if (!chart || e.button !== 0 || !inArea(chart, e.clientX)) return;
+        dragging = chart;
+        e.preventDefault();   // no text selection while dragging
+        moveMarkTo(chart, e.clientX);
     });
-    document.addEventListener("mouseup", e => {
-        if (dragging) { dragging = null; return; }
-        if (down && Math.abs(e.clientX - down.x) < 5 && Math.abs(e.clientY - down.y) < 5) {
-            const area = down.chart.chartArea, px = pxIn(down.chart, e.clientX);
-            if (px >= area.left && px <= area.right) moveMarkTo(down.chart, e.clientX);
-        }
-        down = null;
-    });
-    // Touch: tap to mark, drag the line with a finger.
+    document.addEventListener("mousemove", e => { if (dragging) moveMarkTo(dragging, e.clientX); });
+    document.addEventListener("mouseup", () => { dragging = null; });
     let touch = null;
     card.addEventListener("touchstart", e => {
         const chart = chartAt(e.target), p = e.touches[0];
-        if (!chart || e.touches.length !== 1) return;
-        touch = { chart, x: p.clientX, y: p.clientY, drag: nearLine(chart, p.clientX), moved: false };
+        if (!chart || e.touches.length !== 1 || !inArea(chart, p.clientX)) return;
+        touch = { chart, x: p.clientX, y: p.clientY, mode: null };   // mode: "line" or "scroll", decided by the first move
     }, { passive: true });
     card.addEventListener("touchmove", e => {
         if (!touch) return;
-        const p = e.touches[0];
-        if (Math.abs(p.clientX - touch.x) > 5 || Math.abs(p.clientY - touch.y) > 5) touch.moved = true;
-        if (touch.drag) { e.preventDefault(); moveMarkTo(touch.chart, p.clientX); }
+        const p = e.touches[0], dx = Math.abs(p.clientX - touch.x), dy = Math.abs(p.clientY - touch.y);
+        if (!touch.mode && (dx > 6 || dy > 6)) touch.mode = dx > dy ? "line" : "scroll";
+        if (touch.mode === "line") { e.preventDefault(); moveMarkTo(touch.chart, p.clientX); }
     }, { passive: false });
     card.addEventListener("touchend", () => {
-        if (touch && !touch.drag && !touch.moved) moveMarkTo(touch.chart, touch.x);
+        if (touch && !touch.mode) moveMarkTo(touch.chart, touch.x);   // a tap marks that moment
         touch = null;
     });
     document.addEventListener("keydown", e => { if (e.key === "Escape" && markX != null) { markX = null; showMarker(); } });
@@ -447,7 +418,7 @@
     // Live: while the range ends now, follow new readings.
     const every = Math.max(30, P.poll || 60) * 1000;
     setInterval(() => {
-        if (document.hidden || !zoneId || !r.live || r.zoomed || loading) return;
+        if (document.hidden || !zoneId || !r.live || loading) return;
         r = { ...newRange(r.span), custom: false };
         load();
     }, every);
