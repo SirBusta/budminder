@@ -91,6 +91,10 @@ func resolveStrainStock(seedCount int, wanted *bool, addedOn *string, prev strai
 	return out, nil
 }
 
+// StockToday is today's date (YYYY-MM-DD) in the configured timezone, for
+// pages that count days (the strain page's Day N) the same way.
+func StockToday(c *gin.Context) string { return stockToday(c) }
+
 // stockToday is today's date for an automatic seeds_added_on, in the
 // configured timezone when one is set.
 func stockToday(c *gin.Context) string {
@@ -239,4 +243,59 @@ func StrainsPageData(c *gin.Context, loggedIn bool, lang string, translations ma
 		}
 	}
 	return gin.H{"logged_in": loggedIn, "today": stockToday(c), "lang": lang, "t": t}
+}
+
+// UseStrainSeedsHandler takes seeds out of a strain's stock (the strain
+// page's "−", e.g. a seed given away or one that didn't pop). The count
+// never goes below zero; at zero the stock date is cleared like everywhere
+// else (resolveStrainStock). Starting a grow uses its seed on its own.
+// POST /strains/:id/seeds/use  {"count": 1}
+func UseStrainSeedsHandler(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		apiBadRequest(c, "api_invalid_strain_id")
+		return
+	}
+	var req struct {
+		Count int `json:"count"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.Count < 1 || req.Count > 100000 {
+		apiBadRequest(c, "api_invalid_request_payload")
+		return
+	}
+	db := DBFromContext(c)
+	tx, err := db.Begin()
+	if err != nil {
+		apiInternalError(c, "api_failed_to_start_tx")
+		return
+	}
+	defer tx.Rollback()
+	prev, err := loadStrainStock(tx, id)
+	if err == sql.ErrNoRows {
+		apiNotFound(c, "api_strain_not_found")
+		return
+	}
+	if err != nil {
+		apiInternalError(c, "api_failed_to_update_strain")
+		return
+	}
+	count := max(0, prev.Count-req.Count)
+	keep := prev.AddedOn
+	stock, err := resolveStrainStock(count, nil, &keep, prev, stockToday(c))
+	if err != nil {
+		apiBadRequest(c, err.Error())
+		return
+	}
+	if _, err := tx.Exec(`UPDATE strain SET seed_count = $1, wanted = $2, seeds_added_on = $3 WHERE id = $4`,
+		count, stock.Wanted, stock.AddedOn, id); err != nil {
+		logger.Log.WithError(err).Error("Failed to use seeds")
+		apiInternalError(c, "api_failed_to_update_strain")
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		apiInternalError(c, "api_failed_to_commit_tx")
+		return
+	}
+	ConfigStoreFromContext(c).SetStrains(GetStrains(db))
+	c.JSON(http.StatusOK, gin.H{"seed_count": count, "seeds_added_on": stock.AddedOn, "wanted": stock.Wanted == 1})
 }

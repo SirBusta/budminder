@@ -200,3 +200,38 @@ func LongDate(date string, lcl map[string]string) string {
 		"{year}", strconv.Itoa(t.Year()),
 	).Replace(layout)
 }
+
+// ShortDate formats a YYYY-MM-DD date with the abbreviated month for the
+// page's language ("Dec 2"; "Apr 20, 2025" when it isn't this year), from
+// the month_short_N and date_short / date_short_year keys. Unreadable text
+// comes back unchanged.
+func ShortDate(date string, lcl map[string]string) string {
+	return shortDateAt(date, lcl, time.Now())
+}
+
+func shortDateAt(date string, lcl map[string]string, now time.Time) string {
+	if len(date) > 10 {
+		date = date[:10]
+	}
+	t, err := time.Parse(LayoutDate, date)
+	if err != nil {
+		return date
+	}
+	name := lcl["month_short_"+strconv.Itoa(int(t.Month()))]
+	if name == "" {
+		name = t.Month().String()[:3]
+	}
+	key, def := "date_short", "{month} {day}"
+	if t.Year() != now.Year() {
+		key, def = "date_short_year", "{month} {day}, {year}"
+	}
+	layout := lcl[key]
+	if layout == "" {
+		layout = def
+	}
+	return strings.NewReplacer(
+		"{month}", name,
+		"{day}", strconv.Itoa(t.Day()),
+		"{year}", strconv.Itoa(t.Year()),
+	).Replace(layout)
+}

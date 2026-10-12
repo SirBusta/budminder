@@ -211,9 +211,25 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 		translations := utils.TranslationService.GetTranslations(lang)
 		currentPath, _ := c.Get("currentPath")
 		store := handlers.ConfigStoreFromContext(c)
-		strain := handlers.GetStrain(handlers.DBFromContext(c), c.Param("id"))
+		db := handlers.DBFromContext(c)
+		strain := handlers.GetStrain(db, c.Param("id"))
+		history, err := handlers.LoadStrainHistory(db, strain.ID, handlers.StockToday(c), translations)
+		if err != nil {
+			history = handlers.StrainHistory{}
+		}
 		c.HTML(http.StatusOK, "views/strain.html", gin.H{
 			"title":            "Strain Details",
+			"history":          history,
+			"noHistory":        len(history.Grows) == 0 && history.PhotoCount == 0,
+			"breederCount":     handlers.BreederStrainCount(db, strain.BreederID),
+			"strainLink":       handlers.SafeStrainLink(strain.Url),
+			"strainLinkHost":   handlers.StrainLinkHost(strain.Url),
+			"growURL":          handlers.StrainGrowURL(handlers.StrainGrowTarget{ID: strain.ID, Name: strain.Name, SeedCount: strain.SeedCount}, len(history.Grows)),
+			"canGrow":          strain.SeedCount > 0 || strain.SeedType == "clone",
+			"potency":          handlers.StrainPotency(strain),
+			"effects":          handlers.StrainEffectRows(strain),
+			"terpenes":         handlers.StrainTerpeneRows(strain),
+			"today":            handlers.StockToday(c),
 			"currentPath":      currentPath,
 			"version":          version,
 			"strain":           strain,
@@ -297,6 +313,7 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.DELETE("/strains/:id", handlers.DeleteStrainHandler)
 	r.POST("/strains/:id/wanted", handlers.SetStrainWantedHandler)
 	r.POST("/strains/:id/seeds", handlers.AddStrainSeedsHandler)
+	r.POST("/strains/:id/seeds/use", handlers.UseStrainSeedsHandler)
 
 	// CannaDB import (search + one-click import). Auth-gated so anonymous
 	// users can't drive outbound calls against the shared per-IP rate budget.

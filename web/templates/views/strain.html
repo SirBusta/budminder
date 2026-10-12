@@ -2,8 +2,19 @@
 
 {{ template "common/header.html" .}}
 {{ template "common/header2.html" .}}
-<div class="container ns">
-    <!-- Breadcrumbs -->
+<!-- One strain (mockup SD1+): your own history with it (plants grown,
+     yields, actual flowering, photos, family) in the wide column, what's
+     known about the strain on the right. With no grows and no photos the
+     header and family go full width and the strain's cards share the page
+     in two even columns. -->
+<div class="container-xxl sd" id="sdPage"
+     data-strain-id="{{ .strain.ID }}" data-name="{{ .strain.Name }}" data-breeder="{{ .strain.Breeder }}"
+     data-straincompass="{{ if .strain.StraincompassSlug }}1{{ end }}" data-has-note="{{ if .strain.StraincompassLineageNote }}1{{ end }}"
+     data-add-as="{{ .lcl.lineage_add_as_strain }}" data-search-sc="{{ .lcl.lineage_search_straincompass }}"
+     data-none="{{ .lcl.lineage_none }}" data-parent="{{ .lcl.sd_parent }}" data-parent-mine="{{ .lcl.sd_parent_mine }}"
+     data-via="{{ .lcl.sd_via }}" data-bred-from="{{ .lcl.sd_bred_from }}" data-family-note="{{ .lcl.sd_family_note }}"
+     data-more="{{ .lcl.sd_more_gens }}" data-fewer="{{ .lcl.sd_fewer_gens }}"
+     data-wanted-add="{{ .lcl.wanted_add }}" data-wanted-remove="{{ .lcl.wanted_remove }}" data-failed="{{ .lcl.sd_failed }}">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/strains">{{ .lcl.title_strains }}</a></li>
@@ -11,349 +22,222 @@
         </ol>
     </nav>
 
-    <!-- Page Title -->
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h1 class="display-5 text-primary mb-1">{{ .strain.Name }}</h1>
-            <p class="text-muted fs-5 mb-0">by
-                {{ if .strain.Url }}
-                    <a href="{{ .strain.Url }}" target="_blank" class="text-decoration-none">{{ .strain.Breeder }} <i class="fa-solid fa-arrow-up-right-from-square fa-xs"></i></a>
-                {{ else }}
-                    {{ .strain.Breeder }}
-                {{ end }}
-            </p>
-            {{ if .cannadbURL }}
-            <a href="{{ .cannadbURL }}" target="_blank" rel="noopener" class="badge bg-secondary text-decoration-none mt-2">
-                <i class="fa-solid fa-database me-1"></i>{{ .lcl.view_on_cannadb }} <i class="fa-solid fa-arrow-up-right-from-square fa-xs"></i>
-            </a>
-            {{ end }}
-            {{ if .straincompassURL }}
-            <a href="{{ .straincompassURL }}" target="_blank" rel="noopener" class="badge bg-secondary text-decoration-none mt-2 ms-1">
-                <i class="fa-solid fa-flask me-1"></i>{{ .lcl.view_on_straincompass }} <i class="fa-solid fa-arrow-up-right-from-square fa-xs"></i>
-            </a>
-            {{ end }}
-        </div>
-        {{ if .loggedIn }}
-        <a href="/strain/{{ .strain.ID }}/edit" class="btn btn-primary">
-            <i class="fa-solid fa-pen-to-square me-1"></i> {{ .lcl.edit_strain }}
-        </a>
-        {{ end }}
+    {{ if .noHistory }}
+    {{ template "sd/head" . }}
+    <div class="mt-3">{{ template "sd/family" . }}</div>
+    <div class="sd-cols even mt-3">
+        <div class="sd-stack">{{ template "sd/about" . }}{{ template "sd/facts" . }}</div>
+        <div class="sd-stack">{{ template "sd/vault" . }}{{ template "sd/profile" . }}</div>
     </div>
-
-    <!-- Wikipedia-style layout: content + infobox -->
-    <div class="row g-4">
-        <!-- Main content: Markdown description -->
-        <div class="col-lg-8 order-2 order-lg-1">
-            {{ if .strain.ShortDescription }}
-            <p class="lead text-muted mb-4">{{ .strain.ShortDescription }}</p>
-            {{ end }}
-            <div class="markdown-body">
-                {{ .strain.Description | markdownify }}
-            </div>
+    {{ else }}
+    <div class="sd-cols">
+        <div class="sd-stack">
+            {{ template "sd/head" . }}
+            {{ template "sd/grows" . }}
+            {{ template "sd/family" . }}
+            {{ template "sd/about" . }}
+            {{ template "sd/photos" . }}
         </div>
-
-        <!-- Infobox sidebar -->
-        <div class="col-lg-4 order-1 order-lg-2">
-            <div class="card strain-infobox">
-                <div class="card-body">
-                    <h2 class="h5 card-title text-primary text-center mb-3">
-                        <i class="fa-solid fa-dna me-1"></i> {{ .lcl.title_strain }} Info
-                    </h2>
-
-                    {{ if .strain.PackagingImage }}
-                    <div class="text-center mb-3">
-                        <a href="/{{ .strain.PackagingImage }}" target="_blank" rel="noopener">
-                            <img src="/{{ .strain.PackagingImage }}" alt="{{ .lcl.packaging_image }}: {{ .strain.Name }}"
-                                 class="img-fluid rounded" style="max-height:220px" loading="lazy">
-                        </a>
-                    </div>
-                    {{ end }}
-
-                    <!-- Type badge -->
-                    <div class="text-center mb-3">
-                        {{ if .strain.Autoflower }}
-                        <span class="badge strain-badge-auto">
-                            <i class="fa-solid fa-bolt me-1"></i> {{ .lcl.autoflower }}
-                        </span>
-                        {{ else }}
-                        <span class="badge strain-badge-photo">
-                            <i class="fa-solid fa-sun me-1"></i> Photoperiod
-                        </span>
-                        {{ end }}
-                        {{ if boolPtr .strain.StraincompassVerified }}
-                        <span class="badge bg-success ms-1" title="{{ .lcl.straincompass_verified_desc }}">
-                            <i class="fa-solid fa-circle-check me-1"></i>{{ .lcl.straincompass_verified }}
-                        </span>
-                        {{ end }}
-                    </div>
-
-                    <!-- Indica / Sativa ratio bar -->
-                    <div class="strain-ratio-section mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <small class="fw-semibold strain-indica-text">Indica {{ .strain.Indica }}%</small>
-                            <small class="fw-semibold strain-sativa-text">Sativa {{ .strain.Sativa }}%</small>
-                        </div>
-                        <div class="strain-ratio-bar" role="img" aria-label="Indica {{ .strain.Indica }}% / Sativa {{ .strain.Sativa }}%">
-                            <div class="strain-ratio-fill" style="width: {{ .strain.Indica }}%"></div>
-                        </div>
-                        <div class="text-center mt-1">
-                            <small class="text-muted">
-                                {{ if gt .strain.Indica .strain.Sativa }}
-                                    Indica Dominant
-                                {{ else if gt .strain.Sativa .strain.Indica }}
-                                    Sativa Dominant
-                                {{ else }}
-                                    Hybrid 50/50
-                                {{ end }}
-                            </small>
-                        </div>
-                    </div>
-
-                    {{ if or .strain.ThcMax .strain.CbdMax .strain.CbnMax .strain.CbgMax }}
-                    <!-- Cannabinoids (StrainCompass) -->
-                    <div class="strain-cannabinoid-section mb-3">
-                        {{ if .strain.ThcMax }}
-                        <div class="d-flex justify-content-between">
-                            <small class="fw-semibold">THC</small>
-                            <small>{{ if .strain.ThcMin }}{{ .strain.ThcMin }}–{{ end }}{{ .strain.ThcMax }}%</small>
-                        </div>
-                        {{ end }}
-                        {{ if .strain.CbdMax }}
-                        <div class="d-flex justify-content-between">
-                            <small class="fw-semibold">CBD</small>
-                            <small>{{ if .strain.CbdMin }}{{ .strain.CbdMin }}–{{ end }}{{ .strain.CbdMax }}%</small>
-                        </div>
-                        {{ end }}
-                        {{ if .strain.CbnMax }}
-                        <div class="d-flex justify-content-between">
-                            <small class="fw-semibold">CBN</small>
-                            <small>{{ .strain.CbnMax }}%</small>
-                        </div>
-                        {{ end }}
-                        {{ if .strain.CbgMax }}
-                        <div class="d-flex justify-content-between">
-                            <small class="fw-semibold">CBG</small>
-                            <small>{{ .strain.CbgMax }}%</small>
-                        </div>
-                        {{ end }}
-                    </div>
-                    {{ end }}
-
-                    <hr>
-
-                    <!-- Metadata list -->
-                    <ul class="list-unstyled strain-info-list mb-0">
-                        <li>
-                            <span class="strain-info-label"><i class="fa-solid fa-building me-2"></i>{{ .lcl.breeder }}</span>
-                            <span class="strain-info-value">
-                                {{ if .strain.Url }}
-                                    <a href="{{ .strain.Url }}" target="_blank">{{ .strain.Breeder }}</a>
-                                {{ else }}
-                                    {{ .strain.Breeder }}
-                                {{ end }}
-                            </span>
-                        </li>
-                        <li>
-                            <span class="strain-info-label"><i class="fa-solid fa-clock me-2"></i>{{ if .strain.Autoflower }}{{ .lcl.seed_to_harvest }}{{ else }}{{ .lcl.flowering_time }}{{ end }}</span>
-                            <span class="strain-info-value">
-                                {{ if gt .strain.CycleTime 0 }}
-                                    {{ if and (gt .strain.CycleTimeMin 0) (lt .strain.CycleTimeMin .strain.CycleTime) }}{{ daysToWeeks .strain.CycleTimeMin }}–{{ end }}{{ daysToWeeks .strain.CycleTime }} {{ .lcl.unit_weeks }}
-                                {{ else }}
-                                    {{ .lcl.na }}
-                                {{ end }}
-                            </span>
-                        </li>
-                        {{ with .strain.SeedType }}
-                        <li>
-                            <span class="strain-info-label"><i class="fa-solid fa-tag me-2"></i>{{ $.lcl.seed_type }}</span>
-                            <span class="strain-info-value">{{ if eq . "feminized" }}{{ $.lcl.seed_type_feminized }}{{ else if eq . "regular" }}{{ $.lcl.seed_type_regular }}{{ else if eq . "clone" }}{{ $.lcl.seed_type_clone }}{{ end }}</span>
-                        </li>
-                        {{ end }}
-                        <li>
-                            <span class="strain-info-label"><i class="fa-solid fa-seedling me-2"></i>{{ .lcl.seed_count }}</span>
-                            <span class="strain-info-value">
-                                {{ if gt .strain.SeedCount 0 }}
-                                    <span class="badge bg-success">{{ .strain.SeedCount }} in stock</span>
-                                {{ else }}
-                                    <span class="badge bg-warning text-dark{{ if not .strain.Wanted }} d-none{{ end }}" id="strainWantedBadge"><i class="fa-solid fa-star me-1"></i>{{ .lcl.wanted }}</span>
-                                    <span class="badge bg-secondary{{ if .strain.Wanted }} d-none{{ end }}" id="strainOutOfStockBadge">Out of stock</span>
-                                    {{ if .loggedIn }}
-                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-1 py-0" id="strainWantedToggle"
-                                            data-strain-id="{{ .strain.ID }}" data-wanted="{{ .strain.Wanted }}"
-                                            data-add="{{ .lcl.wanted_add }}" data-remove="{{ .lcl.wanted_remove }}">
-                                        {{ if .strain.Wanted }}{{ .lcl.wanted_remove }}{{ else }}{{ .lcl.wanted_add }}{{ end }}
-                                    </button>
-                                    {{ end }}
-                                {{ end }}
-                            </span>
-                        </li>
-                        {{ if gt .strain.SeedCount 0 }}
-                        <li>
-                            <span class="strain-info-label"><i class="fa-solid fa-calendar-plus me-2"></i>{{ .lcl.seeds_added_on }}</span>
-                            <span class="strain-info-value">
-                                {{ with .strain.SeedsAddedOn }}
-                                    {{ longDate . $.lcl }}
-                                    {{ with seedAge . }}{{ if .OK }}<small class="text-muted">({{ template "common/seed-age" (dict "a" . "lcl" $.lcl) }})</small>{{ end }}{{ end }}
-                                {{ else }}
-                                    <span class="text-muted">{{ $.lcl.seeds_added_on_unknown }}</span>
-                                {{ end }}
-                            </span>
-                        </li>
-                        {{ end }}
-                        {{ with .strain.SeedLocation }}
-                        <li>
-                            <span class="strain-info-label"><i class="fa-solid fa-box-archive me-2"></i>{{ $.lcl.seed_location }}</span>
-                            <span class="strain-info-value">{{ . }}</span>
-                        </li>
-                        {{ end }}
-                        {{ with .strain.HeightIndoor }}
-                        <li>
-                            <span class="strain-info-label"><i class="fa-solid fa-ruler-vertical me-2"></i>{{ $.lcl.height_indoor }}</span>
-                            <span class="strain-info-value">{{ showHeight . }}</span>
-                        </li>
-                        {{ end }}
-                        {{ with .strain.HeightOutdoor }}
-                        <li>
-                            <span class="strain-info-label"><i class="fa-solid fa-ruler-vertical me-2"></i>{{ $.lcl.height_outdoor }}</span>
-                            <span class="strain-info-value">{{ showHeight . }}</span>
-                        </li>
-                        {{ end }}
-                        {{ with .strain.YieldIndoor }}
-                        <li>
-                            <span class="strain-info-label"><i class="fa-solid fa-scale-balanced me-2"></i>{{ $.lcl.yield_indoor }}</span>
-                            <span class="strain-info-value">{{ showYield . }}</span>
-                        </li>
-                        {{ end }}
-                        {{ with .strain.YieldOutdoor }}
-                        <li>
-                            <span class="strain-info-label"><i class="fa-solid fa-scale-balanced me-2"></i>{{ $.lcl.yield_outdoor }}</span>
-                            <span class="strain-info-value">{{ showYield . }}</span>
-                        </li>
-                        {{ end }}
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Lineage box -->
-            <div class="card strain-infobox mt-3" id="lineageCard"
-                 data-has-note="{{ if .strain.StraincompassLineageNote }}1{{ end }}"
-                 data-straincompass="{{ if .strain.StraincompassSlug }}1{{ end }}"
-                 data-show-ancestry="{{ .lcl.lineage_show_ancestry }}"
-                 data-add-as-strain="{{ .lcl.lineage_add_as_strain }}"
-                 data-search-straincompass="{{ .lcl.lineage_search_straincompass }}">
-                <div class="card-body">
-                    <h2 class="h5 card-title text-primary text-center mb-3">
-                        <i class="fa-solid fa-sitemap me-1"></i> {{ .lcl.lineage_title }}
-                    </h2>
-                    <div id="lineageTree"></div>
-                    <div id="lineageEmpty" class="text-center text-muted py-2" style="display:none;">
-                        <small>{{ .lcl.lineage_none }}</small>
-                    </div>
-                    {{ if .strain.StraincompassLineageNote }}
-                    <p class="small text-muted mt-2 mb-0">
-                        {{ .lcl.straincompass_lineage_label }}: {{ .strain.StraincompassLineageNote }}
-                    </p>
-                    {{ end }}
-                    {{ if eq .strain.LineageSource "cannadb" }}
-                    <p class="small text-muted mt-2 mb-0">
-                        <i class="fa-solid fa-cloud-arrow-down me-1"></i>{{ .lcl.lineage_from_cannadb }}
-                        {{ if .lineageSourceURL }}<a href="{{ .lineageSourceURL }}" target="_blank" rel="noopener noreferrer">{{ .lcl.lineage_view_source }}</a>{{ end }}
-                    </p>
-                    {{ end }}
-                </div>
-            </div>
-
-            {{ if or .strain.Effects .strain.Flavors .strain.Terpenes .strain.MedicalUses }}
-            <!-- Effects / Flavors / Terpenes / Medical Uses (StrainCompass) -->
-            <div class="card strain-infobox mt-3" id="strainAttributesCard">
-                <div class="card-body">
-                    <h2 class="h5 card-title text-primary text-center mb-3">
-                        <i class="fa-solid fa-flask me-1"></i> {{ .lcl.straincompass_attributes_title }}
-                    </h2>
-                    {{ if .strain.Effects }}
-                    <div class="mb-2">
-                        <small class="text-muted d-block mb-1">{{ .lcl.straincompass_effects }}</small>
-                        {{ range .strain.Effects }}
-                        <span class="badge bg-info me-1 mb-1">{{ .Name }}</span>
-                        {{ end }}
-                    </div>
-                    {{ end }}
-                    {{ if .strain.Flavors }}
-                    <div class="mb-2">
-                        <small class="text-muted d-block mb-1">{{ .lcl.straincompass_flavors }}</small>
-                        {{ range .strain.Flavors }}
-                        <span class="badge bg-warning text-dark me-1 mb-1">{{ .Name }}</span>
-                        {{ end }}
-                    </div>
-                    {{ end }}
-                    {{ if .strain.Terpenes }}
-                    <div class="mb-2">
-                        <small class="text-muted d-block mb-1">{{ .lcl.straincompass_terpenes }}</small>
-                        {{ range .strain.Terpenes }}
-                        <span class="badge bg-primary me-1 mb-1">{{ .Name }}</span>
-                        {{ end }}
-                    </div>
-                    {{ end }}
-                    {{ if .strain.MedicalUses }}
-                    <div class="mb-0">
-                        <small class="text-muted d-block mb-1">{{ .lcl.straincompass_medical_uses }}</small>
-                        {{ range .strain.MedicalUses }}
-                        <span class="badge bg-secondary me-1 mb-1">{{ .Name }}</span>
-                        {{ end }}
-                    </div>
-                    {{ end }}
-                </div>
-            </div>
-            {{ end }}
-
-            <!-- Descendants box -->
-            <div class="card strain-infobox mt-3" id="descendantsCard" style="display:none;">
-                <div class="card-body">
-                    <h2 class="h5 card-title text-primary text-center mb-3">
-                        <i class="fa-solid fa-diagram-project me-1"></i> {{ .lcl.descendants_title }}
-                    </h2>
-                    <div id="descendantsList"></div>
-                </div>
-            </div>
-        </div>
+        <div class="sd-stack">{{ template "sd/vault" . }}{{ template "sd/facts" . }}{{ template "sd/profile" . }}</div>
     </div>
+    {{ end }}
 </div>
 
-<script nonce="{{ .cspNonce }}">
-    var currentStrainID = {{ .strain.ID }};
-    // html/template quotes and escapes this for JavaScript itself; an extra
-    // `js` filter double-escapes names with apostrophes ("Runtz \'n\' Roses").
-    var currentStrainName = {{ .strain.Name }};
-
-    // Add to / remove from the wish list (only shown while out of stock).
-    (function () {
-        const btn = document.getElementById("strainWantedToggle");
-        if (!btn) return;
-        btn.addEventListener("click", async () => {
-            const want = btn.dataset.wanted !== "true";
-            btn.disabled = true;
-            try {
-                const resp = await fetch(`/strains/${btn.dataset.strainId}/wanted`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ wanted: want }),
-                });
-                const data = await resp.json().catch(() => ({}));
-                if (!resp.ok) throw new Error(data.error || "");
-                btn.dataset.wanted = String(data.wanted);
-                btn.textContent = data.wanted ? btn.dataset.remove : btn.dataset.add;
-                document.getElementById("strainWantedBadge").classList.toggle("d-none", !data.wanted);
-                document.getElementById("strainOutOfStockBadge").classList.toggle("d-none", data.wanted);
-            } catch (e) {
-                if (typeof uiMessages !== "undefined") uiMessages.showToast(e.message || uiMessages.t("api_failed_to_update_strain"), "danger");
-            } finally {
-                btn.disabled = false;
-            }
-        });
-    })();
-</script>
-<script src="/static/js/strain-lineage.js"></script>
-<script src="/static/js/strain-descendants.js"></script>
+<script src="/static/js/strain-page.js" defer></script>
 {{ template "common/footer.html" .}}
 
+{{ end }}
+
+{{/* ---------- Header: name, breeder, badges, links, actions ---------- */}}
+{{ define "sd/head" }}
+<div class="sd-card sd-head">
+    <div class="sd-head-top">
+        <div class="min-w-0">
+            <h1>{{ .strain.Name }}</h1>
+            {{ if .strain.Breeder }}
+            <div class="sd-by">{{ .lcl.sd_by }} <a href="/strains?breeder={{ .strain.Breeder }}#all" title="{{ printf .lcl.sd_strains_from .strain.Breeder }}">{{ .strain.Breeder }}</a>{{ if gt .breederCount 1 }} <span class="sd-faint">· {{ printf .lcl.sd_breeder_count .breederCount }}</span>{{ end }}</div>
+            {{ end }}
+            <div class="sd-chips">
+                {{ if .strain.Autoflower }}<span class="sd-b auto"><i class="fa-solid fa-bolt"></i>{{ .lcl.autoflower }}</span>{{ else }}<span class="sd-b photo"><i class="fa-solid fa-sun"></i>{{ .lcl.photoperiod }}</span>{{ end }}
+                {{ with .strain.SeedType }}<span class="sd-b">{{ if eq . "feminized" }}{{ $.lcl.seed_type_feminized }}{{ else if eq . "regular" }}{{ $.lcl.seed_type_regular }}{{ else if eq . "clone" }}{{ $.lcl.seed_type_clone }}{{ end }}</span>{{ end }}
+                <span class="sd-b">{{ printf .lcl.sd_indica .strain.Indica }}</span>
+                {{ if boolPtr .strain.StraincompassVerified }}<span class="sd-b ok" title="{{ .lcl.straincompass_verified_desc }}"><i class="fa-solid fa-circle-check"></i>{{ .lcl.straincompass_verified }}</span>{{ end }}
+                {{ if .strainLink }}<a class="sd-b src" href="{{ .strainLink }}" target="_blank" rel="noopener noreferrer" title="{{ .lcl.sd_link_title }}"><i class="fa-solid fa-globe"></i>{{ .strainLinkHost }} <i class="fa-solid fa-arrow-up-right-from-square fa-xs"></i></a>{{ end }}
+                {{ if .straincompassURL }}<a class="sd-b src" href="{{ .straincompassURL }}" target="_blank" rel="noopener"><i class="fa-solid fa-flask"></i>{{ .lcl.view_on_straincompass }} <i class="fa-solid fa-arrow-up-right-from-square fa-xs"></i></a>{{ end }}
+                {{ if .cannadbURL }}<a class="sd-b src" href="{{ .cannadbURL }}" target="_blank" rel="noopener"><i class="fa-solid fa-database"></i>{{ .lcl.view_on_cannadb }} <i class="fa-solid fa-arrow-up-right-from-square fa-xs"></i></a>{{ end }}
+            </div>
+        </div>
+        {{ if .loggedIn }}
+        <div class="sd-acts">
+            {{ if and .canGrow (not .noHistory) }}<a class="sd-btn" href="{{ .growURL }}"><i class="fa-solid fa-play"></i>{{ .lcl.sd_start_grow }}</a>{{ end }}
+            <a class="sd-btn light" href="/strain/{{ .strain.ID }}/edit"><i class="fa-solid fa-pen-to-square"></i>{{ .lcl.sd_edit }}</a>
+        </div>
+        {{ end }}
+    </div>
+    {{ if and .strain.ShortDescription (ne .strain.ShortDescription .strain.Description) }}<p class="sd-lead">{{ .strain.ShortDescription }}</p>{{ end }}
+    {{ if .noHistory }}
+    <div class="sd-nogrow">
+        <i class="fa-solid fa-seedling"></i><span>{{ printf .lcl.sd_no_grows .strain.Name }}</span>
+        {{ if and .loggedIn .canGrow }}<a class="sd-btn" href="{{ .growURL }}"><i class="fa-solid fa-play"></i>{{ .lcl.sd_start_grow }}</a>{{ end }}
+    </div>
+    {{ end }}
+</div>
+{{ end }}
+
+{{/* ---------- Your grows ---------- */}}
+{{ define "sd/grows" }}
+{{ $h := .history }}
+<div class="sd-card">
+    <h2 class="sd-h"><i class="fa-solid fa-seedling"></i>{{ .lcl.sd_your_grows }}</h2>
+    <div class="sd-stats">
+        <span>{{ if eq (len $h.Grows) 1 }}{{ .lcl.sd_one_plant }}{{ else }}{{ printf .lcl.sd_n_plants (len $h.Grows) }}{{ end }}</span>
+        {{ if $h.Growing }}<span>{{ printf .lcl.sd_n_growing $h.Growing }}</span>{{ end }}
+        {{ if $h.Harvested }}<span>{{ printf .lcl.sd_n_harvested $h.Harvested }}</span>{{ end }}
+        {{ if $h.Dead }}<span>{{ printf .lcl.sd_n_dead $h.Dead }}</span>{{ end }}
+        {{ if $h.AvgGrams }}<span>{{ printf .lcl.sd_avg_yield $h.AvgGrams }}</span>{{ end }}
+        {{ if $h.AvgFlowerDays }}<span>{{ printf .lcl.sd_avg_flower $h.AvgFlowerDays $h.AvgFlowerWeeks }}</span>{{ end }}
+    </div>
+    {{ range $h.Grows }}
+    <div class="sd-grow">
+        <a class="sd-grow-ph" href="/plant/{{ .ID }}" tabindex="-1" aria-hidden="true">{{ if .Photo }}<img src="{{ .Photo }}" alt="" loading="lazy">{{ else }}<span class="sd-noph"><i class="fa-solid fa-cannabis"></i></span>{{ end }}</a>
+        <div class="min-w-0">
+            <a class="sd-grow-nm" href="/plant/{{ .ID }}">{{ .Name }}</a>
+            <div class="sd-grow-mt">
+                <span class="sd-stage" data-stage="{{ .Stage }}">{{ .StageLabel }}{{ if .StageWeek }} · {{ printf $.lcl.sd_week .StageWeek }}{{ end }}</span>
+                {{ with .Zone }}<span>· {{ . }}</span>{{ end }}
+                {{ if eq .Group "living" }}{{ with .Start }}<span>· {{ printf $.lcl.sd_started (shortDate . $.lcl) }}</span>{{ end }}
+                {{ else if and .Start .End }}<span>· {{ shortDate .Start $.lcl }} – {{ shortDate .End $.lcl }}</span>{{ end }}
+            </div>
+            {{ if ge .Progress 0 }}<div class="sd-prog" role="img" aria-label="{{ .Progress }}%"><span style="width: {{ .Progress }}%"></span></div>{{ end }}
+        </div>
+        <div class="sd-grow-rt">
+            {{ if eq .Group "living" }}
+                {{ if .Day }}<b>{{ printf $.lcl.sd_day .Day }}</b>{{ end }}
+                <span>{{ if .EstMin }}{{ printf $.lcl.sd_harvest_est (shortDate .EstMin $.lcl) (shortDate .EstMax $.lcl) }}{{ else }}{{ $.lcl.sd_no_estimate }}{{ end }}</span>
+            {{ else if eq .Group "harvested" }}
+                {{ if gt .Grams 0.0 }}<b>{{ printf $.lcl.sd_grams (printf "%.0f" .Grams) }}</b>{{ end }}
+                {{ if .FlowerDays }}<span>{{ printf $.lcl.sd_flower_days .FlowerDays }}</span>{{ end }}
+            {{ else }}
+                {{ with .End }}<span>{{ printf $.lcl.sd_died_on (shortDate . $.lcl) }}</span>{{ end }}
+            {{ end }}
+        </div>
+    </div>
+    {{ end }}
+</div>
+{{ end }}
+
+{{/* ---------- Family (drawn by strain-page.js) ---------- */}}
+{{ define "sd/family" }}
+<div class="sd-card">
+    <h2 class="sd-h"><i class="fa-solid fa-sitemap"></i>{{ .lcl.sd_family }}<button type="button" class="sd-link ms-auto" id="sdMoreGens" hidden></button></h2>
+    <div id="sdFamily"><div class="sd-muted small"><i class="fa-solid fa-spinner fa-spin me-1"></i></div></div>
+    {{ if .strain.StraincompassLineageNote }}<p class="sd-muted small mt-2 mb-0">{{ .lcl.straincompass_lineage_label }}: {{ .strain.StraincompassLineageNote }}</p>{{ end }}
+    {{ if eq .strain.LineageSource "cannadb" }}
+    <p class="sd-muted small mt-2 mb-0"><i class="fa-solid fa-cloud-arrow-down me-1"></i>{{ .lcl.lineage_from_cannadb }}
+        {{ if .lineageSourceURL }}<a href="{{ .lineageSourceURL }}" target="_blank" rel="noopener noreferrer">{{ .lcl.lineage_view_source }}</a>{{ end }}</p>
+    {{ end }}
+</div>
+{{ end }}
+
+{{/* ---------- About ---------- */}}
+{{ define "sd/about" }}
+<div class="sd-card">
+    <h2 class="sd-h"><i class="fa-solid fa-book-open"></i>{{ .lcl.sd_about }}</h2>
+    {{ if .strain.Description }}
+    <div class="markdown-body sd-prose">{{ .strain.Description | markdownify }}</div>
+    {{ else }}
+    <p class="sd-muted mb-0">{{ .lcl.sd_no_about }}{{ if .loggedIn }} <a href="/strain/{{ .strain.ID }}/edit">{{ .lcl.sd_edit }}</a>{{ end }}</p>
+    {{ end }}
+</div>
+{{ end }}
+
+{{/* ---------- Photos from your grows ---------- */}}
+{{ define "sd/photos" }}
+{{ if .history.Photos }}
+<div class="sd-card">
+    <h2 class="sd-h"><i class="fa-solid fa-images"></i>{{ .lcl.sd_photos }}<span class="sd-h-r">{{ printf .lcl.sd_n_photos .history.PhotoCount }}</span></h2>
+    <div class="sd-strip">
+        {{ range .history.Photos }}<a href="/plant/{{ .PlantID }}" title="{{ .Plant }} · {{ shortDate .Date $.lcl }}"><img src="{{ .Path }}" alt="{{ .Plant }}" loading="lazy"></a>{{ end }}
+    </div>
+</div>
+{{ end }}
+{{ end }}
+
+{{/* ---------- Seed Vault ---------- */}}
+{{ define "sd/vault" }}
+<div class="sd-card">
+    <h2 class="sd-h"><i class="ic-vault sd-vault-ic"></i>{{ .lcl.sd_seed_vault }}</h2>
+    {{ if .strain.PackagingImage }}
+    <a class="sd-pack" href="/{{ .strain.PackagingImage }}" target="_blank" rel="noopener"><img src="/{{ .strain.PackagingImage }}" alt="{{ .lcl.packaging_image }}: {{ .strain.Name }}" loading="lazy"></a>
+    {{ end }}
+    {{ if gt .strain.SeedCount 0 }}
+    <div class="sd-vault-n">
+        <b>{{ .strain.SeedCount }}</b><span class="sd-muted">{{ if eq .strain.SeedCount 1 }}{{ .lcl.sd_seed_on_hand }}{{ else }}{{ .lcl.sd_seeds_on_hand }}{{ end }}</span>
+        {{ if .loggedIn }}<span class="sd-stepper"><button type="button" data-seeds="use" title="{{ .lcl.sd_one_fewer }}" aria-label="{{ .lcl.sd_one_fewer }}">−</button><button type="button" data-seeds="add" title="{{ .lcl.sd_one_more }}" aria-label="{{ .lcl.sd_one_more }}">+</button></span>{{ end }}
+    </div>
+    <ul class="sd-facts">
+        <li><span><i class="fa-solid fa-calendar-plus"></i>{{ .lcl.seeds_added_on }}</span><span>{{ with .strain.SeedsAddedOn }}{{ longDate . $.lcl }}{{ with seedAge . }}{{ if .OK }} <span class="sd-faint">({{ template "common/seed-age" (dict "a" . "lcl" $.lcl) }})</span>{{ end }}{{ end }}{{ else }}<span class="sd-faint">{{ $.lcl.seeds_added_on_unknown }}</span>{{ end }}</span></li>
+        {{ with .strain.SeedLocation }}<li><span><i class="fa-solid fa-box-archive"></i>{{ $.lcl.seed_location }}</span><span>{{ . }}</span></li>{{ end }}
+    </ul>
+    {{ else }}
+    <div class="sd-vault-n">
+        <span class="sd-muted">{{ .lcl.sd_out_of_stock }}</span>
+        <span class="sd-b wanted{{ if not .strain.Wanted }} d-none{{ end }}" id="sdWantedBadge"><i class="fa-solid fa-star"></i>{{ .lcl.wanted }}</span>
+        {{ if .loggedIn }}<span class="sd-stepper"><button type="button" data-seeds="add" title="{{ .lcl.sd_one_more }}" aria-label="{{ .lcl.sd_one_more }}">+</button></span>{{ end }}
+    </div>
+    {{ if .loggedIn }}
+    <button type="button" class="sd-btn light mt-2" id="sdWanted" data-wanted="{{ .strain.Wanted }}"><i class="fa-{{ if .strain.Wanted }}solid{{ else }}regular{{ end }} fa-star me-1"></i>{{ if .strain.Wanted }}{{ .lcl.wanted_remove }}{{ else }}{{ .lcl.wanted_add }}{{ end }}</button>
+    {{ end }}
+    {{ end }}
+</div>
+{{ end }}
+
+{{/* ---------- Strain facts ---------- */}}
+{{ define "sd/facts" }}
+<div class="sd-card">
+    <h2 class="sd-h"><i class="fa-solid fa-dna"></i>{{ .lcl.sd_strain_facts }}</h2>
+    <div class="sd-irat">
+        <div class="lbls"><span class="i">{{ printf .lcl.sd_indica .strain.Indica }}</span><span class="s">{{ printf .lcl.sd_sativa .strain.Sativa }}</span></div>
+        <div class="bar" role="img" aria-label="Indica {{ .strain.Indica }}% / Sativa {{ .strain.Sativa }}%"><span style="width: {{ .strain.Indica }}%"></span></div>
+        <div class="cap">{{ if gt .strain.Indica .strain.Sativa }}{{ .lcl.sd_indica_dom }}{{ else if gt .strain.Sativa .strain.Indica }}{{ .lcl.sd_sativa_dom }}{{ else }}{{ .lcl.sd_hybrid }}{{ end }}</div>
+    </div>
+    {{ if .potency }}
+    <div class="sd-pot">
+        {{ range .potency }}<div class="sd-rng"><b>{{ .Label }}</b><span class="tr"><span style="left: {{ printf "%.1f" .Left }}%; width: {{ printf "%.1f" .Width }}%"></span></span><span class="v">{{ .Text }}</span></div>{{ end }}
+    </div>
+    {{ end }}
+    <ul class="sd-facts">
+        <li><span><i class="fa-solid fa-clock"></i>{{ if .strain.Autoflower }}{{ .lcl.seed_to_harvest }}{{ else }}{{ .lcl.flowering_time }}{{ end }}</span>
+            <span>{{ if gt .strain.CycleTime 0 }}{{ if and (gt .strain.CycleTimeMin 0) (lt .strain.CycleTimeMin .strain.CycleTime) }}{{ daysToWeeks .strain.CycleTimeMin }}–{{ end }}{{ daysToWeeks .strain.CycleTime }} {{ .lcl.unit_weeks }}{{ else }}<span class="sd-faint">{{ .lcl.na }}</span>{{ end }}</span></li>
+        {{ with .strain.HeightIndoor }}<li><span><i class="fa-solid fa-ruler-vertical"></i>{{ $.lcl.height_indoor }}</span><span>{{ showHeight . }}</span></li>{{ end }}
+        {{ with .strain.HeightOutdoor }}<li><span><i class="fa-solid fa-ruler-vertical"></i>{{ $.lcl.height_outdoor }}</span><span>{{ showHeight . }}</span></li>{{ end }}
+        {{ with .strain.YieldIndoor }}<li><span><i class="fa-solid fa-scale-balanced"></i>{{ $.lcl.yield_indoor }}</span><span>{{ showYield . }}</span></li>{{ end }}
+        {{ with .strain.YieldOutdoor }}<li><span><i class="fa-solid fa-scale-balanced"></i>{{ $.lcl.yield_outdoor }}</span><span>{{ showYield . }}</span></li>{{ end }}
+    </ul>
+</div>
+{{ end }}
+
+{{/* ---------- Effects & terpenes (StrainCompass) ---------- */}}
+{{ define "sd/profile" }}
+{{ if or .strain.Effects .strain.Flavors .strain.Terpenes .strain.MedicalUses }}
+<div class="sd-card">
+    <h2 class="sd-h"><i class="fa-solid fa-flask"></i>{{ .lcl.sd_effects_title }}<span class="sd-h-r sd-faint">{{ .lcl.sd_from_sc }}</span></h2>
+    {{ if .effects }}
+    <div class="sd-sub">{{ .lcl.straincompass_effects }}</div>
+    <div class="sd-eff">{{ range .effects }}<span>{{ .Name }}</span><span class="tr">{{ if .Pct }}<span style="width: {{ .Pct }}%"></span>{{ end }}</span>{{ end }}</div>
+    {{ end }}
+    {{ if .terpenes }}
+    <div class="sd-sub">{{ .lcl.straincompass_terpenes }}</div>
+    <div class="sd-terp">{{ range .terpenes }}<span>{{ .Name }}</span><span>{{ if .Dots }}<span class="dots" aria-hidden="true"><i class="{{ if ge .Dots 1 }}on{{ end }}"></i><i class="{{ if ge .Dots 2 }}on{{ end }}"></i><i class="{{ if ge .Dots 3 }}on{{ end }}"></i></span> <span class="lv">{{ if eq .Dots 1 }}{{ $.lcl.sd_level_low }}{{ else if eq .Dots 2 }}{{ $.lcl.sd_level_medium }}{{ else }}{{ $.lcl.sd_level_high }}{{ end }}</span>{{ end }}</span>{{ end }}</div>
+    {{ end }}
+    {{ if .strain.Flavors }}
+    <div class="sd-sub">{{ .lcl.straincompass_flavors }}</div>
+    <div class="sd-chips">{{ range .strain.Flavors }}<span class="sd-chip fl">{{ .Name }}</span>{{ end }}</div>
+    {{ end }}
+    {{ if .strain.MedicalUses }}
+    <div class="sd-sub">{{ .lcl.straincompass_medical_uses }}</div>
+    <div class="sd-chips">{{ range .strain.MedicalUses }}<span class="sd-chip md">{{ .Name }}</span>{{ end }}</div>
+    {{ end }}
+</div>
+{{ end }}
 {{ end }}

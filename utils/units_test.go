@@ -1,6 +1,9 @@
 package utils
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestNormalizeUnits(t *testing.T) {
 	t.Parallel()
@@ -71,5 +74,23 @@ func TestLongDate(t *testing.T) {
 	}
 	if got := LongDate("sometime", nil); got != "sometime" {
 		t.Errorf("LongDate unreadable = %q", got)
+	}
+}
+
+func TestShortDate(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2026, 10, 12, 9, 0, 0, 0, time.UTC)
+	if got := shortDateAt("2026-12-02", nil, now); got != "Dec 2" {
+		t.Errorf("this year = %q", got)
+	}
+	if got := shortDateAt("2025-04-20T10:00:00", nil, now); got != "Apr 20, 2025" {
+		t.Errorf("other year = %q", got)
+	}
+	de := map[string]string{"month_short_3": "März", "date_short": "{day}. {month}", "date_short_year": "{day}. {month} {year}"}
+	if got := shortDateAt("2026-03-14", de, now); got != "14. März" {
+		t.Errorf("translated = %q", got)
+	}
+	if got := shortDateAt("soon", nil, now); got != "soon" {
+		t.Errorf("unreadable = %q", got)
 	}
 }

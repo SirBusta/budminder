@@ -109,6 +109,8 @@
     let tab = TABS[location.hash.slice(1)] ? location.hash.slice(1) : "vault";
     let layout = store.get("sp-layout") || "cards";
     const filter = { q: "", breeder: "", type: "", seedType: "", sort: "name" };
+    // /strains?breeder=Seed%20Junky#all (the strain page's breeder link) opens filtered.
+    try { filter.breeder = new URLSearchParams(location.search).get("breeder") || ""; } catch (e) { /* keep the default */ }
     // Clicking a sorted column again reverses it (where a reverse exists).
     const PAIR = { oldest: "newest", type: "typedesc" };
 
@@ -137,7 +139,7 @@
     // ---------- Render ----------
     function renderFilters() {
         const breeders = [...new Set(STRAINS.map(s => s.breeder).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-        if (filter.breeder && !breeders.includes(filter.breeder)) filter.breeder = "";
+        if (loaded && filter.breeder && !breeders.includes(filter.breeder)) filter.breeder = "";
         const opt = (v, l, cur) => `<option value="${esc(v)}" ${v === cur ? "selected" : ""}>${esc(l)}</option>`;
         $("spFilters").innerHTML = `
             <div class="sp-search"><i class="fa-solid fa-filter"></i><input type="search" id="spQ" placeholder="${esc(tr("sp_filter_my"))}" aria-label="${esc(tr("sp_filter_my"))}" value="${esc(filter.q)}"></div>

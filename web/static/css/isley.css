@@ -855,15 +855,6 @@ th, td {
     font-size: 0.95rem;
 }
 
-/* ===== Strain Infobox ===== */
-.strain-infobox {
-    border-left: 3px solid var(--color-accent);
-}
-.strain-infobox .card-title {
-    font-size: 1rem;
-    letter-spacing: 0.03em;
-}
-
 /* Strain type badges */
 .strain-badge-auto {
     background: #fef3c7;
@@ -1443,130 +1434,6 @@ th, td {
     padding-left: 1em;
     margin-left: 0;
     color: var(--color-muted);
-}
-
-/* ===== Lineage Tree (View) ===== */
-.lineage-tree {
-    list-style: none;
-    padding-left: 0;
-    margin: 0;
-}
-/* Nested subtrees */
-.lineage-tree .lineage-tree {
-    padding-left: 0;
-    margin-left: 1rem;
-    margin-top: 0;
-}
-.lineage-node {
-    position: relative;
-    padding: 0.15rem 0 0.15rem 0;
-}
-/* Connector lines for nested nodes */
-.lineage-tree .lineage-tree > .lineage-node {
-    padding-left: 1.25rem;
-}
-.lineage-tree .lineage-tree > .lineage-node::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 50%;
-    width: 1rem;
-    border-left: 2px solid var(--color-border);
-    border-bottom: 2px solid var(--color-border);
-    border-bottom-left-radius: 4px;
-}
-/* Vertical line connecting siblings */
-.lineage-tree .lineage-tree > .lineage-node:not(:last-child)::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    border-left: 2px solid var(--color-border);
-}
-/* Extend vertical line to connect to next sibling */
-.lineage-tree .lineage-tree > .lineage-node:last-child::after {
-    display: none;
-}
-.lineage-name {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-size: 0.92rem;
-    line-height: 1.5;
-}
-.lineage-toggle {
-    background: none;
-    border: none;
-    color: var(--color-muted);
-    padding: 0 0.25rem;
-    cursor: pointer;
-    font-size: 0.7rem;
-    line-height: 1;
-}
-.lineage-toggle:hover {
-    color: var(--color-accent);
-}
-.lineage-subtree.collapsed {
-    display: none;
-}
-
-/* Wikipedia-style links */
-.lineage-link-exists {
-    color: var(--color-accent);
-    text-decoration: none;
-}
-.lineage-link-exists:hover {
-    text-decoration: underline;
-}
-.lineage-link-missing {
-    color: #c0392b;
-    text-decoration: none;
-}
-[data-bs-theme="dark"] .lineage-link-missing {
-    color: #e74c3c;
-}
-.lineage-link-missing:hover {
-    text-decoration: underline;
-}
-
-/* ===== Descendants List ===== */
-.descendants-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-}
-.descendant-item {
-    padding: 0.45rem 0;
-    border-bottom: 1px solid var(--color-border, rgba(255,255,255,0.06));
-}
-.descendant-item:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-}
-.descendant-item:first-child {
-    padding-top: 0;
-}
-.descendant-top {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-}
-.descendant-icon {
-    color: var(--color-muted);
-    opacity: 0.45;
-}
-.descendant-cross {
-    font-size: 0.82rem;
-    color: var(--color-muted);
-}
-.descendant-breeder {
-    font-size: 0.78rem;
-    color: var(--color-muted);
-    opacity: 0.55;
-    padding-left: 1.15rem;
 }
 
 /* ===== Lineage Editor ===== */
@@ -3715,3 +3582,187 @@ th, td {
 [data-bs-theme="dark"] .sm-chip.home { background: rgba(56, 189, 248, .14); color: #7dd3fc; }
 [data-bs-theme="dark"] .sm-chip.plant { background: rgba(192, 132, 252, .15); color: #d8b4fe; }
 [data-bs-theme="dark"] .sm-pchip.on { background: rgba(192, 132, 252, .15); border-color: rgba(192, 132, 252, .4); color: #d8b4fe; }
+
+/* ===== Strain page (one strain, mockup SD1+) ===== */
+.sd {
+    --sd-acc: #16a34a;
+    --sd-acc-dark: #15803d;
+    --sd-ink: var(--color-fg);
+    --sd-muted: var(--color-muted);
+    --sd-card: var(--color-card);
+    --sd-line: #e7ecea;
+    --sd-soft: #f8faf9;
+    --sd-seg: #e2e8f0;
+    --sd-faint: #94a3b8;
+    --sd-shadow: 0 1px 3px rgba(15, 40, 35, .08);
+    padding-bottom: 2rem;
+    color: var(--sd-ink);
+}
+[data-bs-theme="dark"] .sd {
+    --sd-line: #2c3237;
+    --sd-soft: #1f2428;
+    --sd-seg: #2e3338;
+    --sd-faint: #8b95a1;
+    --sd-shadow: 0 1px 3px rgba(0, 0, 0, .4);
+}
+.sd .min-w-0 { min-width: 0; }
+.sd .breadcrumb a { color: var(--sd-acc); text-decoration: none; }
+.sd .breadcrumb a:hover { text-decoration: underline; }
+.sd-cols { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: .9rem; align-items: start; }
+.sd-cols.even { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 991.98px) { .sd-cols, .sd-cols.even { grid-template-columns: minmax(0, 1fr); } }
+.sd-stack > * + * { margin-top: .8rem; }
+.sd-card { background: var(--sd-card); border-radius: 16px; box-shadow: var(--sd-shadow); padding: 1rem 1.1rem; }
+.sd-h { font-size: .98rem; font-weight: 800; margin: 0 0 .7rem; display: flex; align-items: center; gap: .45rem; }
+.sd-h > i { color: var(--sd-acc); }
+.sd-h .sd-vault-ic { color: #64748b; }
+.sd-h-r { margin-left: auto; font-size: .78rem; font-weight: 600; color: var(--sd-muted); }
+.sd-muted { color: var(--sd-muted); }
+.sd-faint { color: var(--sd-faint); }
+.sd-link { border: 0; background: none; padding: 0; color: var(--sd-acc); font-size: .8rem; font-weight: 600; }
+.sd-link:hover { color: var(--sd-acc-dark); text-decoration: underline; }
+
+/* Header */
+.sd-head-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+.sd-head h1 { font-size: 1.9rem; font-weight: 800; margin: 0; overflow-wrap: anywhere; }
+.sd-by { color: var(--sd-muted); margin: .1rem 0 .55rem; }
+.sd-by a { color: var(--sd-acc); font-weight: 600; text-decoration: none; }
+.sd-by a:hover { text-decoration: underline; }
+.sd-lead { font-size: 1.05rem; color: var(--sd-muted); margin: .6rem 0 0; }
+.sd-acts { display: flex; gap: .4rem; flex-wrap: wrap; }
+.sd-btn { display: inline-flex; align-items: center; gap: .4rem; border: 0; border-radius: 10px; font-size: .86rem; font-weight: 600; padding: .45rem .85rem; background: var(--sd-acc); color: #fff; text-decoration: none; white-space: nowrap; }
+.sd-btn:hover { background: var(--sd-acc-dark); color: #fff; }
+.sd-btn.light { background: var(--sd-card); color: var(--sd-ink); box-shadow: 0 0 0 1px var(--sd-line); }
+.sd-btn.light:hover { box-shadow: 0 0 0 1px var(--sd-acc); color: var(--sd-acc); }
+.sd-nogrow { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin-top: .8rem; padding: .65rem .8rem; border-radius: 12px; background: #f0fdf4; border: 1px dashed #86efac; font-size: .88rem; }
+.sd-nogrow > i { color: var(--sd-acc); font-size: 1.1rem; }
+.sd-nogrow > span { flex: 1; min-width: 12rem; }
+[data-bs-theme="dark"] .sd-nogrow { background: rgba(22, 163, 74, .1); border-color: rgba(74, 222, 128, .35); }
+
+/* Badges and chips */
+.sd-chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+.sd-b { display: inline-flex; align-items: center; gap: .3rem; font-size: .74rem; font-weight: 600; padding: .16rem .55rem; border-radius: 99px; white-space: nowrap; background: var(--sd-seg); color: var(--sd-ink); text-decoration: none; }
+.sd-b.photo { background: #e0f2fe; color: #075985; }
+.sd-b.photo i { color: #f59e0b; }
+.sd-b.auto { background: #fef3c7; color: #92400e; }
+.sd-b.ok { background: #dcfce7; color: #166534; }
+.sd-b.wanted { background: #fef3c7; color: #92400e; }
+.sd-b.src:hover { background: #cbd5e1; color: var(--sd-ink); }
+.sd-chip { font-size: .78rem; font-weight: 600; padding: .2rem .6rem; border-radius: 99px; background: var(--sd-soft); border: 1px solid var(--sd-line); }
+.sd-chip.fl { background: #fff7ed; border-color: #fed7aa; color: #9a3412; }
+.sd-chip.md { background: #f0f9ff; border-color: #bae6fd; color: #075985; }
+[data-bs-theme="dark"] .sd-b.photo { background: rgba(56, 189, 248, .14); color: #7dd3fc; }
+[data-bs-theme="dark"] .sd-b.auto,
+[data-bs-theme="dark"] .sd-b.wanted { background: rgba(251, 191, 36, .14); color: #fcd34d; }
+[data-bs-theme="dark"] .sd-b.ok { background: rgba(74, 222, 128, .14); color: #86efac; }
+[data-bs-theme="dark"] .sd-b.src:hover { background: #3a4047; }
+[data-bs-theme="dark"] .sd-chip.fl { background: rgba(251, 146, 60, .12); border-color: rgba(251, 146, 60, .3); color: #fdba74; }
+[data-bs-theme="dark"] .sd-chip.md { background: rgba(56, 189, 248, .1); border-color: rgba(56, 189, 248, .3); color: #7dd3fc; }
+
+/* Your grows */
+.sd-stats { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .3rem; }
+.sd-stats span { font-size: .8rem; background: var(--sd-soft); border: 1px solid var(--sd-line); border-radius: 99px; padding: .2rem .65rem; }
+.sd-grow { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: .8rem; align-items: center; padding: .6rem 0; border-top: 1px solid var(--sd-line); }
+.sd-stats + .sd-grow { border-top: 0; }
+.sd-grow-ph img, .sd-noph { width: 56px; height: 56px; border-radius: 11px; object-fit: cover; display: grid; place-items: center; }
+.sd-noph { background: linear-gradient(135deg, #e8f5ec, #d6eedd); color: #86c79b; font-size: 1.2rem; }
+[data-bs-theme="dark"] .sd-noph { background: linear-gradient(135deg, #14261c, #183a25); color: #2f6b45; }
+.sd-grow-nm { font-weight: 800; color: var(--sd-ink); text-decoration: none; }
+.sd-grow-nm:hover { color: var(--sd-acc); }
+.sd-grow-mt { font-size: .78rem; color: var(--sd-muted); display: flex; flex-wrap: wrap; gap: .25rem; }
+.sd-grow-rt { text-align: right; font-size: .8rem; color: var(--sd-muted); display: flex; flex-direction: column; }
+.sd-grow-rt b { font-size: 1rem; color: var(--sd-ink); }
+.sd-stage { --c: #64748b; display: inline-flex; align-items: center; gap: .3rem; font-weight: 700; color: var(--c); }
+.sd-stage::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.sd-stage[data-stage="Germinating"] { --c: #84906b; }
+.sd-stage[data-stage="Planted"] { --c: #6f9a44; }
+.sd-stage[data-stage="Seedling"] { --c: #65a30d; }
+.sd-stage[data-stage="Veg"] { --c: #16a34a; }
+.sd-stage[data-stage="Flower"] { --c: #9333ea; }
+.sd-stage[data-stage="Drying"] { --c: #d97706; }
+.sd-stage[data-stage="Curing"] { --c: #92400e; }
+.sd-stage[data-stage="Success"] { --c: #0284c7; }
+[data-bs-theme="dark"] .sd-stage[data-stage="Flower"] { --c: #c084fc; }
+[data-bs-theme="dark"] .sd-stage[data-stage="Curing"] { --c: #d97706; }
+[data-bs-theme="dark"] .sd-stage[data-stage="Success"] { --c: #38bdf8; }
+.sd-prog { height: 6px; border-radius: 99px; background: var(--sd-seg); overflow: hidden; margin-top: .35rem; max-width: 260px; }
+.sd-prog span { display: block; height: 100%; background: linear-gradient(90deg, #84cc16, #9333ea); }
+@media (max-width: 575.98px) {
+    .sd-grow { grid-template-columns: 56px minmax(0, 1fr); }
+    .sd-grow-rt { grid-column: 2; text-align: left; flex-direction: row; flex-wrap: wrap; gap: .5rem; align-items: baseline; }
+}
+
+/* Family diagram */
+.sd-fam { display: flex; align-items: center; gap: .5rem; overflow-x: auto; padding-bottom: .2rem; }
+.sd-col { display: grid; gap: .45rem; flex: 1 1 0; min-width: 9.5rem; }
+.sd-node { display: block; border-radius: 11px; padding: .45rem .7rem; background: var(--sd-soft); border: 1px solid var(--sd-line); font-size: .84rem; font-weight: 600; color: var(--sd-ink); text-decoration: none; }
+.sd-node small { display: block; font-weight: 500; color: var(--sd-muted); font-size: .72rem; }
+a.sd-node:hover { border-color: var(--sd-acc); }
+.sd-node.lib { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+.sd-node.ext { color: var(--sd-muted); }
+.sd-node.me { background: var(--sd-acc); border-color: var(--sd-acc); color: #fff; font-size: .98rem; text-align: center; padding: .75rem; }
+.sd-node.me small { color: #dcfce7; }
+.sd-node.kid { background: #faf5ff; border-color: #e9d5ff; color: #6b21a8; }
+[data-bs-theme="dark"] .sd-node.lib { background: rgba(74, 222, 128, .1); border-color: rgba(74, 222, 128, .3); color: #86efac; }
+[data-bs-theme="dark"] .sd-node.kid { background: rgba(192, 132, 252, .1); border-color: rgba(192, 132, 252, .3); color: #d8b4fe; }
+.sd-node-wrap { position: relative; }
+.sd-node-wrap .sd-node { padding-right: 1.8rem; }
+.sd-node-sc { position: absolute; top: .45rem; right: .55rem; font-size: .68rem; color: var(--sd-faint); }
+.sd-node-sc:hover { color: var(--sd-acc); }
+.sd-arr { color: var(--sd-faint); flex: none; }
+@media (max-width: 767.98px) {
+    .sd-fam { flex-direction: column; align-items: stretch; }
+    .sd-col { min-width: 0; }
+    .sd-arr { transform: rotate(90deg); align-self: center; }
+}
+
+/* About, photos */
+.sd-prose { line-height: 1.6; }
+.sd-prose > :last-child { margin-bottom: 0; }
+.sd-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .5rem; }
+.sd-strip img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; display: block; }
+@media (max-width: 767.98px) { .sd-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* Seed Vault */
+.sd-vault-n { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
+.sd-vault-n > b { font-size: 2rem; font-weight: 800; line-height: 1; }
+.sd-stepper { display: inline-flex; margin-left: auto; border-radius: 9px; box-shadow: 0 0 0 1px var(--sd-line); overflow: hidden; }
+.sd-stepper button { border: 0; background: var(--sd-card); color: var(--sd-ink); width: 32px; height: 30px; font-size: 1rem; }
+.sd-stepper button + button { border-left: 1px solid var(--sd-line); }
+.sd-stepper button:hover { color: var(--sd-acc); background: var(--sd-soft); }
+.sd-pack { display: block; margin-bottom: .7rem; text-align: center; }
+.sd-pack img { max-width: 100%; max-height: 200px; border-radius: 10px; }
+
+/* Facts */
+.sd-facts { list-style: none; padding: 0; margin: .5rem 0 0; }
+.sd-facts li { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem 0; border-top: 1px solid var(--sd-line); font-size: .86rem; }
+.sd-facts li:first-child { border-top: 0; }
+.sd-facts li > span:first-child { color: var(--sd-muted); white-space: nowrap; }
+.sd-facts li > span:first-child i { width: 1.2em; margin-right: .35rem; color: var(--sd-faint); }
+.sd-facts li > span:last-child { font-weight: 600; text-align: right; }
+.sd-irat .lbls { display: flex; justify-content: space-between; font-size: .8rem; font-weight: 700; }
+.sd-irat .lbls .i { color: #7c3aed; }
+.sd-irat .lbls .s { color: #16a34a; }
+[data-bs-theme="dark"] .sd-irat .lbls .i { color: #a78bfa; }
+[data-bs-theme="dark"] .sd-irat .lbls .s { color: #4ade80; }
+.sd-irat .bar { height: 8px; border-radius: 99px; background: #22c55e; overflow: hidden; margin: .25rem 0; }
+.sd-irat .bar span { display: block; height: 100%; background: #8b5cf6; }
+.sd-irat .cap { font-size: .78rem; color: var(--sd-muted); text-align: center; }
+.sd-pot { margin-top: .6rem; }
+.sd-rng { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; gap: .6rem; align-items: center; font-size: .82rem; margin: .3rem 0; }
+.sd-rng b { font-size: .78rem; }
+.sd-rng .tr { height: 6px; border-radius: 99px; background: var(--sd-seg); position: relative; }
+.sd-rng .tr span { position: absolute; top: 0; bottom: 0; border-radius: 99px; background: var(--sd-acc); }
+.sd-rng .v { font-weight: 700; white-space: nowrap; }
+
+/* Effects & terpenes */
+.sd-sub { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--sd-muted); margin: .9rem 0 .4rem; }
+.sd-h + .sd-sub { margin-top: 0; }
+.sd-eff { display: grid; grid-template-columns: minmax(5rem, auto) minmax(0, 1fr); gap: .35rem .8rem; align-items: center; font-size: .84rem; }
+.sd-eff .tr { height: 7px; border-radius: 99px; background: var(--sd-seg); overflow: hidden; }
+.sd-eff .tr span { display: block; height: 100%; background: #38bdf8; border-radius: 99px; }
+.sd-terp { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .3rem .8rem; align-items: center; font-size: .84rem; }
+.sd-terp .dots { display: inline-flex; gap: 3px; vertical-align: middle; }
+.sd-terp .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--sd-seg); }
+.sd-terp .dots i.on { background: #f59e0b; }
+.sd-terp .lv { display: inline-block; min-width: 3.6rem; font-size: .74rem; color: var(--sd-muted); text-align: right; }
