@@ -99,7 +99,8 @@
         const lbl = k => compact ? "" : " " + esc(tr(k));
         return `<div class="sp-acts">
             ${canGrow ? `<a class="sp-btn primary" href="${esc(growURL(s))}" title="${esc(tr("sp_start_grow"))}"><i class="fa-solid fa-play"></i>${lbl("sp_start_grow")}</a>` : ""}
-            <button class="sp-btn" data-seeds="${s.id}" title="${esc(tr("sp_restock_title"))}"><i class="fa-solid fa-box-open"></i> ${esc(tr("sp_restock"))}</button>
+            ${inVault(s) ? `<button class="sp-btn" data-seeds="${s.id}" title="${esc(tr("sp_restock_title"))}"><i class="fa-solid fa-box-open"></i> ${esc(tr("sp_restock"))}</button>`
+                : `<button class="sp-btn" data-seeds="${s.id}" title="${esc(tr("sp_add_seeds"))}"><i class="fa-solid fa-plus"></i> ${esc(tr("sp_add_seeds"))}</button>`}
             ${inVault(s) ? "" : `<button class="sp-btn ${s.wanted ? "on" : ""}" data-want="${s.id}" title="${esc(tr(s.wanted ? "sp_remove_wanted" : "sp_add_wanted"))}"><i class="fa-${s.wanted ? "solid" : "regular"} fa-star"></i>${lbl(s.wanted ? "sp_wanted" : "sp_want")}</button>`}
         </div>`;
     }
@@ -399,7 +400,10 @@
     function openSeeds(id) {
         const s = STRAINS.find(x => x.id === +id);
         if (!s) return;
-        const el = modal("spSeeds", `<i class="fa-solid fa-box-open me-2"></i>${esc(tr("sp_restock_name", { name: s.name }))}`, `
+        // Restock when there are seeds already; "Add seeds" for a strain with none (e.g. Wanted).
+        const restock = inVault(s);
+        const el = modal("spSeeds", restock ? `<i class="fa-solid fa-box-open me-2"></i>${esc(tr("sp_restock_name", { name: s.name }))}`
+            : `<i class="fa-solid fa-seedling me-2"></i>${esc(tr("sp_add_seeds_to", { name: s.name }))}`, `
             ${isWanted(s) ? `<div class="sp-have mb-3"><i class="fa-solid fa-star me-1"></i>${esc(tr("sp_got_them", { name: s.name }))}</div>` : ""}
             <div class="row g-2">
                 <div class="col-4"><label class="form-label small mb-0" for="spSeedsN">${esc(tr("sp_how_many"))}</label><input type="number" min="1" value="5" class="form-control" id="spSeedsN"></div>
@@ -409,7 +413,7 @@
             </div>
             ${inVault(s) && s.seeds_added_on ? `<p class="small text-muted mt-2 mb-0">${esc(tr("sp_have_already", { n: s.seed_count, date: fmtDate(s.seeds_added_on) }))}</p>` : ""}
             <div class="text-danger small mt-2 d-none sp-err"></div>`,
-            `<button class="btn btn-light" data-bs-dismiss="modal">${esc(tr("sp_cancel"))}</button><button class="btn btn-success" id="spSeedsGo">${esc(tr("sp_restock"))}</button>`);
+            `<button class="btn btn-light" data-bs-dismiss="modal">${esc(tr("sp_cancel"))}</button><button class="btn btn-success" id="spSeedsGo">${esc(tr(restock ? "sp_restock" : "sp_add_seeds"))}</button>`);
         $("spSeedsGo").addEventListener("click", async () => {
             const n = parseInt($("spSeedsN").value, 10);
             if (!(n >= 1)) { $("spSeedsN").reportValidity(); return; }

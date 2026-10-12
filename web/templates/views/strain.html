@@ -188,7 +188,8 @@
     {{ end }}
     {{ if .loggedIn }}
     <div class="sd-vault-acts">
-        <a class="sd-btn light" href="/strains?restock={{ .strain.ID }}&back=/strain/{{ .strain.ID }}#all" title="{{ .lcl.sp_restock_title }}"><i class="fa-solid fa-box-open"></i>{{ .lcl.sd_restock }}</a>
+        {{ if gt .strain.SeedCount 0 }}<a class="sd-btn light" href="/strains?restock={{ .strain.ID }}&back=/strain/{{ .strain.ID }}#all" title="{{ .lcl.sp_restock_title }}"><i class="fa-solid fa-box-open"></i>{{ .lcl.sd_restock }}</a>
+        {{ else }}<a class="sd-btn light" href="/strains?restock={{ .strain.ID }}&back=/strain/{{ .strain.ID }}#all"><i class="fa-solid fa-plus"></i>{{ .lcl.sp_add_seeds }}</a>{{ end }}
         {{ if eq .strain.SeedCount 0 }}<button type="button" class="sd-btn light" id="sdWanted" data-wanted="{{ .strain.Wanted }}"><i class="fa-{{ if .strain.Wanted }}solid{{ else }}regular{{ end }} fa-star me-1"></i>{{ if .strain.Wanted }}{{ .lcl.wanted_remove }}{{ else }}{{ .lcl.wanted_add }}{{ end }}</button>{{ end }}
     </div>
     {{ end }}
