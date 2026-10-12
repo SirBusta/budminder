@@ -15,7 +15,7 @@
 
 ---
 
-![Isley Dashboard](docs/images/dashboard.png)
+![Isley's Today page: what needs attention, each tent with live readings, a camera tile and plant cards](docs/images/screenshots/home.webp)
 
 </div>
 
@@ -51,6 +51,35 @@ Isley doesn't try to revolutionize your grow — it centralizes your tools so yo
 | 🔓 | **Guest Mode** | Optional read-only access for unauthenticated visitors |
 | 💾 | **Backup & Restore** | Cross-database portable backups with optional image bundling and sensor data filtering |
 | 📱 | **Mobile-Friendly** | Responsive layout for desktop and mobile |
+
+---
+
+## 📸 Screenshots
+
+<table>
+<tr>
+<td width="50%"><b>Plant page</b><br>The stage track, and a notebook with one entry per day: activities, measurements like water amount and height, and that day's photos.<br><br><img src="docs/images/screenshots/plant.webp" alt="Plant page with stage track, notebook and photos"></td>
+<td width="50%"><b>Environment</b><br>Live readings and history for each tent: temperature, humidity, VPD, CO₂ and more, from 1 hour to 7 days or a custom range.<br><br><img src="docs/images/screenshots/environment.webp" alt="Environment page with a week of tent readings"></td>
+</tr>
+<tr>
+<td><b>Plants</b><br>Every plant with its stage, progress to harvest and when it was last watered and fed.<br><br><img src="docs/images/screenshots/plants.webp" alt="Plants list with progress bars"></td>
+<td><b>Log activity</b><br>Water, feed, train or note one plant or a whole tent at once, with the amount given.<br><br><img src="docs/images/screenshots/log-activity.webp" alt="Log activity window"></td>
+</tr>
+<tr>
+<td><b>Strains &amp; Seed Vault</b><br>Seeds on hand with their age, a wish list, lineage and flowering times.<br><br><img src="docs/images/screenshots/strains.webp" alt="Strains page with the Seed Vault"></td>
+<td><b>Manage sensors</b><br>Scan AC Infinity and Ecowitt, name each sensor, put it in a tent and choose where it shows.<br><br><img src="docs/images/screenshots/manage-sensors.webp" alt="Manage sensors page"></td>
+</tr>
+<tr>
+<td><b>Settings</b><br>Searchable, grouped settings that save as you go.<br><br><img src="docs/images/screenshots/settings.webp" alt="Settings page"></td>
+<td><b>Dark mode</b><br>Every page has a dark theme.<br><br><img src="docs/images/screenshots/home-dark.webp" alt="Today page in dark mode"></td>
+</tr>
+<tr>
+<td colspan="2"><b>On your phone</b><br>The same pages, laid out for a small screen.<br><br>
+<img src="docs/images/screenshots/phone-home.webp" alt="Today page on a phone" width="32%">&nbsp;&nbsp;<img src="docs/images/screenshots/phone-plant.webp" alt="Plant page on a phone in dark mode" width="32%"></td>
+</tr>
+</table>
+
+<sub>Screenshots use a demo data set: the sensor history is a month of real readings from an AC Infinity controller in a 3x3 tent.</sub>
 
 ---
 
