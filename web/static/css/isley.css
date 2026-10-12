@@ -3733,6 +3733,7 @@ a.sd-node:hover { border-color: var(--sd-acc); }
 .sd-stepper button { border: 0; background: var(--sd-card); color: var(--sd-ink); width: 32px; height: 30px; font-size: 1rem; }
 .sd-stepper button + button { border-left: 1px solid var(--sd-line); }
 .sd-stepper button:hover { color: var(--sd-acc); background: var(--sd-soft); }
+.sd-vault-acts { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .7rem; }
 .sd-pack { display: block; margin-bottom: .7rem; text-align: center; }
 .sd-pack img { max-width: 100%; max-height: 200px; border-radius: 10px; }
 

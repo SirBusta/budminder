@@ -99,7 +99,7 @@
         const lbl = k => compact ? "" : " " + esc(tr(k));
         return `<div class="sp-acts">
             ${canGrow ? `<a class="sp-btn primary" href="${esc(growURL(s))}" title="${esc(tr("sp_start_grow"))}"><i class="fa-solid fa-play"></i>${lbl("sp_start_grow")}</a>` : ""}
-            <button class="sp-btn" data-seeds="${s.id}" title="${esc(tr("sp_add_seeds"))}"><i class="fa-solid fa-plus"></i>${lbl("sp_seeds")}</button>
+            <button class="sp-btn" data-seeds="${s.id}" title="${esc(tr("sp_restock_title"))}"><i class="fa-solid fa-box-open"></i> ${esc(tr("sp_restock"))}</button>
             ${inVault(s) ? "" : `<button class="sp-btn ${s.wanted ? "on" : ""}" data-want="${s.id}" title="${esc(tr(s.wanted ? "sp_remove_wanted" : "sp_add_wanted"))}"><i class="fa-${s.wanted ? "solid" : "regular"} fa-star"></i>${lbl(s.wanted ? "sp_wanted" : "sp_want")}</button>`}
         </div>`;
     }
@@ -399,7 +399,7 @@
     function openSeeds(id) {
         const s = STRAINS.find(x => x.id === +id);
         if (!s) return;
-        const el = modal("spSeeds", `<i class="fa-solid fa-seedling me-2"></i>${esc(tr("sp_add_seeds_to", { name: s.name }))}`, `
+        const el = modal("spSeeds", `<i class="fa-solid fa-box-open me-2"></i>${esc(tr("sp_restock_name", { name: s.name }))}`, `
             ${isWanted(s) ? `<div class="sp-have mb-3"><i class="fa-solid fa-star me-1"></i>${esc(tr("sp_got_them", { name: s.name }))}</div>` : ""}
             <div class="row g-2">
                 <div class="col-4"><label class="form-label small mb-0" for="spSeedsN">${esc(tr("sp_how_many"))}</label><input type="number" min="1" value="5" class="form-control" id="spSeedsN"></div>
@@ -409,7 +409,7 @@
             </div>
             ${inVault(s) && s.seeds_added_on ? `<p class="small text-muted mt-2 mb-0">${esc(tr("sp_have_already", { n: s.seed_count, date: fmtDate(s.seeds_added_on) }))}</p>` : ""}
             <div class="text-danger small mt-2 d-none sp-err"></div>`,
-            `<button class="btn btn-light" data-bs-dismiss="modal">${esc(tr("sp_cancel"))}</button><button class="btn btn-success" id="spSeedsGo">${esc(tr("sp_add_seeds"))}</button>`);
+            `<button class="btn btn-light" data-bs-dismiss="modal">${esc(tr("sp_cancel"))}</button><button class="btn btn-success" id="spSeedsGo">${esc(tr("sp_restock"))}</button>`);
         $("spSeedsGo").addEventListener("click", async () => {
             const n = parseInt($("spSeedsN").value, 10);
             if (!(n >= 1)) { $("spSeedsN").reportValidity(); return; }
@@ -418,9 +418,23 @@
                 await api("POST", `/strains/${s.id}/seeds`, { count: n, seed_type: $("spSeedsT").value, seeds_added_on: $("spSeedsD").value, seed_location: $("spSeedsL").value });
                 closeModal(el);
                 toast(tr(inVault(s) ? "sp_seeds_added_toast" : "sp_moved_to_vault", { n, name: s.name }));
+                if (RETURN_TO) return;   // the hidden handler goes back to the strain page
                 await load();
             } catch (e) { err(el, e.message); } finally { $("spSeedsGo").disabled = false; }
         });
+    }
+
+    const RESTOCK = (() => { try { return +new URLSearchParams(location.search).get("restock") || 0; } catch (e) { return 0; } })();
+    const RETURN_TO = (() => {
+        try {
+            const b = new URLSearchParams(location.search).get("back") || "";
+            return /^\/strain\/\d+$/.test(b) ? b : "";   // only back to a strain page
+        } catch (e) { return ""; }
+    })();
+    function openRestockFromLink() {
+        if (!RESTOCK || !STRAINS.some(x => x.id === RESTOCK)) return;
+        openSeeds(RESTOCK);
+        if (RETURN_TO) document.getElementById("spSeeds")?.addEventListener("hidden.bs.modal", () => { location.href = RETURN_TO; }, { once: true });
     }
 
     async function toggleWant(id) {
@@ -499,5 +513,5 @@
 
     renderFilters();
     render();
-    load();
+    load().then(openRestockFromLink);
 })();

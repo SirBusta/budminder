@@ -185,9 +185,12 @@
         <span class="sd-b wanted{{ if not .strain.Wanted }} d-none{{ end }}" id="sdWantedBadge"><i class="fa-solid fa-star"></i>{{ .lcl.wanted }}</span>
         {{ if .loggedIn }}<span class="sd-stepper"><button type="button" data-seeds="add" title="{{ .lcl.sd_one_more }}" aria-label="{{ .lcl.sd_one_more }}">+</button></span>{{ end }}
     </div>
-    {{ if .loggedIn }}
-    <button type="button" class="sd-btn light mt-2" id="sdWanted" data-wanted="{{ .strain.Wanted }}"><i class="fa-{{ if .strain.Wanted }}solid{{ else }}regular{{ end }} fa-star me-1"></i>{{ if .strain.Wanted }}{{ .lcl.wanted_remove }}{{ else }}{{ .lcl.wanted_add }}{{ end }}</button>
     {{ end }}
+    {{ if .loggedIn }}
+    <div class="sd-vault-acts">
+        <a class="sd-btn light" href="/strains?restock={{ .strain.ID }}&back=/strain/{{ .strain.ID }}#all" title="{{ .lcl.sp_restock_title }}"><i class="fa-solid fa-box-open"></i>{{ .lcl.sd_restock }}</a>
+        {{ if eq .strain.SeedCount 0 }}<button type="button" class="sd-btn light" id="sdWanted" data-wanted="{{ .strain.Wanted }}"><i class="fa-{{ if .strain.Wanted }}solid{{ else }}regular{{ end }} fa-star me-1"></i>{{ if .strain.Wanted }}{{ .lcl.wanted_remove }}{{ else }}{{ .lcl.wanted_add }}{{ end }}</button>{{ end }}
+    </div>
     {{ end }}
 </div>
 {{ end }}
