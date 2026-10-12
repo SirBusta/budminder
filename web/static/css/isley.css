@@ -110,39 +110,55 @@ body {
     background-color: var(--color-row-hover);
 }
 
-/* Top menu (mockup M2, option E): green icons; the page you're on gets a
-   pale green pill with its name. No fill-and-turn-white jump. */
+/* Top menu (mockup M2, option F): every icon has its name underneath; the
+   page you're on is green with a bold name and a bar on the header's bottom
+   line, the others gray until hovered. */
 header .isley-nav {
     --nav-c: #16a34a;
-    --nav-hover: #15803d;
-    --nav-tint: #dcfce7;
-    --nav-hover-tint: rgba(22, 163, 74, .07);
-    --nav-ink: #15803d;
+    --nav-mut: #64748b;
     align-items: center;
-    gap: 6px;
+    gap: 2px;
 }
 [data-bs-theme="dark"] header .isley-nav {
     --nav-c: #4ade80;
-    --nav-hover: #86efac;
-    --nav-tint: rgba(74, 222, 128, .14);
-    --nav-hover-tint: rgba(74, 222, 128, .07);
-    --nav-ink: #86efac;
+    --nav-mut: #8b949e;
 }
 header .isley-nav .nav-link {
+    position: relative;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 7px;
-    padding: 7px 11px;
-    border-radius: 10px;
-    color: var(--nav-c);
+    gap: 4px;
+    min-width: 52px;
+    padding: 5px 8px;
+    border-radius: 8px;
+    color: var(--nav-mut);
     line-height: 1;
 }
-header .isley-nav .nav-link:hover { color: var(--nav-hover); background: var(--nav-hover-tint); }
-header .isley-nav .nav-link.active { color: var(--nav-ink); background: var(--nav-tint); }
+header .isley-nav .nav-link:hover,
+header .isley-nav .nav-link.active { color: var(--nav-c); }
 header .isley-nav .nav-link:focus-visible { box-shadow: 0 0 0 .25rem rgba(22, 163, 74, .3); }
-header .isley-nav .nav-link > .fa { width: 1.2em; text-align: center; }
-header .isley-nav .nav-lbl { display: none; font-size: .9rem; font-weight: 600; }
-header .isley-nav .nav-link.active .nav-lbl { display: inline; }
+header .isley-nav .nav-link > .fa { display: block; width: 1.2em; height: 1.2em; line-height: 1.2em; text-align: center; }
+header .isley-nav .nav-lbl { font-size: 11px; font-weight: 500; white-space: nowrap; }
+header .isley-nav .nav-link.active .nav-lbl { font-weight: 700; }
+/* The bar sits just under the item; on wide screens (one-row header) it
+   lands on the header's bottom border. */
+header .isley-nav .nav-link.active::after {
+    content: "";
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: -4px;
+    height: 3px;
+    border-radius: 3px;
+    background: var(--nav-c);
+}
+@media (min-width: 992px) {
+    header .isley-nav .nav-link.active::after { bottom: calc(-.5rem - 1px); border-radius: 3px 3px 0 0; }
+}
+@media (max-width: 420px) {
+    header .isley-nav .nav-link { min-width: 0; padding: 5px 5px; }
+}
 /* Drawn menu icons: f = filled shape, g = filled leaf, l = line. */
 .nav-ic { width: 1.2em; height: 1.2em; flex: none; overflow: visible; }
 .nav-ic .f { fill: currentColor; stroke: currentColor; stroke-width: 1.2; stroke-linejoin: round; }

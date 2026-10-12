@@ -12,8 +12,8 @@
     </a>
 
     <!-- Navigation Links -->
-    <!-- Top menu: icon only; the page you're on also shows its name in a
-         pale green pill (mockup M2, option E). Home, Plants and Sensors are
+    <!-- Top menu: icon with its name underneath; the page you're on is green
+         with a bar on the header line, the others gray (mockup M2, option F). Home, Plants and Sensors are
          drawn SVGs (Plants reuses Font Awesome Free's cannabis leaf). -->
     <ul class="nav isley-nav">
         <li class="nav-item">
@@ -44,13 +44,13 @@
         </li>
         <li class="nav-item">
             <a href="/logout" class="nav-link" title="{{ .lcl.title_logout }}" aria-label="{{ .lcl.title_logout }}">
-                <i class="fa fa-sign-out" aria-hidden="true"></i>
+                <i class="fa fa-sign-out" aria-hidden="true"></i><span class="nav-lbl">{{ .lcl.title_logout }}</span>
             </a>
         </li>
         {{ else }}
         <li class="nav-item">
             <a href="/login" class="nav-link" title="{{ .lcl.title_login }}" aria-label="{{ .lcl.title_login }}">
-                <i class="fa fa-sign-in" aria-hidden="true"></i>
+                <i class="fa fa-sign-in" aria-hidden="true"></i><span class="nav-lbl">{{ .lcl.title_login }}</span>
             </a>
         </li>
         {{ end }}
