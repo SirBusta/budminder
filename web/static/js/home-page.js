@@ -263,7 +263,7 @@
         $("hmLogBody").innerHTML = `
             <label class="form-label small fw-semibold mb-1">${esc(t("hm_plants"))}</label>
             <div class="hm-chips" id="hmLogPlants">${plants.map(p => `<button type="button" class="hm-chip ${logSel.plants.has(p.id) ? "on" : ""}" data-lp="${p.id}" aria-pressed="${logSel.plants.has(p.id)}"><i class="fa-solid fa-cannabis"></i>${esc(p.name)}</button>`).join("")}</div>
-            ${tents.length ? `<div class="mb-3 mt-1">${tents.map(x => `<button type="button" class="btn btn-link btn-sm p-0 me-3" data-lt="${x.id}">${esc(t("hm_select_tent", { tent: x.name }))}</button>`).join("")}</div>` : `<div class="mb-3"></div>`}
+            ${tents.length ? `<div class="mb-3 mt-1">${tents.map(x => `<button type="button" class="hm-link hm-link-btn me-3" data-lt="${x.id}"><i class="fa-solid fa-check-double me-1"></i>${esc(t("hm_select_tent", { tent: x.name }))}</button>`).join("")}</div>` : `<div class="mb-3"></div>`}
             <div class="row g-2 mb-3"><div class="col-sm-5"><label class="form-label small mb-0" for="hmLogDate">${esc(t("hm_date"))}</label>
                 <input type="date" class="form-control form-control-sm" id="hmLogDate" value="${D.today}" max="${D.today}"></div></div>
             <label class="form-label small fw-semibold mb-1">${esc(t("hm_activities"))}</label>
