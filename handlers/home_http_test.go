@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"testing"
 	"time"
@@ -225,4 +226,25 @@ func TestHomePage_Renders(t *testing.T) {
 	assert.Contains(t, html, `id="homePage"`)
 	assert.NotContains(t, html, `id="hmLog"`, "guests are read-only")
 	assert.NotContains(t, html, `id="uploadImagesModal"`)
+}
+
+// The top menu marks the page you're on (it shows its name in a pill).
+// Manage sensors sits in the Settings menu, so Settings is the one marked.
+func TestTopMenu_SelectedItem(t *testing.T) {
+	t.Parallel()
+	e := newSensorEnv(t)
+	selected := regexp.MustCompile(`<a href="([^"]+)" class="nav-link active" aria-current="page"`)
+	for path, want := range map[string]string{
+		"/": "/", "/plants": "/plants", "/strains": "/strains",
+		"/sensors": "/sensors", "/sensors/manage": "/settings", "/settings": "/settings",
+	} {
+		resp := e.client.Get(path)
+		body, err := io.ReadAll(resp.Body)
+		testutil.DrainAndClose(resp)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode, path)
+		got := selected.FindAllStringSubmatch(string(body), -1)
+		require.Len(t, got, 1, path)
+		assert.Equal(t, want, got[0][1], path)
+	}
 }

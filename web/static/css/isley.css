@@ -110,28 +110,44 @@ body {
     background-color: var(--color-row-hover);
 }
 
-header .nav-item {
-    width: 40px;
-    height: 38px;
-    margin-right: 10px;
+/* Top menu (mockup M2, option E): green icons; the page you're on gets a
+   pale green pill with its name. No fill-and-turn-white jump. */
+header .isley-nav {
+    --nav-c: #16a34a;
+    --nav-hover: #15803d;
+    --nav-tint: #dcfce7;
+    --nav-hover-tint: rgba(22, 163, 74, .07);
+    --nav-ink: #15803d;
+    align-items: center;
+    gap: 6px;
 }
-header .nav-link {
-    padding: 7px 12px;
+[data-bs-theme="dark"] header .isley-nav {
+    --nav-c: #4ade80;
+    --nav-hover: #86efac;
+    --nav-tint: rgba(74, 222, 128, .14);
+    --nav-hover-tint: rgba(74, 222, 128, .07);
+    --nav-ink: #86efac;
 }
-/* Top-menu icons in the new look's green (was Bootstrap blue). */
-header .nav-pills {
-    --bs-nav-link-color: #16a34a;
-    --bs-nav-link-hover-color: #15803d;
-    --bs-nav-pills-link-active-bg: #16a34a;
-    --bs-nav-pills-link-active-color: #fff;
+header .isley-nav .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 11px;
+    border-radius: 10px;
+    color: var(--nav-c);
+    line-height: 1;
 }
-[data-bs-theme="dark"] header .nav-pills {
-    --bs-nav-link-color: #4ade80;
-    --bs-nav-link-hover-color: #86efac;
-}
-header .nav-pills .nav-link:focus-visible {
-    box-shadow: 0 0 0 .25rem rgba(22, 163, 74, .3);
-}
+header .isley-nav .nav-link:hover { color: var(--nav-hover); background: var(--nav-hover-tint); }
+header .isley-nav .nav-link.active { color: var(--nav-ink); background: var(--nav-tint); }
+header .isley-nav .nav-link:focus-visible { box-shadow: 0 0 0 .25rem rgba(22, 163, 74, .3); }
+header .isley-nav .nav-link > .fa { width: 1.2em; text-align: center; }
+header .isley-nav .nav-lbl { display: none; font-size: .9rem; font-weight: 600; }
+header .isley-nav .nav-link.active .nav-lbl { display: inline; }
+/* Drawn menu icons: f = filled shape, g = filled leaf, l = line. */
+.nav-ic { width: 1.2em; height: 1.2em; flex: none; overflow: visible; }
+.nav-ic .f { fill: currentColor; stroke: currentColor; stroke-width: 1.2; stroke-linejoin: round; }
+.nav-ic .g { fill: currentColor; }
+.nav-ic .l { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 header #languageDropdown {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
@@ -741,24 +757,6 @@ th, td {
     left: 0;
     outline: 2px solid var(--color-accent-hover);
     outline-offset: 2px;
-}
-
-/* ===== Nav active indicator ===== */
-header .nav-link.active {
-    position: relative;
-}
-header .nav-link.active::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 25%;
-    width: 50%;
-    height: 3px;
-    background: #166534;
-    border-radius: 999px;
-}
-[data-bs-theme="dark"] header .nav-link.active::after {
-    background: #4ade80;
 }
 
 /* ===== Breadcrumbs ===== */
