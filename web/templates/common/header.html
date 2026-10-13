@@ -11,7 +11,12 @@
     <meta name="author" content="">
 
     {{ if .csrfToken }}<meta name="csrf-token" content="{{ .csrfToken }}">{{ end }}
-    <title>Isley {{ .title }}</title>
+    <title>BudMinder {{ .title }}</title>
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+    <link rel="icon" href="/static/img/brand/budminder-icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/static/img/brand/apple-touch-icon.png">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#16a34a">
     <!-- Bootstrap core CSS -->
     <!-- Third-party libraries are bundled under /static/vendor/ so pages never
          load anything from other sites (Bootstrap 5.3.3, Font Awesome 6.7.1). -->

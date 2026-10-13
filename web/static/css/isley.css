@@ -3770,3 +3770,12 @@ a.sd-node:hover { border-color: var(--sd-acc); }
 .sd-terp .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--sd-seg); }
 .sd-terp .dots i.on { background: #f59e0b; }
 .sd-terp .lv { display: inline-block; min-width: 3.6rem; font-size: .74rem; color: var(--sd-muted); text-align: right; }
+
+/* BudMinder wordmark: a light-background and a dark-background version,
+   shown by theme (the dark one has lighter greens and white "Minder"). */
+.brand-wm { height: 30px; width: auto; display: block; }
+.brand-wm-lg { height: 64px; width: auto; max-width: 100%; display: inline-block; }
+.brand-dark { display: none !important; }
+[data-bs-theme="dark"] .brand-light { display: none !important; }
+[data-bs-theme="dark"] .brand-dark { display: block !important; }
+[data-bs-theme="dark"] .brand-wm-lg.brand-dark { display: inline-block !important; }

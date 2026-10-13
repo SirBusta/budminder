@@ -187,7 +187,7 @@ func runBackup(svc *BackupService, includeImages bool, sensorDays int) (string, 
 	} else if sensorDays > 0 {
 		tag += fmt.Sprintf("-%dd", sensorDays)
 	}
-	filename := fmt.Sprintf("isley-backup-%s-%s.zip", tag, ts)
+	filename := fmt.Sprintf("budminder-backup-%s-%s.zip", tag, ts)
 	destPath := filepath.Join(backupsDir, filename)
 
 	if err := os.WriteFile(destPath, archive, 0644); err != nil {
@@ -346,7 +346,7 @@ func DownloadSQLiteDB(c *gin.Context) {
 		return
 	}
 
-	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="isley-%s.db"`, time.Now().Format("20060102-150405")))
+	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="budminder-%s.db"`, time.Now().Format("20060102-150405")))
 	c.File(dbFile)
 }
 

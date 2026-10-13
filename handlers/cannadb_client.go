@@ -55,7 +55,7 @@ const (
 var Version = "dev"
 
 func cannadbUserAgent() string {
-	return fmt.Sprintf("Isley/%s (+https://github.com/dwot/isley)", Version)
+	return fmt.Sprintf("BudMinder/%s (+https://github.com/SirBusta/budminder)", Version)
 }
 
 // cannadbBaseURL returns the configured base URL or the default, normalized to

@@ -1229,6 +1229,30 @@ func LoadEcDevices(db *sql.DB) ([]string, error) {
 	return ecDevices, nil
 }
 
+// DefaultAdminPassword is a fresh install's first login (admin / budminder);
+// the user has to change it at that first login.
+const DefaultAdminPassword = "budminder"
+
+// SeedDefaultAdmin creates the first-run login when no account exists yet.
+// The store is nil because it runs before the engine (and its Store) exist;
+// LoadSettings reads these rows afterwards.
+func SeedDefaultAdmin(db *sql.DB) error {
+	present, err := ExistsSetting(db, "auth_username")
+	if err != nil || present {
+		return err
+	}
+	hashed, err := utils.HashPassword(DefaultAdminPassword)
+	if err != nil {
+		return err
+	}
+	for _, kv := range [][2]string{{"auth_username", "admin"}, {"auth_password", hashed}, {"force_password_change", "true"}} {
+		if err := UpdateSetting(db, nil, kv[0], kv[1]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func ExistsSetting(db *sql.DB, s string) (bool, error) {
 	fieldLogger := logger.Log.WithField("func", "ExistsSetting")
 

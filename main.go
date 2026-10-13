@@ -44,7 +44,7 @@ var trustedProxies = []string{
 func main() {
 	logger.InitLogger()
 
-	version := fmt.Sprintf("Isley %s", getVersion())
+	version := fmt.Sprintf("BudMinder %s", getVersion())
 	logger.Log.Info("Starting application version:", version)
 
 	// Expose the bare version to handlers for outbound User-Agent strings
@@ -72,14 +72,8 @@ func main() {
 	// Seed default admin credentials if absent. Pass nil for the store
 	// because the engine (and its Store) hasn't been constructed yet —
 	// these rows are loaded into the Store by the LoadSettings call below.
-	present, err := handlers.ExistsSetting(db, "auth_username")
-	if err != nil {
+	if err := handlers.SeedDefaultAdmin(db); err != nil {
 		logger.Log.WithError(err).Error("Error checking if default admin credentials are present")
-	} else if !present {
-		handlers.UpdateSetting(db, nil, "auth_username", "admin")
-		hashedPassword, _ := utils.HashPassword("isley")
-		handlers.UpdateSetting(db, nil, "auth_password", hashedPassword)
-		handlers.UpdateSetting(db, nil, "force_password_change", "true")
 	}
 
 	// Construct the per-process configuration store and load DB-backed

@@ -352,12 +352,12 @@ func TestNotebookHTTP_ExportOneRowPerDay(t *testing.T) {
 
 	csv, disp := read(fmt.Sprintf("/activities/export/csv?plant_ids=%d,%d&from=2026-10-01&to=2026-10-31", f.Plant1, f.Plant2))
 	assert.Len(t, strings.Split(strings.TrimSpace(csv), "\n"), 3)
-	assert.Contains(t, disp, "isley-notebook-all-")
+	assert.Contains(t, disp, "budminder-notebook-all-")
 	csv, _ = read(fmt.Sprintf("/activities/export/csv?activity_id=%d", f.FeedID))
 	assert.Len(t, strings.Split(strings.TrimSpace(csv), "\n"), 2, "only days with a feed")
 
 	_, disp = read(fmt.Sprintf("/activities/export/xlsx?plant_id=%d", f.Plant1))
-	assert.Contains(t, disp, "isley-notebook-plant-1-")
+	assert.Contains(t, disp, "budminder-notebook-plant-1-")
 }
 
 func TestNotebookHTTP_PlantPageRenders(t *testing.T) {

@@ -129,7 +129,7 @@ func TestBackupHTTP_CreateBackup_Accepted(t *testing.T) {
 	files, err := os.ReadDir(filepath.Join(dataDir, "backups"))
 	require.NoError(t, err, "backups dir should have been created by the goroutine")
 	require.Len(t, files, 1, "exactly one backup zip should be on disk")
-	assert.Contains(t, files[0].Name(), "isley-backup-", "filename should follow the production prefix")
+	assert.Contains(t, files[0].Name(), "budminder-backup-", "filename should follow the production prefix")
 }
 
 // TestBackupHTTP_CreateBackup_ConflictWhenInProgress verifies CreateBackup
@@ -594,8 +594,8 @@ func TestBackupHTTP_DownloadSQLiteDB_HappyPath(t *testing.T) {
 	defer testutil.DrainAndClose(resp)
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Contains(t, resp.Header.Get("Content-Disposition"), "isley-",
-		"Content-Disposition should advertise an isley-* attachment filename")
+	assert.Contains(t, resp.Header.Get("Content-Disposition"), "budminder-",
+		"Content-Disposition should advertise a budminder-* attachment filename")
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	assert.Equal(t, payload, string(body), "downloaded bytes should match the file on disk")

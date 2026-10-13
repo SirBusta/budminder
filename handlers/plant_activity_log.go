@@ -163,7 +163,7 @@ func ExportActivitiesCSV(c *gin.Context) {
 		return
 	}
 
-	filename := "isley-notebook-" + suffix + ".csv"
+	filename := "budminder-notebook-" + suffix + ".csv"
 	c.Header("Content-Type", "text/csv; charset=utf-8")
 	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
 
@@ -243,7 +243,7 @@ func ExportActivitiesXLSX(c *gin.Context) {
 		_ = f.AutoFilter(sheet, fmt.Sprintf("A1:G%d", len(rows)+1), nil)
 	}
 
-	filename := "isley-notebook-" + suffix + ".xlsx"
+	filename := "budminder-notebook-" + suffix + ".xlsx"
 	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
 	if err := f.Write(c.Writer); err != nil {

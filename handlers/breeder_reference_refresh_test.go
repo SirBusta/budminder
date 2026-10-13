@@ -77,7 +77,7 @@ func TestBreederReferenceRefresh_StoresListAndUsesETag(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, res.Updated)
 	assert.Equal(t, 1200, res.Count)
-	assert.True(t, strings.HasPrefix(fake.gotAgent, "Isley/"), "honest User-Agent, got %q", fake.gotAgent)
+	assert.True(t, strings.HasPrefix(fake.gotAgent, "BudMinder/"), "honest User-Agent, got %q", fake.gotAgent)
 	assert.Empty(t, fake.gotIfNone, "first fetch is unconditional")
 
 	var n int
