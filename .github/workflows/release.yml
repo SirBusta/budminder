@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - main
-      - dev
+    tags:
+      - 'v*'
   pull_request:
     branches:
       - main
-      - dev
 
 jobs:
   test:
@@ -17,8 +17,8 @@ jobs:
     # docs/TEST_PLAN_2.md Phase 1: pull-requests: write lets the
     # "Post coverage comment" step post the per-PR delta. The default
     # GITHUB_TOKEN has only read access to PRs on pull_request events
-    # from forks; the build job (which doesn't run on PRs anyway)
-    # carries its own contents: write override.
+    # from forks; the image and release jobs (which don't run on PRs)
+    # carry their own permissions.
     permissions:
       contents: read
       pull-requests: write
@@ -44,6 +44,16 @@ jobs:
 
       - name: Vet
         run: go vet ./...
+
+      - name: Check Translation Keys
+        run: |
+          # Run i18n_sync in dry-run mode; if any output is produced, keys are missing
+          output=$(go run ./scripts/i18n_sync.go -path=utils/locales 2>&1)
+          if [ -n "$output" ]; then
+            echo "$output"
+            echo "::error::Translation keys are out of sync. Run: go run ./scripts/i18n_sync.go -path=utils/locales -apply"
+            exit 1
+          fi
 
       # docs/TEST_PLAN_2.md Phase 4: fail before `go test` if any
       # top-level Test function in a non-annotated file omits
@@ -209,90 +219,37 @@ jobs:
             || { echo "::error::postgres coverage $total% < floor $floor%"; exit 1; }
           echo "postgres coverage $total% >= floor $floor%"
 
-  build:
-    name: Build and Release Artifacts
+  # BudMinder images go to the GitHub Container Registry under this
+  # account, pushed with the workflow's own GITHUB_TOKEN (no secrets).
+  # Push to main: :latest and :sha-<short>. Tag vX.Y.Z: :X.Y.Z and :latest.
+  image:
+    name: Docker image
     needs: [test, test-postgres]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Required for creating releases
-
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/sirbusta/budminder
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
-        with:
-          # fetch full history and tags so git describe and tag pushes work correctly
-          fetch-depth: 0
 
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: '1.25.8'
-
-      - name: Verify Go Modules
-        run: go mod verify
-
-      - name: Check Translation Keys
+      - name: Set tags
+        id: tags
         run: |
-          # Run i18n_sync in dry-run mode; if any output is produced, keys are missing
-          output=$(go run ./scripts/i18n_sync.go -path=utils/locales 2>&1)
-          if [ -n "$output" ]; then
-            echo "$output"
-            echo "::error::Translation keys are out of sync. Run: go run ./scripts/i18n_sync.go -path=utils/locales -apply"
-            exit 1
-          fi
-
-      - name: Set Version
-        id: version
-        run: |
-          # On main use the VERSION file (fail if missing); on other branches, use 'dev'
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            if [ -f VERSION ]; then
-              echo "version=$(cat VERSION)" >> $GITHUB_ENV
-            else
-              echo "VERSION file is missing on main branch" >&2
+          VERSION=$(cat VERSION)
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            if [ "${GITHUB_REF_NAME}" != "v${VERSION}" ]; then
+              echo "::error::Tag ${GITHUB_REF_NAME} does not match VERSION file (${VERSION})."
               exit 1
             fi
+            echo "tags=${IMAGE}:${VERSION},${IMAGE}:latest" >> "$GITHUB_OUTPUT"
           else
-            echo "version=dev" >> $GITHUB_ENV
+            echo "tags=${IMAGE}:latest,${IMAGE}:sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Print Version
-        run: echo "Building version ${{ env.version }}"
-
-      - name: Preflight version check (Main Branch Only)
-        if: github.ref == 'refs/heads/main'
-        run: |
-          VERSION="${{ env.version }}"
-          TAG="v$VERSION"
-
-          # Strict SemVer (MAJOR.MINOR.PATCH with optional pre-release/build).
-          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'; then
-            echo "::error::VERSION '$VERSION' is not strict SemVer (MAJOR.MINOR.PATCH[-prerelease][+build]). Bump VERSION before pushing to main."
-            exit 1
-          fi
-
-          # Reject if the release tag already exists.
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "::error::Tag $TAG already exists. Bump VERSION before pushing to main."
-            exit 1
-          fi
-
-          # Require a matching CHANGELOG section. Heading format: '## [X.Y.Z] - YYYY-MM-DD'
-          if [ ! -f CHANGELOG.md ]; then
-            echo "::error::CHANGELOG.md is missing."
-            exit 1
-          fi
-          if ! grep -Eq "^## \[$(echo "$VERSION" | sed -e 's/[.+]/\\&/g')\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md; then
-            echo "::error::CHANGELOG.md has no stamped section for [$VERSION]. Run scripts/cut-release.sh $VERSION on a release/v$VERSION branch."
-            exit 1
-          fi
-
-          echo "Preflight OK: $TAG is new, well-formed, and has a CHANGELOG entry."
-
-      - name: Build Linux Binary
-        run: |
-          GOOS=linux GOARCH=amd64 go build -ldflags="-w -s -X main.version=${{ env.version }}" -o isley-linux
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
@@ -300,120 +257,82 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Log in to Docker Hub
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set Docker Tags
-        id: docker_tags
-        run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            echo "tags=dwot/isley:${{ env.version }},dwot/isley:latest" >> $GITHUB_OUTPUT
-          else
-            SHORT_SHA=${GITHUB_SHA::8}
-            echo "tags=dwot/isley:dev,dwot/isley:dev-${SHORT_SHA}" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Build and Push Multi-Platform Docker Image
+      - name: Build and push (amd64 + arm64)
         uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.docker_tags.outputs.tags }}
+          tags: ${{ steps.tags.outputs.tags }}
           labels: |
-            org.opencontainers.image.title=isley
-            org.opencontainers.image.source=https://github.com/dwot/isley
+            org.opencontainers.image.title=budminder
+            org.opencontainers.image.description=Self-hosted grow journal (based on Isley by dwot)
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.licenses=MIT
             org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.version=${{ env.version }}
+            org.opencontainers.image.version=${{ steps.tags.outputs.version }}
             org.opencontainers.image.ref.name=${{ github.ref_name }}
-            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Extract Release Notes from CHANGELOG (Main Branch Only)
-        if: github.ref == 'refs/heads/main'
+  # Tag vX.Y.Z only: a GitHub Release with the CHANGELOG section for that
+  # version as its notes, plus ready-to-run programs for each system.
+  release:
+    name: GitHub Release
+    needs: [image]
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.8'
+
+      - name: Release notes from CHANGELOG
         run: |
-          VERSION="${{ env.version }}"
-          # Escape regex metacharacters in the version so '.' etc. match literally.
-          VERSION_RE=$(echo "$VERSION" | sed -e 's/[][(){}.*+?|^$\\]/\\&/g')
-          # Extract the CHANGELOG section for this version. Stops at the next
-          # top-level heading (## ...) or end of file. The heading itself is
-          # dropped — the release UI already shows the version/tag.
+          VERSION=$(cat VERSION)
+          VERSION_RE=$(echo "$VERSION" | sed -e 's/[][(){}.*+?|^$\]/\&/g')
+          # The section under '## [X.Y.Z] ...', up to the next '## ' heading.
           awk -v ver_re="$VERSION_RE" '
-            $0 ~ "^## \\[" ver_re "\\]" { found=1; next }
+            $0 ~ "^## \[" ver_re "\]" { found=1; next }
             found && /^## / { exit }
             found { print }
           ' CHANGELOG.md > release_notes.md
-
           if [ ! -s release_notes.md ]; then
-            echo "::error::Extracted release notes for $VERSION are empty. Check CHANGELOG.md formatting."
+            echo "::error::CHANGELOG.md has no section for [$VERSION]."
             exit 1
           fi
-
-          echo "---- release_notes.md ----"
           cat release_notes.md
-          echo "--------------------------"
 
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@v4.1.2
-
-      - name: Sign Docker Images
-        env:
-          TAGS: ${{ steps.docker_tags.outputs.tags }}
-          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+      # The SQLite driver is pure Go, so every target builds without cgo.
+      - name: Build programs
         run: |
-          for tag in ${TAGS//,/ }; do
-            cosign sign --yes --key env://COSIGN_PRIVATE_KEY "$tag"
-          done
+          mkdir dist
+          build() {
+            CGO_ENABLED=0 GOOS=$1 GOARCH=$2 go build -trimpath -ldflags="-w -s" -o "dist/$3" .
+          }
+          build linux   amd64 budminder-linux-amd64
+          build linux   arm64 budminder-linux-arm64
+          build windows amd64 budminder-windows-amd64.exe
+          build darwin  arm64 budminder-macos-arm64
+          build darwin  amd64 budminder-macos-amd64
+          cd dist && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
 
-      - name: Import GPG Key
-        uses: crazy-max/ghaction-import-gpg@v7
-        with:
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase:      ${{ secrets.GPG_PASSPHRASE }}
-          # When passphrase is supplied, the action configures loopback
-          # pinentry and a passphrase-injecting gpg wrapper for us, so
-          # `git tag -s` and `git commit -S` work non-interactively.
-          git_user_signingkey: true
-          git_tag_gpgsign: true
-
-      - name: Create and push tag (Main Branch Only)
-        if: github.ref == 'refs/heads/main'
-        run: |
-          TAG="v${{ env.version }}"
-          
-          # Sign binary with Cosign (Shared Trust). --yes auto-accepts the
-          # Rekor transparency-log upload prompt, which has no TTY in CI.
-          # cosign v3 (installed via cosign-installer@v4) defaults to the new
-          # Sigstore bundle format: --output-signature/--output-certificate are
-          # gone and --bundle (cert + signature + tlog entry in one
-          # .sigstore.json) is required. Verify with:
-          #   cosign verify-blob --bundle isley-linux.bundle --key cosign.pub isley-linux
-          cosign sign-blob --yes --key env://COSIGN_PRIVATE_KEY --bundle isley-linux.bundle isley-linux
-          sha256sum isley-linux > isley-linux.sha256
-          
-          # Use our release identity
-          git config user.name "isley-release-bot"
-          git config user.email "68145+dwot@users.noreply.github.com"
-          
-          git tag -s "$TAG" -m "Release $TAG"
-          git push origin "$TAG"
-        env:
-          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-
-      - name: Release Artifacts (Main Branch Only)
-        if: github.ref == 'refs/heads/main'
+      - name: Publish release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: v${{ env.version }}
-          name: v${{ env.version }}
+          name: BudMinder ${{ github.ref_name }}
           body_path: release_notes.md
-          files: |
-            isley-linux
-            isley-linux.bundle
-            isley-linux.sha256
+          files: dist/*
