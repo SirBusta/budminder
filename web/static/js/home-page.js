@@ -28,7 +28,7 @@
     const STAGE_LOOK = {
         Germinating: ["fa-seedling", "#a3b18a"], Planted: ["fa-bucket", "#8fbc5a"], Seedling: ["fa-leaf", "#84cc16"],
         Veg: ["fa-tree", "#16a34a"], Flower: ["fa-cannabis", "#9333ea"], Drying: ["fa-wind", "#d97706"],
-        Curing: ["fa-jar", "#92400e"], Success: ["fa-award", "#0284c7"], Dead: ["fa-skull", "#64748b"],
+        Curing: ["fa-jar", "#92400e"], Success: ["fa-award", "#0284c7"], Dead: ["fa-skull-crossbones", "#64748b"],
     };
 
     // ---------- Dates ----------

@@ -25,7 +25,7 @@
     const STAGE_LOOK = {
         Germinating: ["fa-seedling", "#a3b18a"], Planted: ["fa-bucket", "#8fbc5a"], Seedling: ["fa-leaf", "#84cc16"],
         Veg: ["fa-tree", "#16a34a"], Flower: ["fa-cannabis", "#9333ea"], Drying: ["fa-wind", "#d97706"],
-        Curing: ["fa-jar", "#92400e"], Success: ["fa-award", "#0284c7"], Dead: ["fa-skull", "#64748b"],
+        Curing: ["fa-jar", "#92400e"], Success: ["fa-award", "#0284c7"], Dead: ["fa-skull-crossbones", "#64748b"],
     };
     const look = name => STAGE_LOOK[name] || ["fa-circle", "#64748b"];
     const stageLabel = name => ((D.stages || []).find(s => s.name === name) || {}).label || name;
@@ -45,7 +45,7 @@
     });
 
     // ---------- State (layout and tab remembered) ----------
-    const GROUPS = [["living", "pl_growing", "fa-seedling"], ["harvested", "pl_harvested", "fa-scissors"], ["dead", "pl_dead", "fa-skull"]];
+    const GROUPS = [["living", "pl_growing", "fa-seedling"], ["harvested", "pl_harvested", "fa-scissors"], ["dead", "pl_dead", "fa-skull-crossbones"]];
     const fromHash = () => { const h = location.hash.slice(1); return GROUPS.some(g => g[0] === h) ? h : null; };
     const S = {
         group: fromHash() || "living", q: "", zone: "", breeder: "", stage: "",

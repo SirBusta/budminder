@@ -45,7 +45,7 @@
     const STAGE_STYLE = {
         germinating: ["fa-seedling", "#a3b18a"], planted: ["fa-bucket", "#8fbc5a"], seedling: ["fa-leaf", "#84cc16"],
         veg: ["fa-tree", "#16a34a"], flower: ["fa-cannabis", "#9333ea"], drying: ["fa-wind", "#d97706"],
-        curing: ["fa-jar", "#92400e"], success: ["fa-award", "#0284c7"], dead: ["fa-skull", "#64748b"],
+        curing: ["fa-jar", "#92400e"], success: ["fa-award", "#0284c7"], dead: ["fa-skull-crossbones", "#64748b"],
     };
     const stageStyle = name => STAGE_STYLE[String(name || "").toLowerCase()] || ["fa-circle", "#64748b"];
     const STATUS_BY_NAME = new Map((D.statuses || []).map(s => [s.status, s]));
@@ -133,7 +133,7 @@
               <button class="pp-live-play" id="ppLivePlay" title="${esc(tr("pp_play"))}" aria-label="${esc(tr("pp_play"))}"><i class="fa-solid fa-play"></i></button>` : "";
         const acts = LOGGED_IN ? `<div class="pp-hacts">
                 <a href="/plant/${P.id}/edit" title="${esc(tr("pp_edit_plant"))}" aria-label="${esc(tr("pp_edit_plant"))}"><i class="fa-solid fa-pen-to-square"></i></a>
-                ${["dead", "success"].includes(String(P.status).toLowerCase()) ? "" : `<button class="danger" id="ppKill" title="${esc(tr("pp_mark_dead"))}" aria-label="${esc(tr("pp_mark_dead"))}"><i class="fa-solid fa-skull"></i></button>`}</div>` : "";
+                ${["dead", "success"].includes(String(P.status).toLowerCase()) ? "" : `<button class="danger" id="ppKill" title="${esc(tr("pp_mark_dead"))}" aria-label="${esc(tr("pp_mark_dead"))}"><i class="fa-solid fa-skull-crossbones"></i></button>`}</div>` : "";
 
         hero.innerHTML = `
         <div class="pp-htxt">
