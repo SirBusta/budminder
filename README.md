@@ -1,530 +1,322 @@
 <div align="center">
 
-# 🌱 Isley
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="web/static/img/brand/budminder-wordmark-dark.svg">
+  <img src="web/static/img/brand/budminder-wordmark.svg" alt="BudMinder" width="340">
+</picture>
 
-### Self-Hosted Cannabis Grow Journal
+**A self-hosted grow journal.** Daily notes and photos for every plant, live sensors from AC Infinity, Ecowitt or Home Assistant, and your seed vault, all on your own hardware.
 
-*Track, trend, and elevate your grow — all in one place.*
+[![Latest release](https://img.shields.io/github/v/release/SirBusta/budminder?color=16a34a&label=release)](https://github.com/SirBusta/budminder/releases)
+[![Docker image](https://img.shields.io/badge/docker-ghcr.io%2Fsirbusta%2Fbudminder-16a34a?logo=docker&logoColor=white)](https://github.com/SirBusta/budminder/pkgs/container/budminder)
+[![License: MIT](https://img.shields.io/badge/license-MIT-16a34a)](LICENSE)
 
-[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/dwot/isley)
-[![Go](https://img.shields.io/badge/Go-1.25.0-00ADD8?logo=go&logoColor=white)](https://golang.org)
-[![License](https://img.shields.io/github/license/dwot/isley)](LICENSE)
-[![Issues](https://img.shields.io/github/issues/dwot/isley)](https://github.com/dwot/isley/issues)
-
-[🌐 Official Site](https://dwot.github.io/isley) · [🐛 Report a Bug](https://github.com/dwot/isley/issues) · [💡 Request a Feature](https://github.com/dwot/isley/issues)
-
----
-
-![Isley's Today page: what needs attention, each tent with live readings, a camera tile and plant cards](docs/images/screenshots/home.webp)
+[Install](#install) · [Tour](#tour) · [Releases](https://github.com/SirBusta/budminder/releases)
 
 </div>
 
----
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/screenshots/plant-dark.webp">
+  <img src="docs/images/screenshots/plant.webp" alt="A plant's page in BudMinder: the stage track from germination to harvest, a notebook with one entry per day, and the three photos taken on the selected day">
+</picture>
 
-## Why Isley?
+<p align="center"><sub>Every plant gets a stage track from seed to harvest and a notebook with one entry per day, shown next to that day's photos.</sub></p>
 
-I built Isley because the tool I wanted didn't exist. Every existing option was either a phone app with a bad UX, a cloud service I didn't trust, or a spreadsheet held together with duct tape. I wanted **one self-hosted solution** to replace all three:
+## Why BudMinder?
 
-| Before Isley | With Isley |
-|---|---|
-| 🌡️ Vendor apps for sensor graphs | Unified environmental dashboard |
-| 📝 Spreadsheets for seeds & harvests | Structured grow journal with charts |
-| 🗒️ Notepads for feeding & watering history | Timestamped activity logs per plant |
+**Your grow, on your hardware.** BudMinder runs on your own computer or home server. There's no account to create, no company storing your grow records, and nobody treating you and your data as the product. What you record stays with you.
 
-Isley doesn't try to revolutionize your grow — it centralizes your tools so you can focus on what matters.
+**Free and open source.** BudMinder is free, with no subscriptions or paid tiers. Its code is public under the MIT license, so anyone can check exactly what it does with your data, suggest improvements, or build on it.
 
----
+**See what your work does.** Each day's notes, watering and feeding sit right next to that day's photos. Scroll back through a grow and you can see how each change showed up in the plants: when you topped, when you flipped, when the frost came in.
 
-## 🚀 Key Features
+**Don't type in every strain.** Search large public strain databases and add a strain in one click. That brings in its breeder, parents, THC and CBD, effects, terpenes and flowering time. You only fill in what's yours: how many seeds you have and where you keep them.
 
-| | Feature | Description |
-|---|---|---|
-| 📒 | **Grow Logs** | Track plant growth, watering, and feeding with custom activity types |
-| 🌡️ | **Environmental Monitoring** | Real-time sensor data from AC Infinity and EcoWitt, plus custom HTTP ingest |
-| 📸 | **Image Uploads** | Attach photos with captions; add text overlays and watermarks |
-| 📷 | **Webcam Integration** | Capture periodic snapshots from camera streams via FFmpeg |
-| 🌱 | **Seed Inventory** | Manage strains, breeders, and seed stock with Indica/Sativa and autoflower tracking |
-| 📊 | **Harvest Tracking** | Record harvest dates, yields, and full cycle times |
-| 📈 | **Graphs and Charts** | Visualize sensor data over time with configurable retention windows |
-| ⚙️ | **Customizable Settings** | Define custom zones, activities, metrics, and camera streams |
-| 🌍 | **Internationalization** | Available in English, German, Spanish, and French |
-| 🔓 | **Guest Mode** | Optional read-only access for unauthenticated visitors |
-| 💾 | **Backup & Restore** | Cross-database portable backups with optional image bundling and sensor data filtering |
-| 📱 | **Mobile-Friendly** | Responsive layout for desktop and mobile |
+**Use the sensors you already have.** BudMinder reads AC Infinity controllers and Ecowitt gateways directly, and any sensor Home Assistant knows about: Govee, SwitchBot, Inkbird, Zigbee, ESPHome and more. If Home Assistant can see it, BudMinder can chart it next to your plants.
 
----
+**Everything in one place.** Sensor readings, a tent camera, your seed stock, harvest weights and every grow you've done, instead of a vendor app, a spreadsheet and a notepad.
 
-## 📸 Screenshots
+**Easy to back up, easy to move.** Make a backup from Settings with one click: your plants, notebook, strains and, if you like, your photos, in a single file you keep. Restore it to bring everything back, or to move BudMinder to a new computer. A backup restores on either kind of database, so you can also switch from SQLite to PostgreSQL later without losing anything. You can also export your journal notes as a CSV or Excel file, with PDF export coming soon.
+
+**Share it if you want to.** Turn on guest view and friends can browse your plants, strains and photos without logging in or being able to change anything. Leave it off and BudMinder stays private behind your login.
+
+BudMinder began as a fork of the excellent [Isley](https://github.com/dwot/isley) by dwot, and builds on it with every page redesigned around a cleaner, more visual layout, plus new features like the daily photo notebook, Home Assistant sensors and strain lookups.
+
+## Tour
+
+### Home Assistant
+
+Already have sensors in Home Assistant? Connect BudMinder once and every sensor Home Assistant knows about (Govee, SwitchBot, Inkbird, Zigbee, ESPHome and more) can be added to a tent, right next to AC Infinity and Ecowitt readings. A scan lists the sensors useful for growing with their live readings; add the ones you want. BudMinder only reads values; it never changes anything in Home Assistant.
+
+<img src="docs/images/screenshots/ha-scan.webp" alt="Scan Home Assistant results: seven grow sensors such as tent temperature, humidity, CO2, VPD, light level and soil moisture, each with its current reading, a tent to put it in and an Add button, plus a filter box and a Show all switch for batteries and power">
+
+### Today
+
+Open BudMinder and see what needs doing: plants you haven't watered or fed in a while, seeds getting old, and every tent's live temperature, humidity, VPD and CO₂ next to its camera and plants. Log water or feeding right from a plant's card.
+
+<img src="docs/images/screenshots/home.webp" alt="The Today page: a needs-attention list, then each tent with its live readings, camera snapshot and plant cards">
+
+### Environment
+
+Every sensor in a tent on one timeline, from the last hour to the last week or any range you pick. Click anywhere on a chart and a marker line shows what every sensor read at that moment; drag it to scrub through the day. Works with AC Infinity controllers, Ecowitt gateways and any sensor in Home Assistant. If you build your own sensors, a simple API lets you send in their readings.
+
+<img src="docs/images/screenshots/environment.webp" alt="The Environment page for a tent: current readings, then temperature, humidity and VPD charts for the last 24 hours with a marker line showing the readings at 3:25 AM">
+
+### Seed Vault
+
+The seeds you have on hand, how old they are and where you keep them, with a warning when a batch passes two years. Use one, restock, or start a grow straight from the list, and keep a wish list of strains you want next.
+
+<img src="docs/images/screenshots/strains.webp" alt="The Seed Vault in list view, oldest seeds first, showing each strain's lineage, type, flowering time, seed count, seed age and grows">
+
+### Strain pages
+
+Everything about a strain in one place: every time you've grown it with yields and flowering times, its family, potency and growing facts, and the photos from your grows. Import a new strain from StrainCompass or CannaDB and most of this fills itself in.
+
+<img src="docs/images/screenshots/strain-grape.webp" alt="The Grape OG strain page: four harvested plants with yields, the strain's family, seed vault and strain facts, and photos from the grows">
+
+### More
 
 <table>
 <tr>
-<td width="50%"><b>Plant page</b><br>The stage track, and a notebook with one entry per day: activities, measurements like water amount and height, and that day's photos.<br><br><img src="docs/images/screenshots/plant.webp" alt="Plant page with stage track, notebook and photos"></td>
-<td width="50%"><b>Environment</b><br>Live readings and history for each tent: temperature, humidity, VPD, CO₂ and more, from 1 hour to 7 days or a custom range.<br><br><img src="docs/images/screenshots/environment.webp" alt="Environment page with a week of tent readings"></td>
+<td width="50%"><b>Plants</b><br>Every plant with its stage, progress to harvest, and when it was last watered and fed.<br><br><img src="docs/images/screenshots/plants.webp" alt="The Plants page listing six growing plants with stage, progress bar and days since watering and feeding"></td>
+<td width="50%"><b>Log activity</b><br>Water, feed, train or add a note for one plant or a whole tent at once, with the amount given.<br><br><img src="docs/images/screenshots/log-activity.webp" alt="The Log activity window with plants, date, activity types, water amount and a note"></td>
 </tr>
 <tr>
-<td><b>Plants</b><br>Every plant with its stage, progress to harvest and when it was last watered and fed.<br><br><img src="docs/images/screenshots/plants.webp" alt="Plants list with progress bars"></td>
-<td><b>Log activity</b><br>Water, feed, train or note one plant or a whole tent at once, with the amount given.<br><br><img src="docs/images/screenshots/log-activity.webp" alt="Log activity window"></td>
-</tr>
-<tr>
-<td><b>Strains &amp; Seed Vault</b><br>Seeds on hand with their age, a wish list, lineage and flowering times.<br><br><img src="docs/images/screenshots/strains.webp" alt="Strains page with the Seed Vault"></td>
-<td><b>Manage sensors</b><br>Scan AC Infinity and Ecowitt, name each sensor, put it in a tent and choose where it shows.<br><br><img src="docs/images/screenshots/manage-sensors.webp" alt="Manage sensors page"></td>
-</tr>
-<tr>
-<td><b>Settings</b><br>Searchable, grouped settings that save as you go.<br><br><img src="docs/images/screenshots/settings.webp" alt="Settings page"></td>
-<td><b>Dark mode</b><br>Every page has a dark theme.<br><br><img src="docs/images/screenshots/home-dark.webp" alt="Today page in dark mode"></td>
-</tr>
-<tr>
-<td colspan="2"><b>On your phone</b><br>The same pages, laid out for a small screen.<br><br>
-<img src="docs/images/screenshots/phone-home.webp" alt="Today page on a phone" width="32%">&nbsp;&nbsp;<img src="docs/images/screenshots/phone-plant.webp" alt="Plant page on a phone in dark mode" width="32%"></td>
+<td><b>Manage sensors</b><br>Scan AC Infinity, Ecowitt and Home Assistant for sensors, name them, put each in a tent and choose where it shows.<br><br><img src="docs/images/screenshots/manage-sensors.webp" alt="The Manage sensors page listing a tent's sensors with their current readings"></td>
+<td><b>Settings</b><br>Grouped and searchable, and every change saves as you go.<br><br><img src="docs/images/screenshots/settings.webp" alt="The Settings page with timezone, units, language, theme, guest view and password"></td>
 </tr>
 </table>
 
-<sub>Screenshots use a demo data set: the sensor history is a month of real readings from an AC Infinity controller in a 3x3 tent.</sub>
+### On your phone
 
----
+<p align="center">
+<img src="docs/images/screenshots/phone-home.webp" alt="The Today page on a phone" width="260">&nbsp;&nbsp;&nbsp;
+<img src="docs/images/screenshots/phone-plant.webp" alt="A harvested plant's page on a phone in dark mode" width="260">
+</p>
 
-## 🛠️ Coming Soon
+### And also
 
-- **🔔 Alerts and Notifications** — Set custom thresholds and get notified when conditions go out of range.
+- One-click strain import from StrainCompass, with THC and CBD ranges, effects, terpenes and parents
+- Imperial or metric units for heights, yields and temperatures
+- Everything is served from your own server: no outside fonts, scripts or trackers
+- Journal export to CSV or Excel (PDF coming soon)
+- Docker images for regular PCs and ARM (Raspberry Pi, newer Macs), plus ready-to-run programs for Windows, macOS and Linux
+- Light and dark themes, in English, German, Spanish and French
+- A tent camera: live view plus automatic snapshots
+- Guest view for sharing, read-only
+- SQLite or PostgreSQL, with backups that move between them
 
----
+<sub>Screenshots use a demo data set. The sensor history is a month of real readings from an AC Infinity controller in a 3x3 tent, and the photos are from real grows.</sub>
 
-## ⚡ Quick Start
+## Install
 
-Isley runs in **Docker** and is up in minutes. PostgreSQL is recommended for production; SQLite works great for local testing.
+BudMinder runs in Docker. You need [Docker](https://docs.docker.com/get-docker/) with Compose.
 
-> **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [docker-compose](https://docs.docker.com/compose/install/)
-
-### 🐳 Option 1: PostgreSQL (Recommended)
+**1. Save this as `docker-compose.yml`** (or use [`docker-compose.sqlite.yml`](docker-compose.sqlite.yml) from this repository):
 
 ```yaml
-# docker-compose.postgres.yml
-version: '3.8'
-
 services:
-  isley:
-    image: dwot/isley:latest
+  budminder:
+    image: ghcr.io/sirbusta/budminder:latest
     ports:
       - "8080:8080"
     environment:
-      - ISLEY_PORT=8080
-      - ISLEY_DB_DRIVER=postgres
-      - ISLEY_DB_HOST=postgres
-      - ISLEY_DB_PORT=5432
-      - ISLEY_DB_USER=isley
-      - ISLEY_DB_PASSWORD=supersecret
-      - ISLEY_DB_NAME=isleydb
-      - ISLEY_SESSION_SECRET=change-me-to-a-long-random-string
-    depends_on:
-      - postgres
+      - BUDMINDER_DB_DRIVER=sqlite
+      - BUDMINDER_SESSION_SECRET=replace-with-a-long-random-string-of-32-or-more-characters
     volumes:
-      - isley-uploads:/app/uploads
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:16.8-alpine
-    environment:
-      - POSTGRES_DB=isleydb
-      - POSTGRES_USER=isley
-      - POSTGRES_PASSWORD=supersecret
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - budminder-data:/app/data
+      - budminder-uploads:/app/uploads
     restart: unless-stopped
 
 volumes:
-  postgres-data:
-  isley-uploads:
+  budminder-data:
+  budminder-uploads:
+```
+
+**2. Start it:**
+
+```bash
+docker compose up -d
+```
+
+**3. Open `http://localhost:8080`** (or your server's address).
+
+> [!TIP]
+> The first login is **admin** / **budminder**. BudMinder asks you to change the password on first launch.
+
+To update later, run `docker compose pull` and then `docker compose up -d`. Your data stays in the two volumes.
+
+<details>
+<summary><b>Unraid</b></summary>
+
+<br>
+
+Add a container (Docker tab, **Add Container**) with:
+
+| Field | Value |
+|---|---|
+| Repository | `ghcr.io/sirbusta/budminder:latest` |
+| Port | Container port `8080` to a host port of your choice |
+| Path | Container path `/app/data` to e.g. `/mnt/user/appdata/budminder/data` |
+| Path | Container path `/app/uploads` to e.g. `/mnt/user/appdata/budminder/uploads` |
+| Variable | `BUDMINDER_SESSION_SECRET` set to a long random string (32+ characters) |
+
+SQLite is used automatically. To use PostgreSQL instead, see the PostgreSQL section below.
+
+</details>
+
+<details>
+<summary><b>Without Docker (Windows, macOS, Linux)</b></summary>
+
+<br>
+
+Download the program for your system from the [latest release](https://github.com/SirBusta/budminder/releases/latest) and run it. BudMinder starts on `http://localhost:8080` and keeps its database and photos in `data` and `uploads` folders next to where you run it. Set the same `BUDMINDER_…` settings below as environment variables if you need them.
+
+</details>
+
+<details>
+<summary><b>PostgreSQL instead of SQLite</b></summary>
+
+<br>
+
+SQLite is built in and is all most people need. If you'd rather use PostgreSQL, [`docker-compose.postgres.yml`](docker-compose.postgres.yml) starts BudMinder and PostgreSQL together. Put the database password in a `.env` file next to it:
+
+```bash
+BUDMINDER_DB_PASSWORD=choose-a-strong-password
+BUDMINDER_SESSION_SECRET=replace-with-a-long-random-string-of-32-or-more-characters
 ```
 
 ```bash
-docker-compose -f docker-compose.postgres.yml up -d
+docker compose -f docker-compose.postgres.yml up -d
 ```
 
-Then open `http://localhost:8080` — default login is `admin` / `isley`. You'll be prompted to change your password on first login.
+To use a PostgreSQL server you already run (on Unraid, another container, or another machine), set `BUDMINDER_DB_DRIVER=postgres` and the `BUDMINDER_DB_HOST`, `BUDMINDER_DB_PORT`, `BUDMINDER_DB_USER`, `BUDMINDER_DB_PASSWORD` and `BUDMINDER_DB_NAME` settings on BudMinder.
 
----
+**Moving from SQLite to PostgreSQL:** either make a backup in Settings and restore it on the PostgreSQL setup, or use [`docker-compose.migration.yml`](docker-compose.migration.yml). It mounts your SQLite data next to a new, empty PostgreSQL database and copies everything over on first start. Back up first, and switch to `docker-compose.postgres.yml` afterwards.
 
-### ⚪ Option 2: SQLite (Lightweight / Local)
+</details>
 
-```yaml
-# docker-compose.sqlite.yml
-version: '3.8'
+## Reference
 
-services:
-  isley:
-    image: dwot/isley:latest
-    ports:
-      - "8080:8080"
-    environment:
-      - ISLEY_PORT=8080
-      - ISLEY_DB_DRIVER=sqlite
-    volumes:
-      - isley-db:/app/data
-      - isley-uploads:/app/uploads
-    restart: unless-stopped
+<details>
+<summary><b>Configuration settings</b></summary>
 
-volumes:
-  isley-db:
-  isley-uploads:
-```
+<br>
 
-```bash
-docker-compose -f docker-compose.sqlite.yml up -d
-```
+Most settings live in the app under **Settings**. These few are startup settings, set on the container (or as environment variables) because BudMinder needs them before it starts. The older `ISLEY_…` names (for example `ISLEY_DB_DRIVER`) still work.
 
-> **Note:** SQLite is not recommended for production due to write contention under concurrent load.
-
----
-
-### 🔄 Migrating from SQLite to PostgreSQL
-
-Already running Isley with SQLite? Isley handles the migration automatically.
-
-Use `docker-compose.migration.yml` — it mounts both your existing SQLite volume and the new PostgreSQL instance. On startup, **if Isley finds existing SQLite data and an empty PostgreSQL instance, it will import everything automatically**.
-
-```yaml
-# docker-compose.migration.yml
-version: '3.8'
-
-services:
-  isley:
-    image: dwot/isley:latest
-    ports:
-      - "8080:8080"
-    environment:
-      - ISLEY_PORT=8080
-      - ISLEY_DB_DRIVER=postgres
-      - ISLEY_DB_HOST=postgres
-      - ISLEY_DB_PORT=5432
-      - ISLEY_DB_USER=isley
-      - ISLEY_DB_PASSWORD=supersecret
-      - ISLEY_DB_NAME=isleydb
-    depends_on:
-      - postgres
-    volumes:
-      - isley-db:/app/data
-      - isley-uploads:/app/uploads
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:16.8-alpine
-    environment:
-      - POSTGRES_DB=isleydb
-      - POSTGRES_USER=isley
-      - POSTGRES_PASSWORD=supersecret
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    restart: unless-stopped
-
-volumes:
-  isley-db:
-  postgres-data:
-  isley-uploads:
-```
-
-> **Tip:** Back up your `isley-db` volume before running migration, just in case.
-
-After migration completes, switch back to `docker-compose.postgres.yml` for your regular deployment.
-
----
-
-### 🔁 Upgrading (important if you customized `ISLEY_PORT`)
-
-Older shipped compose files included a hardcoded
-`healthcheck: wget http://localhost:8080/health` block on the `isley` service.
-A Compose-level healthcheck **fully overrides** the Dockerfile one, so it
-always probed port `8080` and ignored your `ISLEY_PORT` — a container running
-on a custom port was reported **unhealthy** ("connection refused").
-
-As of **v0.2.0** the healthcheck lives only in the Dockerfile and honors
-`${ISLEY_PORT:-8080}`. To pick this up on an existing deployment:
-
-1. Pull the latest `docker-compose.*.yml` **or** delete the `healthcheck:`
-   block from the `isley` service in your existing file.
-2. Recreate the container so the change takes effect:
-   ```bash
-   docker compose up -d --force-recreate
-   ```
-3. If Isley itself listens on a custom port, set `ISLEY_PORT` in the container
-   environment (not just a host port remap like `"420:8080"`).
-
----
-
-## ⚙️ Configuration
-
-Most settings are managed through the **Settings** panel in the app — enable integrations, set device IPs, scan for sensors, and more.
-
-For environment-level configuration, the full reference is below:
-
-### General
-
-| Variable | Default | Description |
+| Setting | Default | What it does |
 |---|---|---|
-| `ISLEY_PORT` | `8080` | Port Isley listens on |
-| `ISLEY_SESSION_SECRET` | *(random)* | Session encryption key (must be ≥32 bytes) — **set this in production** |
-| `ISLEY_SECURE_COOKIES` | `false` | Set to `true` to mark session cookies as `Secure` (cookies only sent over HTTPS). Enable when Isley is fronted by a TLS reverse proxy. |
-| `ISLEY_HSTS_MAX_AGE` | `0` | When > 0, emits a `Strict-Transport-Security: max-age=<seconds>` header on every response. **Only enable when Isley is reachable solely over HTTPS** — sending HSTS over plain HTTP poisons clients that previously connected over TLS. A common production value is `31536000` (one year). |
-| `ISLEY_HSTS_INCLUDE_SUBDOMAINS` | `false` | When `ISLEY_HSTS_MAX_AGE > 0`, append `; includeSubDomains` to the HSTS header. |
-| `ISLEY_HSTS_PRELOAD` | `false` | When `ISLEY_HSTS_INCLUDE_SUBDOMAINS=true`, append `; preload` to the HSTS header. Only opt in if you intend to submit the host to https://hstspreload.org. |
-| `GIN_MODE` | `release` | Set to `debug` for verbose request logging and error details during development |
+| `BUDMINDER_PORT` | `8080` | Port BudMinder listens on |
+| `BUDMINDER_SESSION_SECRET` | random | Key that keeps you logged in (32+ characters). Set it, or everyone is logged out each time BudMinder restarts |
+| `BUDMINDER_SECURE_COOKIES` | `false` | `true` sends the login cookie over HTTPS only. Turn on behind an HTTPS reverse proxy |
+| `BUDMINDER_HSTS_MAX_AGE` | `0` | Above 0, tells browsers to always use HTTPS for this many seconds. Only when BudMinder is reachable over HTTPS alone |
+| `BUDMINDER_HSTS_INCLUDE_SUBDOMAINS` | `false` | Adds `includeSubDomains` to the HSTS header |
+| `BUDMINDER_HSTS_PRELOAD` | `false` | Adds `preload` to the HSTS header |
+| `GIN_MODE` | `release` | `debug` for detailed request logs |
+| `BUDMINDER_DB_DRIVER` | `sqlite` | `sqlite` or `postgres` |
+| `BUDMINDER_DB_FILE` | `data/isley.db` | Where the SQLite database is kept |
+| `BUDMINDER_DB_HOST` | | PostgreSQL server address |
+| `BUDMINDER_DB_PORT` | `5432` | PostgreSQL port |
+| `BUDMINDER_DB_USER` | | PostgreSQL user |
+| `BUDMINDER_DB_PASSWORD` | | PostgreSQL password |
+| `BUDMINDER_DB_NAME` | | PostgreSQL database name |
+| `BUDMINDER_DB_SSLMODE` | `disable` | `require` or `verify-full` for a PostgreSQL server that uses TLS |
 
-### Database
+</details>
 
-| Variable | Default | Description |
-|---|---|---|
-| `ISLEY_DB_DRIVER` | `sqlite` | Database backend: `sqlite` or `postgres` |
-| `ISLEY_DB_FILE` | `data/isley.db` | SQLite database path |
-| `ISLEY_DB_HOST` | — | PostgreSQL host |
-| `ISLEY_DB_PORT` | `5432` | PostgreSQL port |
-| `ISLEY_DB_USER` | — | PostgreSQL username |
-| `ISLEY_DB_PASSWORD` | — | PostgreSQL password |
-| `ISLEY_DB_NAME` | — | PostgreSQL database name |
-| `ISLEY_DB_SSLMODE` | `disable` | PostgreSQL SSL mode — set to `require` (or `verify-full`) when connecting to a TLS-enforcing Postgres host |
+<details>
+<summary><b>Sensors: AC Infinity, Ecowitt, Home Assistant and your own</b></summary>
 
----
+<br>
 
-## 🔌 API & Integrations
+**AC Infinity** (UIS controllers). BudMinder reads your controllers through AC Infinity's cloud, so the controller has to be online and on your AC Infinity account.
 
-Isley exposes an HTTP API for pushing sensor data from custom devices, IoT hardware, or home automation systems.
+1. In **Settings → Integrations**, turn on AC Infinity and sign in with your AC Infinity email and password. BudMinder keeps the access token it gets back, not your password.
+2. In **Sensors → Manage sensors**, click **Scan AC Infinity** and add the sensors and ports you want.
+3. Put each sensor in a tent and choose where it shows.
 
-### Generating an API Key
+AC Infinity's sign-in only uses the first 25 characters of a password.
 
-1. Log in as an admin and go to **Settings → API Settings**.
-2. Click **Generate New Key** and copy it somewhere safe.
-3. Include the key as an `X-API-KEY` header on all API requests.
+**Ecowitt** gateways (GW1000, GW1100, GW2000 and similar) are read directly on your network, with no cloud account.
 
-### Ingest Endpoint
+1. In **Settings → Integrations**, turn on Ecowitt.
+2. In **Sensors → Manage sensors**, click **Scan Ecowitt** and enter the gateway's IP address.
+3. Add the sensors you want and put each in a tent. Scan each gateway separately if you have more than one.
 
-**`POST /api/sensors/ingest`**
+**Home Assistant.** Any numeric sensor in Home Assistant can be added: temperature, humidity, CO₂, soil moisture, light, EC and more. BudMinder only reads values; it never changes anything in Home Assistant.
+
+1. In Home Assistant, create a separate user for BudMinder (**Settings → People → Add person**, allow login, *not* an administrator).
+2. Log in to Home Assistant as that user, open your profile → **Security** → **Long-lived access tokens**, and create a token. Copy it; Home Assistant shows it only once.
+3. In BudMinder, **Settings → Integrations → Home Assistant**: turn it on, enter Home Assistant's address with its port (for example `http://192.168.1.20:8123`), paste the token and click **Test connection**.
+4. In **Sensors → Manage sensors**, click **Scan Home Assistant**. Sensors useful for growing are listed first with their current readings; batteries, power and the like appear with **Show all**. Add the ones you want and put each in a tent.
+
+If Home Assistant restarts or is offline for a while, BudMinder logs it and picks the readings back up when it returns.
+
+Readings are collected at the polling interval set in Settings (every 60 seconds by default).
+
+**Your own sensors:** if you build your own (an ESP32 board, for example), you can program it to send readings through the API below.
+
+</details>
+
+<details>
+<summary><b>API</b></summary>
+
+<br>
+
+Create an API key in **Settings → Integrations** and send it as an `X-API-KEY` header. The key is shown once; making a new one replaces the old one.
+
+**Send a reading:** `POST /api/sensors/ingest`, one reading per request. A new sensor is created the first time its `source`, `device` and `type` are seen.
 
 ```json
 {
   "source": "custom",
-  "device": "Arduino Sensor",
+  "device": "ESP32 tent probe",
   "type": "temperature",
   "value": 25.5,
-  "name": "Temperature Sensor 1",
+  "name": "Canopy temp",
   "new_zone": "Tent 1",
   "unit": "°C"
 }
 ```
 
-> **Use this for:** Arduino/ESP32 sensors, Home Assistant, Node-RED, or any off-the-shelf sensor not natively supported by Isley.
+**Stream overlay:** `GET /api/overlay` returns every growing plant (with its linked sensor readings) and all sensors grouped by source, tent and type. Made for live-stream overlays such as an OBS browser source.
 
-### Overlay Endpoint
+**Sensor history:** `GET /sensorData?sensor=5&minutes=1440` returns readings for one sensor, by `minutes`, or by `start` and `end` dates (`YYYY-MM-DD` or RFC 3339). It needs a login unless guest view is on.
 
-**`GET /api/overlay`** — Returns a JSON snapshot of all living plants (with linked sensor readings) and grouped sensor data. Designed for live-stream overlays (e.g., OBS browser sources).
+</details>
 
-Requires the `X-API-KEY` header.
+<details>
+<summary><b>Backup and restore</b></summary>
 
-**Response structure:**
+<br>
 
-```json
-{
-  "plants": [
-    {
-      "id": 1,
-      "name": "White Widow #3",
-      "strain_name": "White Widow",
-      "zone_name": "Tent A",
-      "status": "Flower",
-      "current_day": 42,
-      "linked_sensors": [
-        {
-          "name": "Tent A Temp",
-          "value": 24.5,
-          "unit": "°C",
-          "trend": "up",
-          "source": "ACI",
-          "type": "temperature"
-        }
-      ]
-    }
-  ],
-  "sensors": { }
-}
-```
+**From the app:** **Settings → Backup & data**. Choose how much sensor history to include and whether to include photos, then create the backup. It runs in the background and appears in the list to download. Download it to keep it somewhere safe: backups stored only on the same computer are lost if that computer fails. A backup includes your saved connection details, such as the AC Infinity and Home Assistant tokens, so keep backup files private.
 
-The `sensors` object groups all sensors by source, zone, and type with their latest readings.
+**Restoring** replaces everything in the current BudMinder with the backup. Backups are stored as JSON, so a backup made on SQLite restores onto PostgreSQL and the other way around. On SQLite you can also skip sensor history to restore faster, or download and upload the database file itself under **SQLite file transfer**, which is the quickest way to copy a SQLite setup.
 
-### Sensor Data Endpoint
+Uploads are limited to 5 GB by default; change it in the restore section (minimum 100 MB). Backups are always full backups, and a large backup with photos needs about as much free memory as its size while restoring. For automatic backups, call `POST /settings/backup/create` on a schedule, or back up the Docker volumes.
 
-**`GET /sensorData`** — Returns historical sensor readings for charting. Requires authentication unless guest mode is enabled.
+**From Docker:** everything BudMinder stores is in its two volumes: the database volume (`/app/data`, or PostgreSQL's own volume) and the uploads volume (`/app/uploads`, your photos and camera snapshots). For SQLite, stop the container before copying the database file.
 
-**Query parameters:**
+</details>
 
-| Parameter | Required | Description |
-|---|---|---|
-| `sensor` | Yes | Sensor ID |
-| `minutes` | One of `minutes` or `start`/`end` | Number of minutes of history to return |
-| `start` | One of `minutes` or `start`/`end` | Start date (`YYYY-MM-DD` or RFC 3339) |
-| `end` | One of `minutes` or `start`/`end` | End date (`YYYY-MM-DD` or RFC 3339) |
+<details>
+<summary><b>Reverse proxy (HTTPS)</b></summary>
 
-**Example:**
+<br>
 
-```
-GET /sensorData?sensor=5&minutes=1440
-```
-
-Returns an array of `{ "id", "sensor_id", "sensor_name", "value", "create_dt" }` objects.
-
----
-
-## 🌡️ Sensor Integration
-
-Isley supports two sensor platforms out of the box, plus a generic HTTP ingest API for custom hardware.
-
-### AC Infinity
-
-AC Infinity controllers (UIS series) expose temperature, humidity, and per-port speed data. Isley communicates with the AC Infinity cloud API — your controller must be online and linked to an AC Infinity account.
-
-**Setup:**
-
-1. Go to **Settings** and enable **AC Infinity Sensor Monitoring**.
-2. Click **Retrieve Token** and enter your AC Infinity account email and password. Isley authenticates once and stores the API token locally — your password is not saved.
-3. After the token is set, go to **Sensors** and click **Scan and Add AC Infinity Sensors**. Isley will discover all controllers and their sensor channels.
-4. Assign each sensor to a **Zone** and toggle visibility for sensors you want to display.
-
-Sensor data is polled at the interval configured in **Settings → Polling Interval** (default 60 seconds). Data appears on the dashboard and can be linked to individual plants for per-plant environmental monitoring.
-
-> **Note:** AC Infinity's API limits password length to 25 characters. If your password is longer, only the first 25 characters are used during authentication.
-
-### EcoWitt
-
-EcoWitt weather stations and soil sensors expose data over a local HTTP API on your network. No cloud account is required — Isley communicates directly with the EcoWitt hub.
-
-**Setup:**
-
-1. Ensure your EcoWitt hub (e.g., GW1000, GW1100, GW2000) is on the same network as your Isley instance.
-2. Go to **Settings** and enable **EcoWitt Sensor Monitoring**.
-3. Go to **Sensors** and click **Scan and Add EcoWitt Sensors**. Enter the IP address of your EcoWitt hub (e.g., `192.168.1.50`) and click **Scan**.
-4. Isley will discover soil moisture and indoor temperature/humidity channels. Assign zones and set visibility as needed.
-
-EcoWitt data is polled at the same **Polling Interval** as AC Infinity. Multiple EcoWitt hubs are supported — scan each one individually.
-
-### Custom Sensors (API Ingest)
-
-For hardware not natively supported (Arduino, ESP32, Home Assistant, etc.), use the HTTP ingest endpoint documented in the [API & Integrations](#-api--integrations) section above. Any device that can make an HTTP POST can push sensor data into Isley.
-
----
-
-## 💾 Backup & Restore
-
-Isley stores data in two Docker volumes that should be backed up regularly.
-
-| Volume | Contents | Path inside container |
-|---|---|---|
-| `postgres-data` (or `isley-db` for SQLite) | Database — all plants, sensors, settings, and history | `/var/lib/postgresql/data` (Postgres) or `/app/data` (SQLite) |
-| `isley-uploads` | Plant photos, stream snapshots, and logo images | `/app/uploads` |
-
-### Backing up
-
-**PostgreSQL:**
-
-```bash
-# Dump the database to a SQL file
-docker exec isley-postgres-1 pg_dump -U isley isleydb > isley_backup_$(date +%Y%m%d).sql
-
-# Back up the uploads volume
-docker cp isley-isley-1:/app/uploads ./isley_uploads_backup
-```
-
-**SQLite:**
-
-```bash
-# Copy the database file (stop the container first to avoid corruption)
-docker compose -f docker-compose.sqlite.yml stop
-docker cp isley-isley-1:/app/data ./isley_data_backup
-docker cp isley-isley-1:/app/uploads ./isley_uploads_backup
-docker compose -f docker-compose.sqlite.yml start
-```
-
-### Restoring
-
-**PostgreSQL:**
-
-```bash
-# Restore the database from a SQL dump
-cat isley_backup_20260315.sql | docker exec -i isley-postgres-1 psql -U isley isleydb
-
-# Restore uploads
-docker cp ./isley_uploads_backup/. isley-isley-1:/app/uploads
-```
-
-**SQLite:**
-
-```bash
-docker compose -f docker-compose.sqlite.yml stop
-docker cp ./isley_data_backup/. isley-isley-1:/app/data
-docker cp ./isley_uploads_backup/. isley-isley-1:/app/uploads
-docker compose -f docker-compose.sqlite.yml start
-```
-
-> **Tip:** Automate backups with a cron job. For PostgreSQL, `pg_dump` can run while the database is online with no downtime.
-
-### Built-in Backup & Restore
-
-Isley includes a built-in backup system accessible from the **Settings > Backup** tab. It produces portable `.zip` archives that work across database backends — you can back up a SQLite instance and restore it onto PostgreSQL, or vice versa.
-
-#### Creating a backup
-
-Navigate to **Settings > Backup** and choose your options before clicking **Create Backup**:
-
-| Option | Values | Effect |
-|---|---|---|
-| **Sensor History** | All, Last 7/30/90 days, None | Controls how much sensor data is included. Excluding sensor data keeps backups small and fast. |
-| **Include Images** | On / Off | Bundles uploaded plant photos and stream snapshots into the archive. Can significantly increase backup size. |
-
-Backups run asynchronously — you can navigate away and return later. Completed archives appear in the **Available Backups** table for download or deletion.
-
-#### What's included
-
-A backup archive contains a `backup.json` file with a full export of all application data (plants, strains, breeders, zones, activities, metrics, sensors, sensor readings, status history, measurements, images metadata, and streams), plus an optional `uploads/` directory with image files. The manifest records the Isley version, source database driver, creation timestamp, and the options used.
-
-#### Restoring a backup
-
-Upload a `.zip` archive in the **Restore Backup** section. The restore process replaces all existing data and runs through several phases: clearing existing tables, inserting data, resetting sequences (PostgreSQL), and extracting image files. A progress indicator shows the current phase and table-level progress throughout.
-
-For SQLite users, a **Skip sensor data** option is available to dramatically speed up imports when sensor history isn't needed.
-
-> **Warning:** Restoring a backup is destructive — it replaces all data in the current instance. Sensor polling is paused automatically during the restore.
-
-#### Cross-database portability
-
-Backups are stored as JSON, not SQL, so they are database-agnostic. A backup created on SQLite can be restored onto PostgreSQL and vice versa. Foreign keys, auto-increment sequences, and driver-specific optimizations are handled automatically during restore.
-
-#### SQLite file transfer
-
-SQLite users have an additional option under **SQLite File Transfer**: download or upload the raw `.db` database file directly. This is the fastest way to clone or migrate a SQLite instance since it bypasses row-by-row import entirely. The uploaded file is validated by checking the SQLite magic header before replacing the active database.
-
-#### Upload size limits
-
-The maximum upload size defaults to **5 GB** and applies to both backup archive uploads and SQLite file uploads. It also caps the total bytes extracted from a backup archive to defend against decompression bombs. You can adjust this limit in the **Restore Backup** section of Settings — the minimum is 100 MB.
-
-#### Limitations
-
-- **Full backups only** — every backup is a complete export; incremental or delta backups are not supported.
-- **SQLite restore performance** — importing large sensor datasets into SQLite is significantly slower than PostgreSQL due to SQLite's single-writer architecture. Use the **Skip sensor data** toggle or the **SQLite File Transfer** feature for faster restores.
-- **Memory usage** — backup archives are read into memory during restore. Very large backups (multi-GB with images) will temporarily consume a corresponding amount of RAM.
-- **No scheduled backups** — backups must be triggered manually from the UI or API. For automated backups, use the Docker volume approach described above or call the `POST /settings/backup/create` endpoint from a cron job.
-
----
-
-## 🔒 Reverse Proxy Examples
-
-Running Isley behind a reverse proxy is recommended for production. This enables HTTPS, custom domain routing, and keeps Isley off a public port.
-
-### Nginx
+**Nginx**
 
 ```nginx
 server {
     listen 443 ssl;
-    server_name isley.example.com;
+    server_name budminder.example.com;
 
-    ssl_certificate     /etc/letsencrypt/live/isley.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/isley.example.com/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/budminder.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/budminder.example.com/privkey.pem;
 
-    client_max_body_size 20M;  # allow image uploads
+    client_max_body_size 20M;  # photo uploads
 
     location / {
         proxy_pass http://127.0.0.1:8080;
@@ -534,58 +326,27 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
-
-server {
-    listen 80;
-    server_name isley.example.com;
-    return 301 https://$host$request_uri;
-}
 ```
 
-### Traefik (Docker labels)
-
-Add these labels to the `isley` service in your compose file:
+**Traefik** (labels on the `budminder` service)
 
 ```yaml
-services:
-  isley:
-    # ... existing config ...
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.isley.rule=Host(`isley.example.com`)"
-      - "traefik.http.routers.isley.entrypoints=websecure"
-      - "traefik.http.routers.isley.tls.certresolver=letsencrypt"
-      - "traefik.http.services.isley.loadbalancer.server.port=8080"
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.budminder.rule=Host(`budminder.example.com`)"
+  - "traefik.http.routers.budminder.entrypoints=websecure"
+  - "traefik.http.routers.budminder.tls.certresolver=letsencrypt"
+  - "traefik.http.services.budminder.loadbalancer.server.port=8080"
 ```
 
-> **Note:** Isley ships with trusted proxy configuration for private RFC-1918 ranges, so `X-Forwarded-For` headers from your reverse proxy will be used correctly for rate limiting and logging.
+BudMinder trusts `X-Forwarded-For` from private network addresses, so a proxy on your network is handled correctly. Behind HTTPS, also set `BUDMINDER_SECURE_COOKIES=true`.
 
----
+</details>
 
-## 🛡️ Production Recommendations
+## Credits and license
 
-- Use **Docker with PostgreSQL** behind a reverse proxy (Nginx, Traefik) for TLS termination and clean URL routing.
-- Back up these volumes on a regular schedule — see [Backup & Restore](#-backup--restore) above.
-- Set `ISLEY_SESSION_SECRET` to keep sessions valid across container restarts.
-- Configure a [sensor data retention period](#) in Settings to prevent unbounded database growth.
+BudMinder is based on [Isley](https://github.com/dwot/isley) by dwot. Strain data comes from [StrainCompass](https://straincompass.com) and [CannaDB](https://cannadb.org). Icons are from [Font Awesome Free](https://fontawesome.com), and the logo is set in [Outfit](https://fonts.google.com/specimen/Outfit).
 
----
+Found a bug or have an idea? [Open an issue](https://github.com/SirBusta/budminder/issues).
 
-## 📝 Notes
-
-- Isley is in **active development** 🚧 — breaking changes may occasionally occur between releases.
-- Found a bug or have a feature request? [Open an issue](https://github.com/dwot/isley/issues) — contributions welcome.
-
-🌐 For screenshots, feature highlights, and the latest news: [dwot.github.io/isley](https://dwot.github.io/isley)
-
----
-
-## ⭐ Star History
-
-<a href="https://www.star-history.com/?repos=dwot%2Fisley&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=dwot/isley&type=Date&theme=dark&legend=top-left#gh-dark-mode-only" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=dwot/isley&type=Date&legend=top-left#gh-light-mode-only" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=dwot/isley&type=Date&legend=top-left" />
- </picture>
-</a>
+Released under the [MIT license](LICENSE).

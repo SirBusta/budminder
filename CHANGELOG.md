@@ -1,6 +1,8 @@
 # Changelog
 
-All notable changes to Isley are documented in this file.
+All notable changes to BudMinder are documented in this file. Versions before
+1.0.0 are releases of [Isley](https://github.com/dwot/isley), the project
+BudMinder is based on.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -31,6 +33,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
+
+## [1.0.0] - 2026-10-13
+
+The first release under the name BudMinder.
+
+### Added
+- **Home Assistant sensors:** connect BudMinder to Home Assistant in
+  Settings (address and a long-lived access token, with Test connection),
+  then scan and add any of its numeric sensors from Manage sensors. Govee,
+  SwitchBot, Inkbird, Zigbee, ESPHome and every other sensor Home Assistant
+  supports can now sit in a tent next to AC Infinity and Ecowitt readings.
+  Read-only: BudMinder never changes anything in Home Assistant.
+- **Today page:** what needs attention, every tent's live readings, its camera
+  and plant cards, with water and feed logging from each card.
+- **Plant page with a daily notebook:** one entry per plant per day, with that
+  day's activities, measurements (water amount, height) and photos side by
+  side; a stage track from germination to harvest with estimated harvest
+  dates; an "All plants" view; notebook export to CSV or Excel.
+- **Seed Vault and Wanted list:** seed counts, age (with a warning past two
+  years), seed type and storage location; − / + one seed, Restock, and start a
+  grow from the list; sort by oldest seeds first.
+- **Strain pages:** every grow of a strain with yields and flowering times,
+  the strain's family, potency, effects, terpenes and photos from your grows.
+- **StrainCompass lookup:** search and import strains with THC/CBD ranges,
+  effects, flavors, terpenes, medical uses and parents, reviewed before saving.
+  StrainCompass and CannaDB lookups are on by default.
+- **Environment page:** every sensor in a tent on one timeline (1 hour to 7
+  days or a custom range); click or drag a marker line to read all sensors at
+  one moment. **Manage sensors** page to scan, add, name and place sensors.
+- **Settings** rebuilt: grouped, searchable, saves as you go.
+- Imperial or metric units for strain height and yield, and sensor temperatures.
+- Breeder type-ahead seeded with about 1,200 breeder names.
+- Docker images for amd64 and arm64 on GitHub Container Registry, and
+  ready-to-run programs for Windows, macOS and Linux on each release.
+
+### Changed
+- New name, logo and icons. New installs log in with admin / budminder (you
+  are asked to change it at first login).
+- Every page redesigned, with a new top menu and dark mode throughout.
+- Everything is served from your own server; pages no longer load fonts or
+  scripts from other sites.
+- Download names start with `budminder-` (backups, database, notebook export).
+  Older `isley-backup-*.zip` files still restore.
+- Startup settings are now named `BUDMINDER_…` (for example
+  `BUDMINDER_DB_DRIVER`). The older `ISLEY_…` names still work, and the SQLite
+  file stays `data/isley.db`, so existing setups keep working.
+
+### Fixed
+- Sensor readings of exactly 0 sent through the API were rejected; they are
+  now stored.
+- "Database is locked" errors when saving activities, caused by two slow
+  background jobs holding the database.
+- Dates shown a day early for time zones west of UTC.
+- Pages failing to load for plants or strains missing a strain, tent or
+  breeder.
+- Backups now include strain effects, flavors, terpenes, medical uses and the
+  daily notebook.
 
 ## [2.3.0] - 2026-06-23
 
