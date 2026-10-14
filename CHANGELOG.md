@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ### Fixed
+- Everyone was logged out whenever BudMinder restarted unless
+  `BUDMINDER_SESSION_SECRET` was set. BudMinder now makes its own key on first
+  start and keeps it in its database, so logins survive restarts.
+- The GitHub Release description now shows the right version's notes.
 
 ### Security
 
