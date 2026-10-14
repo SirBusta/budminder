@@ -167,7 +167,7 @@ To update later, run `docker compose pull` and then `docker compose up -d`. Your
    | Path | `Data` | Container Path `/app/data` | `/mnt/user/appdata/budminder/data` |
    | Path | `Uploads` | Container Path `/app/uploads` | `/mnt/user/appdata/budminder/uploads` |
 
-4. Optional, under **Show more settings**: set **WebUI** to `http://[IP]:[PORT:8080]/` (adds a WebUI link to the container's menu) and **Icon URL** to `https://raw.githubusercontent.com/SirBusta/budminder/main/web/static/img/brand/budminder-256.png`.
+4. Optional: switch the page to **Advanced View** (the Basic View / Advanced View switch at the top right) to see two more fields. Set **WebUI** to `http://[IP]:[PORT:8080]/` to get a WebUI link in the container's menu; Unraid replaces `[PORT:8080]` with the host port you chose, so it opens BudMinder, not whatever else uses 8080. Set **Icon URL** to `https://raw.githubusercontent.com/SirBusta/budminder/main/web/static/img/brand/budminder-256.png` for the BudMinder icon in the Docker tab.
 5. Click **Apply**, then open `http://<your-server>:<host port>`.
 
 SQLite is used automatically. To use PostgreSQL instead, see the PostgreSQL section below.
