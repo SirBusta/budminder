@@ -1,21 +1,22 @@
 package utils
 
 import (
-	"os"
 	"strconv"
+
+	"isley/env"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 // BcryptCost is the bcrypt work factor used when hashing passwords and
 // API keys. Defaults to 12 (a small bump over bcrypt.DefaultCost = 10);
-// can be lowered for tests via ISLEY_BCRYPT_COST to keep suite runtime
+// can be lowered for tests via BUDMINDER_BCRYPT_COST to keep suite runtime
 // reasonable. Reads from the env at process start.
 var BcryptCost = resolveBcryptCost()
 
 func resolveBcryptCost() int {
 	const fallback = 12
-	v := os.Getenv("ISLEY_BCRYPT_COST")
+	v := env.Get("BCRYPT_COST")
 	if v == "" {
 		return fallback
 	}

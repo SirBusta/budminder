@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"isley/config"
+	"isley/env"
 	"isley/logger"
 	"isley/model"
 
@@ -336,7 +337,7 @@ func DownloadSQLiteDB(c *gin.Context) {
 		return
 	}
 
-	dbFile := os.Getenv("ISLEY_DB_FILE")
+	dbFile := env.Get("DB_FILE")
 	if dbFile == "" {
 		dbFile = "data/isley.db"
 	}
@@ -421,7 +422,7 @@ func runSQLiteFileRestore(svc *BackupService, data []byte, store *config.Store) 
 
 	svc.UpdateRestoreProgress("restoring", "database file", 0, 0, 0, 0)
 
-	dbFile := os.Getenv("ISLEY_DB_FILE")
+	dbFile := env.Get("DB_FILE")
 	if dbFile == "" {
 		dbFile = "data/isley.db"
 	}

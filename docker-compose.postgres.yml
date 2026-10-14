@@ -6,14 +6,14 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - ISLEY_PORT=8080
-      - ISLEY_DB_DRIVER=postgres
-      - ISLEY_DB_HOST=postgres
-      - ISLEY_DB_PORT=5432
-      - ISLEY_DB_USER=${ISLEY_DB_USER:-isley}
-      - ISLEY_DB_PASSWORD=${ISLEY_DB_PASSWORD:?Set ISLEY_DB_PASSWORD in .env}
-      - ISLEY_DB_NAME=${ISLEY_DB_NAME:-isleydb}
-      - ISLEY_SESSION_SECRET=${ISLEY_SESSION_SECRET:-}
+      - BUDMINDER_PORT=8080
+      - BUDMINDER_DB_DRIVER=postgres
+      - BUDMINDER_DB_HOST=postgres
+      - BUDMINDER_DB_PORT=5432
+      - BUDMINDER_DB_USER=${BUDMINDER_DB_USER:-isley}
+      - BUDMINDER_DB_PASSWORD=${BUDMINDER_DB_PASSWORD:?Set BUDMINDER_DB_PASSWORD in .env}
+      - BUDMINDER_DB_NAME=${BUDMINDER_DB_NAME:-isleydb}
+      - BUDMINDER_SESSION_SECRET=${BUDMINDER_SESSION_SECRET:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -29,14 +29,14 @@ services:
   postgres:
     image: postgres:16.8-alpine
     environment:
-      - POSTGRES_DB=${ISLEY_DB_NAME:-isleydb}
-      - POSTGRES_USER=${ISLEY_DB_USER:-isley}
-      - POSTGRES_PASSWORD=${ISLEY_DB_PASSWORD:?Set ISLEY_DB_PASSWORD in .env}
+      - POSTGRES_DB=${BUDMINDER_DB_NAME:-isleydb}
+      - POSTGRES_USER=${BUDMINDER_DB_USER:-isley}
+      - POSTGRES_PASSWORD=${BUDMINDER_DB_PASSWORD:?Set BUDMINDER_DB_PASSWORD in .env}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${ISLEY_DB_USER:-isley} -d ${ISLEY_DB_NAME:-isleydb}"]
+      test: ["CMD-SHELL", "pg_isready -U ${BUDMINDER_DB_USER:-isley} -d ${BUDMINDER_DB_NAME:-isleydb}"]
       interval: 10s
       timeout: 5s
       start_period: 30s

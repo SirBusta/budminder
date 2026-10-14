@@ -4,10 +4,10 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"isley/env"
 	"isley/logger"
 	"isley/utils"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -16,8 +16,8 @@ import (
 )
 
 // SecureCookies controls the Secure flag on session cookies.
-// Set via the ISLEY_SECURE_COOKIES environment variable.
-var SecureCookies = strings.EqualFold(os.Getenv("ISLEY_SECURE_COOKIES"), "true")
+// Set via the BUDMINDER_SECURE_COOKIES environment variable (or ISLEY_SECURE_COOKIES; see package env).
+var SecureCookies = strings.EqualFold(env.Get("SECURE_COOKIES"), "true")
 
 // ---------------------------------------------------------------------------
 // CSRF token generation

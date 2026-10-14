@@ -9,6 +9,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/sqlite"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/lib/pq"
+	"isley/env"
 	"isley/logger"
 	_ "modernc.org/sqlite"
 	"os"
@@ -29,10 +30,10 @@ var dbDriver string
 
 func InitDB() {
 	var err error
-	driver := os.Getenv("ISLEY_DB_DRIVER")
+	driver := env.Get("DB_DRIVER")
 	logger.Log.Info("DB_DRIVER is: ", driver)
 
-	dbFile := os.Getenv("ISLEY_DB_FILE")
+	dbFile := env.Get("DB_FILE")
 	logger.Log.Info("DB_FILE is: ", dbFile)
 	if dbFile == "" {
 		dbFile = "data/isley.db"
@@ -42,17 +43,17 @@ func InitDB() {
 	switch driver {
 	case "postgres":
 		logger.Log.Info("Using Postgres driver")
-		pgSSLMode := os.Getenv("ISLEY_DB_SSLMODE")
+		pgSSLMode := env.Get("DB_SSLMODE")
 		if pgSSLMode == "" {
 			pgSSLMode = "disable"
 		}
 		dsn = fmt.Sprintf(
 			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-			os.Getenv("ISLEY_DB_HOST"),
-			os.Getenv("ISLEY_DB_PORT"),
-			os.Getenv("ISLEY_DB_USER"),
-			os.Getenv("ISLEY_DB_PASSWORD"),
-			os.Getenv("ISLEY_DB_NAME"),
+			env.Get("DB_HOST"),
+			env.Get("DB_PORT"),
+			env.Get("DB_USER"),
+			env.Get("DB_PASSWORD"),
+			env.Get("DB_NAME"),
 			pgSSLMode,
 		)
 	case "sqlite", "":
@@ -134,7 +135,7 @@ func IsSQLite() bool {
 }
 
 func DbPath() string {
-	dbPath := os.Getenv("ISLEY_DB_FILE")
+	dbPath := env.Get("DB_FILE")
 	logger.Log.Info("DB_FILE is: ", dbPath)
 	if dbPath == "" {
 		dbPath = "data/isley.db"
@@ -151,7 +152,7 @@ func DbPath() string {
 }
 
 func MigrateDB() {
-	driver := os.Getenv("ISLEY_DB_DRIVER")
+	driver := env.Get("DB_DRIVER")
 	if driver == "" {
 		logger.Log.Info("DB_DRIVER not set, defaulting to sqlite")
 		driver = "sqlite"
@@ -165,17 +166,17 @@ func MigrateDB() {
 	dsn := ""
 	switch driver {
 	case "postgres":
-		pgSSLMode2 := os.Getenv("ISLEY_DB_SSLMODE")
+		pgSSLMode2 := env.Get("DB_SSLMODE")
 		if pgSSLMode2 == "" {
 			pgSSLMode2 = "disable"
 		}
 		dsn = fmt.Sprintf(
 			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-			os.Getenv("ISLEY_DB_HOST"),
-			os.Getenv("ISLEY_DB_PORT"),
-			os.Getenv("ISLEY_DB_USER"),
-			os.Getenv("ISLEY_DB_PASSWORD"),
-			os.Getenv("ISLEY_DB_NAME"),
+			env.Get("DB_HOST"),
+			env.Get("DB_PORT"),
+			env.Get("DB_USER"),
+			env.Get("DB_PASSWORD"),
+			env.Get("DB_NAME"),
 			pgSSLMode2,
 		)
 	case "sqlite":

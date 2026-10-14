@@ -6,9 +6,9 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - ISLEY_PORT=8080
-      - ISLEY_DB_DRIVER=sqlite
-      - ISLEY_SESSION_SECRET=${ISLEY_SESSION_SECRET:-}
+      - BUDMINDER_PORT=8080
+      - BUDMINDER_DB_DRIVER=sqlite
+      - BUDMINDER_SESSION_SECRET=${BUDMINDER_SESSION_SECRET:-}
     volumes:
       - isley-db:/app/data
       - isley-uploads:/app/uploads

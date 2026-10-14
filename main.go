@@ -18,6 +18,7 @@ import (
 
 	"isley/app"
 	"isley/config"
+	"isley/env"
 	"isley/handlers"
 	"isley/logger"
 	"isley/model"
@@ -51,7 +52,7 @@ func main() {
 	// (e.g. the CannaDB import client).
 	handlers.Version = getVersion()
 
-	port := os.Getenv("ISLEY_PORT")
+	port := env.Get("PORT")
 	if port == "" {
 		port = "8080"
 	}
@@ -113,9 +114,9 @@ func main() {
 
 	// Resolve session secret. If unset, generate a random one and warn — sessions
 	// will not survive a restart.
-	sessionSecret := []byte(os.Getenv("ISLEY_SESSION_SECRET"))
+	sessionSecret := []byte(env.Get("SESSION_SECRET"))
 	if len(sessionSecret) == 0 {
-		logger.Log.Warn("ISLEY_SESSION_SECRET not set; generating a random session key (sessions will not survive restart)")
+		logger.Log.Warn("BUDMINDER_SESSION_SECRET not set; generating a random session key (sessions will not survive restart)")
 		sessionSecret = make([]byte, 32)
 		if _, err := rand.Read(sessionSecret); err != nil {
 			logger.Log.WithError(err).Fatal("Failed to generate random session key")
@@ -132,10 +133,10 @@ func main() {
 	// applies the same rules internally; we apply them here too so we
 	// can read the resolved FrameDir before constructing the engine.
 	hstsMaxAge := 0
-	if v := os.Getenv("ISLEY_HSTS_MAX_AGE"); v != "" {
+	if v := env.Get("HSTS_MAX_AGE"); v != "" {
 		parsed, err := strconv.Atoi(v)
 		if err != nil || parsed < 0 {
-			logger.Log.WithField("ISLEY_HSTS_MAX_AGE", v).Warn("Ignoring invalid ISLEY_HSTS_MAX_AGE; expected non-negative integer (seconds)")
+			logger.Log.WithField("BUDMINDER_HSTS_MAX_AGE", v).Warn("Ignoring invalid BUDMINDER_HSTS_MAX_AGE; expected non-negative integer (seconds)")
 		} else {
 			hstsMaxAge = parsed
 		}
@@ -148,8 +149,8 @@ func main() {
 		SessionSecret:         sessionSecret,
 		SecureCookies:         handlers.SecureCookies,
 		HSTSMaxAge:            hstsMaxAge,
-		HSTSIncludeSubdomains: strings.EqualFold(os.Getenv("ISLEY_HSTS_INCLUDE_SUBDOMAINS"), "true"),
-		HSTSPreload:           strings.EqualFold(os.Getenv("ISLEY_HSTS_PRELOAD"), "true"),
+		HSTSIncludeSubdomains: strings.EqualFold(env.Get("HSTS_INCLUDE_SUBDOMAINS"), "true"),
+		HSTSPreload:           strings.EqualFold(env.Get("HSTS_PRELOAD"), "true"),
 		GuestMode:             configStore.GuestMode() == 1,
 		TrustedProxies:        trustedProxies,
 		DataDir:               "data",
