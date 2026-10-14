@@ -20,6 +20,7 @@ import (
 	"isley/config"
 	"isley/env"
 	"isley/handlers"
+	"isley/homeassistant"
 	"isley/logger"
 	"isley/model"
 	"isley/utils"
@@ -51,6 +52,7 @@ func main() {
 	// Expose the bare version to handlers for outbound User-Agent strings
 	// (e.g. the CannaDB import client).
 	handlers.Version = getVersion()
+	homeassistant.UserAgent = fmt.Sprintf("BudMinder/%s (+https://github.com/SirBusta/budminder)", handlers.Version)
 
 	port := env.Get("PORT")
 	if port == "" {

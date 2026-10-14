@@ -124,6 +124,11 @@
                 base_url: val("straincompassBaseUrl").value.trim(),
                 api_key: val("straincompassApiKey").value.trim(),
             },
+            homeassistant: {
+                enabled: val("haEnabled").checked,
+                url: val("haUrl").value.trim(),
+                token: val("haToken").value.trim(),
+            },
             polling_interval: val("pollingInterval").value,
             guest_mode: val("guestMode").checked,
             stream_grab_enabled: val("streamGrabEnabled").checked,
@@ -146,7 +151,7 @@
     }
     function save() {
         const body = payload();
-        const sentKey = body.straincompass.api_key;
+        const sentKey = body.straincompass.api_key, sentHAToken = body.homeassistant.token;
         saving = saving.then(() => fetch("/settings", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -162,11 +167,46 @@
                 badge.textContent = L.tokenSet;
                 badge.className = "badge bg-success";
             }
+            if (sentHAToken) {
+                const input = val("haToken"), badge = val("haTokenBadge");
+                if (input.value.trim() === sentHAToken) input.value = "";
+                input.placeholder = "••••••••";
+                badge.textContent = L.tokenSet;
+                badge.className = "badge bg-success";
+            }
         }).catch(() => {
             if (window.uiMessages) uiMessages.showToast(L.saveFailed || "Failed to save settings", "danger");
         }));
     }
     function queueSave() { clearTimeout(timer); timer = setTimeout(save, 400); }
+
+    // ---------- Home Assistant: Test connection ----------
+    // Tests what's typed (address and a newly pasted token), falling back
+    // to the saved settings on the server.
+    const haTest = val("haTest");
+    if (haTest) haTest.addEventListener("click", async () => {
+        const out = val("haTestResult"), label = haTest.innerHTML;
+        haTest.disabled = true;
+        out.className = "st-ha-result";
+        out.textContent = L.haTesting;
+        try {
+            const resp = await fetch("/settings/homeassistant/test", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: val("haUrl").value.trim(), token: val("haToken").value.trim() }),
+            });
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok) throw new Error(data.error || L.haTestFailed);
+            out.textContent = L.haTestOk.replace("{n}", data.sensors).replace("{g}", data.grow);
+            out.classList.add("ok");
+        } catch (e) {
+            out.textContent = e.message || L.haTestFailed;
+            out.classList.add("bad");
+        } finally {
+            haTest.disabled = false;
+            haTest.innerHTML = label;
+        }
+    });
     page.addEventListener("change", e => { if (e.target.matches("[data-autosave]")) queueSave(); });
     // Text fields save when you leave them or press Enter (change), not per keystroke.
     page.addEventListener("keydown", e => {

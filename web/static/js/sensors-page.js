@@ -24,11 +24,11 @@
     // ---------- What each sensor is (shared: sensor-kinds.js) ----------
     const K = window.SensorKinds;
     const isPort = K.isPort, isOutside = K.isOutside;
-    const ORDER = { temp: 0, hum: 1, vpd: 2, co2: 3, soil: 4, ec: 5, other: 6 };
+    const ORDER = { temp: 0, hum: 1, vpd: 2, co2: 3, soil: 4, ec: 5, light: 6, other: 7 };
     const OTHER_COLORS = ["#0ea5e9", "#14b8a6", "#64748b", "#eab308", "#ec4899"];
     function look(s, i) {
         const k = K.kind(s), out = isOutside(s);
-        const color = { temp: out ? "#f97316" : "#ef4444", hum: out ? "#a78bfa" : "#6366f1", vpd: "#10b981", co2: "#d946ef", soil: "#a16207", ec: "#0d9488" }[k] || OTHER_COLORS[i % OTHER_COLORS.length];
+        const color = { temp: out ? "#f97316" : "#ef4444", hum: out ? "#a78bfa" : "#6366f1", vpd: "#10b981", co2: "#d946ef", soil: "#a16207", ec: "#0d9488", light: "#eab308" }[k] || OTHER_COLORS[i % OTHER_COLORS.length];
         const { unit, conv } = K.display(s, P.units);
         const span = { temp: unit === "°C" ? 2 : 4, hum: 10, vpd: 0.4, co2: 80, soil: 10 }[k] || 0;
         return { k, color, dp: K.decimals(s), unit, conv, span };

@@ -298,6 +298,7 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 
 	r.POST("/sensors/scanACI", handlers.ScanACInfinitySensors)
 	r.POST("/sensors/scanEC", handlers.ScanEcoWittSensors)
+	r.POST("/sensors/scanHA", handlers.ScanHomeAssistantSensors)
 	r.POST("/sensors/edit", handlers.EditSensor)
 	r.DELETE("/sensors/delete/:id", handlers.DeleteSensor)
 	r.PUT("/sensors/:id", handlers.UpdateSensorHandler)
@@ -383,6 +384,7 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.POST("/settings/backup/sqlite/upload", handlers.UploadSQLiteDB)
 	r.POST("/record-multi-activity", handlers.RecordMultiPlantActivity)
 	r.POST("/settings", handlers.SaveSettings)
+	r.POST("/settings/homeassistant/test", handlers.TestHomeAssistantHandler)
 }
 
 // AddExternalApiRoutes External API endpoints

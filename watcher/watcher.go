@@ -1,4 +1,4 @@
-// Package watcher polls the AC Infinity and EcoWitt cloud APIs at a
+// Package watcher polls AC Infinity, EcoWitt and Home Assistant at a
 // configurable interval, persists readings into sensor_data, prunes
 // rows past their retention window, and refreshes the hourly rollup
 // table.
@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"isley/config"
+	"isley/homeassistant"
 	"isley/logger"
 	"isley/model"
 	"isley/model/types"
@@ -75,7 +76,12 @@ type Watcher struct {
 	ACIToken          func() string
 	ECEnabled         func() bool
 	ECDevices         func() []string
-	SensorRetention   func() int
+	HAEnabled         func() bool
+	HAURL             func() string
+	HAToken           func() string
+	// HAHTTP is the client for Home Assistant (nil = its no-redirect default).
+	HAHTTP          homeassistant.Doer
+	SensorRetention func() int
 }
 
 // New returns a Watcher wired to the supplied per-engine *config.Store
@@ -96,6 +102,9 @@ func New(db *sql.DB, store *config.Store) *Watcher {
 		ACIToken:          store.ACIToken,
 		ECEnabled:         func() bool { return store.ECEnabled() == 1 },
 		ECDevices:         store.ECDevices,
+		HAEnabled:         func() bool { return store.HAEnabled() == 1 },
+		HAURL:             store.HAURL,
+		HAToken:           store.HAToken,
 		SensorRetention:   store.SensorRetention,
 	}
 }
@@ -137,6 +146,9 @@ func (w *Watcher) Run(ctx context.Context) {
 				for _, ecServer := range w.ECDevices() {
 					w.PollEcoWitt(ctx, ecServer)
 				}
+			}
+			if w.HAEnabled != nil && w.HAEnabled() {
+				w.PollHomeAssistant(ctx)
 			}
 
 			w.computeZoneVPD(ctx)
@@ -300,6 +312,73 @@ func (w *Watcher) PollACI(ctx context.Context, token string) {
 			w.addSensorData(source, device, key, fmt.Sprintf("%f", value))
 		}
 	}
+}
+
+// PollHomeAssistant reads every state from Home Assistant in one request
+// and saves readings for the Home Assistant sensors that were added in
+// Manage sensors. Sensors that are unavailable or not a number are skipped.
+// If Home Assistant's unit for a temperature changed since the sensor was
+// added (°C ↔ °F), the reading is converted to the sensor's saved unit.
+func (w *Watcher) PollHomeAssistant(ctx context.Context) {
+	log := w.Logger.WithField("func", "PollHomeAssistant")
+
+	tracked := map[string]struct {
+		id   int
+		unit string
+	}{}
+	rows, err := w.DB.Query("SELECT id, type, COALESCE(unit, '') FROM sensors WHERE source = $1", homeassistant.Source)
+	if err != nil {
+		log.WithError(err).Error("Error loading Home Assistant sensors")
+		return
+	}
+	for rows.Next() {
+		var id int
+		var entityID, unit string
+		if err := rows.Scan(&id, &entityID, &unit); err == nil {
+			tracked[entityID] = struct {
+				id   int
+				unit string
+			}{id, unit}
+		}
+	}
+	rows.Close()
+	if len(tracked) == 0 {
+		return // nothing added yet: don't contact Home Assistant
+	}
+
+	client, err := homeassistant.New(w.HAURL(), w.HAToken())
+	if err != nil {
+		log.WithError(err).Warn("Home Assistant is on but its address or token is missing or invalid")
+		return
+	}
+	if w.HAHTTP != nil {
+		client.HTTP = w.HAHTTP
+	}
+	states, err := client.States(ctx)
+	if err != nil {
+		log.WithError(err).Error("Error reading Home Assistant")
+		return
+	}
+
+	saved := 0
+	for _, e := range states {
+		t, ok := tracked[e.EntityID]
+		if !ok {
+			continue
+		}
+		v, ok := e.Value()
+		if !ok {
+			log.WithFields(logrus.Fields{"entity": e.EntityID, "state": e.State}).Debug("Home Assistant sensor has no reading")
+			continue
+		}
+		v = homeassistant.ConvertTemperature(v, e.Attributes.Unit, t.unit)
+		if _, err := w.DB.Exec("INSERT INTO sensor_data (sensor_id, value) VALUES ($1, $2)", t.id, v); err != nil {
+			log.WithError(err).WithField("sensorID", t.id).Error("Error writing sensor data to database")
+			continue
+		}
+		saved++
+	}
+	log.WithField("readings", saved).Debug("Home Assistant poll done")
 }
 
 // addSensorData writes a single (source, device, key, value) tuple to

@@ -63,6 +63,9 @@ func newTestWatcher(t *testing.T, db *sql.DB) *Watcher {
 		ACIToken:          func() string { return "" },
 		ECEnabled:         func() bool { return false },
 		ECDevices:         func() []string { return nil },
+		HAEnabled:         func() bool { return false },
+		HAURL:             func() string { return "" },
+		HAToken:           func() string { return "" },
 		SensorRetention:   func() int { return 0 },
 	}
 }

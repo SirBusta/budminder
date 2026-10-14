@@ -9,6 +9,8 @@ window.SensorKinds = (function () {
     function kind(s) {
         if (isPort(s)) return "port";
         const u = (s.unit || "").toLowerCase(), ty = s.type + " " + s.name;
+        if (/battery/i.test(ty)) return "other";
+        if (u === "lx" || /illuminance|\blux\b/i.test(ty)) return "light";
         if (u.includes("°") || /temp/i.test(ty) && !u.includes("%")) return "temp";
         if (u === "kpa" || /vpd/i.test(ty)) return "vpd";
         if (u === "ppm" || /co2|co₂/i.test(ty)) return "co2";
@@ -17,7 +19,7 @@ window.SensorKinds = (function () {
         if (u === "%" || /hum/i.test(ty)) return "hum";
         return "other";
     }
-    const ICONS = { temp: "fa-temperature-half", hum: "fa-droplet", vpd: "fa-cloud", co2: "fa-smog", soil: "fa-water", ec: "fa-bolt", port: "fa-plug", other: "fa-gauge" };
+    const ICONS = { light: "fa-sun", temp: "fa-temperature-half", hum: "fa-droplet", vpd: "fa-cloud", co2: "fa-smog", soil: "fa-water", ec: "fa-bolt", port: "fa-plug", other: "fa-gauge" };
     function portIcon(name) {
         const n = (name || "").toLowerCase();
         if (/light|led|lamp|sun|bloom|veg|fc\d/.test(n)) return "fa-lightbulb";
@@ -40,6 +42,6 @@ window.SensorKinds = (function () {
         }
         return { unit, conv };
     }
-    const decimals = s => ({ temp: 1, hum: 1, vpd: 2, co2: 0, soil: 1, ec: 2, port: 0 })[kind(s)] ?? 1;
+    const decimals = s => ({ temp: 1, hum: 1, vpd: 2, co2: 0, soil: 1, ec: 2, light: 0, port: 0 })[kind(s)] ?? 1;
     return { isPort, isOutside, kind, icon, portIcon, display, decimals };
 })();

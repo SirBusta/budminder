@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"isley/homeassistant"
 	"isley/logger"
 	"isley/model"
 	"isley/utils"
@@ -29,6 +30,10 @@ type foundSensor struct {
 	Type   string `json:"type"`
 	Name   string `json:"name"`
 	Unit   string `json:"unit"`
+	// Home Assistant scans also report the current reading, and More marks
+	// sensors that are only listed with "Show all" (batteries, power, …).
+	Value *float64 `json:"value,omitempty"`
+	More  bool     `json:"more,omitempty"`
 }
 
 type sensorCollector []foundSensor
@@ -62,7 +67,7 @@ func newSensorsOnly(db *sql.DB, found []foundSensor) []foundSensor {
 
 // scannableSources are the integrations whose scan results can be added
 // one by one from the Manage sensors page.
-var scannableSources = map[string]bool{"acinfinity": true, "ecowitt": true}
+var scannableSources = map[string]bool{"acinfinity": true, "ecowitt": true, homeassistant.Source: true}
 
 // AddScannedSensorHandler saves one sensor from a scan preview into a tent
 // (POST /sensors/add). Adding the same sensor twice is a no-op.
@@ -656,6 +661,8 @@ func SensorsPageData(c *gin.Context, prefix string, lang string, translations ma
 		data["plants"] = plants
 		data["aci"] = gin.H{"enabled": store.ACIEnabled() == 1, "token_set": store.ACIToken() != ""}
 		data["ecowitt"] = gin.H{"enabled": store.ECEnabled() == 1, "devices": devices}
+		// The address is shown on the card; the token itself never leaves the server.
+		data["homeassistant"] = gin.H{"enabled": store.HAEnabled() == 1, "url": store.HAURL(), "token_set": store.HAToken() != ""}
 	}
 	return data
 }

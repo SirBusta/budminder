@@ -45,6 +45,9 @@ type Store struct {
 	straincompassEnabled int
 	straincompassBaseURL string
 	straincompassAPIKey  string
+	haEnabled            int
+	haURL                string
+	haToken              string
 }
 
 // Defaults mirrors the historical package-global initial values. Tests
@@ -250,6 +253,44 @@ func (s *Store) SetStraincompassAPIKey(v string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.straincompassAPIKey = v
+}
+
+// Home Assistant (homeassistant.enabled / .url / .token settings).
+
+func (s *Store) HAEnabled() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.haEnabled
+}
+
+func (s *Store) SetHAEnabled(v int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.haEnabled = v
+}
+
+func (s *Store) HAURL() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.haURL
+}
+
+func (s *Store) SetHAURL(v string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.haURL = v
+}
+
+func (s *Store) HAToken() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.haToken
+}
+
+func (s *Store) SetHAToken(v string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.haToken = v
 }
 
 func (s *Store) LogLevel() string {

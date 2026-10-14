@@ -178,11 +178,14 @@ type Settings struct {
 		// top-level APIKey field below.
 		APIKey string `json:"api_key"`
 	} `json:"straincompass"`
-	PollingInterval    string `json:"polling_interval"`
-	GuestMode          bool   `json:"guest_mode"`
-	StreamGrabEnabled  bool   `json:"stream_grab_enabled"`
-	StreamGrabInterval string `json:"stream_grab_interval"`
-	APIKey             string `json:"api_key"`
+	// HomeAssistant is a pointer so a settings save that doesn't include it
+	// (an older page, a script) leaves the Home Assistant settings alone.
+	HomeAssistant      *HomeAssistantSettingsInput `json:"homeassistant"`
+	PollingInterval    string                      `json:"polling_interval"`
+	GuestMode          bool                        `json:"guest_mode"`
+	StreamGrabEnabled  bool                        `json:"stream_grab_enabled"`
+	StreamGrabInterval string                      `json:"stream_grab_interval"`
+	APIKey             string                      `json:"api_key"`
 	// New: allow disabling API ingest from settings form
 	DisableAPIIngest    bool   `json:"disable_api_ingest"`
 	SensorRetentionDays string `json:"sensor_retention_days"`
@@ -190,6 +193,22 @@ type Settings struct {
 	MaxBackupSizeMB     string `json:"max_backup_size_mb"`
 	Timezone            string `json:"timezone"`
 	Units               string `json:"units"` // "imperial" or "metric"; empty leaves it unchanged
+}
+
+// HomeAssistantSettingsInput is the Home Assistant part of a settings save.
+// Token: empty means "leave unchanged", like the StrainCompass API key.
+type HomeAssistantSettingsInput struct {
+	Enabled bool   `json:"enabled"`
+	URL     string `json:"url"`
+	Token   string `json:"token"`
+}
+
+// HomeAssistantSettings is what the Settings page is told; the token itself
+// is never sent back.
+type HomeAssistantSettings struct {
+	Enabled  bool   `json:"enabled"`
+	URL      string `json:"url"`
+	TokenSet bool   `json:"token_set"`
 }
 
 type ACInfinitySettings struct {
@@ -217,6 +236,7 @@ type SettingsData struct {
 	EC                 EcoWittSettings       `json:"ec"`
 	Cannadb            CannadbSettings       `json:"cannadb"`
 	Straincompass      StraincompassSettings `json:"straincompass"`
+	HomeAssistant      HomeAssistantSettings `json:"homeassistant"`
 	PollingInterval    int                   `json:"polling_interval"`
 	GuestMode          bool                  `json:"guest_mode"`
 	StreamGrabEnabled  bool                  `json:"stream_grab_enabled"`

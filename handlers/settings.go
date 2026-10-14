@@ -247,6 +247,38 @@ func SaveSettings(c *gin.Context) {
 		store.SetStraincompassAPIKey(settings.Straincompass.APIKey)
 	}
 
+	// Home Assistant: only when the save includes it. The address is kept as
+	// typed (Test connection explains a bad one); a blank token keeps the
+	// stored one, like the StrainCompass API key.
+	if ha := settings.HomeAssistant; ha != nil {
+		if err := saveBool("homeassistant.enabled", ha.Enabled, store.SetHAEnabled); err != nil {
+			fieldLogger.WithError(err).Error("Failed to save Home Assistant setting")
+			apiInternalError(c, "api_failed_to_save_settings")
+			return
+		}
+		haURL := strings.TrimSpace(ha.URL)
+		if err := utils.ValidateStringLength("homeassistant.url", haURL, utils.MaxNameLength); err != nil {
+			apiBadRequest(c, err.Error())
+			return
+		}
+		if err := UpdateSetting(db, store, "homeassistant.url", haURL); err != nil {
+			fieldLogger.WithError(err).Error("Failed to save Home Assistant address")
+			apiInternalError(c, "api_failed_to_save_settings")
+			return
+		}
+		if tok := strings.TrimSpace(ha.Token); tok != "" {
+			if len(tok) > maxHATokenLength {
+				apiBadRequest(c, "api_invalid_input")
+				return
+			}
+			if err := UpdateSetting(db, store, "homeassistant.token", tok); err != nil {
+				fieldLogger.Error("Failed to save Home Assistant token")
+				apiInternalError(c, "api_failed_to_save_settings")
+				return
+			}
+		}
+	}
+
 	// Timezone setting — always persist (empty = system default)
 	err = UpdateSetting(db, store, "timezone", settings.Timezone)
 	if err != nil {
@@ -374,6 +406,13 @@ func GetSettings(db *sql.DB) types.SettingsData {
 			if value != "" {
 				settingsData.ACI.TokenSet = true
 			}
+		case "homeassistant.enabled":
+			settingsData.HomeAssistant.Enabled = value == "1"
+		case "homeassistant.url":
+			settingsData.HomeAssistant.URL = value
+		case "homeassistant.token":
+			// Only indicate that a token is set; never reveal it.
+			settingsData.HomeAssistant.TokenSet = value != ""
 		case "polling_interval":
 			settingsData.PollingInterval, _ = strconv.Atoi(value)
 		case "guest_mode":
@@ -1476,6 +1515,19 @@ func LoadSettings(db *sql.DB, store *config.Store) {
 	strSCAPIKey, err := GetSetting(db, "straincompass.api_key")
 	if err == nil {
 		store.SetStraincompassAPIKey(strSCAPIKey)
+	}
+
+	strHAEnabled, err := GetSetting(db, "homeassistant.enabled")
+	if err == nil {
+		if iHAEnabled, err := strconv.Atoi(strHAEnabled); err == nil {
+			store.SetHAEnabled(iHAEnabled)
+		}
+	}
+	if strHAURL, err := GetSetting(db, "homeassistant.url"); err == nil {
+		store.SetHAURL(strHAURL)
+	}
+	if strHAToken, err := GetSetting(db, "homeassistant.token"); err == nil {
+		store.SetHAToken(strHAToken)
 	}
 
 	// On first boot after the timezone migration, capture a baseline snapshot

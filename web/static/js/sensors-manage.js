@@ -22,8 +22,13 @@
     let zones = P.zones || [];
     const plants = P.plants || [];
     let found = [];
-    const SOURCE_NAMES = { acinfinity: "AC Infinity", ecowitt: "Ecowitt" };
+    // Home Assistant scans can list dozens of sensors: a filter box, and
+    // batteries / power / the like only with "Show all" (f.more).
+    let foundQ = "", foundAll = false;
+    const SOURCE_NAMES = { acinfinity: "AC Infinity", ecowitt: "Ecowitt", homeassistant: "Home Assistant" };
     const sourceName = s => SOURCE_NAMES[s] || s;
+    // Home Assistant sensors all share one "device"; their entity ID says which sensor it is.
+    const deviceText = s => s.source === "homeassistant" ? s.type : s.device;
 
     // ---------- Formatting ----------
     function ago(ms) {
@@ -50,21 +55,25 @@
 
     // ---------- Integration cards ----------
     function renderInteg() {
-        const aci = sensors.filter(s => s.source === "acinfinity"), eco = sensors.filter(s => s.source === "ecowitt");
+        const aci = sensors.filter(s => s.source === "acinfinity"), eco = sensors.filter(s => s.source === "ecowitt"), has = sensors.filter(s => s.source === "homeassistant");
         const last = list => Math.max(0, ...list.map(s => s.last_at || 0));
         const card = (cls, icon, title, status, statusCls, meta) => `<div class="sm-ic">
             <div class="logo ${cls}"><i class="fa-solid ${icon}"></i></div>
             <div class="sm-ic-b"><h3>${esc(title)}</h3><div class="st ${statusCls}"><i class="fa-solid fa-circle"></i>${esc(status)}</div><div class="meta">${meta}</div></div>
             <div class="acts"><a href="/settings#integrations">${esc(t("sm_settings_link"))}</a></div></div>`;
-        const A = P.aci || {}, E = P.ecowitt || {};
+        const A = P.aci || {}, E = P.ecowitt || {}, H = P.homeassistant || {};
         const aciStatus = !A.enabled ? ["sm_status_off", "off"] : A.token_set ? ["sm_status_connected", "ok"] : ["sm_status_no_token", "warn"];
         const aciLast = last(aci), ecoLast = last(eco);
         const aciMeta = [t("sm_n_sensors_ports", { n: aci.length }), aciLast ? t("sm_updated", { ago: ago(aciLast) }) : ""].filter(Boolean).join(" · ");
         const gw = (E.devices || []).join(", ");
         const ecoMeta = [gw ? t("sm_gateway", { addr: gw }) : "", t("sm_n_sensors", { n: eco.length }), ecoLast ? t("sm_updated", { ago: ago(ecoLast) }) : ""].filter(Boolean).join(" · ");
+        const haStatus = !H.enabled ? ["sm_status_off", "off"] : H.url && H.token_set ? ["sm_status_on", "ok"] : ["sm_ha_needs_setup", "warn"];
+        const haLast = last(has);
+        const haMeta = [H.url ? t("sm_ha_server", { addr: H.url }) : "", t("sm_n_sensors", { n: has.length }), haLast ? t("sm_updated", { ago: ago(haLast) }) : ""].filter(Boolean).join(" · ");
         document.getElementById("smInteg").innerHTML =
             card("aci", "fa-fan", "AC Infinity", t(aciStatus[0]), aciStatus[1], esc(aciMeta)) +
-            card("eco", "fa-satellite-dish", "Ecowitt", t(E.enabled ? "sm_status_on" : "sm_status_off"), E.enabled ? "ok" : "off", esc(ecoMeta));
+            card("eco", "fa-satellite-dish", "Ecowitt", t(E.enabled ? "sm_status_on" : "sm_status_off"), E.enabled ? "ok" : "off", esc(ecoMeta)) +
+            card("ha", "fa-house-signal", "Home Assistant", t(haStatus[0]), haStatus[1], esc(haMeta));
     }
 
     // ---------- Found sensors (scan preview) ----------
@@ -73,19 +82,32 @@
         return zones.map(z => `<option value="${z.id}" ${z.id === selected ? "selected" : ""}>${esc(z.name)}</option>`).join("") +
             `<option value="new">${esc(t("sm_new_tent"))}</option>`;
     }
+    const foundShown = f => (foundAll || !f.more) && (!foundQ || (f.name + " " + f.type + " " + typeLabel(f)).toLowerCase().includes(foundQ));
+    function foundValue(f) {
+        if (f.value == null) return "";
+        const { unit, conv } = K.display(f, P.units);
+        return " · " + Number(conv(f.value)).toLocaleString(locale, { maximumFractionDigits: K.decimals(f) }) + (unit ? " " + unit : "");
+    }
     function renderFound() {
         const el = document.getElementById("smFound");
         if (!found.length) { el.innerHTML = ""; return; }
         const guess = f => { const same = sensors.find(s => s.source === f.source && s.device === f.device && s.zone_id); return same ? same.zone_id : (zones[0] && zones[0].id); };
-        el.innerHTML = `<div class="sm-found"><h3><i class="fa-solid fa-circle-plus me-1"></i>${esc(t(found.length === 1 ? "sm_found_one" : "sm_found_n", { n: found.length }))}</h3>
-            ${found.map((f, i) => `<div class="sm-found-row">
-                <div class="nm"><b>${esc(f.name)}</b><small>${esc(sourceName(f.source))} · ${esc(f.device)} · ${esc(typeLabel(f))}</small></div>
+        const shown = found.map((f, i) => [f, i]).filter(([f]) => foundShown(f));
+        const more = found.filter(f => f.more).length;
+        const tools = found.length > 8 || more ? `<div class="sm-found-tools">
+                <div class="sm-search"><i class="fa-solid fa-filter"></i><input type="search" id="smFoundQ" value="${esc(foundQ)}" placeholder="${esc(t("sm_found_filter"))}" aria-label="${esc(t("sm_found_filter"))}"></div>
+                ${more ? `<label class="sm-check"><input type="checkbox" class="form-check-input m-0" id="smFoundAll" ${foundAll ? "checked" : ""}> ${esc(t("sm_found_show_all", { n: more }))}</label>` : ""}
+            </div>` : "";
+        el.innerHTML = `<div class="sm-found"><h3><i class="fa-solid fa-circle-plus me-1"></i>${esc(t(found.length === 1 ? "sm_found_one" : "sm_found_n", { n: found.length }))}</h3>${tools}
+            ${shown.length ? "" : `<div class="sm-found-none">${esc(t("sm_found_nothing_shown"))}</div>`}
+            ${shown.map(([f, i]) => `<div class="sm-found-row">
+                <div class="nm"><b>${esc(f.name)}</b><small>${esc(sourceName(f.source))} · ${esc(deviceText(f))} · ${esc(typeLabel(f))}${esc(foundValue(f))}</small></div>
                 <select class="form-select form-select-sm" id="smFz${i}" aria-label="${esc(t("sm_tent"))}">${zoneOptions(guess(f))}</select>
                 <input class="form-control form-control-sm d-none" id="smFn${i}" placeholder="${esc(t("sm_new_tent_name"))}" maxlength="255" aria-label="${esc(t("sm_new_tent_name"))}">
                 <button type="button" class="sm-btn small" data-add="${i}">${esc(t("sm_add"))}</button>
                 <button type="button" class="sm-ebtn" data-ignore="${i}">${esc(t("sm_ignore"))}</button></div>`).join("")}
-            ${found.length > 1 ? `<div class="sm-found-all"><button type="button" class="sx-link" data-addall>${esc(t("sm_add_all"))}</button></div>` : ""}</div>`;
-        found.forEach((f, i) => document.getElementById("smFn" + i).classList.toggle("d-none", document.getElementById("smFz" + i).value !== "new"));
+            ${shown.length > 1 ? `<div class="sm-found-all"><button type="button" class="sx-link" data-addall>${esc(t(shown.length === found.length ? "sm_add_all" : "sm_add_shown", { n: shown.length }))}</button></div>` : ""}</div>`;
+        shown.forEach(([, i]) => document.getElementById("smFn" + i).classList.toggle("d-none", document.getElementById("smFz" + i).value !== "new"));
     }
 
     // ---------- Sensor list ----------
@@ -102,7 +124,7 @@
         const lastTxt = s.last_at ? t("sm_last_reading", { ago: ago(s.last_at) }) : t("sm_no_reading");
         return `<div class="sm-row ${s.hidden ? "hidden-s" : ""}">
             <span class="live ${stale ? "stale" : ""}" title="${esc(stale ? lastTxt : t("sm_reporting"))}" aria-label="${esc(stale ? lastTxt : t("sm_reporting"))}"></span>
-            <div class="nm"><b>${esc(s.name)}</b><small>${esc(sourceName(s.source))} · ${esc(s.device)}${stale && s.last_at ? ` · <span class="warn">${esc(lastTxt)}</span>` : ""}</small></div>
+            <div class="nm"><b>${esc(s.name)}</b><small>${esc(sourceName(s.source))} · ${esc(deviceText(s))}${stale && s.last_at ? ` · <span class="warn">${esc(lastTxt)}</span>` : ""}</small></div>
             <div class="ty"><i class="fa-solid ${K.icon(s)}"></i>${esc(typeLabel(s))}</div>
             <div class="val">${valueText(s)}</div>
             <div class="sm-chips">${chips(s)}</div>
@@ -110,7 +132,7 @@
         </div>`;
     }
     // Within a tent: readings, then ports, then hidden; inside before outside.
-    const KIND_ORDER = { temp: 0, hum: 1, vpd: 2, co2: 3, soil: 4, ec: 5, other: 6, port: 7 };
+    const KIND_ORDER = { temp: 0, hum: 1, vpd: 2, co2: 3, soil: 4, ec: 5, light: 6, other: 7, port: 8 };
     const rowOrder = (a, b) => (a.hidden - b.hidden) || (K.isPort(a) - K.isPort(b)) || (K.isOutside(a) - K.isOutside(b)) ||
         (KIND_ORDER[K.kind(a)] - KIND_ORDER[K.kind(b)]) || a.type.localeCompare(b.type, undefined, { numeric: true }) || a.name.localeCompare(b.name);
     function renderList() {
@@ -153,6 +175,7 @@
             const data = await send("POST", url, { ...body, preview: true });
             const known = new Set(found.map(foundKey));
             const fresh = (data.sensors || []).filter(f => !known.has(foundKey(f)));
+            foundQ = ""; foundAll = false;
             found.push(...fresh);
             toast(fresh.length ? t(fresh.length === 1 ? "sm_found_one" : "sm_found_n", { n: fresh.length }) : t("sm_found_none"), fresh.length ? "success" : "info");
             renderFound();
@@ -286,6 +309,7 @@
         const el = e.target.closest("button, a");
         if (!el) return;
         if (el.id === "smScanACI") return scan(el, "/sensors/scanACI", {});
+        if (el.id === "smScanHA") return scan(el, "/sensors/scanHA", {});
         if (el.id === "smScanEco") {
             const addr = document.getElementById("smEcoAddr");
             if (!addr.value) addr.value = ((P.ecowitt || {}).devices || [])[0] || "";
@@ -308,6 +332,7 @@
             el.disabled = true;
             let added = 0;
             for (let i = found.length - 1; i >= 0; i--) {
+                if (!foundShown(found[i])) continue;
                 try { if (await addFound(i)) added++; } catch (err) { toast(err.message, "danger"); break; }
             }
             if (added) toast(t("sm_added_n", { n: added }));
@@ -332,10 +357,20 @@
     document.addEventListener("change", e => {
         if (e.target.id === "smDumpRedact") return fetchDump();
         if (["smSrc", "smHidden"].includes(e.target.id)) return renderList();
+        if (e.target.id === "smFoundAll") { foundAll = e.target.checked; return renderFound(); }
         const m = /^smFz(\d+)$/.exec(e.target.id);
         if (m) document.getElementById("smFn" + m[1]).classList.toggle("d-none", e.target.value !== "new");
     });
     document.getElementById("smQ").addEventListener("input", renderList);
+    // Typing in the found-sensors filter redraws the list but keeps the cursor in the box.
+    document.addEventListener("input", e => {
+        if (e.target.id !== "smFoundQ") return;
+        foundQ = e.target.value.trim().toLowerCase();
+        const pos = e.target.selectionStart;
+        renderFound();
+        const box = document.getElementById("smFoundQ");
+        if (box) { box.focus(); box.setSelectionRange(pos, pos); }
+    });
     document.getElementById("smEcoAddr").addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("smEcoGo").click(); });
 
     render();

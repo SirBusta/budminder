@@ -12,7 +12,10 @@
      data-search-count="{{ .lcl.st_search_count }}"
      data-search-count-one="{{ .lcl.st_search_count_one }}"
      data-log-nothing="{{ .lcl.st_log_nothing }}"
-     data-save-failed="{{ .lcl.failed_to_save_settings }}">
+     data-save-failed="{{ .lcl.failed_to_save_settings }}"
+     data-ha-testing="{{ .lcl.ha_testing }}"
+     data-ha-test-ok="{{ .lcl.ha_test_ok }}"
+     data-ha-test-failed="{{ .lcl.ha_err_unreachable }}">
     <div class="st-layout">
         {{ template "common/settings-nav.html" (dict "lcl" .lcl "page" "settings") }}
 
@@ -108,6 +111,33 @@
                     <div class="st-row">
                         <div class="st-row-l"><small>{{ .lcl.st_eco_manage_desc }}</small></div>
                         <div class="st-row-r"><a class="st-btn light" href="/sensors/manage"><i class="fa-solid fa-temperature-half me-1"></i>{{ .lcl.st_sec_sensors }}</a></div>
+                    </div>
+                </div>
+
+                <div class="st-card" id="haCard">
+                    <div class="st-card-h"><i class="fa-solid fa-house-signal"></i><div><h3>Home Assistant</h3><p>{{ .lcl.ha_card_desc }}</p></div></div>
+                    <label class="st-row st-switch">
+                        <div class="st-row-l"><span class="st-label">{{ .lcl.ha_enabled_info }}</span></div>
+                        <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="haEnabled" data-autosave {{ if .settings.HomeAssistant.Enabled }}checked{{ end }}></div>
+                    </label>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="haUrl">{{ .lcl.ha_url_label }}</label><small>{{ .lcl.ha_url_desc }}</small></div>
+                        <div class="st-row-r"><input type="url" class="form-control form-control-sm" id="haUrl" placeholder="http://192.168.1.20:8123" value="{{ .settings.HomeAssistant.URL }}" autocomplete="off" data-autosave></div>
+                    </div>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="haToken">{{ .lcl.ha_token_label }}</label><small>{{ .lcl.ha_token_desc }}</small></div>
+                        <div class="st-row-r d-flex align-items-center gap-2">
+                            <input type="password" class="form-control form-control-sm" id="haToken" autocomplete="off" data-autosave
+                                   placeholder="{{ if .settings.HomeAssistant.TokenSet }}••••••••{{ else }}{{ .lcl.ha_token_placeholder }}{{ end }}">
+                            <span class="badge {{ if .settings.HomeAssistant.TokenSet }}bg-success{{ else }}bg-secondary{{ end }}" id="haTokenBadge">{{ if .settings.HomeAssistant.TokenSet }}{{ .lcl.token_set }}{{ else }}{{ .lcl.ha_token_none }}{{ end }}</span>
+                        </div>
+                    </div>
+                    <div class="st-row">
+                        <div class="st-row-l"><small>{{ .lcl.ha_help }}</small><small class="st-ha-result" id="haTestResult" role="status" aria-live="polite"></small></div>
+                        <div class="st-row-r d-flex gap-2 flex-wrap justify-content-end">
+                            <button type="button" class="st-btn light" id="haTest"><i class="fa-solid fa-plug-circle-check me-1"></i>{{ .lcl.ha_test }}</button>
+                            <a class="st-btn light" href="/sensors/manage"><i class="fa-solid fa-temperature-half me-1"></i>{{ .lcl.st_sec_sensors }}</a>
+                        </div>
                     </div>
                 </div>
 
