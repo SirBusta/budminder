@@ -163,7 +163,7 @@ To update later, run `docker compose pull` and then `docker compose up -d`. Your
 
    | Config Type | Name | Container | Host |
    |---|---|---|---|
-   | Port | `WebUI` | Container Port `8080` | Host Port of your choice, e.g. `8080` |
+   | Port | `WebUI` | Container Port `8080` | Host Port of your choice, e.g. `8091` (any free port) |
    | Path | `Data` | Container Path `/app/data` | `/mnt/user/appdata/budminder/data` |
    | Path | `Uploads` | Container Path `/app/uploads` | `/mnt/user/appdata/budminder/uploads` |
 
