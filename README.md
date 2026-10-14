@@ -150,14 +150,25 @@ To update later, run `docker compose pull` and then `docker compose up -d`. Your
 
 <br>
 
-Add a container (Docker tab, **Add Container**) with:
+1. In the **Docker** tab, click **Add Container**. Leave **Template** empty.
+2. Fill in:
 
-| Field | Value |
-|---|---|
-| Repository | `ghcr.io/sirbusta/budminder:latest` |
-| Port | Container port `8080` to a host port of your choice |
-| Path | Container path `/app/data` to e.g. `/mnt/user/appdata/budminder/data` |
-| Path | Container path `/app/uploads` to e.g. `/mnt/user/appdata/budminder/uploads` |
+   | Field | Value |
+   |---|---|
+   | Name | `budminder` |
+   | Repository | `ghcr.io/sirbusta/budminder:latest` |
+   | Network Type | Bridge |
+
+3. Click **Add another Path, Port, Variable, Label or Device** three times, once for each of these:
+
+   | Config Type | Name | Container | Host |
+   |---|---|---|---|
+   | Port | `WebUI` | Container Port `8080` | Host Port of your choice, e.g. `8080` |
+   | Path | `Data` | Container Path `/app/data` | `/mnt/user/appdata/budminder/data` |
+   | Path | `Uploads` | Container Path `/app/uploads` | `/mnt/user/appdata/budminder/uploads` |
+
+4. Optional, under **Show more settings**: set **WebUI** to `http://[IP]:[PORT:8080]/` (adds a WebUI link to the container's menu) and **Icon URL** to `https://raw.githubusercontent.com/SirBusta/budminder/main/web/static/img/brand/budminder-256.png`.
+5. Click **Apply**, then open `http://<your-server>:<host port>`.
 
 SQLite is used automatically. To use PostgreSQL instead, see the PostgreSQL section below.
 
