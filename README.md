@@ -78,12 +78,12 @@ Everything about a strain in one place: every time you've grown it with yields a
 
 <table>
 <tr>
-<td width="50%"><b>Plants</b><br>Every plant with its stage, progress to harvest, and when it was last watered and fed.<br><br><img src="docs/images/screenshots/plants.webp" alt="The Plants page listing six growing plants with stage, progress bar and days since watering and feeding"></td>
-<td width="50%"><b>Log activity</b><br>Water, feed, train or add a note for one plant or a whole tent at once, with the amount given.<br><br><img src="docs/images/screenshots/log-activity.webp" alt="The Log activity window with plants, date, activity types, water amount and a note"></td>
+<td width="50%" valign="top"><b>Plants</b><br>Every plant with its stage, progress to harvest, and when it was last watered and fed.<br><br><img src="docs/images/screenshots/plants.webp" alt="The Plants page listing six growing plants with stage, progress bar and days since watering and feeding"></td>
+<td width="50%" valign="top"><b>Log activity</b><br>Water, feed, train or add a note for one plant or a whole tent at once, with the amount given.<br><br><img src="docs/images/screenshots/log-activity.webp" alt="The Log activity window with plants, date, activity types, water amount and a note"></td>
 </tr>
 <tr>
-<td><b>Manage sensors</b><br>Scan AC Infinity, Ecowitt and Home Assistant for sensors, name them, put each in a tent and choose where it shows.<br><br><img src="docs/images/screenshots/manage-sensors.webp" alt="The Manage sensors page listing a tent's sensors with their current readings"></td>
-<td><b>Settings</b><br>Grouped and searchable, and every change saves as you go.<br><br><img src="docs/images/screenshots/settings.webp" alt="The Settings page with timezone, units, language, theme, guest view and password"></td>
+<td valign="top"><b>Manage sensors</b><br>Scan AC Infinity, Ecowitt and Home Assistant for sensors, name them, put each in a tent and choose where it shows.<br><br><img src="docs/images/screenshots/manage-sensors.webp" alt="The Manage sensors page listing a tent's sensors with their current readings"></td>
+<td valign="top"><b>Settings</b><br>Grouped and searchable, and every change saves as you go.<br><br><img src="docs/images/screenshots/settings.webp" alt="The Settings page with timezone, units, language, theme, guest view and password"></td>
 </tr>
 </table>
 
