@@ -5,7 +5,7 @@
   <img src="web/static/img/brand/budminder-wordmark.svg" alt="BudMinder" width="340">
 </picture>
 
-**A self-hosted grow journal.** Daily notes and photos for every plant, live sensors from AC Infinity, Ecowitt or Home Assistant, and your seed vault, all on your own hardware.
+**A self-hosted cannabis grow journal.** Daily notes and photos for every plant, live sensors from AC Infinity, Ecowitt or Home Assistant, and your seed vault, all on your own hardware.
 
 [![Latest release](https://img.shields.io/github/v/release/SirBusta/budminder?color=16a34a&label=release)](https://github.com/SirBusta/budminder/releases)
 [![Docker image](https://img.shields.io/badge/docker-ghcr.io%2Fsirbusta%2Fbudminder-16a34a?logo=docker&logoColor=white)](https://github.com/SirBusta/budminder/pkgs/container/budminder)
