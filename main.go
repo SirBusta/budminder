@@ -114,14 +114,21 @@ func main() {
 		w.Run(ctx)
 	}()
 
-	// Resolve session secret. If unset, generate a random one and warn — sessions
-	// will not survive a restart.
+	// Resolve the session secret: BUDMINDER_SESSION_SECRET if set, otherwise
+	// a key BudMinder made once and keeps in its database, so logins survive
+	// restarts. Only if that fails is a throwaway key used.
 	sessionSecret := []byte(env.Get("SESSION_SECRET"))
 	if len(sessionSecret) == 0 {
-		logger.Log.Warn("BUDMINDER_SESSION_SECRET not set; generating a random session key (sessions will not survive restart)")
-		sessionSecret = make([]byte, 32)
-		if _, err := rand.Read(sessionSecret); err != nil {
-			logger.Log.WithError(err).Fatal("Failed to generate random session key")
+		saved, err := handlers.LoadOrCreateSessionSecret(db)
+		if err == nil {
+			sessionSecret = saved
+			logger.Log.Info("Using the session key saved in the database (set BUDMINDER_SESSION_SECRET to choose your own)")
+		} else {
+			logger.Log.WithError(err).Warn("Couldn't save a session key; using a temporary one (logins will not survive a restart)")
+			sessionSecret = make([]byte, 32)
+			if _, err := rand.Read(sessionSecret); err != nil {
+				logger.Log.WithError(err).Fatal("Failed to generate random session key")
+			}
 		}
 	}
 

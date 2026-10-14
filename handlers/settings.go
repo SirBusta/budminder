@@ -1272,6 +1272,30 @@ func LoadEcDevices(db *sql.DB) ([]string, error) {
 // the user has to change it at that first login.
 const DefaultAdminPassword = "budminder"
 
+// LoadOrCreateSessionSecret returns the key that signs login cookies when
+// BUDMINDER_SESSION_SECRET isn't set: made once (32 random bytes, hex) and
+// kept in the settings table, so people stay logged in across restarts.
+// The database is the one place every setup keeps (SQLite file or
+// PostgreSQL), and anyone who can read it can already read everything else.
+func LoadOrCreateSessionSecret(db *sql.DB) ([]byte, error) {
+	saved, err := GetSetting(db, "session_secret")
+	if err != nil {
+		return nil, err
+	}
+	if len(saved) >= 32 {
+		return []byte(saved), nil
+	}
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return nil, err
+	}
+	secret := hex.EncodeToString(raw)
+	if err := UpdateSetting(db, nil, "session_secret", secret); err != nil {
+		return nil, err
+	}
+	return []byte(secret), nil
+}
+
 // SeedDefaultAdmin creates the first-run login when no account exists yet.
 // The store is nil because it runs before the engine (and its Store) exist;
 // LoadSettings reads these rows afterwards.

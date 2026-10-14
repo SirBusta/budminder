@@ -122,7 +122,6 @@ services:
       - "8080:8080"
     environment:
       - BUDMINDER_DB_DRIVER=sqlite
-      - BUDMINDER_SESSION_SECRET=replace-with-a-long-random-string-of-32-or-more-characters
     volumes:
       - budminder-data:/app/data
       - budminder-uploads:/app/uploads
@@ -159,7 +158,6 @@ Add a container (Docker tab, **Add Container**) with:
 | Port | Container port `8080` to a host port of your choice |
 | Path | Container path `/app/data` to e.g. `/mnt/user/appdata/budminder/data` |
 | Path | Container path `/app/uploads` to e.g. `/mnt/user/appdata/budminder/uploads` |
-| Variable | `BUDMINDER_SESSION_SECRET` set to a long random string (32+ characters) |
 
 SQLite is used automatically. To use PostgreSQL instead, see the PostgreSQL section below.
 
@@ -188,7 +186,6 @@ SQLite is built in and is all most people need. If you'd rather use PostgreSQL, 
 
 ```bash
 BUDMINDER_DB_PASSWORD=choose-a-strong-password
-BUDMINDER_SESSION_SECRET=replace-with-a-long-random-string-of-32-or-more-characters
 ```
 
 ```bash
@@ -213,7 +210,7 @@ Most settings live in the app under **Settings**. These few are startup settings
 | Setting | Default | What it does |
 |---|---|---|
 | `BUDMINDER_PORT` | `8080` | Port BudMinder listens on |
-| `BUDMINDER_SESSION_SECRET` | random | Key that keeps you logged in (32+ characters). Set it, or everyone is logged out each time BudMinder restarts |
+| `BUDMINDER_SESSION_SECRET` | made on first start | Key that keeps you logged in (32+ characters). BudMinder makes one on first start and keeps it in its database; set this only to use your own |
 | `BUDMINDER_SECURE_COOKIES` | `false` | `true` sends the login cookie over HTTPS only. Turn on behind an HTTPS reverse proxy |
 | `BUDMINDER_HSTS_MAX_AGE` | `0` | Above 0, tells browsers to always use HTTPS for this many seconds. Only when BudMinder is reachable over HTTPS alone |
 | `BUDMINDER_HSTS_INCLUDE_SUBDOMAINS` | `false` | Adds `includeSubDomains` to the HSTS header |
