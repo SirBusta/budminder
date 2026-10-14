@@ -170,7 +170,12 @@ SQLite is used automatically. To use PostgreSQL instead, see the PostgreSQL sect
 
 <br>
 
-Download the program for your system from the [latest release](https://github.com/SirBusta/budminder/releases/latest) and run it. BudMinder starts on `http://localhost:8080` and keeps its database and photos in `data` and `uploads` folders next to where you run it. Set the same `BUDMINDER_…` settings below as environment variables if you need them.
+Download the program for your system from the [latest release](https://github.com/SirBusta/budminder/releases/latest), put it in its own folder and run it. BudMinder starts on `http://localhost:8080` and keeps its database and photos in `data` and `uploads` folders next to the program. Set the same `BUDMINDER_…` settings below as environment variables if you need them.
+
+- **Windows:** the program isn't signed, so Windows may say "Windows protected your PC". Click **More info → Run anyway**. When Windows Firewall asks, allow it on **private networks** so other devices can connect.
+- **macOS:** make it runnable with `chmod +x budminder-macos-*`. The first time, right-click the file → **Open** (or allow it in System Settings → Privacy & Security), because it isn't signed by Apple.
+- **Linux:** `chmod +x budminder-linux-*`, then run it.
+- **From your phone:** on the same Wi-Fi, open `http://<your computer's address>:8080`, for example `http://192.168.1.108:8080`. The computer has to stay on with BudMinder running.
 
 </details>
 
