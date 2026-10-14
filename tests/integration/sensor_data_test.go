@@ -180,6 +180,44 @@ func TestSensorIngest_RejectsMissingSource(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
+func TestSensorIngest_AcceptsZeroValue(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db, testutil.WithConfigStore(storeWithAPIIngest(1)))
+	apiKey := seedSensorIngestKey(t, db)
+
+	c := server.NewClient(t)
+	// A light sensor at night or a fan switched off reports exactly 0; that
+	// is a real reading and must be stored, not rejected as missing.
+	resp := c.APIPostJSON(t, "/api/sensors/ingest", apiKey, map[string]interface{}{
+		"source": "src", "device": "D", "type": "light", "value": 0,
+	})
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var v float64
+	require.NoError(t, db.QueryRow(
+		`SELECT d.value FROM sensor_data d JOIN sensors s ON s.id = d.sensor_id WHERE s.type = 'light'`,
+	).Scan(&v))
+	assert.Zero(t, v)
+}
+
+func TestSensorIngest_RejectsMissingValue(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db, testutil.WithConfigStore(storeWithAPIIngest(1)))
+	apiKey := seedSensorIngestKey(t, db)
+
+	c := server.NewClient(t)
+	resp := c.APIPostJSON(t, "/api/sensors/ingest", apiKey, map[string]interface{}{
+		"source": "src", "device": "D", "type": "temp",
+	})
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "a reading with no value at all is still refused")
+}
+
 func TestSensorIngest_RejectsNonFiniteValue(t *testing.T) {
 	t.Parallel()
 

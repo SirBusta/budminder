@@ -1077,7 +1077,9 @@ type SensorDataPayload struct {
 	Source  string  `json:"source" binding:"required"`
 	Device  string  `json:"device" binding:"required"`
 	Type    string  `json:"type" binding:"required"`
-	Value   float64 `json:"value" binding:"required"`
+	// A pointer so "required" means "present": a reading of exactly 0 (a
+	// light at night, a fan switched off) is a real value, not a missing one.
+	Value   *float64 `json:"value" binding:"required"`
 	Name    string  `json:"name"`
 	Unit    string  `json:"unit"`
 	ZoneID  *int    `json:"zone_id"`
@@ -1131,7 +1133,7 @@ func IngestSensorData(c *gin.Context) {
 	}
 
 	// Validate sensor value is finite (reject NaN and Infinity)
-	if err := utils.ValidateFiniteFloat64("value", payload.Value); err != nil {
+	if err := utils.ValidateFiniteFloat64("value", *payload.Value); err != nil {
 		apiBadRequest(c, err.Error())
 		return
 	}
@@ -1174,7 +1176,7 @@ func IngestSensorData(c *gin.Context) {
 
 	// Insert the sensor reading
 	_, err = db.Exec("INSERT INTO sensor_data (sensor_id, value) VALUES ($1, $2)",
-		sensorID, payload.Value)
+		sensorID, *payload.Value)
 	if err != nil {
 		fieldLogger.WithError(err).Error("Error inserting sensor data")
 		apiInternalError(c, "api_failed_to_save_sensor_data")
