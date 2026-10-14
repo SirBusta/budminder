@@ -303,10 +303,11 @@ jobs:
       - name: Release notes from CHANGELOG
         run: |
           VERSION=$(cat VERSION)
-          VERSION_RE=$(echo "$VERSION" | sed -e 's/[][(){}.*+?|^$\]/\&/g')
           # The section under '## [X.Y.Z] ...', up to the next '## ' heading.
-          awk -v ver_re="$VERSION_RE" '
-            $0 ~ "^## \[" ver_re "\]" { found=1; next }
+          # A plain text match: a regex built from the version would treat
+          # "[1.0.0]" as a character class and pick the wrong section.
+          awk -v h="## [$VERSION]" '
+            index($0, h) == 1 { found=1; next }
             found && /^## / { exit }
             found { print }
           ' CHANGELOG.md > release_notes.md
