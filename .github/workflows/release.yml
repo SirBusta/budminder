@@ -12,12 +12,14 @@ on:
     paths-ignore:
       - 'templates/**'
       - 'ca_profile.xml'
+      - '.github/ISSUE_TEMPLATE/**'
   pull_request:
     branches:
       - main
     paths-ignore:
       - 'templates/**'
       - 'ca_profile.xml'
+      - '.github/ISSUE_TEMPLATE/**'
 
 jobs:
   test:

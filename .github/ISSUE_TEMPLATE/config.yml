@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Setup guide (README)
+    url: https://github.com/SirBusta/budminder#readme
+    about: Installing on Docker, Unraid or as a program, sensors, backups and PostgreSQL.

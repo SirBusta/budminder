@@ -1,0 +1,60 @@
+name: Bug report
+description: Something in BudMinder doesn't work the way it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. Please don't paste passwords, tokens or API keys anywhere below.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+      placeholder: "I clicked Save on a plant's note and got \"Something went wrong\". I expected the note to save."
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to make it happen again
+      placeholder: |
+        1. Open a plant
+        2. ...
+  - type: input
+    id: version
+    attributes:
+      label: BudMinder version
+      description: Shown at the bottom of every page.
+      placeholder: "1.0.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How do you run BudMinder?
+      options:
+        - Unraid
+        - Docker / Docker Compose
+        - Program download (Windows, macOS or Linux)
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: database
+    attributes:
+      label: Database
+      options:
+        - SQLite (the default)
+        - PostgreSQL
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log lines (optional)
+      description: "Anything relevant from BudMinder's log. On Unraid: Docker tab, BudMinder icon, Logs."
+      render: text
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else (optional)
+      description: Screenshots, browser, phone or computer, sensors you use.
