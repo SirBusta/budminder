@@ -663,6 +663,7 @@ func SensorsPageData(c *gin.Context, prefix string, lang string, translations ma
 		data["ecowitt"] = gin.H{"enabled": store.ECEnabled() == 1, "devices": devices}
 		// The address is shown on the card; the token itself never leaves the server.
 		data["homeassistant"] = gin.H{"enabled": store.HAEnabled() == 1, "url": store.HAURL(), "token_set": store.HAToken() != ""}
+		data["status"] = IntegrationStatuses(db, store)
 	}
 	return data
 }

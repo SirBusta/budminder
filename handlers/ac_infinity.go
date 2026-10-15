@@ -88,6 +88,9 @@ func ACILoginHandler(c *gin.Context) {
 
 	// Update the user's token in the database
 	db := DBFromContext(c)
-	UpdateSetting(db, ConfigStoreFromContext(c), "aci.token", aciResponse.Data.AppID)
+	store := ConfigStoreFromContext(c)
+	UpdateSetting(db, store, "aci.token", aciResponse.Data.AppID)
+	// A fresh sign-in: forget the old refusal until the next poll says how it went.
+	store.ClearIntegrationError("acinfinity")
 	c.JSON(http.StatusOK, gin.H{"success": true, "token": aciResponse.Data.AppID})
 }

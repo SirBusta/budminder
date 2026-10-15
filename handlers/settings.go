@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"isley/config"
+	"isley/homeassistant"
 	"isley/logger"
 	"isley/model/types"
 	"isley/utils"
@@ -276,6 +277,7 @@ func SaveSettings(c *gin.Context) {
 				apiInternalError(c, "api_failed_to_save_settings")
 				return
 			}
+			store.ClearIntegrationError(homeassistant.Source)
 		}
 	}
 

@@ -87,7 +87,7 @@
                     <div class="st-card-h"><i class="fa-solid fa-fan"></i><div><h3>{{ .lcl.settings_ac_infinity }}</h3><p>{{ .lcl.st_card_aci_desc }}</p></div></div>
                     <div class="st-row">
                         <div class="st-row-l">
-                            <span id="tokenSetBadge" class="badge bg-{{ if .settings.ACI.TokenSet }}success{{ else }}danger{{ end }} align-self-start">{{ if .settings.ACI.TokenSet }}{{ .lcl.token_set }}{{ else }}{{ .lcl.token_not_set }}{{ end }}</span>
+                            {{ $aci := index .integrations "acinfinity" }}<span id="tokenSetBadge" class="badge bg-{{ if eq $aci.State "auth" }}danger{{ else if .settings.ACI.TokenSet }}success{{ else }}danger{{ end }} align-self-start">{{ if eq $aci.State "auth" }}{{ .lcl.aci_sign_in_expired }}{{ else if .settings.ACI.TokenSet }}{{ .lcl.token_set }}{{ else }}{{ .lcl.token_not_set }}{{ end }}</span>
                             <small>{{ .lcl.retrieve_token_desc }}</small>
                         </div>
                         <div class="st-row-r"><button type="button" class="st-btn light" data-bs-toggle="modal" data-bs-target="#aciLoginModal"><i class="fa-solid fa-right-to-bracket me-1"></i>{{ .lcl.retrieve_token }}</button></div>
@@ -1230,6 +1230,7 @@
                     if (data.success) {
                         const modal = bootstrap.Modal.getInstance(document.getElementById("aciLoginModal"));
                         modal.hide();
+                        uiMessages.showToast("{{ .lcl.aci_signed_in }}", "success");
                         document.getElementById("tokenSetBadge").textContent = "{{ .lcl.token_set }}";
                         document.getElementById("tokenSetBadge").classList.remove("bg-danger");
                         document.getElementById("tokenSetBadge").classList.add("bg-success");

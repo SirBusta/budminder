@@ -129,6 +129,7 @@ func HomePageData(c *gin.Context, loggedIn bool, lang string, translations map[s
 	}
 	if loggedIn {
 		data["old_seed_batches"] = countOldSeedBatches(db, time.Now())
+		data["integrations"] = IntegrationStatuses(db, store)
 	}
 	return data, nil
 }

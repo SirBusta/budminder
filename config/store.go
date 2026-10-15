@@ -2,6 +2,7 @@ package config
 
 import (
 	"sync"
+	"time"
 
 	"isley/model/types"
 )
@@ -48,6 +49,22 @@ type Store struct {
 	haEnabled            int
 	haURL                string
 	haToken              string
+	health               map[string]IntegrationHealth
+}
+
+// IntegrationHealth is how the last polls of one sensor integration went
+// (AC Infinity, Ecowitt, Home Assistant). Runtime only: it starts empty at
+// each start and fills in with the first poll.
+type IntegrationHealth struct {
+	LastOK    time.Time // last poll that got an answer
+	LastErr   time.Time // last poll that failed
+	ErrKind   string    // "auth" (sign-in or token refused), "unreachable", "error"
+	ErrDetail string    // the service's own message, when it gave one
+}
+
+// Failing reports whether the most recent poll failed.
+func (h IntegrationHealth) Failing() bool {
+	return !h.LastErr.IsZero() && h.LastErr.After(h.LastOK)
 }
 
 // Defaults mirrors the historical package-global initial values. Tests
@@ -486,4 +503,39 @@ func (s *Store) SetStreams(v []types.Stream) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.streams = append(s.streams[:0:0], v...)
+}
+
+// ReportIntegration records one poll of an integration: kind "" means it
+// worked; otherwise kind and detail describe the failure.
+func (s *Store) ReportIntegration(source, kind, detail string, at time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.health == nil {
+		s.health = map[string]IntegrationHealth{}
+	}
+	h := s.health[source]
+	if kind == "" {
+		h.LastOK = at
+	} else {
+		h.LastErr, h.ErrKind, h.ErrDetail = at, kind, detail
+	}
+	s.health[source] = h
+}
+
+// ClearIntegrationError forgets a failure, e.g. after signing in again, so
+// the status shows "waiting" instead of the old error until the next poll.
+func (s *Store) ClearIntegrationError(source string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if h, ok := s.health[source]; ok {
+		h.LastErr, h.ErrKind, h.ErrDetail = time.Time{}, "", ""
+		s.health[source] = h
+	}
+}
+
+// IntegrationHealth returns what's known about an integration's polls.
+func (s *Store) IntegrationHealth(source string) IntegrationHealth {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.health[source]
 }

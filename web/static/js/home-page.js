@@ -102,6 +102,16 @@
             const lf = level("feed", p.feed);
             if (lf === "over" || lf === "due") out.push({ lv: lf === "over" ? "over" : "warn", icon: "fa-flask", txt: t("hm_alert_feed", { plant: "#P#", n: p.feed }).replace("#P#", name(p)), act: `<button class="hm-btn-s primary" data-log="${p.id}" data-kind="feed"><i class="fa-solid fa-flask me-1"></i>${esc(t("hm_fed_it"))}</button>` });
         });
+        // An integration that refuses BudMinder or doesn't answer (stale
+        // readings alone are covered by the per-tent line below).
+        const NAMES = { acinfinity: "AC Infinity", ecowitt: "Ecowitt", homeassistant: "Home Assistant" };
+        Object.entries(D.integrations || {}).forEach(([src, st]) => {
+            if (st.state !== "auth" && st.state !== "failing") return;
+            const key = st.state === "auth" ? (src === "acinfinity" ? "hm_alert_aci_auth" : "hm_alert_int_auth") : "hm_alert_int_failing";
+            const txt = t(key, { name: NAMES[src] || src, ago: st.since ? ago(st.since) : "—" });
+            const act = st.state === "auth" ? `<a class="hm-link" href="/settings#integrations">${esc(t("hm_sign_in_again"))}</a>` : `<a class="hm-link" href="/sensors/manage">${esc(t("hm_check_sensors"))}</a>`;
+            out.push({ lv: "over", icon: "fa-plug-circle-exclamation", txt: esc(txt), act });
+        });
         // Sensors that stopped reporting: one line per tent.
         (D.tents || []).forEach(tent => {
             const stale = [...tent.readings, ...tent.ports].filter(r => r.stale && r.last_at);

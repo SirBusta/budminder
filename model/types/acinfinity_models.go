@@ -1,6 +1,10 @@
 package types
 
 type ACIResponse struct {
+	// Code is 200 when AC Infinity accepted the request; otherwise Msg says
+	// why (e.g. an expired or invalid token). Absent (0) in older fixtures.
+	Code int             `json:"code"`
+	Msg  string          `json:"msg"`
 	Data []ACIDeviceData `json:"data"`
 }
 

@@ -57,23 +57,38 @@
     function renderInteg() {
         const aci = sensors.filter(s => s.source === "acinfinity"), eco = sensors.filter(s => s.source === "ecowitt"), has = sensors.filter(s => s.source === "homeassistant");
         const last = list => Math.max(0, ...list.map(s => s.last_at || 0));
-        const card = (cls, icon, title, status, statusCls, meta) => `<div class="sm-ic">
+        const card = (cls, icon, title, status, statusCls, meta, problem) => `<div class="sm-ic">
             <div class="logo ${cls}"><i class="fa-solid ${icon}"></i></div>
-            <div class="sm-ic-b"><h3>${esc(title)}</h3><div class="st ${statusCls}"><i class="fa-solid fa-circle"></i>${esc(status)}</div><div class="meta">${meta}</div></div>
+            <div class="sm-ic-b"><h3>${esc(title)}</h3><div class="st ${statusCls}"><i class="fa-solid fa-circle"></i>${esc(status)}</div>${problem ? `<div class="sm-ic-problem">${problem}</div>` : ""}<div class="meta">${meta}</div></div>
             <div class="acts"><a href="/settings#integrations">${esc(t("sm_settings_link"))}</a></div></div>`;
-        const A = P.aci || {}, E = P.ecowitt || {}, H = P.homeassistant || {};
-        const aciStatus = !A.enabled ? ["sm_status_off", "off"] : A.token_set ? ["sm_status_connected", "ok"] : ["sm_status_no_token", "warn"];
+        const A = P.aci || {}, E = P.ecowitt || {}, H = P.homeassistant || {}, ST = P.status || {};
+        // The status comes from how the last polls went and when readings
+        // last arrived (handlers/integration_status.go), not just "on + token saved".
+        const SETUP = { acinfinity: "sm_status_no_token", ecowitt: "sm_status_on", homeassistant: "sm_ha_needs_setup" };
+        const AUTH = { acinfinity: "sm_state_auth_aci", homeassistant: "sm_state_auth_ha" };
+        function status(src) {
+            const s = ST[src] || { state: "off" };
+            const label = {
+                off: t("sm_status_off"), setup: t(SETUP[src]), waiting: t("sm_state_waiting"), ok: t(src === "acinfinity" ? "sm_status_connected" : "sm_status_on"),
+                auth: t(AUTH[src] || "sm_state_failing"), failing: t("sm_state_failing"), stale: t("sm_state_stale"),
+            }[s.state] || s.state;
+            const cls = { off: "off", setup: "warn", waiting: "warn", ok: "ok", auth: "bad", failing: "bad", stale: "bad" }[s.state] || "off";
+            const lines = [];
+            if (["auth", "failing", "stale"].includes(s.state) && s.since) lines.push(esc(t("sm_state_since", { ago: ago(s.since) })));
+            if (s.detail) lines.push(esc(t("sm_state_said", { what: s.detail })));
+            return [label, cls, lines.join("<br>")];
+        }
         const aciLast = last(aci), ecoLast = last(eco);
         const aciMeta = [t("sm_n_sensors_ports", { n: aci.length }), aciLast ? t("sm_updated", { ago: ago(aciLast) }) : ""].filter(Boolean).join(" · ");
         const gw = (E.devices || []).join(", ");
         const ecoMeta = [gw ? t("sm_gateway", { addr: gw }) : "", t("sm_n_sensors", { n: eco.length }), ecoLast ? t("sm_updated", { ago: ago(ecoLast) }) : ""].filter(Boolean).join(" · ");
-        const haStatus = !H.enabled ? ["sm_status_off", "off"] : H.url && H.token_set ? ["sm_status_on", "ok"] : ["sm_ha_needs_setup", "warn"];
         const haLast = last(has);
         const haMeta = [H.url ? t("sm_ha_server", { addr: H.url }) : "", t("sm_n_sensors", { n: has.length }), haLast ? t("sm_updated", { ago: ago(haLast) }) : ""].filter(Boolean).join(" · ");
+        const [aL, aC, aP] = status("acinfinity"), [eL, eC, eP] = status("ecowitt"), [hL, hC, hP] = status("homeassistant");
         document.getElementById("smInteg").innerHTML =
-            card("aci", "fa-fan", "AC Infinity", t(aciStatus[0]), aciStatus[1], esc(aciMeta)) +
-            card("eco", "fa-satellite-dish", "Ecowitt", t(E.enabled ? "sm_status_on" : "sm_status_off"), E.enabled ? "ok" : "off", esc(ecoMeta)) +
-            card("ha", "fa-house-signal", "Home Assistant", t(haStatus[0]), haStatus[1], esc(haMeta));
+            card("aci", "fa-fan", "AC Infinity", aL, aC, esc(aciMeta), aP) +
+            card("eco", "fa-satellite-dish", "Ecowitt", eL, eC, esc(ecoMeta), eP) +
+            card("ha", "fa-house-signal", "Home Assistant", hL, hC, esc(haMeta), hP);
     }
 
     // ---------- Found sensors (scan preview) ----------

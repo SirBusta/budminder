@@ -13,6 +13,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -82,6 +83,50 @@ type Watcher struct {
 	// HAHTTP is the client for Home Assistant (nil = its no-redirect default).
 	HAHTTP          homeassistant.Doer
 	SensorRetention func() int
+	// ReportHealth records how each integration's poll went (kind "" = it
+	// worked), for the status shown in Manage sensors and on Today. Optional.
+	ReportHealth func(source, kind, detail string)
+}
+
+// aciSuccessCode is what AC Infinity's API returns in "code" when it
+// accepted the request.
+const aciSuccessCode = 200
+
+// PollError says why a poll failed: Kind is "auth" (the service refused the
+// sign-in or token), "unreachable" or "error"; Detail is the service's own
+// message when it gave one.
+type PollError struct {
+	Kind, Detail string
+	Err          error
+}
+
+func (e *PollError) Error() string {
+	if e.Detail != "" {
+		return e.Kind + ": " + e.Detail
+	}
+	if e.Err != nil {
+		return e.Kind + ": " + e.Err.Error()
+	}
+	return e.Kind
+}
+
+func (e *PollError) Unwrap() error { return e.Err }
+
+// report passes a poll's outcome to ReportHealth.
+func (w *Watcher) report(source string, err error) {
+	if w.ReportHealth == nil {
+		return
+	}
+	if err == nil {
+		w.ReportHealth(source, "", "")
+		return
+	}
+	var pe *PollError
+	if errors.As(err, &pe) {
+		w.ReportHealth(source, pe.Kind, pe.Detail)
+		return
+	}
+	w.ReportHealth(source, "error", "")
 }
 
 // New returns a Watcher wired to the supplied per-engine *config.Store
@@ -106,6 +151,9 @@ func New(db *sql.DB, store *config.Store) *Watcher {
 		HAURL:             store.HAURL,
 		HAToken:           store.HAToken,
 		SensorRetention:   store.SensorRetention,
+		ReportHealth: func(source, kind, detail string) {
+			store.ReportIntegration(source, kind, detail, time.Now())
+		},
 	}
 }
 
@@ -139,16 +187,24 @@ func (w *Watcher) Run(ctx context.Context) {
 		} else {
 			if w.ACIEnabled() {
 				if token := w.ACIToken(); token != "" {
-					w.PollACI(ctx, token)
+					w.report("acinfinity", w.PollACI(ctx, token))
 				}
 			}
 			if w.ECEnabled() {
-				for _, ecServer := range w.ECDevices() {
-					w.PollEcoWitt(ctx, ecServer)
+				if servers := w.ECDevices(); len(servers) > 0 {
+					var firstErr error
+					for _, ecServer := range servers {
+						if err := w.PollEcoWitt(ctx, ecServer); err != nil && firstErr == nil {
+							firstErr = err
+						}
+					}
+					w.report("ecowitt", firstErr)
 				}
 			}
 			if w.HAEnabled != nil && w.HAEnabled() {
-				w.PollHomeAssistant(ctx)
+				if contacted, err := w.PollHomeAssistant(ctx); contacted {
+					w.report(homeassistant.Source, err)
+				}
 			}
 
 			w.computeZoneVPD(ctx)
@@ -185,33 +241,33 @@ func (w *Watcher) Run(ctx context.Context) {
 // PollEcoWitt fetches livedata from a single EcoWitt server and writes
 // matching sensor rows. server is the host[:port] portion as it
 // appears in the Store's ECDevices() slice.
-func (w *Watcher) PollEcoWitt(ctx context.Context, server string) {
+func (w *Watcher) PollEcoWitt(ctx context.Context, server string) error {
 	w.Logger.WithField("timestamp", w.Now()).Info("Updating EC sensor data")
 
 	url := "http://" + server + "/get_livedata_info"
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		w.Logger.WithError(err).Error("Error creating EcoWitt request")
-		return
+		return &PollError{Kind: "error", Detail: server, Err: err}
 	}
 
 	resp, err := w.HTTP.Do(req)
 	if err != nil {
 		w.Logger.WithError(err).Error("Error sending EcoWitt request")
-		return
+		return &PollError{Kind: "unreachable", Detail: server, Err: err}
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxSensorResponseBytes))
 	if err != nil {
 		w.Logger.WithError(err).Error("Error reading EcoWitt response body")
-		return
+		return &PollError{Kind: "unreachable", Detail: server, Err: err}
 	}
 
 	var apiResponse types.ECWAPIResponse
 	if err := json.Unmarshal(respBody, &apiResponse); err != nil {
 		w.Logger.WithError(err).Error("Error parsing EcoWitt JSON response")
-		return
+		return &PollError{Kind: "error", Detail: server, Err: err}
 	}
 
 	device := server
@@ -253,18 +309,19 @@ func (w *Watcher) PollEcoWitt(ctx context.Context, server string) {
 	for key, value := range dataMap {
 		w.addSensorData(source, device, key, value)
 	}
+	return nil
 }
 
 // PollACI fetches the device list from AC Infinity using the supplied
 // access token and writes matching sensor rows.
-func (w *Watcher) PollACI(ctx context.Context, token string) {
+func (w *Watcher) PollACI(ctx context.Context, token string) error {
 	w.Logger.WithField("timestamp", w.Now()).Info("Updating ACI sensor data")
 
 	url := w.ACIBaseURL + "/api/user/devInfoListAll?userId=" + token
 	req, err := http.NewRequestWithContext(ctx, "POST", url, nil)
 	if err != nil {
 		w.Logger.WithError(err).Error("Error creating ACI request")
-		return
+		return &PollError{Kind: "error", Err: err}
 	}
 
 	req.Header.Add("token", token)
@@ -275,20 +332,32 @@ func (w *Watcher) PollACI(ctx context.Context, token string) {
 	resp, err := w.HTTP.Do(req)
 	if err != nil {
 		w.Logger.WithError(err).Error("Error sending ACI request")
-		return
+		return &PollError{Kind: "unreachable", Err: err}
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxSensorResponseBytes))
 	if err != nil {
 		w.Logger.WithError(err).Error("Error reading ACI response body")
-		return
+		return &PollError{Kind: "unreachable", Err: err}
+	}
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		w.Logger.WithField("status", resp.StatusCode).Warn("AC Infinity refused the saved sign-in; sign in again in Settings")
+		return &PollError{Kind: "auth", Detail: resp.Status}
 	}
 
 	var jsonResponse types.ACIResponse
 	if err := json.Unmarshal(respBody, &jsonResponse); err != nil {
 		w.Logger.WithError(err).Error("Error unmarshalling ACI JSON response")
-		return
+		return &PollError{Kind: "error", Err: err}
+	}
+	// AC Infinity answers 200 OK with its own code: anything but 200 means it
+	// refused the request, almost always because the saved token no longer
+	// works. Before 1.0.1 this was ignored and polling silently got nothing.
+	if jsonResponse.Code != 0 && jsonResponse.Code != aciSuccessCode {
+		w.Logger.WithFields(logrus.Fields{"code": jsonResponse.Code, "message": jsonResponse.Msg}).
+			Warn("AC Infinity refused the request; sign in again in Settings")
+		return &PollError{Kind: "auth", Detail: strings.TrimSpace(fmt.Sprintf("%d %s", jsonResponse.Code, jsonResponse.Msg))}
 	}
 
 	source := "acinfinity"
@@ -312,6 +381,7 @@ func (w *Watcher) PollACI(ctx context.Context, token string) {
 			w.addSensorData(source, device, key, fmt.Sprintf("%f", value))
 		}
 	}
+	return nil
 }
 
 // PollHomeAssistant reads every state from Home Assistant in one request
@@ -319,7 +389,10 @@ func (w *Watcher) PollACI(ctx context.Context, token string) {
 // Manage sensors. Sensors that are unavailable or not a number are skipped.
 // If Home Assistant's unit for a temperature changed since the sensor was
 // added (°C ↔ °F), the reading is converted to the sensor's saved unit.
-func (w *Watcher) PollHomeAssistant(ctx context.Context) {
+//
+// contacted is false when nothing was asked of Home Assistant (no sensors
+// added yet), so there's nothing to report.
+func (w *Watcher) PollHomeAssistant(ctx context.Context) (contacted bool, err error) {
 	log := w.Logger.WithField("func", "PollHomeAssistant")
 
 	tracked := map[string]struct {
@@ -329,7 +402,7 @@ func (w *Watcher) PollHomeAssistant(ctx context.Context) {
 	rows, err := w.DB.Query("SELECT id, type, COALESCE(unit, '') FROM sensors WHERE source = $1", homeassistant.Source)
 	if err != nil {
 		log.WithError(err).Error("Error loading Home Assistant sensors")
-		return
+		return false, nil
 	}
 	for rows.Next() {
 		var id int
@@ -343,13 +416,13 @@ func (w *Watcher) PollHomeAssistant(ctx context.Context) {
 	}
 	rows.Close()
 	if len(tracked) == 0 {
-		return // nothing added yet: don't contact Home Assistant
+		return false, nil // nothing added yet: don't contact Home Assistant
 	}
 
 	client, err := homeassistant.New(w.HAURL(), w.HAToken())
 	if err != nil {
 		log.WithError(err).Warn("Home Assistant is on but its address or token is missing or invalid")
-		return
+		return false, nil
 	}
 	if w.HAHTTP != nil {
 		client.HTTP = w.HAHTTP
@@ -357,7 +430,14 @@ func (w *Watcher) PollHomeAssistant(ctx context.Context) {
 	states, err := client.States(ctx)
 	if err != nil {
 		log.WithError(err).Error("Error reading Home Assistant")
-		return
+		kind := "error"
+		switch {
+		case errors.Is(err, homeassistant.ErrUnauthorized):
+			kind = "auth"
+		case errors.Is(err, homeassistant.ErrUnreachable):
+			kind = "unreachable"
+		}
+		return true, &PollError{Kind: kind, Err: err}
 	}
 
 	saved := 0
@@ -379,6 +459,7 @@ func (w *Watcher) PollHomeAssistant(ctx context.Context) {
 		saved++
 	}
 	log.WithField("readings", saved).Debug("Home Assistant poll done")
+	return true, nil
 }
 
 // addSensorData writes a single (source, device, key, value) tuple to
