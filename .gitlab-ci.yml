@@ -25,6 +25,8 @@ test:
     # can persist them between pipelines.
     GOPATH: $CI_PROJECT_DIR/.go
     GOCACHE: $CI_PROJECT_DIR/.gocache
+    # Test-only: cheapest bcrypt work factor (the released program keeps 12).
+    BUDMINDER_BCRYPT_COST: '4'
   cache:
     key:
       files:
@@ -98,6 +100,7 @@ test-postgres:
     ISLEY_TEST_DB_PORT: '5432'
     ISLEY_TEST_DB_USER: postgres
     ISLEY_TEST_DB_PASSWORD: test
+    BUDMINDER_BCRYPT_COST: '4'
   cache:
     key:
       files:

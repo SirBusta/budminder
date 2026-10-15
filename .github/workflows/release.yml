@@ -14,6 +14,12 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    env:
+      # Test-only: the cheapest bcrypt work factor instead of the real 12.
+      # Logging in and hashing API keys at cost 12 under -race is most of
+      # the suite's run time. A hash records its own cost, so nothing else
+      # changes; the released program keeps 12. See utils/authentication.go.
+      BUDMINDER_BCRYPT_COST: '4'
     # docs/TEST_PLAN_2.md Phase 1: pull-requests: write lets the
     # "Post coverage comment" step post the per-PR delta. The default
     # GITHUB_TOKEN has only read access to PRs on pull_request events
@@ -148,6 +154,9 @@ jobs:
   test-postgres:
     name: Test (Postgres)
     runs-on: ubuntu-latest
+    # Only reads the code; never writes to the repo.
+    permissions:
+      contents: read
     # docs/TEST_PLAN.md Phase 5: every dialect-branching path runs against
     # real PostgreSQL on every PR. Without this matrix the project's
     # second supported backend has only ever been exercised against a
@@ -198,6 +207,8 @@ jobs:
           ISLEY_TEST_DB_PORT: '5432'
           ISLEY_TEST_DB_USER: postgres
           ISLEY_TEST_DB_PASSWORD: test
+          # Same as the test job: cheap bcrypt for tests only.
+          BUDMINDER_BCRYPT_COST: '4'
 
       - name: Coverage summary (Postgres)
         if: always()
