@@ -245,7 +245,7 @@ Most settings live in the app under **Settings**. These few are startup settings
 
 **AC Infinity** (UIS controllers). BudMinder reads your controllers through AC Infinity's cloud, so the controller has to be online and on your AC Infinity account.
 
-1. In **Settings → Integrations**, turn on AC Infinity and sign in with your AC Infinity email and password. BudMinder keeps the access token it gets back, not your password.
+1. In **Settings → Integrations**, turn on AC Infinity and sign in with your AC Infinity email and password. BudMinder keeps the access token it gets back. AC Infinity logs that token out from time to time; tick **Stay signed in** and BudMinder keeps your password, encrypted, and signs in again by itself when that happens. The encryption key is kept in its own file in BudMinder's data folder (`/app/data` in Docker), not in the database or in backups.
 2. In **Sensors → Manage sensors**, click **Scan AC Infinity** and add the sensors and ports you want.
 3. Put each sensor in a tent and choose where it shows.
 

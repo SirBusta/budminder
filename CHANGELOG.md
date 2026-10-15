@@ -23,12 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-
-### Changed
-
-### Deprecated
-
-### Removed
+- **AC Infinity "Stay signed in".** AC Infinity logs BudMinder out from time
+  to time ("Login Expired"). With this ticked in the AC Infinity sign-in
+  window, BudMinder keeps your AC Infinity password, encrypted, and signs in
+  again by itself when that happens, so readings keep coming. The key is
+  kept in its own file in the data folder, not in the database or in
+  backups. "Forget saved password" turns it off.
 
 ### Changed
 - **Honest connection status for AC Infinity, Ecowitt and Home Assistant.**
@@ -55,6 +55,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `BUDMINDER_SESSION_SECRET` was set. BudMinder now makes its own key on first
   start and keeps it in its database, so logins survive restarts.
 - The GitHub Release description now shows the right version's notes.
+- The AC Infinity sign-in window's Password label was blank.
+
+### Deprecated
+
+### Removed
 
 ### Security
 
@@ -104,14 +109,26 @@ The first release under the name BudMinder.
   `BUDMINDER_DB_DRIVER`). The older `ISLEY_…` names still work, and the SQLite
   file stays `data/isley.db`, so existing setups keep working.
 
-### Fixed
-- Sensor readings of exactly 0 sent through the API were rejected; they are
-  now stored.
+### Fixed (problems carried over from Isley)
 - "Database is locked" errors when saving activities, caused by two slow
   background jobs holding the database.
+- Saving sensor readings got slower and slower on SQLite as the history grew.
 - Dates shown a day early for time zones west of UTC.
 - Pages failing to load for plants or strains missing a strain, tent or
   breeder.
+- The estimated harvest date could show "0000-12-31".
+- Sensor readings of exactly 0 sent through the API were rejected; they are
+  now stored.
+- Strain names with an apostrophe showed stray backslashes.
+- Importing the same strain from CannaDB for a second breeder overwrote the
+  first one.
+- Typing a breeder's name could create a duplicate breeder.
+- New strains didn't appear on the Strains list until the page was reloaded.
+- Adding a plant together with a brand-new strain could fail.
+- Changing an activity's type (for example from Note to Water) wasn't saved.
+- The Log activity window opened with the previous note already filled in.
+- Errors that crashed a page weren't recorded in Settings → Logs.
+- The Restore Backup card showed raw HTML code instead of formatted text.
 - Backups now include strain effects, flavors, terpenes, medical uses and the
   daily notebook.
 
