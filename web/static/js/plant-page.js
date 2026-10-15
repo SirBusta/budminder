@@ -463,7 +463,7 @@
                     if (thumb) setTimeout(() => thumb.click(), 300);
                 });
                 $("ppVDelete").addEventListener("click", async () => {
-                    const ok = window.uiMessages ? await uiMessages.showConfirm(tr("pp_delete_photo_confirm")) : confirm(tr("pp_delete_photo_confirm"));
+                    const ok = await uiMessages.showConfirm(tr("pp_delete_photo_confirm"), { danger: true });
                     if (!ok) return;
                     try {
                         await api("DELETE", `/plant/images/${vList[vIdx].id}/delete`);
@@ -603,7 +603,7 @@
             const del = $("ppDayDelete");
             del.classList.toggle("d-none", !existing);
             del.onclick = async () => {
-                const ok = window.uiMessages ? await uiMessages.showConfirm(tr("pp_delete_day_confirm", { date: nice })) : confirm(tr("pp_delete_day_confirm", { date: nice }));
+                const ok = await uiMessages.showConfirm(tr("pp_delete_day_confirm", { date: nice }), { danger: true });
                 if (!ok) return;
                 try {
                     await api("DELETE", `/plant/${P.id}/day/${d}`);

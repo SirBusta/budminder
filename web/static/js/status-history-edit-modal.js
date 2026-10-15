@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const statusId = document.getElementById("statusId").value;
 
-        uiMessages.showConfirm(uiMessages.t('confirm_delete_status')).then(confirmed => {
+        uiMessages.showConfirm(uiMessages.t('confirm_delete_status'), { danger: true }).then(confirmed => {
             if (!confirmed) return;
             fetch(`/plantStatus/delete/${statusId}`, { method: "DELETE" })
                 .then(async response => {

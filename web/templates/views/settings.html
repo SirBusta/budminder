@@ -1205,7 +1205,7 @@
         deleteZoneButton.addEventListener("click", () => {
             const zoneId = document.getElementById("zoneId").value;
 
-            uiMessages.showConfirm(uiMessages.t('delete_zone_confirm')).then(confirmed => {
+            uiMessages.showConfirm(uiMessages.t('delete_zone_confirm'), { danger: true }).then(confirmed => {
                 if (!confirmed) return;
                 fetch(`/zones/${zoneId}`, { method: "DELETE" })
                     .then(response => response.json())
@@ -1468,7 +1468,7 @@
         deleteActivityButton.addEventListener("click", () => {
             const activityId = document.getElementById("activityId").value;
 
-            uiMessages.showConfirm(uiMessages.t('delete_activity_confirm')).then(confirmed => {
+            uiMessages.showConfirm(uiMessages.t('delete_activity_confirm'), { danger: true }).then(confirmed => {
                 if (!confirmed) return;
                 fetch(`/activities/${activityId}`, { method: "DELETE" })
                     .then(response => response.json())
@@ -1520,7 +1520,7 @@
         deleteStreamButton.addEventListener("click", () => {
             const streamId = document.getElementById("streamId").value;
 
-            uiMessages.showConfirm(uiMessages.t('delete_stream_confirm')).then(confirmed => {
+            uiMessages.showConfirm(uiMessages.t('delete_stream_confirm'), { danger: true }).then(confirmed => {
                 if (!confirmed) return;
                 fetch(`/streams/${streamId}`, { method: "DELETE" })
                     .then(response => response.json())
@@ -1613,7 +1613,7 @@
         deleteMetricButton.addEventListener("click", () => {
             const metricId = document.getElementById("metricId").value;
 
-            uiMessages.showConfirm(uiMessages.t('delete_metric_confirm')).then(confirmed => {
+            uiMessages.showConfirm(uiMessages.t('delete_metric_confirm'), { danger: true }).then(confirmed => {
                 if (!confirmed) return;
                 fetch(`/metrics/${metricId}`, { method: "DELETE" })
                     .then(response => response.json())
@@ -1702,7 +1702,7 @@
         deleteBreederButton.addEventListener("click", () => {
             const breederId = document.getElementById("breederId").value;
 
-            uiMessages.showConfirm(uiMessages.t('delete_breeder_confirm')).then(confirmed => {
+            uiMessages.showConfirm(uiMessages.t('delete_breeder_confirm'), { danger: true }).then(confirmed => {
                 if (!confirmed) return;
                 fetch(`/breeders/${breederId}`, { method: "DELETE" })
                     .then(response => response.json())
@@ -1855,6 +1855,9 @@
             sqliteTooLargeHint:   "{{ .lcl.backup_sqlite_too_large_hint }}",
             confirmRestore:       "{{ .lcl.backup_confirm_restore }}",
             confirmSqliteReplace: "{{ .lcl.backup_confirm_sqlite_replace }}",
+            confirmDelete:        "{{ .lcl.backup_confirm_delete }}",
+            restoreBtn:           "{{ .lcl.backup_restore_btn }}",
+            replaceBtn:           "{{ .lcl.backup_sqlite_replace_btn }}",
             uploading:            "{{ .lcl.backup_uploading }}",
             uploadProgress:       "{{ .lcl.backup_upload_progress }}",
             restoreFailed:        "{{ .lcl.backup_restore_failed }}",
@@ -1969,9 +1972,11 @@
                 document.querySelectorAll(".backup-delete-btn").forEach(btn => {
                     btn.addEventListener("click", () => {
                         const name = btn.dataset.name;
-                        if (!confirm("Delete backup " + name + "?")) return;
-                        fetch("/settings/backup/" + encodeURIComponent(name), { method: "DELETE" })
-                        .then(() => loadBackupList());
+                        uiMessages.showConfirm(bkT.confirmDelete.split("{name}").join(name), { danger: true }).then(ok => {
+                            if (!ok) return;
+                            fetch("/settings/backup/" + encodeURIComponent(name), { method: "DELETE" })
+                            .then(() => loadBackupList());
+                        });
                     });
                 });
             })
@@ -2040,9 +2045,9 @@
         const progressBar = document.getElementById("restoreProgressBar");
         const detailText = document.getElementById("restoreDetailText");
 
-        importBtn.addEventListener("click", () => {
+        importBtn.addEventListener("click", async () => {
             if (!selectedFile) return;
-            if (!confirm(bkT.confirmRestore)) return;
+            if (!await uiMessages.showConfirm(bkT.confirmRestore, { title: bkT.restoreBtn, okLabel: bkT.restoreBtn, danger: true })) return;
 
             const formData = new FormData();
             formData.append("backup", selectedFile);
@@ -2204,9 +2209,9 @@
                 sqliteResult.style.display = "none";
             });
 
-            uploadSqliteBtn.addEventListener("click", () => {
+            uploadSqliteBtn.addEventListener("click", async () => {
                 if (!selectedSqliteFile) return;
-                if (!confirm(bkT.confirmSqliteReplace)) return;
+                if (!await uiMessages.showConfirm(bkT.confirmSqliteReplace, { title: bkT.replaceBtn, okLabel: bkT.replaceBtn, danger: true })) return;
 
                 const formData = new FormData();
                 formData.append("database", selectedSqliteFile);

@@ -2,7 +2,7 @@
 // Lightweight UI messaging helper used across templates. Provides:
 // - uiMessages.t(key) -> returns translation if loaded, otherwise key
 // - uiMessages.showToast(message, level)
-// - uiMessages.showConfirm(message) -> Promise<boolean>
+// - uiMessages.showConfirm(message, { title, okLabel, danger }) -> Promise<boolean>
 
 (() => {
     const translations = {};
@@ -80,7 +80,11 @@
         return container;
     }
 
-    function showConfirm(message) {
+    // showConfirm asks a yes/no question in the app's own dialog (never the
+    // browser's plain confirm()). opts: title (default "Confirm"), okLabel
+    // (default "OK", or "Delete" when danger), danger (red button).
+    async function showConfirm(message, opts = {}) {
+        await readyPromise;
         return new Promise((resolve) => {
             // Create a modal-like confirm using bootstrap modal markup
             const modalId = 'uiConfirmModal';
@@ -94,15 +98,15 @@
                 <div class="modal-dialog modal-dialog-centered">
                   <div class="modal-content">
                     <div class="modal-header">
-                      <h5 class="modal-title">${t('confirm') || 'Confirm'}</h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      <h5 class="modal-title" id="uiConfirmTitle"></h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" id="uiConfirmClose"></button>
                     </div>
                     <div class="modal-body">
                       <p id="uiConfirmMessage"></p>
                     </div>
                     <div class="modal-footer">
-                      <button type="button" class="btn btn-secondary" id="uiConfirmCancel">${t('cancel') || 'Cancel'}</button>
-                      <button type="button" class="btn btn-primary" id="uiConfirmOk">${t('ok') || 'OK'}</button>
+                      <button type="button" class="btn btn-secondary" id="uiConfirmCancel"></button>
+                      <button type="button" class="btn" id="uiConfirmOk"></button>
                     </div>
                   </div>
                 </div>
@@ -115,17 +119,32 @@
             const cancelBtn = modalEl.querySelector('#uiConfirmCancel');
 
             msgEl.textContent = message;
+            // Set on every call: translations may have arrived since the
+            // dialog was built, and each question has its own title/button.
+            modalEl.querySelector('#uiConfirmTitle').textContent = opts.title || t('confirm');
+            modalEl.querySelector('#uiConfirmClose').setAttribute('aria-label', t('title_close'));
+            cancelBtn.textContent = t('cancel');
+            okBtn.textContent = opts.okLabel || t(opts.danger ? 'delete' : 'ok');
+            okBtn.className = 'btn ' + (opts.danger ? 'btn-danger' : 'btn-primary');
 
-            const bsModal = new bootstrap.Modal(modalEl);
-            const cleanup = () => {
+            const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            let answered = false;
+            const finish = (yes) => {
+                if (answered) return;
+                answered = true;
                 okBtn.removeEventListener('click', okHandler);
                 cancelBtn.removeEventListener('click', cancelHandler);
+                modalEl.removeEventListener('hidden.bs.modal', hiddenHandler);
                 try { bsModal.hide(); } catch (e) {}
+                resolve(yes);
             };
-            const okHandler = () => { cleanup(); resolve(true); };
-            const cancelHandler = () => { cleanup(); resolve(false); };
+            const okHandler = () => finish(true);
+            const cancelHandler = () => finish(false);
+            // The X, Esc or a click outside closes the dialog: that's a "no".
+            const hiddenHandler = () => finish(false);
             okBtn.addEventListener('click', okHandler);
             cancelBtn.addEventListener('click', cancelHandler);
+            modalEl.addEventListener('hidden.bs.modal', hiddenHandler);
 
             bsModal.show();
         });

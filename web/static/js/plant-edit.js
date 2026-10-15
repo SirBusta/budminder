@@ -104,26 +104,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Delete plant
     if (deletePlantButton) {
         deletePlantButton.addEventListener("click", () => {
-            // Use the global confirm modal if available
-            const confirmModal = document.getElementById("confirmModal");
-            if (confirmModal && window.bootstrap) {
-                const confirmBody = confirmModal.querySelector(".modal-body");
-                const confirmBtn = confirmModal.querySelector(".confirm-action-btn");
-                if (confirmBody) confirmBody.textContent = "Are you sure you want to delete this plant? This action cannot be undone.";
-                if (confirmBtn) {
-                    const newBtn = confirmBtn.cloneNode(true);
-                    confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
-                    newBtn.addEventListener("click", () => {
-                        doDelete();
-                        bootstrap.Modal.getInstance(confirmModal)?.hide();
-                    });
-                }
-                new bootstrap.Modal(confirmModal).show();
-            } else {
-                if (confirm("Are you sure you want to delete this plant?")) {
-                    doDelete();
-                }
-            }
+            uiMessages.showConfirm(uiMessages.t('confirm_delete_plant'), { title: uiMessages.t('delete_plant'), danger: true })
+                .then(ok => { if (ok) doDelete(); });
         });
     }
 
