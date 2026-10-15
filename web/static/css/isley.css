@@ -1544,6 +1544,25 @@ th, td {
     background: var(--color-border);
     margin: 0;
 }
+/* Nothing matches (e.g. a strain that hasn't been added yet): a note, not a choice. */
+.isley-ac-note {
+    padding: 0.55rem 0.75rem;
+    font-size: 0.9rem;
+    color: var(--color-fg);
+    white-space: normal;
+    cursor: default;
+}
+.isley-ac-note a {
+    text-decoration: none;
+}
+
+/* The bar on a strain's page that leads back to Add Plant / Edit plant. */
+.sf-back {
+    background: var(--bs-success-bg-subtle);
+    border: 1px solid var(--bs-success-border-subtle);
+    border-radius: 12px;
+    padding: 0.7rem 1rem;
+}
 
 /* ============================================
    PLANTS LIST PAGE

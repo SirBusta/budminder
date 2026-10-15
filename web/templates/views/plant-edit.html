@@ -35,6 +35,12 @@
         <div class="row g-4">
             <!-- Left column: Form fields -->
             <div class="col-lg-7">
+                <div class="alert alert-success d-flex gap-2 align-items-center mb-4 d-none" id="strainFirstBack" role="status">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <div id="strainFirstBackText"></div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="{{ .lcl.title_close }}"></button>
+                </div>
+
                 <!-- Basic info card -->
                 <div class="card mb-4">
                     <div class="card-body">
@@ -69,11 +75,10 @@
                             <!-- Strain -->
                             <div class="col-md-6">
                                 <label for="strainSelect" class="form-label required">{{ .lcl.title_strain }}</label>
-                                <select class="form-select" id="strainSelect" required>
+                                <select class="form-select" id="strainSelect" required data-ac-did-you-mean="{{ .lcl.sf_did_you_mean }}" data-ac-placeholder="{{ .lcl.sf_search_placeholder }}">
                                     {{ range .strains }}
-                                    <option {{ if eq .ID $.plant.StrainID }}selected{{ end }} value="{{ .ID }}">{{ .Name }} ({{ .Breeder }})</option>
+                                    <option {{ if eq .ID $.plant.StrainID }}selected{{ end }} value="{{ .ID }}" data-name="{{ .Name }}">{{ .Name }} ({{ .Breeder }})</option>
                                     {{ end }}
-                                    <option value="new">{{ .lcl.add_new_strain }}</option>
                                 </select>
                             </div>
 
@@ -81,37 +86,6 @@
                             <div class="col-md-6">
                                 <label for="startDate" class="form-label">{{ .lcl.start_date }}</label>
                                 <input type="date" class="form-control" id="startDate" data-stored="{{ .plant.StartDT | formatDateTimeLocal }}">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- New Strain card (hidden by default) -->
-                <div class="card mb-4 d-none" id="newStrainCard">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary mb-3">
-                            <i class="fa-solid fa-cannabis me-1"></i> New Strain
-                        </h2>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="newStrainName" class="form-label">{{ .lcl.strain_name }}</label>
-                                <input type="text" class="form-control" id="newStrainName" placeholder="{{ .lcl.enter_strain_name }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="breederSelect" class="form-label">{{ .lcl.breeder }}</label>
-                                <select class="form-select" id="breederSelect"
-                                        data-ac-placeholder="{{ .lcl.breeder_search_placeholder }}"
-                                        data-ac-new-text="{{ .lcl.breeder_add_new_named }}"
-                                        data-ac-did-you-mean="{{ .lcl.autocomplete_did_you_mean }}"
-                                        data-ac-suggested="{{ .lcl.autocomplete_suggested }}"
-                                        data-ac-results="{{ .lcl.autocomplete_results }}">
-                                    <option value="" selected></option>
-                                    {{ range .breeders }}
-                                    <option value="{{ .ID }}">{{ .Name }}</option>
-                                    {{ end }}
-                                    <option value="new">{{ .lcl.add_new_breeder }}</option>
-                                </select>
-                                <input type="hidden" id="newBreederName">
                             </div>
                         </div>
                     </div>

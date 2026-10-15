@@ -23,6 +23,26 @@
     <form id="addPlantForm">
         <div class="row g-4 justify-content-center">
             <div class="col-lg-8">
+                <!-- Start with the strain: plants get their strain from the Strains
+                     page (lookups, seeds). Hidden by plant-add.js when the strain is
+                     already chosen (Start a grow, or back from the Strains page). -->
+                {{ if .strains }}
+                <div class="alert alert-info d-flex gap-2 align-items-start mb-4" id="strainFirstNote" role="note">
+                    <i class="fa-solid fa-seedling mt-1"></i>
+                    <div><b>{{ .lcl.sf_note_title }}</b> {{ .lcl.sf_note_before }} <a href="/strains" class="alert-link" data-strain-first>{{ .lcl.sf_strains_link }}</a>{{ .lcl.sf_note_after }}</div>
+                </div>
+                {{ else }}
+                <div class="alert alert-warning d-flex gap-2 align-items-start mb-4" id="strainFirstNote" role="alert">
+                    <i class="fa-solid fa-triangle-exclamation mt-1"></i>
+                    <div><b>{{ .lcl.sf_none_title }}</b> {{ .lcl.sf_none_before }} <a href="/strains" class="alert-link" data-strain-first>{{ .lcl.sf_strains_link }}</a>{{ .lcl.sf_note_after }}</div>
+                </div>
+                {{ end }}
+                <div class="alert alert-success d-flex gap-2 align-items-center mb-4 d-none" id="strainFirstBack" role="status">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <div id="strainFirstBackText"></div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="{{ .lcl.title_close }}"></button>
+                </div>
+
                 <!-- Basic info card -->
                 <div class="card mb-4">
                     <div class="card-body">
@@ -58,12 +78,11 @@
                             <!-- Strain -->
                             <div class="col-md-6">
                                 <label for="strainSelect" class="form-label required">{{ .lcl.title_strain }}</label>
-                                <select class="form-select" id="strainSelect" required>
+                                <select class="form-select" id="strainSelect" required data-ac-did-you-mean="{{ .lcl.sf_did_you_mean }}" data-ac-placeholder="{{ .lcl.sf_search_placeholder }}">
                                     <option value="" disabled selected>Select strain...</option>
                                     {{ range .strains }}
-                                    <option value="{{ .ID }}">{{ .Name }} ({{ .Breeder }})</option>
+                                    <option value="{{ .ID }}" data-name="{{ .Name }}">{{ .Name }} ({{ .Breeder }})</option>
                                     {{ end }}
-                                    <option value="new">{{ .lcl.add_new_strain }}</option>
                                 </select>
                             </div>
 
@@ -76,37 +95,6 @@
                                     <option value="{{ .ID }}">{{ if $lbl }}{{ $lbl }}{{ else }}{{ .Status }}{{ end }}</option>
                                     {{ end }}
                                 </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- New Strain card (hidden by default) -->
-                <div class="card mb-4 d-none" id="newStrainCard">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary mb-3">
-                            <i class="fa-solid fa-cannabis me-1"></i> New Strain
-                        </h2>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="newStrainName" class="form-label">{{ .lcl.strain_name }}</label>
-                                <input type="text" class="form-control" id="newStrainName" placeholder="{{ .lcl.enter_strain_name }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="breederSelect" class="form-label">{{ .lcl.breeder }}</label>
-                                <select class="form-select" id="breederSelect"
-                                        data-ac-placeholder="{{ .lcl.breeder_search_placeholder }}"
-                                        data-ac-new-text="{{ .lcl.breeder_add_new_named }}"
-                                        data-ac-did-you-mean="{{ .lcl.autocomplete_did_you_mean }}"
-                                        data-ac-suggested="{{ .lcl.autocomplete_suggested }}"
-                                        data-ac-results="{{ .lcl.autocomplete_results }}">
-                                    <option value="" selected></option>
-                                    {{ range .breeders }}
-                                    <option value="{{ .ID }}">{{ .Name }}</option>
-                                    {{ end }}
-                                    <option value="new">{{ .lcl.add_new_breeder }}</option>
-                                </select>
-                                <input type="hidden" id="newBreederName">
                             </div>
                         </div>
                     </div>

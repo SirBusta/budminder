@@ -35,6 +35,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   changes.
 
 ### Changed
+- **Add Plant now starts from your strains.** Plants get their strain from
+  the Strains page, where the strain's details are looked up and your seeds
+  are tracked, instead of a bare "Add New Strain" with only a name and
+  breeder.
+  - A note at the top of Add Plant links to the Strains page. It's a
+    warning when no strains exist yet.
+  - Typing a strain you haven't added says so, with a link that opens the
+    Strains page already searching for it. It also suggests close matches
+    for typos ("Did you mean Blue Dream?").
+  - After the strain is saved, a "Back to Add Plant" button returns you with
+    the strain chosen and everything you'd filled in still there.
+  - Edit plant works the same way.
 - **Honest connection status for AC Infinity, Ecowitt and Home Assistant.**
   Manage sensors, Settings and the Today page now show what's really
   happening: connected, sign-in expired, not responding, or no new readings
@@ -72,6 +84,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that every piece of text exists in all four languages.
 - VPD was wrong for a temperature sensor whose unit was spelled in lower
   case ("celsius"): the temperature was read as Fahrenheit.
+- Choosing a strain or tent and then typing something else over it kept the
+  earlier choice, so a plant could be saved with a strain other than the one
+  shown. Typing an exact strain name without clicking it in the list now
+  selects it.
 
 ### Deprecated
 

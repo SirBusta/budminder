@@ -517,5 +517,43 @@
 
     renderFilters();
     render();
-    load().then(openRestockFromLink);
+    // Sent here from Add Plant / Edit plant for a strain that hasn't been added
+    // yet (strain-first.js): say a way back is coming, and look up the name
+    // that was typed (?add=).
+    function strainFirst() {
+        const draft = window.StrainFirst && StrainFirst.peek();
+        if (draft && window.uiMessages) uiMessages._ready().then(() => {
+            const n = document.createElement("div");
+            n.className = "alert alert-info d-flex gap-2 align-items-center py-2 mb-3";
+            n.setAttribute("role", "note");
+            const text = draft.returnTo === "/plant/new" ? esc(uiMessages.t("sf_strains_note"))
+                : esc(uiMessages.t("sf_strains_note_edit")).split("{name}").join(`<b>${esc(draft.plantName)}</b>`);
+            n.innerHTML = `<i class="fa-solid fa-seedling"></i><div class="flex-grow-1">${text}</div>
+                <a href="#" class="small" data-sf-dismiss>${esc(uiMessages.t("sf_not_now"))}</a>`;
+            n.querySelector("[data-sf-dismiss]").addEventListener("click", e => {
+                e.preventDefault();
+                StrainFirst.clear();
+                n.remove();
+            });
+            document.querySelector(".sp-top").after(n);
+        });
+        const name = (new URLSearchParams(location.search).get("add") || "").trim();
+        if (!name || !LOGGED_IN) return;
+        // Only once: a reload or Back doesn't search again.
+        history.replaceState(null, "", location.pathname + location.hash);
+        if ($("spFindBtn")) {
+            openFind();
+            $("spFindQ").value = name;
+            $("spFindForm").requestSubmit();
+        } else {
+            openManual();
+            $("spManualName").value = name;
+            manualDupCheck();
+        }
+    }
+
+    load().then(() => {
+        openRestockFromLink();
+        strainFirst();
+    });
 })();

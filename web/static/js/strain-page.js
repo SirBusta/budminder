@@ -108,4 +108,27 @@
             want.disabled = false;
         }
     });
+
+    // Sent to the Strains page from Add Plant / Edit plant (strain-first.js):
+    // offer the way back with this strain.
+    const sfDraft = window.StrainFirst && StrainFirst.peek();
+    if (sfDraft && window.uiMessages) uiMessages._ready().then(() => {
+        const t = k => esc(uiMessages.t(k));
+        const b = s => `<b>${esc(s)}</b>`;
+        const toAdd = sfDraft.returnTo === "/plant/new";
+        const bar = document.createElement("div");
+        bar.className = "sf-back d-flex flex-wrap gap-2 align-items-center mb-3";
+        bar.setAttribute("role", "status");
+        bar.innerHTML = `<i class="fa-solid fa-circle-check text-success fs-5"></i>
+            <div class="flex-grow-1">${fill(t(toAdd ? "sf_in_your_strains_add" : "sf_in_your_strains"), { name: b(D.name) })}</div>
+            <a class="btn btn-success" href="${esc(StrainFirst.backURL(sfDraft, ID))}"><i class="fa-solid fa-arrow-left me-1"></i>${
+                fill(t(toAdd ? "sf_back_to_add" : "sf_back_to_edit"), { name: esc(D.name), plant: esc(sfDraft.plantName) })}</a>
+            <a class="btn btn-link" href="#" data-sf-dismiss>${t("sf_not_now")}</a>`;
+        bar.querySelector("[data-sf-dismiss]").addEventListener("click", e => {
+            e.preventDefault();
+            StrainFirst.clear();
+            bar.remove();
+        });
+        page.prepend(bar);
+    });
 })();

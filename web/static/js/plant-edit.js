@@ -14,9 +14,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const zoneSelect = document.getElementById("zoneSelect");
     const newZoneInput = document.getElementById("newZoneInput");
     const strainSelect = document.getElementById("strainSelect");
-    const newStrainCard = document.getElementById("newStrainCard");
-    const breederSelect = document.getElementById("breederSelect");
-    const newBreederName = document.getElementById("newBreederName");
     const deletePlantButton = document.getElementById("deletePlantButton");
     const plantId = document.getElementById("plantId").value;
 
@@ -24,33 +21,26 @@ document.addEventListener("DOMContentLoaded", () => {
     const zoneAC = new IsleyAutocomplete(zoneSelect, {
         placeholder: "Type to search zones...",
     });
-    const strainAC = new IsleyAutocomplete(strainSelect, {
-        placeholder: "Type to search strains...",
-    });
+    // Strains are added on the Strains page; see strain-first.js.
+    const strainAC = StrainFirst.strainField(strainSelect);
+    const editPath = `/plant/${plantId}/edit`;
+    StrainFirst.wire(editPlantForm, editPath, () => document.getElementById("plantName").value);
 
     // Show/Hide New Zone Input
     zoneSelect.addEventListener("change", () => {
         newZoneInput.classList.toggle("d-none", zoneSelect.value !== "new");
     });
 
-    // Show/Hide New Strain Card
-    strainSelect.addEventListener("change", () => {
-        newStrainCard.classList.toggle("d-none", strainSelect.value !== "new");
-    });
-
-    const breederAC = IsleyAutocomplete.breederPicker(breederSelect, newBreederName);
-
     // Form submission
     editPlantForm.addEventListener("submit", (e) => {
         e.preventDefault();
 
-        if (breederAC) {
-            breederAC.commit();
-            formHelpers.clearFieldError(breederAC.input);
-            if (strainSelect.value === "new" && breederSelect.value === "") {
-                formHelpers.setFieldError(breederAC.input, uiMessages.t('api_new_breeder_name_required'));
-                return;
-            }
+        strainAC.commit();
+        if (!strainSelect.value) {
+            const typed = strainAC.input.value.trim();
+            if (typed) StrainFirst.showError(strainAC, typed);
+            else formHelpers.setFieldError(strainAC.input, uiMessages.t('api_strain_required'));
+            return;
         }
 
         const submitBtn = editPlantForm.querySelector('button[type="submit"]');
@@ -60,7 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const zoneVal = zoneSelect.value;
         const strainVal = strainSelect.value;
         const newZoneName = document.getElementById("newZoneName");
-        const newStrainName = document.getElementById("newStrainName");
 
         const payload = {
             plant_id: parseInt(plantId, 10),
@@ -68,12 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
             plant_description: document.getElementById("plantDescription").value,
             zone_id: zoneVal && zoneVal !== "new" ? parseInt(zoneVal, 10) : null,
             new_zone: zoneVal === "new" ? newZoneName.value : "",
-            strain_id: strainVal && strainVal !== "new" ? parseInt(strainVal, 10) : null,
-            new_strain: strainVal === "new" ? {
-                name: newStrainName.value,
-                breeder_id: breederSelect && breederSelect.value !== "new" ? parseInt(breederSelect.value, 10) : null,
-                new_breeder: breederSelect && breederSelect.value === "new" ? newBreederName.value : null
-            } : null,
+            strain_id: parseInt(strainVal, 10),
             clone: document.getElementById("cloneCheckbox").checked,
             start_date: startDateValue(),
             harvest_weight: parseFloat(document.getElementById("harvestWeight").value) || 0,
@@ -100,6 +84,21 @@ document.addEventListener("DOMContentLoaded", () => {
             uiMessages.showToast(uiMessages.t('failed_save_changes') || 'Failed to save changes', 'danger');
         });
     });
+
+    // Back from the Strains page (?strain_id=&resume=1): the new strain is
+    // chosen and any other changes made before leaving are put back.
+    const params = new URLSearchParams(location.search);
+    const draft = params.get("resume") === "1" ? StrainFirst.take(editPath) : null;
+    if (draft) {
+        StrainFirst.restore(draft);
+        zoneAC.setValue(zoneSelect.value);
+        if (params.get("strain_id")) strainAC.setValue(params.get("strain_id"));
+        const label = strainAC.input.value;
+        uiMessages._ready().then(() => {
+            document.getElementById("strainFirstBackText").innerHTML = StrainFirst.withName("sf_back_restored_edit", label);
+            document.getElementById("strainFirstBack").classList.remove("d-none");
+        });
+    }
 
     // Delete plant
     if (deletePlantButton) {

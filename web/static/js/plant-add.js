@@ -3,9 +3,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const zoneSelect = document.getElementById("zoneSelect");
     const newZoneInput = document.getElementById("newZoneInput");
     const strainSelect = document.getElementById("strainSelect");
-    const newStrainCard = document.getElementById("newStrainCard");
-    const breederSelect = document.getElementById("breederSelect");
-    const newBreederName = document.getElementById("newBreederName");
     const parentPlantDropdown = document.getElementById("parentPlantDropdown");
     const parentPlantSelect = document.getElementById("parentPlantSelect");
     const isClone = document.getElementById("isClone");
@@ -25,22 +22,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const zoneAC = new IsleyAutocomplete(zoneSelect, {
         placeholder: "Type to search zones...",
     });
-    const strainAC = new IsleyAutocomplete(strainSelect, {
-        placeholder: "Type to search strains...",
-    });
-    const breederAC = IsleyAutocomplete.breederPicker(breederSelect, newBreederName);
+    // Strains are added on the Strains page (lookups, seeds), not here: a name
+    // that isn't there gets a note with a link, plus "Did you mean" for typos.
+    const strainAC = StrainFirst.strainField(strainSelect);
+    StrainFirst.wire(addPlantForm, "/plant/new");
 
     // Show/Hide New Zone Input
     zoneSelect.addEventListener("change", () => {
         newZoneInput.classList.toggle("d-none", zoneSelect.value !== "new");
     });
 
-    // Show/Hide New Strain Card
     strainSelect.addEventListener("change", () => {
-        newStrainCard.classList.toggle("d-none", strainSelect.value !== "new");
-
+        formHelpers.clearFieldError(strainAC.input);
         // Load parent plants for selected strain
-        if (strainSelect.value !== "new" && strainSelect.value) {
+        if (strainSelect.value) {
             fetch(`/plants/by-strain/${strainSelect.value}`)
                 .then(r => r.json())
                 .then(plants => {
@@ -67,8 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         formHelpers.clearFieldError(zoneAC.input);
         formHelpers.clearFieldError(strainAC.input);
-        formHelpers.clearFieldError(breederAC.input);
-        breederAC.commit();
+        strainAC.commit();
 
         // The autocomplete only sets zoneSelect/strainSelect's value when an
         // existing item or "Add New" is explicitly chosen from its dropdown.
@@ -81,11 +75,12 @@ document.addEventListener("DOMContentLoaded", () => {
             hasError = true;
         }
         if (strainSelect.value === "") {
-            formHelpers.setFieldError(strainAC.input, uiMessages.t('api_strain_required'));
-            hasError = true;
-        }
-        if (strainSelect.value === "new" && breederSelect.value === "") {
-            formHelpers.setFieldError(breederAC.input, uiMessages.t('api_new_breeder_name_required'));
+            const typed = strainAC.input.value.trim();
+            if (typed) {
+                StrainFirst.showError(strainAC, typed);
+            } else {
+                formHelpers.setFieldError(strainAC.input, uiMessages.t('api_strain_required'));
+            }
             hasError = true;
         }
         if (hasError) return;
@@ -98,12 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
             name: document.getElementById("plantName").value,
             zone_id: zoneSelect.value === "new" ? null : parseInt(zoneSelect.value, 10),
             new_zone: zoneSelect.value === "new" ? document.getElementById("newZoneName").value : null,
-            strain_id: strainSelect.value === "new" ? null : parseInt(strainSelect.value, 10),
-            new_strain: strainSelect.value === "new" ? {
-                name: document.getElementById("newStrainName").value,
-                breeder_id: breederSelect.value === "new" ? null : parseInt(breederSelect.value, 10),
-                new_breeder: breederSelect.value === "new" ? newBreederName.value : null
-            } : null,
+            strain_id: parseInt(strainSelect.value, 10),
             status_id: parseInt(document.getElementById("statusSelect").value, 10),
             date: withTimeNow(document.getElementById("startDate").value),
             clone: isClone.checked ? 1 : 0,
@@ -137,8 +127,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // "Start a grow" from the Strains page: ?strain_id=&name=&use_seed=1
     // pre-fill the strain, the plant's name and "use one seed".
+    // Back from the Strains page (?strain_id=&resume=1): what was filled in
+    // before is put back too.
     const params = new URLSearchParams(location.search);
-    if (params.get("strain_id")) strainAC.setValue(params.get("strain_id"));
+    const draft = params.get("resume") === "1" ? StrainFirst.take("/plant/new") : null;
+    if (draft) {
+        StrainFirst.restore(draft);
+        zoneAC.setValue(zoneSelect.value);
+    }
+    if (params.get("strain_id")) {
+        strainAC.setValue(params.get("strain_id"));
+        // The strain is chosen already: the "add the strain first" note isn't needed.
+        document.getElementById("strainFirstNote")?.classList.add("d-none");
+    }
     if (params.get("name")) document.getElementById("plantName").value = params.get("name");
     if (params.get("use_seed") === "1") document.getElementById("decrementSeedCount").checked = true;
+    if (draft && strainSelect.value) {
+        const label = strainAC.input.value;
+        uiMessages._ready().then(() => {
+            document.getElementById("strainFirstBackText").innerHTML = StrainFirst.withName("sf_back_restored", label);
+            document.getElementById("strainFirstBack").classList.remove("d-none");
+        });
+    }
 });

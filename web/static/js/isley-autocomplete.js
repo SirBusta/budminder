@@ -20,7 +20,15 @@
  *       referenceSource: null,   // () => Promise<string[]>: extra suggestions that are not
  *                                // yet rows; picking one counts as a new name
  *       labels: { newText, didYouMean, suggested, results },  // "{name}" / "{count}" placeholders
+ *
+ *       // When nothing matches (e.g. strains, which are added on the Strains page):
+ *       noMatch:     null,   // optional: function(query) => HTML for a note shown instead of
+ *                            // results (not selectable; links in it work)
+ *       typoSuggest: false,  // offer "Did you mean X?" for names one or two letters off
  *   });
+ *
+ *   An <option data-name="Grape OG">Grape OG (Cali Connection)</option> is also found by
+ *   its bare name: typing exactly "Grape OG" selects it when only one option has that name.
  *
  *   // Programmatic control:
  *   ac.reset();            // clear the input + selection
@@ -60,6 +68,8 @@ class IsleyAutocomplete {
             newFromText: false,
             newNameInput: null,
             referenceSource: null,
+            noMatch: null,
+            typoSuggest: false,
         }, opts);
         this.labels = Object.assign({
             newText: 'Add "{name}"',
@@ -336,6 +346,7 @@ class IsleyAutocomplete {
                 : opt.textContent.trim();
             this._items.push({
                 value: val,
+                name: (opt.dataset.name || "").trim(),
                 label: opt.textContent.trim(),
                 displayLabel: label,
                 sublabel: this.opts.sublabel ? (this.opts.sublabel(opt) || "") : "",
@@ -410,9 +421,96 @@ class IsleyAutocomplete {
         return hits.length === 1 ? hits[0] : null;
     }
 
+    /** Bare-name match (option data-name) when exactly one option has that name. */
+    _uniqueName(text) {
+        const lower = text.toLowerCase();
+        const hits = this._items.filter(i => i.name && i.name.toLowerCase() === lower);
+        return hits.length === 1 ? hits[0] : null;
+    }
+
+    /** Options whose name is one or two letters away from text (typos), closest first. */
+    _typos(text) {
+        const squash = t => String(t).toLowerCase().replace(/[^a-z0-9]+/g, "");
+        const q = squash(text);
+        if (q.length < 4) return [];
+        const max = q.length >= 8 ? 2 : 1;
+        return this._items
+            .map(i => ({ i, d: IsleyAutocomplete.editDistance(q, squash(i.name || i.label), max) }))
+            .filter(x => x.d <= max)
+            .sort((a, b) => a.d - b.d)
+            .slice(0, 3)
+            .map(x => x.i);
+    }
+
+    /** Levenshtein distance, giving up (returning max + 1) once it can't stay within max. */
+    static editDistance(a, b, max) {
+        if (Math.abs(a.length - b.length) > max) return max + 1;
+        let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+        for (let i = 1; i <= a.length; i++) {
+            const cur = [i];
+            let best = i;
+            for (let j = 1; j <= b.length; j++) {
+                cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+                best = Math.min(best, cur[j]);
+            }
+            if (best > max) return max + 1;
+            prev = cur;
+        }
+        return prev[b.length];
+    }
+
+    /** Nothing matches: "Did you mean...?" choices, then the noMatch note. */
+    _renderNoMatch(query) {
+        const typos = this.opts.typoSuggest ? this._typos(query) : [];
+        typos.forEach((item, i) => {
+            const div = document.createElement("div");
+            div.className = "isley-ac-item isley-ac-typo";
+            div.id = `isley-ac-opt-${this._uid}-t${i}`;
+            div.setAttribute("role", "option");
+            div.setAttribute("aria-selected", "false");
+            const name = this._escapeHtml(item.name || item.label);
+            div.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles me-1 text-warning"></i>` +
+                this._escapeHtml(this.labels.didYouMean).replace("{name}", `<b>${name}</b>`) +
+                (item.name && item.label !== item.name ? `<div class="small text-muted ms-4">${this._escapeHtml(item.label.slice(item.name.length).trim().replace(/^\(|\)$/g, ""))}</div>` : "");
+            div.addEventListener("mousedown", (e) => {
+                e.preventDefault();
+                this._selectItem(item, false);
+            });
+            this.dropdown.appendChild(div);
+        });
+        const html = this.opts.noMatch ? this.opts.noMatch(query) : "";
+        if (html) {
+            if (typos.length) {
+                const sep = document.createElement("div");
+                sep.className = "isley-ac-separator";
+                sep.setAttribute("role", "separator");
+                this.dropdown.appendChild(sep);
+            }
+            const note = document.createElement("div");
+            note.className = "isley-ac-note";
+            note.innerHTML = html;
+            // Keep the field focused: a blur would close the dropdown and take
+            // the note's link away before a slow click lands on it.
+            note.addEventListener("mousedown", (e) => e.preventDefault());
+            this.dropdown.appendChild(note);
+        }
+        if (!typos.length && !html) {
+            this._hideDropdown();
+            return;
+        }
+        this.dropdown.style.display = "block";
+        this.input.setAttribute("aria-expanded", "true");
+        this._announce(this.dropdown.textContent.trim());
+    }
+
     _renderDropdown(matches, query) {
         this.dropdown.innerHTML = "";
         this._activeIdx = -1;
+
+        if (matches.length === 0 && query !== "" && (this.opts.noMatch || this.opts.typoSuggest)) {
+            this._renderNoMatch(query);
+            return;
+        }
 
         const showTextNew = this.opts.allowNew && this.opts.newFromText && query !== "" &&
             !this._findExact(this._items, query) && !this._findExact(this._refItems, query);
@@ -538,13 +636,25 @@ class IsleyAutocomplete {
         const currentItem = this._items.find(i => String(i.value) === String(currentVal));
         if (currentItem && currentItem.label === text) return;
 
-        const exact = this.opts.newFromText ? this._uniqueExact(this._items, text) : this._findExact(this._items, text);
+        const exact = this.opts.newFromText ? this._uniqueExact(this._items, text)
+            : (this._findExact(this._items, text) || this._uniqueName(text));
         if (exact) {
             this._selectItem(exact, false);
             return;
         }
 
-        if (!this.opts.newFromText || !this.opts.allowNew) return;
+        if (!this.opts.newFromText || !this.opts.allowNew) {
+            // Typed over an earlier choice with text that matches nothing: drop
+            // the old choice, so a form can't save something other than what
+            // the field shows. ("Add New ..." picked from the list keeps its label.)
+            if (currentVal === this.opts.newValue && text === this._newLabel) return;
+            if (currentVal !== "") {
+                this.select.value = "";
+                this._setNewName("");
+                this.select.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            return;
+        }
         if (currentVal === this.opts.newValue && this._newName === text) return;
 
         const ref = this._findExact(this._refItems, text);
