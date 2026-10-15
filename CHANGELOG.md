@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   again by itself when that happens, so readings keep coming. The key is
   kept in its own file in the data folder, not in the database or in
   backups. "Forget saved password" turns it off.
+- **PUID / PGID** settings for the Docker image. Set both, for example 99 and
+  100 on Unraid, and BudMinder's data, uploads and logs folders belong to
+  that user and group, and BudMinder runs as them. Without them nothing
+  changes.
 
 ### Changed
 - **Honest connection status for AC Infinity, Ecowitt and Home Assistant.**
