@@ -92,6 +92,11 @@ type Watcher struct {
 // accepted the request.
 const aciSuccessCode = 200
 
+// aciCO2SensorType is AC Infinity's CO2 sensor. It reports plain ppm; the
+// other sensors report x100 (7260 = 72.60 °F). Migration 036 rescaled the
+// history recorded before 1.0.1, which divided CO2 by 100 too.
+const aciCO2SensorType = 11
+
 // PollError says why a poll failed: Kind is "auth" (the service refused the
 // sign-in or token), "unreachable" or "error"; Detail is the service's own
 // message when it gave one.
@@ -370,7 +375,11 @@ func (w *Watcher) PollACI(ctx context.Context, token string) error {
 		dataMap["ACI.humidity"] = float64(deviceData.DeviceInfo.Humidity) / 100.0
 
 		for _, sensor := range deviceData.DeviceInfo.Sensors {
-			dataMap[fmt.Sprintf("ACI.%d.%d", sensor.AccessPort, sensor.SensorType)] = float64(sensor.SensorData) / 100.0
+			value := float64(sensor.SensorData) / 100.0
+			if sensor.SensorType == aciCO2SensorType {
+				value = float64(sensor.SensorData)
+			}
+			dataMap[fmt.Sprintf("ACI.%d.%d", sensor.AccessPort, sensor.SensorType)] = value
 		}
 
 		for _, port := range deviceData.DeviceInfo.Ports {

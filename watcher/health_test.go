@@ -87,3 +87,26 @@ func TestRun_ReportsIntegrationHealth(t *testing.T) {
 		})
 	}
 }
+
+// AC Infinity reports CO2 (sensorType 11) in plain ppm, unlike the x100
+// temperatures; 770 must be stored as 770, not 7.7.
+func TestPollACI_CO2IsPlainPPM(t *testing.T) {
+	t.Parallel()
+	db := testutil.NewTestDB(t)
+	co2 := seedSensor(t, db, "acinfinity", "DEV", "ACI.2.11")
+	temp := seedSensor(t, db, "acinfinity", "DEV", "ACI.1.0")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"code":200,"msg":"success","data":[{"devCode":"DEV","deviceInfo":{"sensors":[
+			{"sensorType":11,"accessPort":2,"sensorData":770},{"sensorType":0,"accessPort":1,"sensorData":7260}]}}]}`))
+	}))
+	t.Cleanup(srv.Close)
+	w := newTestWatcher(t, db)
+	w.ACIBaseURL = srv.URL
+	require.NoError(t, w.PollACI(context.Background(), "tok"))
+
+	var v float64
+	require.NoError(t, db.QueryRow(`SELECT value FROM sensor_data WHERE sensor_id = $1`, co2).Scan(&v))
+	assert.InDelta(t, 770, v, 0.001)
+	require.NoError(t, db.QueryRow(`SELECT value FROM sensor_data WHERE sensor_id = $1`, temp).Scan(&v))
+	assert.InDelta(t, 72.6, v, 0.001)
+}

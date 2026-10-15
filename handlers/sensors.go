@@ -526,6 +526,10 @@ func aciFoundSensors(jsonResponse types.ACIResponse) []foundSensor {
 					name := "ACI (" + device + ") outside VPD"
 					unit := "kPa"
 					found.add(source, device, sensorType, name, unit)
+				case 11: // CO2 (reported in plain ppm, not x100)
+					name := "ACI (" + device + ") CO2"
+					unit := "ppm"
+					found.add(source, device, sensorType, name, unit)
 				default:
 					// Unknown sensorType: create a generic sensor so users can see and rename it.
 					// Determine a reasonable default unit:

@@ -40,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Signing in to AC Infinity now confirms it worked.
 
 ### Fixed
+- AC Infinity CO2 readings were 100 times too low (770 ppm showed as 8).
+  CO2 is now read correctly and your existing CO2 history is corrected
+  automatically on upgrade.
 - AC Infinity refusing the saved sign-in was ignored, so readings silently
   stopped. It's now logged with AC Infinity's reason and shown as
   "Sign-in expired".
