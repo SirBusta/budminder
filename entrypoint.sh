@@ -1,17 +1,31 @@
 #!/bin/sh
 # Fix ownership on mounted volumes (may be root-owned from previous versions),
-# then drop to the non-root isley user to run the application.
+# then drop to a non-root user to run the application.
 #
-# DEPRECATION: This root entrypoint exists only to smooth the transition from
-# older images that ran as root. It will be removed in a future release, after
-# which the container will run as the isley user directly. If you see permission
-# errors after that change, run once:
-#   docker run --rm -v <your-volume>:/app/data alpine chown -R 100:101 /app/data
+# PUID / PGID (optional): run as that user and group ID instead of the
+# built-in isley user, and give the data, uploads and logs folders to it.
+# Unraid's template sets 99 / 100 (nobody:users), the owner Unraid expects
+# for appdata. Without them, nothing changes: the isley user (100:101).
 
 if [ "$(id -u)" = "0" ]; then
-    chown -R isley:isley /app/data /app/uploads 2>/dev/null || true
-    exec su-exec isley /app/isley "$@"
+    owner="isley:isley"
+    if [ -n "$PUID" ] || [ -n "$PGID" ]; then
+        case "${PUID:-x}${PGID:-x}" in
+            *[!0-9]*)
+                echo "PUID and PGID must both be numbers (got PUID='$PUID' PGID='$PGID'); running as isley" >&2
+                ;;
+            *)
+                owner="$PUID:$PGID"
+                ;;
+        esac
+    fi
+    mkdir -p /app/data /app/uploads /app/logs
+    chown -R "$owner" /app/data /app/uploads /app/logs 2>/dev/null || true
+    if [ "$owner" = "isley:isley" ]; then
+        exec su-exec isley /app/isley "$@"
+    fi
+    exec su-exec "$owner" /app/isley "$@"
 else
-    # Already running as non-root (future default)
+    # Already running as non-root (docker run --user ...)
     exec /app/isley "$@"
 fi

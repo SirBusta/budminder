@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>BudMinder</Name>
+  <Repository>ghcr.io/sirbusta/budminder:latest</Repository>
+  <Registry>https://github.com/SirBusta/budminder/pkgs/container/budminder</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/SirBusta/budminder/issues</Support>
+  <Project>https://github.com/SirBusta/budminder</Project>
+  <ReadMe>https://github.com/SirBusta/budminder#readme</ReadMe>
+  <Overview>A self-hosted grow journal for home growers. Keep daily notes, measurements and photos for every plant from seed to harvest, see live temperature, humidity, VPD and CO2 from AC Infinity, Ecowitt or Home Assistant sensors, and track your strains and seed vault. Everything stays on your server: SQLite by default (PostgreSQL optional), with backups you can download and restore in Settings.
+
+First login: admin / budminder. BudMinder asks you to choose a new password right away.
+
+Your database lives in the Data folder and your photos in the Uploads folder; both survive container updates. Based on Isley by dwot.</Overview>
+  <Category>HomeAutomation: Tools:Utilities</Category>
+  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/SirBusta/budminder/main/templates/budminder.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/SirBusta/budminder/main/web/static/img/brand/budminder-256.png</Icon>
+  <ExtraSearchTerms>grow journal growlog grow log plants garden cannabis seeds strains ac infinity ecowitt home assistant vpd isley</ExtraSearchTerms>
+  <License>MIT</License>
+  <Changes>Initial Community Applications template.</Changes>
+  <Screenshot>https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/screenshots/plant.webp</Screenshot>
+  <Screenshot>https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/screenshots/home.webp</Screenshot>
+  <Screenshot>https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/screenshots/environment.webp</Screenshot>
+  <Screenshot>https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/screenshots/strains.webp</Screenshot>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="WebUI" Target="8080" Default="8091" Mode="tcp" Description="Port for the BudMinder web page. Pick any free port on your server; 8091 is suggested because 8080 is often already taken." Type="Port" Display="always" Required="true" Mask="false">8091</Config>
+  <Config Name="Data" Target="/app/data" Default="/mnt/user/appdata/budminder/data" Mode="rw" Description="The database, settings, backups and BudMinder's key file." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/budminder/data</Config>
+  <Config Name="Uploads" Target="/app/uploads" Default="/mnt/user/appdata/budminder/uploads" Mode="rw" Description="Plant and strain photos." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/budminder/uploads</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID that owns the files in the Data and Uploads folders. 99 (nobody) is the Unraid default." Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID that owns the files in the Data and Uploads folders. 100 (users) is the Unraid default." Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+  <Config Name="Database type" Target="BUDMINDER_DB_DRIVER" Default="sqlite" Mode="" Description="sqlite (built in, nothing to set up) or postgres (fill in the PostgreSQL settings below)." Type="Variable" Display="advanced" Required="false" Mask="false">sqlite</Config>
+  <Config Name="PostgreSQL host" Target="BUDMINDER_DB_HOST" Default="" Mode="" Description="Only for postgres: the PostgreSQL server's address." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PostgreSQL port" Target="BUDMINDER_DB_PORT" Default="5432" Mode="" Description="Only for postgres." Type="Variable" Display="advanced" Required="false" Mask="false">5432</Config>
+  <Config Name="PostgreSQL user" Target="BUDMINDER_DB_USER" Default="" Mode="" Description="Only for postgres." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PostgreSQL password" Target="BUDMINDER_DB_PASSWORD" Default="" Mode="" Description="Only for postgres." Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="PostgreSQL database" Target="BUDMINDER_DB_NAME" Default="" Mode="" Description="Only for postgres: the database name." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+</Container>

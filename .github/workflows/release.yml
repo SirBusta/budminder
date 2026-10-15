@@ -6,9 +6,18 @@ on:
       - main
     tags:
       - 'v*'
+    # The Unraid Community Applications template and profile aren't part of
+    # the program: changing only those shouldn't test, build or publish a new
+    # image. (Path filters don't apply to tag pushes, so releases still run.)
+    paths-ignore:
+      - 'templates/**'
+      - 'ca_profile.xml'
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - 'templates/**'
+      - 'ca_profile.xml'
 
 jobs:
   test:

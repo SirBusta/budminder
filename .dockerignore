@@ -23,6 +23,10 @@ audits/
 scripts/
 tools/
 
+# Unraid Community Applications template (not part of the program)
+templates/
+ca_profile.xml
+
 # Docker compose files (not needed in build context)
 docker-compose*.yml
 .env
