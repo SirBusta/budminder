@@ -214,6 +214,9 @@ type HomeAssistantSettings struct {
 type ACInfinitySettings struct {
 	Enabled  bool `json:"enabled"`
 	TokenSet bool `json:"token_set"`
+	// StaySignedIn: an encrypted AC Infinity password is saved so BudMinder
+	// can sign in again by itself. The password itself is never sent back.
+	StaySignedIn bool `json:"stay_signed_in"`
 }
 
 type EcoWittSettings struct {

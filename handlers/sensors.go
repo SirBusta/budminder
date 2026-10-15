@@ -1078,16 +1078,16 @@ func ValidateServerAddress(address string) bool {
 
 // SensorDataPayload represents the expected structure of incoming sensor data
 type SensorDataPayload struct {
-	Source  string  `json:"source" binding:"required"`
-	Device  string  `json:"device" binding:"required"`
-	Type    string  `json:"type" binding:"required"`
+	Source string `json:"source" binding:"required"`
+	Device string `json:"device" binding:"required"`
+	Type   string `json:"type" binding:"required"`
 	// A pointer so "required" means "present": a reading of exactly 0 (a
 	// light at night, a fan switched off) is a real value, not a missing one.
 	Value   *float64 `json:"value" binding:"required"`
-	Name    string  `json:"name"`
-	Unit    string  `json:"unit"`
-	ZoneID  *int    `json:"zone_id"`
-	NewZone string  `json:"new_zone"`
+	Name    string   `json:"name"`
+	Unit    string   `json:"unit"`
+	ZoneID  *int     `json:"zone_id"`
+	NewZone string   `json:"new_zone"`
 }
 
 // IngestSensorData handles the ingestion of sensor data from external sources

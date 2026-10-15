@@ -3101,6 +3101,8 @@ th, td {
 .sm-found-tools .sm-search { flex: 1; min-width: 200px; max-width: 360px; }
 .sm-found-none { color: var(--sx-muted); font-size: .85rem; padding: .3rem 0; }
 .st-ha-result { display: block; margin-top: .35rem; font-weight: 600; }
+.st-aci-stay { display: block; margin-top: .3rem; color: #15803d; }
+[data-bs-theme="dark"] .st-aci-stay { color: #4ade80; }
 .st-ha-result.ok { color: #15803d; }
 .st-ha-result.bad { color: #b91c1c; }
 [data-bs-theme="dark"] .st-ha-result.ok { color: #4ade80; }

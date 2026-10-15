@@ -100,6 +100,7 @@ func main() {
 	var bgWG sync.WaitGroup
 
 	w := watcher.New(db, configStore)
+	w.ACIRelogin = handlers.NewACIRelogin(db, configStore, "data", "") // same data folder as the engine
 
 	// Prune old sensor data once before the watcher loop kicks in.
 	if err := w.PruneSensorData(); err != nil {

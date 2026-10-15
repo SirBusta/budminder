@@ -86,6 +86,39 @@ type Watcher struct {
 	// ReportHealth records how each integration's poll went (kind "" = it
 	// worked), for the status shown in Manage sensors and on Today. Optional.
 	ReportHealth func(source, kind, detail string)
+	// ACIRelogin signs in to AC Infinity again with the saved password
+	// ("Stay signed in") when it refuses the token. attempted is false when
+	// no password is saved. Optional; main wires handlers.NewACIRelogin.
+	ACIRelogin func(ctx context.Context) (attempted bool, err error)
+
+	lastACIRelogin time.Time // Run's goroutine only
+}
+
+// aciReloginEvery limits automatic AC Infinity sign-ins to one an hour, so a
+// changed password doesn't hammer AC Infinity with failing sign-ins.
+const aciReloginEvery = time.Hour
+
+// pollACIStayingSignedIn polls AC Infinity; if it refuses the token and a
+// password is saved, it signs in again and polls once more.
+func (w *Watcher) pollACIStayingSignedIn(ctx context.Context, token string) error {
+	err := w.PollACI(ctx, token)
+	var pe *PollError
+	if !errors.As(err, &pe) || pe.Kind != "auth" || w.ACIRelogin == nil {
+		return err
+	}
+	if !w.lastACIRelogin.IsZero() && w.Now().Sub(w.lastACIRelogin) < aciReloginEvery {
+		return err
+	}
+	w.lastACIRelogin = w.Now()
+	attempted, rerr := w.ACIRelogin(ctx)
+	switch {
+	case !attempted:
+		return err
+	case rerr != nil:
+		w.Logger.WithError(rerr).Warn("Automatic AC Infinity sign-in failed; sign in again in Settings")
+		return &PollError{Kind: "auth", Detail: "automatic sign-in failed: " + rerr.Error(), Err: rerr}
+	}
+	return w.PollACI(ctx, w.ACIToken())
 }
 
 // aciSuccessCode is what AC Infinity's API returns in "code" when it
@@ -192,7 +225,7 @@ func (w *Watcher) Run(ctx context.Context) {
 		} else {
 			if w.ACIEnabled() {
 				if token := w.ACIToken(); token != "" {
-					w.report("acinfinity", w.PollACI(ctx, token))
+					w.report("acinfinity", w.pollACIStayingSignedIn(ctx, token))
 				}
 			}
 			if w.ECEnabled() {

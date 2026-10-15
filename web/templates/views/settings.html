@@ -89,6 +89,7 @@
                         <div class="st-row-l">
                             {{ $aci := index .integrations "acinfinity" }}<span id="tokenSetBadge" class="badge bg-{{ if eq $aci.State "auth" }}danger{{ else if .settings.ACI.TokenSet }}success{{ else }}danger{{ end }} align-self-start">{{ if eq $aci.State "auth" }}{{ .lcl.aci_sign_in_expired }}{{ else if .settings.ACI.TokenSet }}{{ .lcl.token_set }}{{ else }}{{ .lcl.token_not_set }}{{ end }}</span>
                             <small>{{ .lcl.retrieve_token_desc }}</small>
+                            <small class="st-aci-stay{{ if not .settings.ACI.StaySignedIn }} d-none{{ end }}" id="aciStayNote"><i class="fa-solid fa-rotate me-1"></i>{{ .lcl.aci_auto_signin_on }} <a href="#" id="aciForget">{{ .lcl.aci_forget }}</a></small>
                         </div>
                         <div class="st-row-r"><button type="button" class="st-btn light" data-bs-toggle="modal" data-bs-target="#aciLoginModal"><i class="fa-solid fa-right-to-bracket me-1"></i>{{ .lcl.retrieve_token }}</button></div>
                     </div>
@@ -579,6 +580,11 @@
                     <div class="mb-3">
                         <label for="aciPassword" class="form-label">{{ .lcl.title_password }}</label>
                         <input type="password" class="form-control" id="aciPassword" placeholder="{{ .lcl.title_aci_password_placeholder }}" required>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="aciStay" {{ if .settings.ACI.StaySignedIn }}checked{{ end }}>
+                        <label class="form-check-label" for="aciStay">{{ .lcl.aci_stay_signed_in }}</label>
+                        <div class="form-text">{{ .lcl.aci_stay_signed_in_help }}</div>
                     </div>
                     <button type="submit" class="btn btn-primary">{{ .lcl.title_login }}</button>
                 </form>
@@ -1212,18 +1218,31 @@
     document.addEventListener("DOMContentLoaded", () => {
         const aciLoginForm = document.getElementById("aciLoginForm");
 
+        document.getElementById("aciForget").addEventListener("click", (e) => {
+            e.preventDefault();
+            fetch("/aci/forget", { method: "POST" })
+                .then((r) => { if (!r.ok) throw new Error(); })
+                .then(() => {
+                    document.getElementById("aciStayNote").classList.add("d-none");
+                    document.getElementById("aciStay").checked = false;
+                    uiMessages.showToast("{{ .lcl.aci_forgotten }}", "success");
+                })
+                .catch(() => uiMessages.showToast(uiMessages.t('generic_error'), 'danger'));
+        });
+
         aciLoginForm.addEventListener("submit", (e) => {
             e.preventDefault();
 
             const email = document.getElementById("aciEmail").value;
             const password = document.getElementById("aciPassword").value;
+            const stay_signed_in = document.getElementById("aciStay").checked;
 
             fetch("/aci/login", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email, password, stay_signed_in }),
             })
                 .then((response) => response.json())
                 .then((data) => {
@@ -1231,6 +1250,8 @@
                         const modal = bootstrap.Modal.getInstance(document.getElementById("aciLoginModal"));
                         modal.hide();
                         uiMessages.showToast("{{ .lcl.aci_signed_in }}", "success");
+                        document.getElementById("aciStayNote").classList.toggle("d-none", !data.stay_signed_in);
+                        document.getElementById("aciPassword").value = "";
                         document.getElementById("tokenSetBadge").textContent = "{{ .lcl.token_set }}";
                         document.getElementById("tokenSetBadge").classList.remove("bg-danger");
                         document.getElementById("tokenSetBadge").classList.add("bg-success");

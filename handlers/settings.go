@@ -408,6 +408,8 @@ func GetSettings(db *sql.DB) types.SettingsData {
 			if value != "" {
 				settingsData.ACI.TokenSet = true
 			}
+		case "aci.password":
+			settingsData.ACI.StaySignedIn = value != ""
 		case "homeassistant.enabled":
 			settingsData.HomeAssistant.Enabled = value == "1"
 		case "homeassistant.url":

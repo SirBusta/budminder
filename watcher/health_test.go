@@ -110,3 +110,61 @@ func TestPollACI_CO2IsPlainPPM(t *testing.T) {
 	require.NoError(t, db.QueryRow(`SELECT value FROM sensor_data WHERE sensor_id = $1`, temp).Scan(&v))
 	assert.InDelta(t, 72.6, v, 0.001)
 }
+
+// fakeACIDevices answers devInfoListAll: refuses any token but "NEW".
+func fakeACIDevices(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("token") != "NEW" {
+			_, _ = w.Write([]byte(`{"code":403,"msg":"Login Expired Please login again!","data":[]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"code":200,"msg":"success","data":[{"devCode":"DEV","deviceInfo":{"sensors":[{"sensorType":0,"accessPort":1,"sensorData":7260}]}}]}`))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestStaySignedIn_RefusedTokenSignsInAgainAndPolls(t *testing.T) {
+	t.Parallel()
+	db := testutil.NewTestDB(t)
+	id := seedSensor(t, db, "acinfinity", "DEV", "ACI.1.0")
+	token := "OLD"
+	calls := 0
+	w := newTestWatcher(t, db)
+	w.ACIBaseURL = fakeACIDevices(t).URL
+	w.ACIToken = func() string { return token }
+	w.ACIRelogin = func(context.Context) (bool, error) { calls++; token = "NEW"; return true, nil }
+
+	require.NoError(t, w.pollACIStayingSignedIn(context.Background(), "OLD"))
+	assert.Equal(t, 1, calls)
+	assert.Equal(t, 1, countSensorData(t, db, id), "the reading arrives on the same poll")
+
+	// Expired again within the hour: no second sign-in, the refusal is reported.
+	token = "OLD"
+	err := w.pollACIStayingSignedIn(context.Background(), "OLD")
+	var pe *PollError
+	require.True(t, errors.As(err, &pe))
+	assert.Equal(t, "auth", pe.Kind)
+	assert.Equal(t, 1, calls, "at most one automatic sign-in an hour")
+}
+
+func TestStaySignedIn_FailedSignInIsReported(t *testing.T) {
+	t.Parallel()
+	w := newTestWatcher(t, testutil.NewTestDB(t))
+	w.ACIBaseURL = fakeACIDevices(t).URL
+	w.ACIRelogin = func(context.Context) (bool, error) { return true, errors.New("Incorrect account or password") }
+	err := w.pollACIStayingSignedIn(context.Background(), "OLD")
+	var pe *PollError
+	require.True(t, errors.As(err, &pe))
+	assert.Equal(t, "auth", pe.Kind)
+	assert.Contains(t, pe.Detail, "automatic sign-in failed: Incorrect account or password")
+
+	// Off (no password saved): just the refusal.
+	w2 := newTestWatcher(t, testutil.NewTestDB(t))
+	w2.ACIBaseURL = w.ACIBaseURL
+	w2.ACIRelogin = func(context.Context) (bool, error) { return false, nil }
+	err = w2.pollACIStayingSignedIn(context.Background(), "OLD")
+	require.True(t, errors.As(err, &pe))
+	assert.Contains(t, pe.Detail, "Login Expired")
+}

@@ -343,6 +343,7 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.DELETE("/lineage/:lineageID", handlers.DeleteLineageHandler)
 
 	r.POST("/aci/login", handlers.ACILoginHandler)
+	r.POST("/aci/forget", handlers.ACIForgetHandler)
 
 	r.POST("/zones", handlers.AddZoneHandler)
 	r.PUT("/zones/:id", handlers.UpdateZoneHandler)
