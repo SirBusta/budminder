@@ -1,6 +1,18 @@
 package utils
 
-import "math"
+import (
+	"math"
+	"strings"
+)
+
+// IsCelsius reports whether a sensor's temperature unit is Celsius, in any
+// spelling or case: "°C", "C", "c", "celsius", "Celsius", "degC", "℃".
+// Anything else (including "°F", "fahrenheit" and no unit) counts as
+// Fahrenheit, BudMinder's default.
+func IsCelsius(unit string) bool {
+	u := strings.ToLower(strings.TrimSpace(unit))
+	return u == "℃" || strings.Contains(u, "c")
+}
 
 // FahrenheitToCelsius converts a temperature from Fahrenheit to Celsius.
 func FahrenheitToCelsius(f float64) float64 {

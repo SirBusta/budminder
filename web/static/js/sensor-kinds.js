@@ -11,7 +11,7 @@ window.SensorKinds = (function () {
         const u = (s.unit || "").toLowerCase(), ty = s.type + " " + s.name;
         if (/battery/i.test(ty)) return "other";
         if (u === "lx" || /illuminance|\blux\b/i.test(ty)) return "light";
-        if (u.includes("°") || /temp/i.test(ty) && !u.includes("%")) return "temp";
+        if (u.includes("°") || /^(celsius|fahrenheit|degc|degf|℃|℉)$/.test(u) || /temp/i.test(ty) && !u.includes("%")) return "temp";
         if (u === "kpa" || /vpd/i.test(ty)) return "vpd";
         if (u === "ppm" || /co2|co₂/i.test(ty)) return "co2";
         if (/ms\/cm|\.ec$/i.test(u + " " + s.type)) return "ec";

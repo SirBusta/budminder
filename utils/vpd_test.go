@@ -65,3 +65,15 @@ func TestVPD(t *testing.T) {
 		})
 	}
 }
+
+func TestIsCelsius(t *testing.T) {
+	t.Parallel()
+	for unit, want := range map[string]bool{
+		"°C": true, "C": true, "c": true, "celsius": true, "Celsius": true, " CELSIUS ": true, "degC": true, "℃": true,
+		"°F": false, "F": false, "fahrenheit": false, "Fahrenheit": false, "℉": false, "": false,
+	} {
+		if got := IsCelsius(unit); got != want {
+			t.Errorf("IsCelsius(%q) = %v, want %v", unit, got, want)
+		}
+	}
+}
