@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"isley/handlers"
+	"isley/model"
 	"isley/tests/testutil"
 )
 
@@ -51,6 +52,12 @@ func TestBackup_RoundTrip(t *testing.T) {
 	// Notebook day note (migration 032) and a customized activity icon.
 	testutil.MustExec(t, db, `INSERT INTO plant_day_entry (plant_id, entry_date, note) VALUES ($1, '2026-10-05', 'Roundtrip note')`, plantID)
 	testutil.MustExec(t, db, `UPDATE activity SET icon = 'fa-bug', color = '#e11d48' WHERE name = 'Note'`)
+	// Sensor history: restore pauses the rolling-average trigger for the
+	// bulk load and must put it back.
+	sensorID := testutil.SeedSensor(t, db, "acinfinity", "RTDEV", "ACI.tempF")
+	for i := 1; i <= 20; i++ {
+		testutil.MustExec(t, db, `INSERT INTO sensor_data (sensor_id, value) VALUES ($1, $2)`, sensorID, float64(i))
+	}
 
 	c := server.NewClient(t)
 
@@ -137,6 +144,18 @@ func TestBackup_RoundTrip(t *testing.T) {
 	require.NoError(t, db.QueryRow(`SELECT icon, color FROM activity WHERE name = 'Note'`).Scan(&icon, &color))
 	assert.Equal(t, "fa-bug", icon, "activity icon should round-trip")
 	assert.Equal(t, "#e11d48", color, "activity color should round-trip")
+
+	require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM sensor_data WHERE sensor_id = $1`, sensorID).Scan(&n))
+	assert.Equal(t, 20, n, "sensor history should round-trip")
+	if model.IsSQLite() {
+		require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'update_rolling_avg'`).Scan(&n))
+		assert.Equal(t, 1, n, "the rolling-average trigger is back after the restore")
+	}
+	// And it works: a new reading averages the 16 before it (5..20 -> 12.5).
+	testutil.MustExec(t, db, `INSERT INTO sensor_data (sensor_id, value) VALUES ($1, 100)`, sensorID)
+	var avg float64
+	require.NoError(t, db.QueryRow(`SELECT avg_value FROM rolling_averages WHERE sensor_id = $1`, sensorID).Scan(&avg))
+	assert.InDelta(t, 12.5, avg, 0.001)
 }
 
 // ---------------------------------------------------------------------------

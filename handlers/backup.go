@@ -158,10 +158,10 @@ func GetRestoreStatus(c *gin.Context) {
 func runBackup(svc *BackupService, includeImages bool, sensorDays int) (string, error) {
 	fieldLogger := logger.Log.WithField("handler", "runBackup")
 
-	version := "unknown"
-	if v, err := os.ReadFile("VERSION"); err == nil {
-		version = strings.TrimSpace(string(v))
-	}
+	// The version built into the program (main sets Version from the
+	// embedded VERSION file). Reading a VERSION file from the working
+	// directory found nothing in Docker, so backups said "unknown".
+	version := Version
 
 	archive, manifest, err := BuildBackupArchive(svc.DB(), BuildArchiveOptions{
 		IncludeImages: includeImages,
@@ -787,6 +787,27 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 	}
 
 	if model.IsSQLite() {
+		// The rolling-average trigger runs on every inserted reading and
+		// reads that sensor's previous 16 rows through the sensor_id index —
+		// the index dropped just below, so each insert scanned the whole
+		// table (a 1.3M-reading restore took hours). Off during the bulk
+		// load, back afterwards (also on failure); the backup carries the
+		// rolling_averages rows, so nothing needs recomputing.
+		var trigSQL string
+		if err := db.QueryRow(`SELECT sql FROM sqlite_master WHERE type = 'trigger' AND name = 'update_rolling_avg'`).Scan(&trigSQL); err == nil && trigSQL != "" {
+			if _, err := exec.ExecContext(ctx, "DROP TRIGGER IF EXISTS update_rolling_avg"); err != nil {
+				fieldLogger.WithError(err).Warn("Could not pause the rolling-average trigger")
+			} else {
+				fieldLogger.Info("Paused the rolling-average trigger for bulk import")
+				defer func() {
+					if _, err := exec.ExecContext(ctx, trigSQL); err != nil {
+						fieldLogger.WithError(err).Error("Could not restore the rolling-average trigger")
+					} else {
+						fieldLogger.Info("Restored the rolling-average trigger")
+					}
+				}()
+			}
+		}
 		for _, idx := range sensorDataIndexes {
 			if _, err := exec.ExecContext(ctx, fmt.Sprintf("DROP INDEX IF EXISTS %s", idx.name)); err != nil {
 				fieldLogger.WithError(err).Warnf("Could not drop index %s", idx.name)
