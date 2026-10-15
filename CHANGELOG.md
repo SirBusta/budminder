@@ -38,6 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   showed "Connected" whenever a token was saved, even if it had stopped
   working weeks earlier.
 - Signing in to AC Infinity now confirms it worked.
+- "Are you sure?" questions use BudMinder's own dialog everywhere instead
+  of the browser's plain pop-up, with a red Delete button for deletions.
+- Updated libraries (security fixes in Go's crypto, image and text
+  packages; newer SQLite driver) and Go 1.27.1 for the Docker image.
 
 ### Fixed
 - AC Infinity CO2 readings were 100 times too low (770 ppm showed as 8).
@@ -56,6 +60,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   start and keeps it in its database, so logins survive restarts.
 - The GitHub Release description now shows the right version's notes.
 - The AC Infinity sign-in window's Password label was blank.
+- Delete plant on the Edit plant page opened an empty dialog whose button
+  did nothing, so the plant couldn't be deleted from there.
+- Several labels were blank (Settings: breeder name, Edit breeder, Edit
+  stream, Delete stream) and some messages showed internal names such as
+  "api_backup_deleted" instead of a sentence. A new automatic test checks
+  that every piece of text exists in all four languages.
+- VPD was wrong for a temperature sensor whose unit was spelled in lower
+  case ("celsius"): the temperature was read as Fahrenheit.
 
 ### Deprecated
 
