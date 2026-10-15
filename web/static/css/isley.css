@@ -3747,6 +3747,8 @@ a.sd-node:hover { border-color: var(--sd-acc); }
 .sd-node-wrap .sd-node { padding-right: 1.8rem; }
 .sd-node-sc { position: absolute; top: .45rem; right: .55rem; font-size: .68rem; color: var(--sd-faint); }
 .sd-node-sc:hover { color: var(--sd-acc); }
+.sd-node-ext-ic { position: absolute; top: .45rem; right: .55rem; font-size: .68rem; color: var(--sd-faint); }
+a.sd-node.ext { position: relative; padding-right: 1.8rem; }
 .sd-arr { color: var(--sd-faint); flex: none; }
 @media (max-width: 767.98px) {
     .sd-fam { flex-direction: column; align-items: stretch; }

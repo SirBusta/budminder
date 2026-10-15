@@ -47,6 +47,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - After the strain is saved, a "Back to Add Plant" button returns you with
     the strain chosen and everything you'd filled in still there.
   - Edit plant works the same way.
+- **Family diagram on a strain's page:** a parent that isn't in your strains
+  now opens a StrainCompass search for it in a new tab, instead of an old
+  "add a strain" page. Parents you have still open your own strain page, now
+  with a small StrainCompass link on every strain (it used to appear only on
+  strains imported from StrainCompass). With StrainCompass lookups turned off,
+  those parents are shown as plain names.
 - **Honest connection status for AC Infinity, Ecowitt and Home Assistant.**
   Manage sensors, Settings and the Today page now show what's really
   happening: connected, sign-in expired, not responding, or no new readings

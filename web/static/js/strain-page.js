@@ -25,16 +25,24 @@
     const fam = document.getElementById("sdFamily");
     let lineage = [], kids = [], showAll = false;
 
+    // A parent you have opens your strain page (plus a small StrainCompass
+    // icon); one you don't opens a StrainCompass search for its name in a new
+    // tab. With StrainCompass lookups off in Settings it's just the name.
     function node(n, small, extra) {
         const name = esc(n.parent_name);
+        const sub = small ? `<small>${esc(small)}</small>` : "";
+        const scURL = "https://straincompass.com/en/strains?q=" + encodeURIComponent(n.parent_name);
+        const scTitle = esc(fill(D.searchSc, { name: n.parent_name }));
         let link;
         if (n.parent_strain_id) {
-            link = `<a class="sd-node lib" href="/strain/${n.parent_strain_id}">${name}${small ? `<small>${esc(small)}</small>` : ""}</a>`;
+            link = `<a class="sd-node lib" href="/strain/${n.parent_strain_id}">${name}${sub}</a>`;
+            if (D.straincompass) {
+                link = `<div class="sd-node-wrap">${link}<a class="sd-node-sc" href="${scURL}" target="_blank" rel="noopener noreferrer" title="${scTitle}" aria-label="${scTitle}"><i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>`;
+            }
+        } else if (D.straincompass) {
+            link = `<a class="sd-node ext" href="${scURL}" target="_blank" rel="noopener noreferrer" title="${scTitle}">${name}${sub}<i class="fa-solid fa-arrow-up-right-from-square sd-node-ext-ic" aria-hidden="true"></i></a>`;
         } else {
-            link = `<a class="sd-node ext" href="/strain/new?name=${encodeURIComponent(n.parent_name)}" title="${esc(fill(D.addAs, { name: n.parent_name }))}">${name}${small ? `<small>${esc(small)}</small>` : ""}</a>`;
-        }
-        if (D.straincompass) {
-            link = `<div class="sd-node-wrap">${link}<a class="sd-node-sc" href="https://straincompass.com/en/strains?q=${encodeURIComponent(n.parent_name)}" target="_blank" rel="noopener noreferrer" title="${esc(fill(D.searchSc, { name: n.parent_name }))}" aria-label="${esc(fill(D.searchSc, { name: n.parent_name }))}"><i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>`;
+            link = `<div class="sd-node ext">${name}${sub}</div>`;
         }
         return link + (extra || "");
     }

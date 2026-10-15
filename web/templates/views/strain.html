@@ -9,10 +9,10 @@
      in two even columns. -->
 <div class="container-xxl sd" id="sdPage"
      data-strain-id="{{ .strain.ID }}" data-name="{{ .strain.Name }}" data-breeder="{{ .strain.Breeder }}"
-     data-straincompass="{{ if .strain.StraincompassSlug }}1{{ end }}" data-has-note="{{ if .strain.StraincompassLineageNote }}1{{ end }}"
-     data-add-as="{{ .lcl.lineage_add_as_strain }}" data-search-sc="{{ .lcl.lineage_search_straincompass }}"
+     data-straincompass="{{ if .straincompassEnabled }}1{{ end }}" data-has-note="{{ if .strain.StraincompassLineageNote }}1{{ end }}"
+     data-search-sc="{{ .lcl.lineage_search_straincompass }}"
      data-none="{{ .lcl.lineage_none }}" data-parent="{{ .lcl.sd_parent }}" data-parent-mine="{{ .lcl.sd_parent_mine }}"
-     data-via="{{ .lcl.sd_via }}" data-bred-from="{{ .lcl.sd_bred_from }}" data-family-note="{{ .lcl.sd_family_note }}"
+     data-via="{{ .lcl.sd_via }}" data-bred-from="{{ .lcl.sd_bred_from }}" data-family-note="{{ if .straincompassEnabled }}{{ .lcl.sd_family_note }}{{ else }}{{ .lcl.sd_family_note_off }}{{ end }}"
      data-more="{{ .lcl.sd_more_gens }}" data-fewer="{{ .lcl.sd_fewer_gens }}"
      data-wanted-add="{{ .lcl.wanted_add }}" data-wanted-remove="{{ .lcl.wanted_remove }}" data-failed="{{ .lcl.sd_failed }}">
     <nav aria-label="breadcrumb">
