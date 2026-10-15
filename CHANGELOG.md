@@ -30,7 +30,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+### Changed
+- **Honest connection status for AC Infinity, Ecowitt and Home Assistant.**
+  Manage sensors, Settings and the Today page now show what's really
+  happening: connected, sign-in expired, not responding, or no new readings
+  since a given time, with the service's own message. Before, AC Infinity
+  showed "Connected" whenever a token was saved, even if it had stopped
+  working weeks earlier.
+- Signing in to AC Infinity now confirms it worked.
+
 ### Fixed
+- AC Infinity refusing the saved sign-in was ignored, so readings silently
+  stopped. It's now logged with AC Infinity's reason and shown as
+  "Sign-in expired".
+- Restoring a backup with a long sensor history is much faster (a backup
+  with 1.3 million readings went from hours to under a minute).
+- Backups made in Docker recorded their version as "unknown".
+- The chart hint on the Environment page still mentioned zooming, which was
+  removed.
 - Everyone was logged out whenever BudMinder restarted unless
   `BUDMINDER_SESSION_SECRET` was set. BudMinder now makes its own key on first
   start and keeps it in its database, so logins survive restarts.
