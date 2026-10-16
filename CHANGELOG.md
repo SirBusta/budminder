@@ -47,6 +47,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - After the strain is saved, a "Back to Add Plant" button returns you with
     the strain chosen and everything you'd filled in still there.
   - Edit plant works the same way.
+- In the photo viewer and the Decorate window, Delete photo (and Decorate)
+  moved below the photo, away from the close button, so it's hard to hit
+  by mistake on a phone.
+- In a plant's journal, the photo icon is teal instead of gray, so it no
+  longer looks like the Note icon, especially in dark mode.
 - **Deleting a breeder is safe now.** It used to delete every strain and plant
   from that breeder as well. Now only a breeder none of your strains use can
   be deleted. Settings → Grow setup shows how many strains use each breeder,
@@ -95,6 +100,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that every piece of text exists in all four languages.
 - VPD was wrong for a temperature sensor whose unit was spelled in lower
   case ("celsius"): the temperature was read as Fahrenheit.
+- Decorate's custom text boxes sat greyed out, and nothing said they only
+  work after choosing "Custom" in the menu above. They now appear only when
+  "Custom" is chosen, ready to type in.
 - Choosing a strain or tent and then typing something else over it kept the
   earlier choice, so a plant could be saved with a strain other than the one
   shown. Typing an exact strain name without clicking it in the list now

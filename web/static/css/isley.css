@@ -2660,8 +2660,9 @@ th, td {
 .pp-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 6px 8px 1rem 6px; margin: -6px -8px 0 -6px; }
 .pp-ico { --c: #888; display: inline-grid; place-items: center; position: relative; width: 24px; height: 24px; border-radius: 7px; background: color-mix(in srgb, var(--c) 15%, transparent); color: var(--c); font-size: .72rem; border: 0; padding: 0; flex: none; }
 .pp-ico .cnt { position: absolute; top: -6px; right: -6px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 99px; background: #e5484d; color: #fff; font-size: .6rem; font-weight: 700; line-height: 15px; text-align: center; box-shadow: 0 0 0 2px var(--pp-card); }
-.pp-ico.cam { --c: #5b6472; cursor: pointer; }
-[data-bs-theme="dark"] .pp-ico.cam { --c: #a8b0bb; }
+/* Photos: teal (the photo panel's color), so it can't be mistaken for the gray Note icon. */
+.pp-ico.cam { --c: #0d9488; cursor: pointer; }
+[data-bs-theme="dark"] .pp-ico.cam { --c: #2dd4bf; }
 .pp-row { --sc: #94a3b8; display: grid; grid-template-columns: 78px auto minmax(0, 1fr) auto; gap: .7rem; align-items: start; padding: .55rem .8rem; cursor: pointer; position: relative; color: var(--pp-ink); }
 .pp-row.all { grid-template-columns: 70px 185px auto minmax(0, 1fr) auto; }
 .pp-row .dd { font-weight: 800; font-size: .95rem; line-height: 1.1; }
@@ -2731,6 +2732,8 @@ th, td {
 .pp-vnav { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .12); color: #fff; }
 .pp-vnav.prev { left: 1rem; }
 .pp-vnav.next { right: 1rem; }
+/* Decorate / Delete under the photo, away from the close button at the top. */
+.pp-vacts { display: flex; gap: .6rem; justify-content: center; padding: .6rem .75rem 0; }
 .pp-vstrip { display: flex; gap: .4rem; justify-content: center; padding: .75rem; overflow-x: auto; }
 .pp-vstrip img { height: 54px; border-radius: 4px; opacity: .5; cursor: pointer; }
 .pp-vstrip img.active { opacity: 1; outline: 2px solid #2dd4bf; }

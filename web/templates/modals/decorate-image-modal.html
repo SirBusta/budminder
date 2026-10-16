@@ -43,7 +43,7 @@
                             <select id="text1Dropdown" class="form-select">
 
                             </select>
-                            <input type="text" id="text1" class="form-control mt-2" placeholder="{{ .lcl.custom_text }}" disabled>
+                            <input type="text" id="text1" class="form-control mt-2 d-none" placeholder="{{ .lcl.custom_text }}" disabled>
                             <label for="text1Corner" class="mt-2">{{ .lcl.title_placement }}</label>
                             <select id="text1Corner" class="form-select">
                                 <option selected value="top-left">{{ .lcl.top_left }}</option>
@@ -57,7 +57,7 @@
                             <select id="text2Dropdown" class="form-select">
 
                             </select>
-                            <input type="text" id="text2" class="form-control mt-2" placeholder="Custom text" disabled>
+                            <input type="text" id="text2" class="form-control mt-2 d-none" placeholder="{{ .lcl.custom_text }}" disabled>
                             <label for="text2Corner" class="mt-2">{{ .lcl.title_placement }}</label>
                             <select id="text2Corner" class="form-select">
                                 <option value="top-left">{{ .lcl.top_left }}</option>
@@ -84,10 +84,12 @@
                     <button id="nextImage" class="btn btn-secondary">{{ .lcl.title_next }}</button>
                 </div>
                 {{ if .loggedIn }}
-                <button class="btn btn-danger btn-sm btn-icon-action position-absolute top-0 end-0 m-1"
-                        id="btnDeleteImage">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
+                <!-- At the bottom, well away from the close button at the top. -->
+                <div class="text-center mt-4">
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="btnDeleteImage">
+                        <i class="fa-solid fa-trash me-1"></i>{{ .lcl.pp_delete_photo }}
+                    </button>
+                </div>
                 {{ end }}
             </div>
         </div>

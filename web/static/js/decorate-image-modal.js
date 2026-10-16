@@ -46,6 +46,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         text1dropdown.value = strainName;
         text2dropdown.value = "Day " + diffDays;
+        // Hide the custom text boxes again for the new photo.
+        text1dropdown.dispatchEvent(new Event("change"));
+        text2dropdown.dispatchEvent(new Event("change"));
 
         // Update button state
         prevButton.disabled = index === 0;
@@ -178,11 +181,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Enable custom input fields based on dropdown selection
+    // The custom text box only shows when "Custom" is chosen above it (it used
+    // to sit there greyed out, with nothing saying how to turn it on).
     [text1Dropdown, text2Dropdown].forEach((dropdown, index) => {
-        dropdown.addEventListener("change", () => {
+        dropdown.addEventListener("change", (e) => {
             const input = index === 0 ? text1Input : text2Input;
-            input.disabled = dropdown.value !== "Custom";
+            const custom = dropdown.value === "Custom";
+            input.disabled = !custom;
+            input.classList.toggle("d-none", !custom);
+            if (custom && e.isTrusted) input.focus();
         });
     });
 

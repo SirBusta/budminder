@@ -311,7 +311,7 @@
     // =====================================================================
     // Notebook (this plant)
     // =====================================================================
-    const ALLTYPES = () => [...TYPE_ORDER.map(t => [String(t.id), t]), ["photos", { name: tr("pp_has_photos"), icon: "fa-camera", color: "#5b6472" }]];
+    const ALLTYPES = () => [...TYPE_ORDER.map(t => [String(t.id), t]), ["photos", { name: tr("pp_has_photos"), icon: "fa-camera", color: "#0d9488" }]];
     function matchesTypes(day) {
         if (!filter.types.size) return true;
         const has = k => k === "photos" ? day.photos.length > 0 : day.types.some(t => String(t.activity_id) === k);
@@ -441,11 +441,11 @@
         if (!list.length) return;
         const el = modal("ppViewer", `<div class="modal-dialog modal-fullscreen"><div class="modal-content">
             <div class="pp-vtop"><span id="ppVCap"></span><span class="acts">
-                ${LOGGED_IN ? `<button class="btn btn-sm btn-outline-light" id="ppVDecorate"><i class="fa-solid fa-wand-magic-sparkles me-1"></i>${esc(tr("pp_decorate"))}</button>
-                <button class="btn btn-sm btn-outline-danger" id="ppVDelete"><i class="fa-solid fa-trash me-1"></i>${esc(tr("pp_delete_photo"))}</button>` : ""}
                 <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="modal" aria-label="${esc(tr("pp_close"))}"></button></span></div>
             <div class="pp-vbody"><button class="pp-vnav prev" id="ppVPrev" aria-label="${esc(tr("pp_previous"))}"><i class="fa-solid fa-chevron-left"></i></button>
                 <img id="ppVImg" alt=""><button class="pp-vnav next" id="ppVNext" aria-label="${esc(tr("pp_next"))}"><i class="fa-solid fa-chevron-right"></i></button></div>
+            ${LOGGED_IN ? `<div class="pp-vacts"><button class="btn btn-sm btn-outline-light" id="ppVDecorate"><i class="fa-solid fa-wand-magic-sparkles me-1"></i>${esc(tr("pp_decorate"))}</button>
+                <button class="btn btn-sm btn-outline-danger" id="ppVDelete"><i class="fa-solid fa-trash me-1"></i>${esc(tr("pp_delete_photo"))}</button></div>` : ""}
             <div class="pp-vstrip" id="ppVStrip"></div></div></div>`, "pp-viewer");
         if (!el.dataset.wired) {
             el.dataset.wired = "1";
