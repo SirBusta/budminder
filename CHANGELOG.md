@@ -23,6 +23,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Deprecated
+
+### Removed
+
+### Security
+
+## [1.0.1] - 2026-10-15
+
+### Added
 - **AC Infinity "Stay signed in".** AC Infinity logs BudMinder out from time
   to time ("Login Expired"). With this ticked in the AC Infinity sign-in
   window, BudMinder keeps your AC Infinity password, encrypted, and signs in
@@ -47,13 +61,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - After the strain is saved, a "Back to Add Plant" button returns you with
     the strain chosen and everything you'd filled in still there.
   - Edit plant works the same way.
-- In the photo viewer and the Decorate window, Delete photo (and Decorate)
-  moved below the photo, away from the close button, so it's hard to hit
-  by mistake on a phone.
-- Settings → Appearance no longer shows the empty "Colors" card; it comes
-  back when color schemes are built.
-- In a plant's journal, the photo icon is teal instead of gray, so it no
-  longer looks like the Note icon, especially in dark mode.
+- **Honest connection status for AC Infinity, Ecowitt and Home Assistant.**
+  Manage sensors, Settings and the Today page now show what's really
+  happening: connected, sign-in expired, not responding, or no new readings
+  since a given time, with the service's own message. Before, AC Infinity
+  showed "Connected" whenever a token was saved, even if it had stopped
+  working weeks earlier.
 - **Deleting a breeder is safe now.** It used to delete every strain and plant
   from that breeder as well. Now only a breeder none of your strains use can
   be deleted. Settings → Grow setup shows how many strains use each breeder,
@@ -65,17 +78,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with a small StrainCompass link on every strain (it used to appear only on
   strains imported from StrainCompass). With StrainCompass lookups turned off,
   those parents are shown as plain names.
-- **Honest connection status for AC Infinity, Ecowitt and Home Assistant.**
-  Manage sensors, Settings and the Today page now show what's really
-  happening: connected, sign-in expired, not responding, or no new readings
-  since a given time, with the service's own message. Before, AC Infinity
-  showed "Connected" whenever a token was saved, even if it had stopped
-  working weeks earlier.
 - Signing in to AC Infinity now confirms it worked.
 - "Are you sure?" questions use BudMinder's own dialog everywhere instead
   of the browser's plain pop-up, with a red Delete button for deletions.
-- Updated libraries (security fixes in Go's crypto, image and text
-  packages; newer SQLite driver) and Go 1.27.1 for the Docker image.
+- In the photo viewer and the Decorate window, Delete photo (and Decorate)
+  moved below the photo, away from the close button, so it's hard to hit
+  by mistake on a phone.
+- In a plant's journal, the photo icon is teal instead of gray, so it no
+  longer looks like the Note icon, especially in dark mode.
+- Settings → Appearance no longer shows the empty "Colors" card; it comes
+  back when color schemes are built.
 
 ### Fixed
 - AC Infinity CO2 readings were 100 times too low (770 ppm showed as 8).
@@ -110,11 +122,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shown. Typing an exact strain name without clicking it in the list now
   selects it.
 
-### Deprecated
-
-### Removed
-
 ### Security
+- Updated libraries: security fixes in Go's crypto, image and text
+  packages, a newer SQLite driver, and Go 1.27.1 for the Docker image.
 
 ## [1.0.0] - 2026-10-14
 
