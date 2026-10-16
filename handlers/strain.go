@@ -185,57 +185,55 @@ func UpdateBreederHandler(c *gin.Context) {
 
 func DeleteBreederHandler(c *gin.Context) {
 	fieldLogger := logger.Log.WithField("func", "DeleteBreederHandler")
-	id := c.Param("id")
-
-	// Delete breeder from database
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		apiBadRequest(c, "api_invalid_breeder_id")
+		return
+	}
 	db := DBFromContext(c)
 
-	// Delete any plants associated with this breeder
-	rows, err := db.Query("SELECT p.id FROM plant p LEFT OUTER JOIN strain s on s.id = p.strain_id WHERE s.breeder_id = $1", id)
-	if err != nil {
-		if err.Error() != "sql: no rows in result set" {
-
-		} else {
-			fieldLogger.WithError(err).Error("Failed to delete plants")
-			return
-		}
-	}
-	defer rows.Close()
-
-	plantList := []int{}
-	for rows.Next() {
-		var plantId int
-		err = rows.Scan(&plantId)
-		if err != nil {
-			fieldLogger.WithError(err).Error("Failed to delete plant")
-			continue
-		}
-		plantList = append(plantList, plantId)
+	// Only a breeder no strain uses can be deleted. This used to delete every
+	// strain and plant from the breeder too, which was an easy way to lose a
+	// grow history by accident; renaming covers fixing a breeder's name.
+	if n := BreederStrainCount(db, id); n > 0 {
+		c.JSON(http.StatusConflict, gin.H{
+			"error":        strings.ReplaceAll(T(c, "api_breeder_in_use"), "{count}", strconv.Itoa(n)),
+			"strain_count": n,
+		})
+		return
 	}
 
-	for _, plantId := range plantList {
-		DeletePlantById(db, strconv.Itoa(plantId))
-	}
-
-	// Delete any strains associated with this breeder
-	_, err = db.Exec("DELETE FROM strain WHERE breeder_id = $1", id)
-	if err != nil {
-		fieldLogger.WithError(err).Error("Failed to delete strains")
-		apiInternalError(c, "api_failed_to_delete_strains")
-	}
-
-	// Delete breeder from database
-	_, err = db.Exec("DELETE FROM breeder WHERE id = $1", id)
+	res, err := db.Exec("DELETE FROM breeder WHERE id = $1", id)
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to delete breeder")
 		apiInternalError(c, "api_failed_to_delete_breeder")
 		return
 	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		apiNotFound(c, "api_breeder_not_found")
+		return
+	}
 
-	//Reload Config
 	ConfigStoreFromContext(c).SetBreeders(GetBreeders(db))
-
 	apiOK(c, "api_breeder_deleted")
+}
+
+// BreederStrainCounts maps each breeder's id to how many strains use it
+// (breeders no strain uses are left out).
+func BreederStrainCounts(db *sql.DB) map[int]int {
+	counts := map[int]int{}
+	rows, err := db.Query(`SELECT breeder_id, COUNT(*) FROM strain WHERE breeder_id IS NOT NULL GROUP BY breeder_id`)
+	if err != nil {
+		return counts
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id, n int
+		if rows.Scan(&id, &n) == nil {
+			counts[id] = n
+		}
+	}
+	return counts
 }
 
 // ---------------------------------------------------------------------------
@@ -439,14 +437,14 @@ func AddStrainHandler(c *gin.Context) {
 	fieldLogger := logger.Log.WithField("func", "AddStrainHandler")
 	// Parse the incoming JSON request
 	var req struct {
-		Name             string `json:"name"`
-		BreederID        *int   `json:"breeder_id"` // Nullable for new breeders
-		NewBreeder       string `json:"new_breeder"`
-		Indica           int    `json:"indica"`
-		Sativa           int    `json:"sativa"`
-		Autoflower       bool   `json:"autoflower"`
-		SeedCount        int    `json:"seed_count"`
-		Description      string `json:"description"`
+		Name             string             `json:"name"`
+		BreederID        *int               `json:"breeder_id"` // Nullable for new breeders
+		NewBreeder       string             `json:"new_breeder"`
+		Indica           int                `json:"indica"`
+		Sativa           int                `json:"sativa"`
+		Autoflower       bool               `json:"autoflower"`
+		SeedCount        int                `json:"seed_count"`
+		Description      string             `json:"description"`
 		ShortDescription string             `json:"short_desc"`
 		CycleTime        int                `json:"cycle_time"`
 		CycleTimeMin     int                `json:"cycle_time_min"`

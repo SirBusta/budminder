@@ -313,7 +313,8 @@
                         <button type="button" class="st-btn" data-bs-toggle="modal" data-bs-target="#addBreederModal"><i class="fa-solid fa-plus me-1"></i>{{ .lcl.add_breeder }}</button></div>
                     <div class="st-chips">
                         {{ range .breeders }}
-                        <button type="button" class="st-chip clickable-row breeder-row" data-breeder='{{ json . }}'>{{ .Name }}<i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+                        {{ $n := index $.breederStrainCounts .ID }}
+                        <button type="button" class="st-chip clickable-row breeder-row" data-breeder='{{ json . }}' data-strains="{{ $n }}">{{ .Name }}{{ if $n }} <small class="text-muted">{{ $n }}</small>{{ end }}<i class="fa-solid fa-pen" aria-hidden="true"></i></button>
                         {{ end }}
                     </div>
                 </div>
@@ -917,6 +918,7 @@
                         <label for="editBreederName" class="form-label">{{ .lcl.breeder_name }}</label>
                         <input type="text" class="form-control" id="editBreederName" step="any" required>
                     </div>
+                    <div class="alert alert-secondary small d-none" id="breederInUse" role="note"></div>
                     <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> {{ .lcl.save_changes }}</button>
                     <button type="button" class="btn btn-danger" id="deleteBreeder"><i class="fa-solid fa-trash"></i> {{ .lcl.delete_breeder }}</button>
                 </form>
@@ -1678,6 +1680,13 @@
                 document.getElementById("breederId").value = breederData.id;
                 document.getElementById("editBreederName").value = breederData.name;
 
+                // A breeder your strains use can only be renamed, not deleted.
+                const inUse = parseInt(row.dataset.strains, 10) || 0;
+                const note = document.getElementById("breederInUse");
+                note.classList.toggle("d-none", !inUse);
+                note.textContent = inUse ? uiMessages.t("breeder_in_use_note").split("{name}").join(breederData.name).split("{count}").join(inUse) : "";
+                deleteBreederButton.disabled = !!inUse;
+
                 editBreederModal.show();
             });
         });
@@ -1705,9 +1714,12 @@
             uiMessages.showConfirm(uiMessages.t('delete_breeder_confirm'), { danger: true }).then(confirmed => {
                 if (!confirmed) return;
                 fetch(`/breeders/${breederId}`, { method: "DELETE" })
-                    .then(response => response.json())
-                    .then(() => location.reload())
-                    .catch(err => uiMessages.showToast(uiMessages.t('failed_to_delete_breeder'), 'danger'));
+                    .then(async response => {
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) throw new Error(data.error || uiMessages.t('failed_to_delete_breeder'));
+                        location.reload();
+                    })
+                    .catch(err => uiMessages.showToast(err.message || uiMessages.t('failed_to_delete_breeder'), 'danger'));
             });
         });
     });

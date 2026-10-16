@@ -546,20 +546,20 @@ func TestBreeder_UpdateRenames(t *testing.T) {
 	assert.Equal(t, "New Name", name)
 }
 
-func TestBreeder_DeleteCascadesStrainsAndPlants(t *testing.T) {
+func TestBreeder_DeleteRefusedWhileStrainsUseIt(t *testing.T) {
 	t.Parallel()
 
 	db := testutil.NewTestDB(t)
 	server := testutil.NewTestServer(t, db)
 
-	// breeder → strain → plant chain. DeleteBreederHandler removes
-	// associated plants, then strains, then the breeder itself.
-	testutil.MustExec(t, db, `INSERT INTO breeder (id, name) VALUES (1, 'Doomed')`)
+	// breeder → strain → plant. Deleting the breeder used to delete the
+	// strain and plant too; now it's refused and nothing is touched.
+	testutil.MustExec(t, db, `INSERT INTO breeder (id, name) VALUES (1, 'Kept')`)
 	testutil.MustExec(t, db, `INSERT INTO strain (id, name, breeder_id, sativa, indica, autoflower, description, seed_count)
-	                    VALUES (1, 'Doomed Strain', 1, 50, 50, 0, '', 0)`)
+	                    VALUES (1, 'Kept Strain', 1, 50, 50, 0, '', 0)`)
 	testutil.MustExec(t, db, `INSERT INTO zones (id, name) VALUES (1, 'Z')`)
 	testutil.MustExec(t, db, `INSERT INTO plant (name, zone_id, strain_id, description, clone, start_dt, sensors)
-	                    VALUES ('Doomed Plant', 1, 1, '', 0, '2026-01-01', '[]')`)
+	                    VALUES ('Kept Plant', 1, 1, '', 0, '2026-01-01', '[]')`)
 
 	const plaintext = "test-breeder-key"
 	testutil.SeedAPIKey(t, db, plaintext)
@@ -567,11 +567,40 @@ func TestBreeder_DeleteCascadesStrainsAndPlants(t *testing.T) {
 	c := server.NewClient(t)
 	resp := c.APIDelete(t, "/breeders/1", plaintext)
 	defer resp.Body.Close()
-	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusConflict, resp.StatusCode)
+	var body struct {
+		Error       string `json:"error"`
+		StrainCount int    `json:"strain_count"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+	assert.Equal(t, 1, body.StrainCount)
+	assert.Contains(t, body.Error, "1", "the message says how many strains use it")
 
 	for _, table := range []string{"breeder", "strain", "plant"} {
 		var n int
 		require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM `+table).Scan(&n))
-		assert.Zerof(t, n, "%s should be empty after breeder delete cascade", table)
+		assert.Equalf(t, 1, n, "%s must be untouched when the delete is refused", table)
 	}
+}
+
+func TestBreeder_DeleteUnused(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db)
+	testutil.MustExec(t, db, `INSERT INTO breeder (id, name) VALUES (1, 'Unused')`)
+	const plaintext = "test-breeder-key"
+	testutil.SeedAPIKey(t, db, plaintext)
+
+	c := server.NewClient(t)
+	resp := c.APIDelete(t, "/breeders/1", plaintext)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	var n int
+	require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM breeder`).Scan(&n))
+	assert.Zero(t, n)
+
+	resp2 := c.APIDelete(t, "/breeders/1", plaintext)
+	defer resp2.Body.Close()
+	assert.Equal(t, http.StatusNotFound, resp2.StatusCode, "already gone")
 }

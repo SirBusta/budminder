@@ -47,6 +47,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - After the strain is saved, a "Back to Add Plant" button returns you with
     the strain chosen and everything you'd filled in still there.
   - Edit plant works the same way.
+- **Deleting a breeder is safe now.** It used to delete every strain and plant
+  from that breeder as well. Now only a breeder none of your strains use can
+  be deleted. Settings → Grow setup shows how many strains use each breeder,
+  and for one in use, Edit Breeder explains why Delete is off and that it can
+  still be renamed.
 - **Family diagram on a strain's page:** a parent that isn't in your strains
   now opens a StrainCompass search for it in a new tab, instead of an old
   "add a strain" page. Parents you have still open your own strain page, now
