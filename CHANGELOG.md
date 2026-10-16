@@ -50,6 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - In the photo viewer and the Decorate window, Delete photo (and Decorate)
   moved below the photo, away from the close button, so it's hard to hit
   by mistake on a phone.
+- Settings → Appearance no longer shows the empty "Colors" card; it comes
+  back when color schemes are built.
 - In a plant's journal, the photo icon is teal instead of gray, so it no
   longer looks like the Note icon, especially in dark mode.
 - **Deleting a breeder is safe now.** It used to delete every strain and plant
