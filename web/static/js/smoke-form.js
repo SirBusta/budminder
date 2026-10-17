@@ -73,12 +73,13 @@
             ${on.filter(t => t.custom).map(t => `<button type="button" data-custom="${esc(t.name)}" class="on ${cls}" title="${esc(tr("sr_remove"))}">${esc(t.name)} <i class="fa-solid fa-xmark ms-1"></i></button>`).join("")}
             <input class="otherin" data-other="${kind}" placeholder="${esc(tr("sr_other"))}: ${esc(tr("sr_other_ph"))}" aria-label="${esc(tr("sr_other"))}"></div>`;
     }
-    // 1 → 10: red, amber, green (the picked number fills with its color).
-    const SCALE = ["#b91c1c", "#dc2626", "#ea580c", "#d97706", "#ca8a04", "#65a30d", "#4d7c0f", "#16a34a", "#15803d", "#166534"];
+    // 1 → 10: light green to dark green. The picked number and the ones
+    // below it fill with their own shade.
+    const SCALE = ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#22c55e", "#16a34a", "#15803d", "#166534", "#14532d", "#052e16"];
     function ten(k) {
         const v = S.scores[k];
         let h = "";
-        for (let i = 1; i <= 10; i++) h += `<button type="button" data-score="${k}" data-v="${i}" style="--n:${SCALE[i - 1]}" class="${v === i ? "on" : v && i < v ? "in" : ""}" aria-pressed="${v === i}">${i}</button>`;
+        for (let i = 1; i <= 10; i++) h += `<button type="button" data-score="${k}" data-v="${i}" style="--n:${SCALE[i - 1]};--nt:${i <= 5 ? "#14532d" : "#fff"}" class="${v === i ? "on" : v && i < v ? "in" : ""}" aria-pressed="${v === i}">${i}</button>`;
         return `<div class="sr-ten" role="group" aria-label="${esc(tr("sr_" + k))}">${h}</div><div class="wt">×${W[k]}</div>`;
     }
     function overall() {
