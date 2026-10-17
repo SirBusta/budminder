@@ -24,25 +24,25 @@
 
 ## Why BudMinder?
 
-**Your grow, on your hardware.** BudMinder runs on your own computer or home server. There's no account to create, no company storing your grow records, and nobody treating you and your data as the product. What you record stays with you.
+**Your grow, on your hardware.** BudMinder is a self-hosted grow journal designed to run entirely on your own machine or home server. No cloud accounts, no corporate tracking, and no treating your cultivation logs as a commodity. What you record stays on your own server.
 
 **Free and open source.** BudMinder is free, with no subscriptions or paid tiers. Its code is public under the MIT license, so anyone can check exactly what it does with your data, suggest improvements, or build on it.
 
-**See what your work does.** Each day's notes, watering and feeding sit right next to that day's photos. Scroll back through a grow and you can see how each change showed up in the plants: when you topped, when you flipped, when the frost came in.
+**Connect actions to results.** Each day's notes, watering and feeding sit right next to that day's photos. Scroll back through a grow and you can see how each change showed up in the plants: when you topped, when you flipped, when the frost came in.
 
-**Remember how it turned out.** Write a smoke report for each harvest, or for flower you bought. Score the bud, taste, smell and effects, and pick what you noticed from lists. BudMinder fills in the grow details for you: harvest date, days to harvest, dry and cure time, the tent, lights and medium. Months later you can see which grows were worth repeating, and how much a longer cure helped.
+**Close the loop from seed to smoke.** Write a smoke report for each harvest or dispensary pickup. Score bud quality, aroma, flavor and effects. BudMinder auto-fills the dry and cure times so months later you can see which runs were worth repeating and whether an extended cure paid off.
 
-**Don't type in every strain.** Search large public strain databases and add a strain in one click. That brings in its breeder, parents, THC and CBD, effects, terpenes and flowering time. You only fill in what's yours: how many seeds you have and where you keep them.
+**Instant strain lookups.** Search large public strain databases and add a strain in one click. That brings in its breeder, parents, THC and CBD, effects, terpenes and flowering time. You only fill in what's yours: how many seeds you have and where you keep them.
 
-**Use the sensors you already have.** BudMinder reads AC Infinity controllers and Ecowitt gateways directly, and any sensor Home Assistant knows about: Govee, SwitchBot, Inkbird, Zigbee, ESPHome and more. If Home Assistant can see it, BudMinder can chart it next to your plants.
+**Use the hardware you already own.** BudMinder works with AC Infinity controllers and Ecowitt gateways, plus any sensor tracked by Home Assistant: Govee, SwitchBot, Inkbird, Zigbee, ESPHome and more. If Home Assistant sees it, BudMinder can plot it alongside your plant logs.
 
-**Everything in one place.** Sensor readings, a tent camera, your seed stock, harvest weights and every grow you've done, instead of a vendor app, a spreadsheet and a notepad.
+**Everything in one place.** Live sensor readings, tent cameras, harvest yields and a seed vault sit alongside your daily grow journal. BudMinder replaces the fragmented mess of vendor apps, spreadsheets and paper notes with a single app built around your grow.
 
-**Easy to back up, easy to move.** Make a backup from Settings with one click: your plants, notebook, strains and, if you like, your photos, in a single file you keep. Restore it to bring everything back, or to move BudMinder to a new computer. A backup restores on either kind of database, so you can also switch from SQLite to PostgreSQL later without losing anything. You can also export your journal notes as a CSV or Excel file, with PDF export coming soon.
+**Easy to back up, simple to move.** Create a snapshot from Settings in one click, packaging your plants, notes, strains, smoke reports and photos into a single portable file. Restoring brings everything back or moves your installation to a new machine. You can also export your journal entries to CSV or Excel, with PDF export coming soon.
 
-**Share it if you want to.** Turn on guest view and friends can browse your plants, strains and photos without logging in or being able to change anything. Leave it off and BudMinder stays private behind your login.
+**Optional read-only guest view.** Want to show off your grow without compromising your records? Turn on guest view to let friends browse your plants, seed vault, smoke reports and photos without needing an account or being able to edit your data. Leave it off, and BudMinder stays completely private behind your login.
 
-BudMinder began as a fork of the excellent [Isley](https://github.com/dwot/isley) by dwot, and builds on it with every page redesigned around a cleaner, more visual layout, plus new features like the daily photo notebook, Home Assistant sensors and strain lookups.
+BudMinder began as a fork of the excellent [Isley](https://github.com/dwot/isley) by dwot, and builds on it with every page redesigned around a cleaner, more visual layout, plus new features like the daily photo notebook, Home Assistant sensors and multi-site strain lookups.
 
 ## Tour
 
@@ -114,7 +114,7 @@ A tasting journal for everything you smoke, grown or bought. Score bud quality, 
 - Light and dark themes, in English, German, Spanish and French
 - A tent camera: live view plus automatic snapshots
 - Guest view for sharing, read-only
-- SQLite or PostgreSQL, with backups that move between them
+- SQLite or PostgreSQL
 
 <sub>Screenshots use a demo data set. The sensor history is a month of real readings from an AC Infinity controller in a 3x3 tent.</sub>
 
@@ -215,7 +215,7 @@ docker compose -f docker-compose.postgres.yml up -d
 
 To use a PostgreSQL server you already run (on Unraid, another container, or another machine), set `BUDMINDER_DB_DRIVER=postgres` and the `BUDMINDER_DB_HOST`, `BUDMINDER_DB_PORT`, `BUDMINDER_DB_USER`, `BUDMINDER_DB_PASSWORD` and `BUDMINDER_DB_NAME` settings on BudMinder.
 
-**Moving from SQLite to PostgreSQL:** either make a backup in Settings and restore it on the PostgreSQL setup, or use [`docker-compose.migration.yml`](docker-compose.migration.yml). It mounts your SQLite data next to a new, empty PostgreSQL database and copies everything over on first start. Back up first, and switch to `docker-compose.postgres.yml` afterwards.
+**Moving from SQLite to PostgreSQL:** use [`docker-compose.migration.yml`](docker-compose.migration.yml). It mounts your SQLite data next to a new, empty PostgreSQL database and copies everything over on first start. Back up first, and switch to `docker-compose.postgres.yml` afterwards.
 
 </details>
 
@@ -316,7 +316,7 @@ Create an API key in **Settings → Integrations** and send it as an `X-API-KEY`
 
 **From the app:** **Settings → Backup & data**. Choose how much sensor history to include and whether to include photos, then create the backup. It runs in the background and appears in the list to download. Download it to keep it somewhere safe: backups stored only on the same computer are lost if that computer fails. A backup includes your saved connection details, such as the AC Infinity and Home Assistant tokens, so keep backup files private.
 
-**Restoring** replaces everything in the current BudMinder with the backup. Backups are stored as JSON, so a backup made on SQLite restores onto PostgreSQL and the other way around. On SQLite you can also skip sensor history to restore faster, or download and upload the database file itself under **SQLite file transfer**, which is the quickest way to copy a SQLite setup.
+**Restoring** replaces everything in the current BudMinder with the backup. On SQLite you can also skip sensor history to restore faster, or download and upload the database file itself under **SQLite file transfer**, which is the quickest way to copy a SQLite setup.
 
 Uploads are limited to 5 GB by default; change it in the restore section (minimum 100 MB). Backups are always full backups, and a large backup with photos needs about as much free memory as its size while restoring. For automatic backups, call `POST /settings/backup/create` on a schedule, or back up the Docker volumes.
 
