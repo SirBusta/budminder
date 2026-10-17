@@ -4022,17 +4022,17 @@ body { --sr-scorebg: var(--sr-acc); --sr-num: var(--sr-acc); }
 .sr-card .ph .sr-score:not(.mid):not(.low) { background: var(--sr-scorebg-photo, var(--sr-scorebg)); }
 
 /* ---------- Smoke report form colors (Forest: solid accents, no pastel fills) ---------- */
-.sr-form .sr-c { --cc: #166534; border-left: 4px solid var(--cc); }
+.sr-form .sr-c { --cc: #166534; }
 .sr-form .sr-c-source { --cc: #166534; }
 .sr-form .sr-c-smoke { --cc: #166534; }
 .sr-form .sr-c-grow { --cc: #0f766e; }
-.sr-form .sr-c-scores { --cc: #b45309; }
+.sr-form .sr-c-scores { --cc: #eab308; }
 .sr-form .sr-c-describe { --cc: #7c3aed; }
 .sr-form .sr-c-again { --cc: #166534; }
 .sr-form .sr-c-notes { --cc: #475569; }
 .sr-form .sr-c-photos { --cc: #1d4ed8; }
 [data-bs-theme="dark"] .sr-form .sr-c-grow { --cc: #14b8a6; }
-[data-bs-theme="dark"] .sr-form .sr-c-scores { --cc: #f59e0b; }
+[data-bs-theme="dark"] .sr-form .sr-c-scores { --cc: #facc15; }
 [data-bs-theme="dark"] .sr-form .sr-c-describe { --cc: #a78bfa; }
 [data-bs-theme="dark"] .sr-form .sr-c-notes { --cc: #94a3b8; }
 [data-bs-theme="dark"] .sr-form .sr-c-photos { --cc: #60a5fa; }
@@ -4062,8 +4062,8 @@ body { --sr-scorebg: var(--sr-acc); --sr-num: var(--sr-acc); }
 .sr-form .sr-pick button.on.taste, .sr-form .sr-pick button.on.bud { background: var(--g); border-color: var(--g); color: #fff; }
 [data-bs-theme="dark"] .sr-form .sr-pick button.on { color: #111827; }
 .sr-form .sr-pick .otherin { border-color: color-mix(in srgb, var(--cc, #166534) 60%, transparent); }
-/* Score numbers 1 → 10 in a red → green scale */
-.sr-form .sr-ten button { color: var(--n); border-color: color-mix(in srgb, var(--n) 45%, transparent); border-width: 1.5px; }
+/* Score numbers stay plain until one is picked, then show a red → green scale */
+.sr-form .sr-ten button { border-width: 1.5px; }
 .sr-form .sr-ten button:hover { border-color: var(--n); }
 .sr-form .sr-ten button.in { background: transparent; border-color: var(--n); color: var(--n); }
 .sr-form .sr-ten button.on { background: var(--n); border-color: var(--n); color: #fff; }

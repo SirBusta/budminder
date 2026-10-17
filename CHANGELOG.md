@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     hide fields you never use.
 
 ### Changed
-- The Smoke report form is in color: each section has its own color, and
+- The Smoke report form is in color: each section has its own colored icon, and
   the choices, scores and "grow again" buttons are colored by group.
 - A photo added from a web address shows on the Smoke report form right
   away, before you save.
