@@ -68,6 +68,10 @@ type BackupPayload struct {
 	PlantDayEntry     []map[string]interface{} `json:"plant_day_entry"`
 	PlantImages       []map[string]interface{} `json:"plant_images"`
 	Streams           []map[string]interface{} `json:"streams"`
+	// Smoke reports (migration 037). Absent from older backups.
+	SmokeReports     []map[string]interface{} `json:"smoke_report"`
+	SmokeReportTags  []map[string]interface{} `json:"smoke_report_tag"`
+	SmokeReportPhoto []map[string]interface{} `json:"smoke_report_photo"`
 }
 
 // BackupFileInfo is returned by the list endpoint.
@@ -602,6 +606,9 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 
 	// Tables in deletion order (children first) to satisfy FK constraints.
 	truncateOrder := []string{
+		"smoke_report_photo",
+		"smoke_report_tag",
+		"smoke_report",
 		"plant_activity",
 		"plant_day_entry",
 		"plant_measurements",
@@ -655,6 +662,9 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 		{"plant_day_entry", payload.PlantDayEntry},
 		{"plant_images", payload.PlantImages},
 		{"streams", payload.Streams},
+		{"smoke_report", payload.SmokeReports},
+		{"smoke_report_tag", payload.SmokeReportTags},
+		{"smoke_report_photo", payload.SmokeReportPhoto},
 	}
 
 	// Count tables with data for progress tracking
@@ -857,6 +867,7 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 			"plant_status", "plant",
 			"plant_status_log", "metric", "plant_measurements",
 			"activity", "activity_metric", "plant_activity", "plant_day_entry", "plant_images", "streams",
+			"smoke_report", "smoke_report_tag", "smoke_report_photo",
 		}
 		for _, tbl := range seqTables {
 			q := fmt.Sprintf(

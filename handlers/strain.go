@@ -800,6 +800,9 @@ func DeleteStrainHandler(c *gin.Context) {
 	var packaging sql.NullString
 	_ = db.QueryRow("SELECT packaging_image FROM strain WHERE id = $1", id).Scan(&packaging)
 
+	// Smoke reports keep their own strain name and breeder; only the link goes.
+	_, _ = db.Exec(`UPDATE smoke_report SET strain_id = NULL WHERE strain_id = $1`, id)
+
 	result, err := db.Exec(`DELETE FROM strain WHERE id = $1`, id)
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to delete strain")

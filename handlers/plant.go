@@ -365,6 +365,8 @@ func DeletePlantById(db *sql.DB, id string) error {
 		{"plant_activity", "DELETE FROM plant_activity WHERE plant_id = $1"},
 		{"plant_day_entry", "DELETE FROM plant_day_entry WHERE plant_id = $1"},
 		{"plant_status_log", "DELETE FROM plant_status_log WHERE plant_id = $1"},
+		// Smoke reports outlive the plant: they keep their own copy of the details.
+		{"smoke_report", "UPDATE smoke_report SET plant_id = NULL WHERE plant_id = $1"},
 		{"plant", "DELETE FROM plant WHERE id = $1"},
 	}
 	for _, d := range deletes {

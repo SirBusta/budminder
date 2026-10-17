@@ -275,6 +275,7 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 	r.GET("/strains/:id/lineage", handlers.GetLineageHandler)
 	r.GET("/strains/:id/descendants", handlers.GetDescendantsHandler)
 	r.GET("/strains/lookup", handlers.LookupStrainByName)
+	addSmokeBasicRoutes(r, version)
 }
 
 func AddProtectedApiRoutes(r *gin.RouterGroup) {
@@ -388,6 +389,7 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.POST("/record-multi-activity", handlers.RecordMultiPlantActivity)
 	r.POST("/settings", handlers.SaveSettings)
 	r.POST("/settings/homeassistant/test", handlers.TestHomeAssistantHandler)
+	addSmokeAPIRoutes(r)
 }
 
 // AddExternalApiRoutes External API endpoints
@@ -557,6 +559,7 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 	// Activity log exports (auth-gated; unauthenticated users are redirected
 	// to /login by AuthMiddleware).  Filters mirror the /activities page.
 	r.GET("/activities/export/csv", handlers.ExportActivitiesCSV)
+	addSmokeProtectedRoutes(r, version)
 	r.GET("/activities/export/xlsx", handlers.ExportActivitiesXLSX)
 }
 

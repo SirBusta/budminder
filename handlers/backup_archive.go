@@ -95,6 +95,9 @@ func BuildBackupArchive(db *sql.DB, opts BuildArchiveOptions) ([]byte, BackupMan
 		{"plant_day_entry", &payload.PlantDayEntry},
 		{"plant_images", &payload.PlantImages},
 		{"streams", &payload.Streams},
+		{"smoke_report", &payload.SmokeReports},
+		{"smoke_report_tag", &payload.SmokeReportTags},
+		{"smoke_report_photo", &payload.SmokeReportPhoto},
 	}
 
 	tableCount := 0
@@ -242,6 +245,9 @@ func ApplyBackupToDB(ctx context.Context, db *sql.DB, payload BackupPayload) err
 
 	// Tables in deletion order (children first) to satisfy FK constraints.
 	truncateOrder := []string{
+		"smoke_report_photo",
+		"smoke_report_tag",
+		"smoke_report",
 		"plant_activity",
 		"plant_day_entry",
 		"plant_measurements",
@@ -303,6 +309,9 @@ func ApplyBackupToDB(ctx context.Context, db *sql.DB, payload BackupPayload) err
 		{"plant_day_entry", payload.PlantDayEntry},
 		{"plant_images", payload.PlantImages},
 		{"streams", payload.Streams},
+		{"smoke_report", payload.SmokeReports},
+		{"smoke_report_tag", payload.SmokeReportTags},
+		{"smoke_report_photo", payload.SmokeReportPhoto},
 	}
 
 	tx, err := db.BeginTx(ctx, nil)
@@ -362,6 +371,7 @@ func ApplyBackupToDB(ctx context.Context, db *sql.DB, payload BackupPayload) err
 			"plant_status", "plant",
 			"plant_status_log", "metric", "plant_measurements",
 			"activity", "activity_metric", "plant_activity", "plant_day_entry", "plant_images", "streams",
+			"smoke_report", "smoke_report_tag", "smoke_report_photo",
 		}
 		for _, tbl := range seqTables {
 			q := fmt.Sprintf(
