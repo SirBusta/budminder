@@ -23,6 +23,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Deprecated
+
+### Removed
+
+### Security
+
+## [1.1.0] - 2026-10-16
+
+### Added
 - **Smoke reports.** A tasting journal for flower you grew and flower you
   bought, with its own **Smoke** page in the top menu (cards or a sortable
   list).
@@ -45,21 +59,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Settings → Grow setup → Smoke reports: score weights, and switches to
     hide fields you never use.
 
-### Changed
-- The Smoke report form is in color: each section has its own colored icon, and
-  the choices, scores and "grow again" buttons are colored by group.
-- A photo added from a web address shows on the Smoke report form right
-  away, before you save.
-
 ### Fixed
 - The plant page no longer logs a server error when no photo logo was ever
   uploaded (the logo list is now just empty).
-
-### Deprecated
-
-### Removed
-
-### Security
 
 ## [1.0.1] - 2026-10-15
 
