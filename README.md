@@ -24,21 +24,21 @@
 
 ## Why BudMinder?
 
-**Your grow, on your hardware.** BudMinder is a self-hosted grow journal designed to run entirely on your own machine or home server. No cloud accounts, no corporate tracking, and no treating your cultivation logs as a commodity. What you record stays on your own server.
+**Your grow, on your hardware.** BudMinder is a self-hosted grow journal designed to run entirely on your own machine or home server. No cloud accounts, no corporate tracking, and no treating your cultivation logs as a commodity. What you record stays on your own hardware.
 
 **Free and open source.** BudMinder is free, with no subscriptions or paid tiers. Its code is public under the MIT license, so anyone can check exactly what it does with your data, suggest improvements, or build on it.
 
 **Connect actions to results.** Each day's notes, watering and feeding sit right next to that day's photos. Scroll back through a grow and you can see how each change showed up in the plants: when you topped, when you flipped, when the frost came in.
 
-**Close the loop from seed to smoke.** Write a smoke report for each harvest or dispensary pickup. Score bud quality, aroma, flavor and effects. BudMinder auto-fills the dry and cure times so months later you can see which runs were worth repeating and whether an extended cure paid off.
+**Close the loop from seed to smoke.** Write a smoke report for each harvest or dispensary pickup. Rate bud quality, aroma, flavor and effects. BudMinder auto-fills the dry and cure times so months later you can see which runs were worth repeating and whether an extended cure paid off.
 
-**Instant strain lookups.** Search large public strain databases and add a strain in one click. That brings in its breeder, parents, THC and CBD, effects, terpenes and flowering time. You only fill in what's yours: how many seeds you have and where you keep them.
+**Instant strain lookups.** Search large public strain databases and add a strain in one click. That brings in its breeder, lineage, THC and CBD, effects, terpenes and flowering time. You only fill in what's yours: how many seeds you have and where you keep them.
 
 **Use the hardware you already own.** BudMinder works with AC Infinity controllers and Ecowitt gateways, plus any sensor tracked by Home Assistant: Govee, SwitchBot, Inkbird, Zigbee, ESPHome and more. If Home Assistant sees it, BudMinder can plot it alongside your plant logs.
 
 **Everything in one place.** Live sensor readings, tent cameras, harvest yields and a seed vault sit alongside your daily grow journal. BudMinder replaces the fragmented mess of vendor apps, spreadsheets and paper notes with a single app built around your grow.
 
-**Easy to back up, simple to move.** Create a snapshot from Settings in one click, packaging your plants, notes, strains, smoke reports and photos into a single portable file. Restoring brings everything back or moves your installation to a new machine. You can also export your journal entries to CSV or Excel, with PDF export coming soon.
+**Easy to back up, simple to move.** Create a snapshot in one click, packaging your plants, notes, strains, smoke reports and photos into a single portable file. Restoring brings everything back or moves your installation to a new machine. You can also export your journal entries to CSV or Excel, with PDF export coming soon.
 
 **Optional read-only guest view.** Want to show off your grow without compromising your records? Turn on guest view to let friends browse your plants, seed vault, smoke reports and photos without needing an account or being able to edit your data. Leave it off, and BudMinder stays completely private behind your login.
 
@@ -46,11 +46,12 @@ BudMinder began as a fork of the excellent [Isley](https://github.com/dwot/isley
 
 ## Tour
 
-### Home Assistant
+### Plant pages
 
-Already have sensors in Home Assistant? Connect BudMinder once and every sensor Home Assistant knows about (Govee, SwitchBot, Inkbird, Zigbee, ESPHome and more) can be added to a tent, right next to AC Infinity and Ecowitt readings. A scan lists the sensors useful for growing with their live readings; add the ones you want. BudMinder only reads values; it never changes anything in Home Assistant.
+Every plant has its own page and notebook. The stage track shows where it is from germination to harvest, how long it spent in each stage and when to expect harvest, based on the strain's flowering time; click a stage to move the plant along. Each day you log is one row: water and feed amounts, training, height and notes, with that day's photos right beside it. Filter by activity, search your notes, switch between weeks and a plain list, or see every plant's notebook at once. Log for a whole tent in one go, check the tent camera live, and export the notebook to CSV or Excel.
 
-<img src="docs/images/screenshots/ha-scan.webp" alt="Scan Home Assistant results: seven grow sensors such as tent temperature, humidity, CO2, VPD, light level and soil moisture, each with its current reading, a tent to put it in and an Add button, plus a filter box and a Show all switch for batteries and power">
+<img src="docs/images/screenshots/plant-pm1-dark.webp" alt="Permanent Marker #1's page in dark mode: the stage track at Flower week 2 with an estimated harvest of Nov 30 to Dec 7, the notebook grouped by week with water amounts, heights and notes, and the two photos from Sep 28 shown beside the selected day"><br>
+<sub>Shown in dark mode.</sub>
 
 ### Today
 
@@ -78,9 +79,15 @@ Everything about a strain in one place: every time you've grown it with yields a
 
 ### Smoke reports
 
-A tasting journal for everything you smoke, grown or bought. Score bud quality, taste, smell and effects from 1 to 10 and get an overall score, weighted the way you like. Pick effects, side effects, smells and tastes from lists or type your own, and say whether you'd grow or buy it again. For bought flower, look the strain up, add the dispensary and price, and BudMinder works out the price per gram. Add a photo by upload, from a web address, or from the plant's journal. Every report gets its own page, and plants and strains show their latest scores.
+A tasting journal for the flower you grow or buy. Score bud quality, taste, smell and effects from 1 to 10 and get an overall score, weighted the way you like. Pick effects, side effects, smells and tastes from lists or type your own, and say whether you'd grow or buy it again. For bought flower, look the strain up, add the dispensary and price, and BudMinder works out the price per gram. Add a photo by upload, from a web address, or from the plant's journal. Every report gets its own page, and plants and strains show their latest scores.
 
 <img src="docs/images/screenshots/smoke-report.webp" alt="A smoke report for home-grown Grape OG: a photo of two dried buds, an overall score of 7.8 out of 10, THC, CBD and cure time, top effects and smells, bars for the bud quality, taste, smell and effects scores, and the grow details BudMinder filled in from the plant">
+
+### Home Assistant
+
+Already have sensors in Home Assistant? Connect BudMinder once and every sensor Home Assistant knows about (Govee, SwitchBot, Inkbird, Zigbee, ESPHome and more) can be added to a tent, right next to AC Infinity and Ecowitt readings. A scan lists the sensors useful for growing with their live readings; add the ones you want. BudMinder only reads values; it never changes anything in Home Assistant.
+
+<img src="docs/images/screenshots/ha-scan.webp" alt="Scan Home Assistant results: seven grow sensors such as tent temperature, humidity, CO2, VPD, light level and soil moisture, each with its current reading, a tent to put it in and an Add button, plus a filter box and a Show all switch for batteries and power">
 
 ### More
 
