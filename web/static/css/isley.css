@@ -3880,7 +3880,7 @@ body { --sr-scorebg: var(--sr-acc); --sr-num: var(--sr-acc); }
 .sr-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(15,40,35,.14); color: var(--sd-ink); }
 .sr-card .ph { position: relative; aspect-ratio: 4/3; background: var(--sd-soft); }
 .sr-card .ph img { width: 100%; height: 100%; object-fit: cover; }
-.sr-card .ph .sr-score { background: var(--sr-scorebg-photo, var(--sr-scorebg)); position: absolute; right: .6rem; bottom: .6rem; font-size: 1.05rem; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+.sr-card .ph .sr-score { position: absolute; right: .6rem; bottom: .6rem; font-size: 1.05rem; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
 .sr-card .ph .sr-src { position: absolute; left: .6rem; top: .6rem; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
 .sr-card .bd { padding: .7rem .85rem .8rem; }
 .sr-card h3 { font-size: 1.05rem; font-weight: 800; margin: 0; }
@@ -4019,3 +4019,4 @@ body { --sr-scorebg: var(--sr-acc); --sr-num: var(--sr-acc); }
 .pl-smoke { display: inline-flex; align-items: center; gap: .25rem; font-size: .72rem; font-weight: 800; padding: .12rem .45rem; border-radius: 99px;
   background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; text-decoration: none; }
 [data-bs-theme="dark"] .pl-smoke { background: rgba(251,146,60,.12); color: #fdba74; border-color: rgba(251,146,60,.35); }
+.sr-card .ph .sr-score:not(.mid):not(.low) { background: var(--sr-scorebg-photo, var(--sr-scorebg)); }

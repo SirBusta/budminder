@@ -23,6 +23,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Smoke reports.** A tasting journal for flower you grew and flower you
+  bought, with its own **Smoke** page in the top menu (cards or a sortable
+  list).
+  - Score bud quality, taste, smell and effects from 1 to 10. The overall
+    score is a weighted average, and you choose the weights in Settings.
+  - Pick effects, side effects, smells, tastes and bud qualities from lists,
+    or type your own. Also how it was smoked, and whether you'd grow or buy
+    it again.
+  - From one of your plants, BudMinder fills in the strain, harvest date,
+    tent, days to harvest, dry and cure time, THC, a light from the tent's
+    AC Infinity ports, and what you used last time in that tent.
+  - For bought flower: look the strain up in your strains or on
+    StrainCompass, change anything, add the dispensary, price (price per gram
+    is worked out) and batch, and optionally add the strain to your Strains.
+  - Photos: upload them, give a web address (BudMinder keeps its own copy),
+    or pick them from the plant's journal. The first one is the main photo.
+  - Each report has a product-style page with the plant's reports over time.
+    Plants show a marker with their latest score, the plant page gets a
+    "Smoke" step after its stages, and a strain's page lists its reports.
+  - Settings → Grow setup → Smoke reports: score weights, and switches to
+    hide fields you never use.
 
 ### Changed
 
