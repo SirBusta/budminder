@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -771,4 +772,47 @@ func BuildSmokeReportView(db *sql.DB, lcl map[string]string, id int) (SmokeRepor
 		}
 	}
 	return v, nil
+}
+
+// StrainSmoke is the strain page's "Smoke reports" card.
+type StrainSmoke struct {
+	Cards    []SmokeCard
+	Count    int
+	AvgText  string
+	AvgClass string
+}
+
+// StrainSmokeSummary lists a strain's smoke reports (newest first) with
+// their average overall score.
+func StrainSmokeSummary(db *sql.DB, strainID int) StrainSmoke {
+	out := StrainSmoke{}
+	list, err := LoadSmokeReports(db, LoadSmokeSettings(db).Weights, "r.strain_id = $1", strainID)
+	if err != nil {
+		return out
+	}
+	sum, n := 0.0, 0
+	for _, r := range list {
+		c := SmokeCard{ID: r.ID, Title: r.PlantName, Date: r.SmokedOn}
+		if c.Title == "" {
+			c.Title = r.Dispensary
+		}
+		if c.Title == "" {
+			c.Title = r.StrainName
+		}
+		if len(r.Photos) > 0 {
+			c.Photo = r.Photos[0].URL
+		}
+		c.OverallText, c.OverallClass = smokeScoreText(r.Overall)
+		if r.Overall != nil {
+			sum += *r.Overall
+			n++
+		}
+		out.Cards = append(out.Cards, c)
+	}
+	out.Count = len(list)
+	if n > 0 {
+		avg := math.Round(sum/float64(n)*10) / 10
+		out.AvgText, out.AvgClass = smokeScoreText(&avg)
+	}
+	return out
 }

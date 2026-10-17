@@ -12,19 +12,21 @@ import (
 // page as one JSON attribute (separately fetched .js files aren't
 // templated, so translated strings travel here too, under T).
 type PlantPageData struct {
-	Plant    PlantPageInfo         `json:"plant"`
-	Statuses []PlantPageStatus     `json:"statuses"`
-	History  []PlantPageStage      `json:"history"`
-	Types    []types.Activity      `json:"types"`
-	Metrics  []types.Metric        `json:"metrics"`
-	Days     []types.NotebookDay   `json:"days"`
-	Stream   *PlantPageStream      `json:"stream"`
-	Prev     int                   `json:"prev"`
-	Next     int                   `json:"next"`
-	LoggedIn bool                  `json:"logged_in"`
-	Today    string                `json:"today"`
-	Lang     string                `json:"lang"`
-	T        map[string]string     `json:"t"`
+	Plant    PlantPageInfo       `json:"plant"`
+	Statuses []PlantPageStatus   `json:"statuses"`
+	History  []PlantPageStage    `json:"history"`
+	Types    []types.Activity    `json:"types"`
+	Metrics  []types.Metric      `json:"metrics"`
+	Days     []types.NotebookDay `json:"days"`
+	Stream   *PlantPageStream    `json:"stream"`
+	Prev     int                 `json:"prev"`
+	Next     int                 `json:"next"`
+	LoggedIn bool                `json:"logged_in"`
+	Today    string              `json:"today"`
+	Lang     string              `json:"lang"`
+	T        map[string]string   `json:"t"`
+	// Smoke reports for this plant (the "Smoke" step on the stage track).
+	Smoke SmokeSummary `json:"smoke"`
 }
 
 // PlantPageInfo is the header's facts about the plant.
@@ -155,5 +157,6 @@ func BuildPlantPageData(db *sql.DB, plant types.Plant, loggedIn bool, lang strin
 			d.T[k] = v
 		}
 	}
+	d.Smoke = SmokeSummariesFor(db, int(plant.ID))
 	return d, nil
 }

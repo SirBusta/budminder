@@ -374,3 +374,41 @@ func TestSmokePages_Render(t *testing.T) {
 	newForm := e.page(t, fmt.Sprintf("/smoke/new?plant_id=%d", plant))
 	assert.Contains(t, newForm, fmt.Sprintf(`&#34;plant_id&#34;:%d`, plant))
 }
+
+func TestSmokeTouchpoints(t *testing.T) {
+	t.Parallel()
+	e := newSensorEnv(t)
+	strain := testutil.SeedStrain(t, e.db, testutil.SeedBreeder(t, e.db, "Cali"), "Grape OG")
+	plant := testutil.SeedPlant(t, e.db, "Grape OG #1", strain, testutil.SeedZone(t, e.db, "Tent"))
+	for _, d := range []string{"2025-03-01", "2025-04-12"} {
+		code, _ := e.postSmoke(t, http.MethodPost, "/smoke", map[string]any{"plant_id": plant, "strain_id": strain, "strain_name": "Grape OG", "smoked_on": d, "score_taste": 8})
+		require.Equal(t, http.StatusOK, code)
+	}
+
+	// Plants page data: count and the latest report.
+	rows, err := handlers.LoadPlantsList(e.db)
+	require.NoError(t, err)
+	var row handlers.PlantListRow
+	for _, r := range rows {
+		if r.ID == plant {
+			row = r
+		}
+	}
+	assert.Equal(t, 2, row.Smoke.Count)
+	require.NotNil(t, row.Smoke.Latest)
+	assert.Equal(t, 8.0, *row.Smoke.Latest)
+	var latestID int
+	require.NoError(t, e.db.QueryRow(`SELECT id FROM smoke_report WHERE smoked_on = '2025-04-12'`).Scan(&latestID))
+	assert.Equal(t, latestID, row.Smoke.LastID, "the most recently smoked")
+
+	// Plant page and strain page.
+	assert.Contains(t, e.page(t, fmt.Sprintf("/plant/%d", plant)), `&#34;smoke&#34;:{&#34;count&#34;:2`)
+	strainPage := e.page(t, fmt.Sprintf("/strain/%d", strain))
+	assert.Contains(t, strainPage, fmt.Sprintf(`href="/smoke/%d"`, latestID))
+	assert.Contains(t, strainPage, fmt.Sprintf(`/smoke/new?strain_id=%d`, strain))
+
+	// Settings → Grow setup card.
+	settings := e.page(t, "/settings")
+	assert.Contains(t, settings, `id="smokeSettingsCard"`)
+	assert.Contains(t, settings, `data-field="nutrients"`)
+}

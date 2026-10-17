@@ -117,6 +117,12 @@
         }
     });
 
+    // Smoke report dates (sd/smoke) in the reader's own format.
+    page.querySelectorAll(".sd-date[data-date]").forEach(el => {
+        const d = el.dataset.date;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(d)) el.textContent = new Date(d + "T12:00:00").toLocaleDateString(document.documentElement.lang || undefined, { month: "short", day: "numeric", year: "numeric" });
+    });
+
     // Sent to the Strains page from Add Plant / Edit plant (strain-first.js):
     // offer the way back with this strain.
     const sfDraft = window.StrainFirst && StrainFirst.peek();

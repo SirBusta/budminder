@@ -237,6 +237,7 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 			"straincompassURL": handlers.StraincompassWebURL(strain.StraincompassSlug),
 			// Family diagram: parents you don't have link to a StrainCompass search.
 			"straincompassEnabled": store.StraincompassEnabled() == 1,
+			"smoke":                handlers.StrainSmokeSummary(db, strain.ID),
 			"lineageSourceURL":     handlers.CannadbWebURL(strain.LineageSourceURI),
 			"breeders":             store.Breeders(),
 			"loggedIn":             sessions.Default(c).Get("logged_in"),
@@ -501,14 +502,16 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 			"breeders":       store.Breeders(),
 			// Breeders a strain uses can't be deleted (Edit Breeder says why).
 			"breederStrainCounts": handlers.BreederStrainCounts(db),
-			"streams":             handlers.GetStreams(db),
-			"loggedIn":            sessions.Default(c).Get("logged_in"),
-			"lcl":                 translations,
-			"languages":           utils.AvailableLanguages,
-			"currentLanguage":     lang,
-			"dbDriver":            model.GetDriver(),
-			"csrfToken":           c.GetString("csrf_token"),
-			"cspNonce":            c.GetString("cspNonce"),
+			// Grow setup → Smoke reports: weights and which fields the form shows.
+			"smokeSettings":   handlers.LoadSmokeSettings(db),
+			"streams":         handlers.GetStreams(db),
+			"loggedIn":        sessions.Default(c).Get("logged_in"),
+			"lcl":             translations,
+			"languages":       utils.AvailableLanguages,
+			"currentLanguage": lang,
+			"dbDriver":        model.GetDriver(),
+			"csrfToken":       c.GetString("csrf_token"),
+			"cspNonce":        c.GetString("cspNonce"),
 		})
 	})
 

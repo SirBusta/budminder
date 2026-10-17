@@ -115,12 +115,20 @@
         return `<div class="pl-prog"><div class="lbls"><span>${stagePill(p)}</span><span>${p.day ? `<b>${esc(t("pl_day", { n: p.day }))}</b>` : ""}${h ? ` · ${esc(h)}` : ""}</span></div>
             <div class="bar" title="${esc(h || t("pl_no_estimate"))}">${pct != null ? `<span style="width:${pct}%;background:linear-gradient(90deg, #84cc16, ${color})"></span>` : `<span class="unknown"></span>`}</div></div>`;
     }
+    // A plant's smoke reports: the latest overall score (and how many).
+    function smokeTag(p, link) {
+        const s = p.smoke || {};
+        if (!s.count) return "";
+        const txt = `<i class="fa-solid fa-joint"></i>${s.latest != null ? s.latest.toFixed(1) : ""}${s.count > 1 ? ` · ${s.count}` : ""}`;
+        return link ? `<a class="pl-smoke" href="/smoke/${s.last_id}" title="${esc(t("pl_smoke"))}" aria-label="${esc(t("pl_smoke"))}">${txt}</a>`
+            : `<span class="pl-smoke" title="${esc(t("pl_smoke"))}">${txt}</span>`;
+    }
     function row(p) {
         const zoneIcon = /outdoor|outside/i.test(p.zone) ? "fa-tree" : "fa-tent";
         return `<div class="pl-r">
             <a class="ph" href="${url(p)}" aria-hidden="true" tabindex="-1">${photo(p)}</a>
             <div class="pl-who"><a class="nm" href="${url(p)}">${esc(p.name)}</a><div class="sub">${esc(p.strain)}${p.breeder ? ` · ${esc(p.breeder)}` : ""}</div>
-                <div class="meta">${p.zone ? `<span class="pl-tag zone"><i class="fa-solid ${zoneIcon}"></i>${esc(p.zone)}</span>` : ""}${typeTag(p)}${p.clone ? `<span class="pl-tag zone"><i class="fa-solid fa-clone"></i>${esc(t("pl_clone"))}</span>` : ""}</div></div>
+                <div class="meta">${p.zone ? `<span class="pl-tag zone"><i class="fa-solid ${zoneIcon}"></i>${esc(p.zone)}</span>` : ""}${typeTag(p)}${p.clone ? `<span class="pl-tag zone"><i class="fa-solid fa-clone"></i>${esc(t("pl_clone"))}</span>` : ""}${smokeTag(p, true)}</div></div>
             ${progress(p)}
             <div class="wfs">${p.group === "living" ? wf("water", p.water) + wf("feed", p.feed) : ""}</div>
             <div class="acts">${actions(p)}</div>
@@ -128,7 +136,7 @@
     }
     const tile = p => `<a class="pl-t" href="${url(p)}">${photo(p)}${stagePill(p)}
         ${p.group === "living" && p.water != null ? `<span class="wfx">${wf("water", p.water)}</span>` : ""}
-        <span class="ov"><b>${esc(p.name)}</b><small>${esc(p.zone)}${p.group === "living" && p.day ? ` · ${esc(t("pl_day", { n: p.day }))}` : ""}</small></span></a>`;
+        <span class="ov"><b>${esc(p.name)}</b><small>${esc(p.zone)}${p.group === "living" && p.day ? ` · ${esc(t("pl_day", { n: p.day }))}` : ""} ${smokeTag(p, false)}</small></span></a>`;
 
     // ---------- Drawing ----------
     function renderTabs() {

@@ -33,6 +33,8 @@ type PlantListRow struct {
 	EstMax        string  `json:"est_max"`
 	HarvestWeight float64 `json:"harvest_weight"`
 	Photo         string  `json:"photo"`
+	// Smoke reports: how many, and the latest one's overall score / id.
+	Smoke SmokeSummary `json:"smoke"`
 }
 
 // plantGroup sorts a plant into the Plants page's lists by its current stage.
@@ -116,6 +118,7 @@ func LoadPlantsList(db *sql.DB) ([]PlantListRow, error) {
 		return nil, err
 	}
 
+	smoke := SmokeSummariesByPlant(db)
 	out := make([]PlantListRow, 0, len(base))
 	for _, p := range base {
 		e := extras[p.ID]
@@ -124,7 +127,7 @@ func LoadPlantsList(db *sql.DB) ([]PlantListRow, error) {
 			Zone: p.Zone, ZoneID: p.ZoneID, Autoflower: e.auto, Clone: e.clone,
 			Group: plantGroup(p.Status, p.Active), Stage: p.Status, Start: p.Start,
 			LastWater: dateOrEmpty(lastWater[p.ID]), LastFeed: dateOrEmpty(lastFeed[p.ID]),
-			HarvestWeight: e.weight, Photo: p.Photo,
+			HarvestWeight: e.weight, Photo: p.Photo, Smoke: smoke[p.ID],
 		}
 		if n := len(p.History); n > 0 {
 			r.StageSince = p.History[n-1].Date

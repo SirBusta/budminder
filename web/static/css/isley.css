@@ -4008,3 +4008,14 @@ body { --sr-scorebg: var(--sr-acc); --sr-num: var(--sr-acc); }
 .sr-drop { cursor: pointer; }
 .sr-drop:hover { border-color: var(--sr-acc); color: var(--sr-acc); }
 .sr-sel, .sr-search input { font-size: .86rem; }
+
+/* Plant page: the "Smoke" step after the stages, and the Smoke report button */
+.pp-smoke a.pp-node, .pp-smoke span.pp-node { display: inline-grid; place-items: center; text-decoration: none; }
+.pp-smoke-btn { display: inline-flex; align-items: center; gap: .25rem; font-size: .78rem; font-weight: 700; padding: .12rem .55rem; border-radius: 99px;
+  background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; text-decoration: none; }
+.pp-smoke-btn:hover { background: #ffedd5; color: #9a3412; }
+[data-bs-theme="dark"] .pp-smoke-btn { background: rgba(251,146,60,.12); color: #fdba74; border-color: rgba(251,146,60,.35); }
+/* Plants page: a plant's smoke reports (latest score) */
+.pl-smoke { display: inline-flex; align-items: center; gap: .25rem; font-size: .72rem; font-weight: 800; padding: .12rem .45rem; border-radius: 99px;
+  background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; text-decoration: none; }
+[data-bs-theme="dark"] .pl-smoke { background: rgba(251,146,60,.12); color: #fdba74; border-color: rgba(251,146,60,.35); }

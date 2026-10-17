@@ -108,7 +108,8 @@
         const list = apply();
         const scored = list.filter(r => r.overall != null);
         const avg = scored.length ? (scored.reduce((a, r) => a + r.overall, 0) / scored.length).toFixed(1) : "–";
-        $("srSum").innerHTML = REPORTS.length ? esc(tr("sr_summary", { n: list.length, s: new Set(list.map(r => r.strain_name.toLowerCase())).size, avg })) + weightsNote() : "";
+        const sumText = list.length === 1 ? tr("sr_summary_one", { avg }) : tr("sr_summary", { n: list.length, s: new Set(list.map(r => r.strain_name.toLowerCase())).size, avg });
+        $("srSum").innerHTML = REPORTS.length ? esc(sumText) + weightsNote() : "";
         if (!REPORTS.length) {
             $("srOut").innerHTML = `<div class="sd-card text-center py-5"><i class="fa-solid fa-joint fa-2x text-body-tertiary mb-2"></i><h2 class="h5 fw-bold">${esc(tr("sr_empty_title"))}</h2><p class="sd-muted">${esc(tr("sr_empty"))}</p>
                 ${D.logged_in ? `<a class="sd-btn" href="/smoke/new"><i class="fa-solid fa-plus"></i>${esc(tr("sr_new"))}</a>` : ""}</div>`;

@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
+	"math"
 	"net/http"
 	"net/url"
-	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -413,6 +413,8 @@ func buildFuncMap(store *config.Store) template.FuncMap {
 			}
 			return v
 		},
+		// list makes a slice to range over: {{ range (list "a" "b") }}.
+		"list": func(items ...string) []string { return items },
 		// fill puts values into a translation's {placeholders}:
 		// {{ fill .lcl.sr_days "n" 12 }} → "12 days".
 		"fill": func(tpl string, pairs ...any) string {
@@ -442,7 +444,7 @@ func buildFuncMap(store *config.Store) template.FuncMap {
 		"showYield":  func(text string) string { return utils.ShowYield(text, store.Units()) },
 		// longDate shows a "2006-01-02" date written out ("March 14,
 		// 2025"), in the page's language.
-		"longDate": utils.LongDate,
+		"longDate":  utils.LongDate,
 		"shortDate": utils.ShortDate,
 		// dict builds a map from key/value pairs so a shared sub-template
 		// can take several arguments: {{ template "x" (dict "k" v ...) }}.
@@ -607,7 +609,7 @@ func registerStaticRoutes(r *gin.Engine, assets fs.FS) {
 // seedAgeInfo is a seed stock's age in whole months (Total), also split into
 // Years and Months for display.
 type seedAgeInfo struct {
-	OK                    bool
+	OK                   bool
 	Total, Years, Months int
 }
 

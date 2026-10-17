@@ -26,7 +26,7 @@
     {{ template "sd/head" . }}
     <div class="mt-3">{{ template "sd/family" . }}</div>
     <div class="sd-cols even mt-3">
-        <div class="sd-stack">{{ template "sd/about" . }}{{ template "sd/facts" . }}</div>
+        <div class="sd-stack">{{ template "sd/about" . }}{{ template "sd/smoke" . }}{{ template "sd/facts" . }}</div>
         <div class="sd-stack">{{ template "sd/vault" . }}{{ template "sd/profile" . }}</div>
     </div>
     {{ else }}
@@ -34,6 +34,7 @@
         <div class="sd-stack">
             {{ template "sd/head" . }}
             {{ template "sd/grows" . }}
+            {{ template "sd/smoke" . }}
             {{ template "sd/family" . }}
             {{ template "sd/about" . }}
             {{ template "sd/photos" . }}
@@ -85,6 +86,24 @@
 {{ end }}
 
 {{/* ---------- Your grows ---------- */}}
+{{/* ---------- Smoke reports of this strain (shown when there are some, or to a signed-in user) ---------- */}}
+{{ define "sd/smoke" }}
+{{ if or .smoke.Cards .loggedIn }}
+<div class="sd-card sr">
+    <h2 class="sd-h"><i class="fa-solid fa-joint"></i>{{ .lcl.sd_smoke_reports }}{{ if .smoke.AvgText }}<span class="sd-h-r">{{ if eq .smoke.Count 1 }}{{ .lcl.sd_smoke_one }}{{ else }}{{ fill .lcl.sd_smoke_summary "n" .smoke.Count }}{{ end }} <span class="sr-score {{ .smoke.AvgClass }}">{{ .smoke.AvgText }}</span></span>{{ end }}</h2>
+    {{ if .smoke.Cards }}
+    <div class="sr-more">
+        {{ range .smoke.Cards }}
+        <a href="/smoke/{{ .ID }}">{{ if .Photo }}<img src="{{ .Photo }}" alt="">{{ else }}<span class="d-inline-flex align-items-center justify-content-center bg-body-tertiary rounded" style="width:46px;height:46px"><i class="fa-solid fa-cannabis text-body-tertiary"></i></span>{{ end }}
+            <div><b>{{ .Title }}</b> {{ if .OverallText }}<span class="sr-score {{ .OverallClass }}">{{ .OverallText }}</span>{{ end }}<small class="sd-date" data-date="{{ .Date }}">{{ .Date }}</small></div></a>
+        {{ end }}
+    </div>
+    {{ end }}
+    {{ if .loggedIn }}<div class="{{ if .smoke.Cards }}mt-2{{ end }}"><a class="sd-btn light" href="/smoke/new?strain_id={{ .strain.ID }}"><i class="fa-solid fa-plus"></i>{{ .lcl.sd_new_smoke }}</a></div>{{ end }}
+</div>
+{{ end }}
+{{ end }}
+
 {{ define "sd/grows" }}
 {{ $h := .history }}
 <div class="sd-card">

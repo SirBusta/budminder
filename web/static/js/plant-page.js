@@ -121,6 +121,7 @@
         } else {
             const d = endDate(["drying", "curing", "success"]);
             if (d) facts.push(`<span class="sep">·</span><span>${esc(tr("pp_harvested"))} <b>${esc(fmt(d))}</b></span>`);
+            if (LOGGED_IN) facts.push(`<span class="sep">·</span><a class="pp-smoke-btn" href="/smoke/new?plant_id=${P.id}"><i class="fa-solid fa-plus"></i>${esc(tr("pp_smoke_report"))}</a>`);
         }
 
         const sub = [P.strain, P.breeder ? (P.strain_url ? `<a href="${esc(P.strain_url)}" target="_blank" rel="noopener">${esc(P.breeder)}</a>` : esc(P.breeder)) : "", P.zone]
@@ -161,6 +162,19 @@
             durations[h.status_id] = (durations[h.status_id] || 0) + Math.max(0, daysBetween(h.date, end));
         });
         const reached = new Set(HISTORY.map(h => h.status_id));
+        // After the stages: "Smoke", for harvested plants or any plant with a
+        // smoke report (its latest score and how many).
+        const smoke = D.smoke || {};
+        const showSmoke = smoke.count > 0 || ["drying", "curing", "success"].includes(String(P.status).toLowerCase());
+        let smokeStep = "";
+        if (showSmoke) {
+            const href = smoke.count ? `/smoke/${smoke.last_id}` : `/smoke/new?plant_id=${P.id}`;
+            const title = smoke.count ? tr("pp_smoke_n", { n: smoke.count, score: smoke.latest != null ? smoke.latest.toFixed(1) : "–" }) : tr("pp_smoke_report");
+            const node = smoke.count || LOGGED_IN ? `<a class="pp-node" href="${href}" title="${esc(title)}" aria-label="${esc(title)}"><i class="fa-solid fa-joint"></i></a>`
+                : `<span class="pp-node"><i class="fa-solid fa-joint"></i></span>`;
+            smokeStep = `<div class="pp-stg pp-smoke ${smoke.count ? "done" : ""}" style="--sc:#ea580c"><div class="pp-stg-row">${node}</div>
+                <div class="pp-lbl">${esc(tr("pp_smoke"))}${smoke.count ? `<small>${smoke.latest != null ? smoke.latest.toFixed(1) + " · " : ""}${smoke.count}</small>` : ""}</div></div>`;
+        }
         return stages.map((s, i) => {
             const [icon, color] = stageStyle(s.status);
             const isCur = i === curIdx;
@@ -170,9 +184,9 @@
             const days = reached.has(s.id) ? durations[s.id] : null;
             const title = !LOGGED_IN ? s.label : reached.has(s.id) ? tr("pp_change_stage_date", { stage: s.label }) : tr("pp_move_to", { stage: s.label });
             return `<div class="pp-stg ${cls}" style="--sc:${color}">
-                <div class="pp-stg-row"><button class="pp-node" ${LOGGED_IN ? `data-stage="${s.id}"` : "disabled"} title="${esc(title)}" aria-label="${esc(title)}"><i class="fa-solid ${icon}"></i></button>${i < stages.length - 1 ? `<div class="pp-seg-line"></div>` : ""}</div>
+                <div class="pp-stg-row"><button class="pp-node" ${LOGGED_IN ? `data-stage="${s.id}"` : "disabled"} title="${esc(title)}" aria-label="${esc(title)}"><i class="fa-solid ${icon}"></i></button>${i < stages.length - 1 || smokeStep ? `<div class="pp-seg-line"></div>` : ""}</div>
                 <div class="pp-lbl">${esc(s.label)}${days != null ? `<small>${days}d</small>` : ""}</div></div>`;
-        }).join("");
+        }).join("") + smokeStep;
     }
 
     // Stage click: a reached stage edits its date (existing window); any

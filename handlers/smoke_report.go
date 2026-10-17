@@ -361,6 +361,15 @@ type SmokeSummary struct {
 	LastID int      `json:"last_id"`
 }
 
+// SmokeSummariesFor is one plant's reports' count and latest score.
+func SmokeSummariesFor(db *sql.DB, plantID int) SmokeSummary {
+	list, err := LoadSmokeReports(db, LoadSmokeSettings(db).Weights, "r.plant_id = $1", plantID)
+	if err != nil || len(list) == 0 {
+		return SmokeSummary{}
+	}
+	return SmokeSummary{Count: len(list), Latest: list[0].Overall, LastID: list[0].ID}
+}
+
 // SmokeSummariesByPlant maps plant id → its reports' count and latest score.
 func SmokeSummariesByPlant(db *sql.DB) map[int]SmokeSummary {
 	out := map[int]SmokeSummary{}

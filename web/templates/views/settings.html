@@ -318,6 +318,37 @@
                         {{ end }}
                     </div>
                 </div>
+
+                <!-- Smoke reports: score weights and the form's optional fields (js/smoke-settings.js). -->
+                <div class="st-card" id="smokeSettingsCard" data-saved="{{ .lcl.api_smoke_saved }}">
+                    <div class="st-card-h"><i class="fa-solid fa-joint"></i><div><h3>{{ .lcl.sr_settings_title }}</h3><p>{{ .lcl.sr_settings_desc }}</p></div></div>
+                    <div class="p-3 pt-0">
+                        <h4 class="h6 fw-bold mt-2">{{ .lcl.sr_weights }}</h4>
+                        <p class="small text-body-secondary mb-2">{{ .lcl.sr_weights_desc }}</p>
+                        <div class="sr-wt">
+                            {{ $w := .smokeSettings.Weights }}
+                            <div><span>{{ .lcl.sr_bud }}</span><span class="sr-step"><button type="button" data-wstep="bud" data-d="-1" aria-label="−">−</button><b data-w="bud">{{ $w.Bud }}×</b><button type="button" data-wstep="bud" data-d="1" aria-label="+">+</button></span></div>
+                            <div><span>{{ .lcl.sr_taste }}</span><span class="sr-step"><button type="button" data-wstep="taste" data-d="-1" aria-label="−">−</button><b data-w="taste">{{ $w.Taste }}×</b><button type="button" data-wstep="taste" data-d="1" aria-label="+">+</button></span></div>
+                            <div><span>{{ .lcl.sr_smell }}</span><span class="sr-step"><button type="button" data-wstep="smell" data-d="-1" aria-label="−">−</button><b data-w="smell">{{ $w.Smell }}×</b><button type="button" data-wstep="smell" data-d="1" aria-label="+">+</button></span></div>
+                            <div><span>{{ .lcl.sr_effects }}</span><span class="sr-step"><button type="button" data-wstep="effects" data-d="-1" aria-label="−">−</button><b data-w="effects">{{ $w.Effects }}×</b><button type="button" data-wstep="effects" data-d="1" aria-label="+">+</button></span></div>
+                        </div>
+                        <h4 class="h6 fw-bold mt-3">{{ .lcl.sr_fields }}</h4>
+                        <p class="small text-body-secondary mb-2">{{ .lcl.sr_fields_desc }}</p>
+                        {{ $h := .smokeSettings.Hidden }}{{ $lcl := .lcl }}
+                        <div class="small fw-bold text-body-secondary mt-2 mb-1">{{ .lcl.sr_fields_grow }}</div>
+                        <div class="sr-fields">
+                            {{ range $f := (list "harvested" "grow_space" "lights" "container" "medium" "nutrients" "days_to_harvest" "dry_cure") }}
+                            <label><span>{{ index $lcl (print "sr_h_" $f) }}</span><span class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" data-field="{{ $f }}" {{ if not (index $h $f) }}checked{{ end }}></span></label>
+                            {{ end }}
+                        </div>
+                        <div class="small fw-bold text-body-secondary mt-2 mb-1">{{ .lcl.sr_fields_other }}</div>
+                        <div class="sr-fields">
+                            {{ range $f := (list "method" "side" "bud" "again" "thc_cbd" "dispensary") }}
+                            <label><span>{{ index $lcl (print "sr_h_" $f) }}</span><span class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" data-field="{{ $f }}" {{ if not (index $h $f) }}checked{{ end }}></span></label>
+                            {{ end }}
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- ========================== Appearance ========================== -->
@@ -2326,6 +2357,7 @@
 <script src="/static/js/settings-page.js" defer></script>
 
 <!--Embed the footer.html template at this location-->
+<script src="/static/js/smoke-settings.js" defer></script>
 {{ template "common/footer.html" .}}
 
 {{ end }}
