@@ -80,7 +80,7 @@ Everything about a strain in one place: every time you've grown it with yields a
 
 A tasting journal for everything you smoke, grown or bought. Score bud quality, taste, smell and effects from 1 to 10 and get an overall score, weighted the way you like. Pick effects, side effects, smells and tastes from lists or type your own, and say whether you'd grow or buy it again. For bought flower, look the strain up, add the dispensary and price, and BudMinder works out the price per gram. Add a photo by upload, from a web address, or from the plant's journal. Every report gets its own page, and plants and strains show their latest scores.
 
-<img src="docs/images/screenshots/smoke-report.webp" alt="A smoke report for Skyline Haze bought at a dispensary: the product photo, an overall score of 8.5 out of 10, price per gram, THC, top effects and smells, and bars for the bud quality, taste, smell and effects scores">
+<img src="docs/images/screenshots/smoke-report.webp" alt="A smoke report for home-grown Grape OG: a photo of two dried buds, an overall score of 7.8 out of 10, THC, CBD and cure time, top effects and smells, bars for the bud quality, taste, smell and effects scores, and the grow details BudMinder filled in from the plant">
 
 ### More
 
