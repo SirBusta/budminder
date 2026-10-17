@@ -412,3 +412,28 @@ func TestSmokeTouchpoints(t *testing.T) {
 	assert.Contains(t, settings, `id="smokeSettingsCard"`)
 	assert.Contains(t, settings, `data-field="nutrients"`)
 }
+
+func TestSmokePhoto_FromDraft(t *testing.T) {
+	t.Parallel()
+	e := newSmokeEnv(t)
+	code, out := e.postSmoke(t, http.MethodPost, "/smoke", map[string]any{"strain_name": "S"})
+	require.Equal(t, http.StatusOK, code)
+	id := int(out["id"].(float64))
+
+	// A picture from a web address lands in uploads/smoke/drafts first.
+	token := "0123456789abcdef0123456789abcdef"
+	draft := filepath.Join(e.server.UploadDir, "smoke", "drafts", token+".png")
+	require.NoError(t, os.MkdirAll(filepath.Dir(draft), 0o755))
+	require.NoError(t, os.WriteFile(draft, smokePNG(t), 0o644))
+
+	code, _ = e.postSmoke(t, http.MethodPost, fmt.Sprintf("/smoke/%d/photos/draft", id), map[string]any{"token": "../../etc/passwd"})
+	assert.Equal(t, http.StatusBadRequest, code, "only a draft token")
+	code, _ = e.postSmoke(t, http.MethodPost, fmt.Sprintf("/smoke/%d/photos/draft", id), map[string]any{"token": strings.Repeat("f", 32)})
+	assert.Equal(t, http.StatusNotFound, code)
+
+	code, out = e.postSmoke(t, http.MethodPost, fmt.Sprintf("/smoke/%d/photos/draft", id), map[string]any{"token": token})
+	require.Equal(t, http.StatusOK, code, out)
+	assert.Len(t, e.smokeAll(t)[0].Photos, 1)
+	_, err := os.Stat(draft)
+	assert.True(t, os.IsNotExist(err), "the draft is moved, not copied")
+}

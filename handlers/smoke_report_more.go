@@ -5,7 +5,9 @@ package handlers
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -591,7 +593,7 @@ func SmokeFormData(c *gin.Context, lang string, translations map[string]string, 
 	}
 	data := gin.H{"lang": lang, "t": smokeTranslations(translations), "vocab": SmokeVocab(),
 		"settings": LoadSmokeSettings(db), "plants": SmokePlantOptions(db), "strains": strains,
-		"today": time.Now().Format(utils.LayoutDate),
+		"today":         time.Now().Format(utils.LayoutDate),
 		"straincompass": ConfigStoreFromContext(c).StraincompassEnabled() == 1}
 	if report != nil {
 		data["report"] = report
@@ -815,4 +817,109 @@ func StrainSmokeSummary(db *sql.DB, strainID int) StrainSmoke {
 		out.AvgText, out.AvgClass = smokeScoreText(&avg)
 	}
 	return out
+}
+
+// ---------------------------------------------------------------------------
+// Draft photos: a picture from a web address is downloaded as soon as it's
+// added on the form, so it can be shown before the report is saved (the
+// page may only show images from BudMinder itself). Saving moves it in.
+// ---------------------------------------------------------------------------
+
+func smokeDraftDir(uploadDir string) string {
+	return filepath.Join(smokeUploadDir(uploadDir), "drafts")
+}
+
+var smokeDraftToken = regexp.MustCompile(`^[0-9a-f]{32}$`)
+
+// cleanupSmokeDrafts removes drafts older than a day (forms left unsaved).
+func cleanupSmokeDrafts(uploadDir string) {
+	entries, err := os.ReadDir(smokeDraftDir(uploadDir))
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if info, err := e.Info(); err == nil && time.Since(info.ModTime()) > 24*time.Hour {
+			_ = os.Remove(filepath.Join(smokeDraftDir(uploadDir), e.Name()))
+		}
+	}
+}
+
+// SmokeDraftPhotoHandler: POST /smoke/draft-photo {url} → {token, url}.
+func SmokeDraftPhotoHandler(c *gin.Context) {
+	var req struct {
+		URL string `json:"url"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || len(req.URL) > 2048 {
+		apiBadRequest(c, "api_invalid_request_payload")
+		return
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	defer cancel()
+	body, err := fetchImageURL(ctx, publicOnlyClient, req.URL, maxSmokePhotoSize)
+	if err != nil {
+		if errors.Is(err, errSmokeTooBig) || errors.Is(err, errSmokeNotImage) {
+			smokePhotoError(c, err)
+			return
+		}
+		logger.Log.WithError(err).Warn("Couldn't download smoke report photo")
+		apiBadRequest(c, "api_smoke_photo_download_failed")
+		return
+	}
+	ext, err := validateImageBytes(body)
+	if err != nil {
+		smokePhotoError(c, errSmokeNotImage)
+		return
+	}
+	uploadDir := UploadDirFromContext(c)
+	cleanupSmokeDrafts(uploadDir)
+	if err := os.MkdirAll(smokeDraftDir(uploadDir), 0o755); err != nil {
+		apiInternalError(c, "api_failed_to_create_directory")
+		return
+	}
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		apiInternalError(c, "api_failed_to_save_file")
+		return
+	}
+	token := hex.EncodeToString(b)
+	path := filepath.Join(smokeDraftDir(uploadDir), token+ext)
+	if err := os.WriteFile(path, body, 0o644); err != nil {
+		apiInternalError(c, "api_failed_to_save_file")
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"token": token, "url": webPath(path)})
+}
+
+// SmokePhotoFromDraftHandler: POST /smoke/:id/photos/draft {token} moves a
+// downloaded draft onto the report.
+func SmokePhotoFromDraftHandler(c *gin.Context) {
+	id, ok := smokeID(c)
+	if !ok {
+		return
+	}
+	var req struct {
+		Token string `json:"token"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || !smokeDraftToken.MatchString(req.Token) {
+		apiBadRequest(c, "api_invalid_request_payload")
+		return
+	}
+	uploadDir := UploadDirFromContext(c)
+	matches, _ := filepath.Glob(filepath.Join(smokeDraftDir(uploadDir), req.Token+".*"))
+	if len(matches) != 1 {
+		apiNotFound(c, "api_image_not_found")
+		return
+	}
+	body, err := os.ReadFile(matches[0])
+	if err != nil {
+		apiNotFound(c, "api_image_not_found")
+		return
+	}
+	p, err := saveSmokePhoto(DBFromContext(c), uploadDir, id, body)
+	if err != nil {
+		smokePhotoError(c, err)
+		return
+	}
+	_ = os.Remove(matches[0])
+	c.JSON(http.StatusOK, gin.H{"photos": []SmokePhoto{p}})
 }

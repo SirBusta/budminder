@@ -73,10 +73,12 @@
             ${on.filter(t => t.custom).map(t => `<button type="button" data-custom="${esc(t.name)}" class="on ${cls}" title="${esc(tr("sr_remove"))}">${esc(t.name)} <i class="fa-solid fa-xmark ms-1"></i></button>`).join("")}
             <input class="otherin" data-other="${kind}" placeholder="${esc(tr("sr_other"))}: ${esc(tr("sr_other_ph"))}" aria-label="${esc(tr("sr_other"))}"></div>`;
     }
+    // 1 → 10: red, amber, green (the picked number fills with its color).
+    const SCALE = ["#b91c1c", "#dc2626", "#ea580c", "#d97706", "#ca8a04", "#65a30d", "#4d7c0f", "#16a34a", "#15803d", "#166534"];
     function ten(k) {
         const v = S.scores[k];
         let h = "";
-        for (let i = 1; i <= 10; i++) h += `<button type="button" data-score="${k}" data-v="${i}" class="${v === i ? "on" : v && i < v ? "in" : ""}" aria-pressed="${v === i}">${i}</button>`;
+        for (let i = 1; i <= 10; i++) h += `<button type="button" data-score="${k}" data-v="${i}" style="--n:${SCALE[i - 1]}" class="${v === i ? "on" : v && i < v ? "in" : ""}" aria-pressed="${v === i}">${i}</button>`;
         return `<div class="sr-ten" role="group" aria-label="${esc(tr("sr_" + k))}">${h}</div><div class="wt">×${W[k]}</div>`;
     }
     function overall() {
@@ -129,27 +131,29 @@
             ["container", "container", "sr_f_container"], ["medium", "medium", "sr_f_medium"], ["nutrients", "nutrients", "sr_f_nutrients"],
             ["days_to_harvest", "days_to_harvest", "sr_f_days_to_harvest", "number"], ["dry_cure", "dry_days", "sr_f_dry", "number"], ["dry_cure", "cure_days", "sr_f_cure", "number"]];
         const f = rows.filter(r => shown(r[0])).map(([, k, l, t]) => field(k, tr(l) + (t === "number" && k !== "days_to_harvest" ? "" : ""), t || "text", t === "number" ? `min="0" step="1"` : "")).join("");
-        return f ? `<div class="sd-card"><h2 class="sd-h"><i class="fa-solid fa-clipboard-list"></i>${esc(tr("sr_grow_info"))}<a class="sd-h-r" href="/settings#grow"><i class="fa-solid fa-sliders me-1"></i>${esc(tr("sr_customize"))}</a></h2><div class="grid">${f}</div></div>` : "";
+        return f ? `<div class="sd-card sr-c sr-c-grow"><h2 class="sd-h"><span class="sr-ic"><i class="fa-solid fa-clipboard-list"></i></span>${esc(tr("sr_grow_info"))}<a class="sd-h-r" href="/settings#grow"><i class="fa-solid fa-sliders me-1"></i>${esc(tr("sr_customize"))}</a></h2><div class="grid">${f}</div></div>` : "";
     }
     function scoresSection() {
         const row = (k, hint) => `<div class="sr-scorerow"><div class="lbl"><b>${esc(tr("sr_" + k))}</b>${hint ? `<small>${esc(tr(hint))}</small>` : ""}</div>${ten(k)}</div>`;
-        return `<div class="sd-card"><h2 class="sd-h"><i class="fa-solid fa-star-half-stroke"></i>${esc(tr("sr_scores"))}<span class="sd-h-r">${esc(tr("sr_scores_hint"))}</span></h2>
+        return `<div class="sd-card sr-c sr-c-scores"><h2 class="sd-h"><span class="sr-ic"><i class="fa-solid fa-star-half-stroke"></i></span>${esc(tr("sr_scores"))}<span class="sd-h-r">${esc(tr("sr_scores_hint"))}</span></h2>
             ${row("bud", "sr_bud_hint")}${row("taste")}${row("smell")}${row("effects", "sr_effects_hint")}
             <div class="sr-overall">${esc(tr("sr_overall"))} <span id="srOverall">${scoreBadge(overall())}</span></div></div>`;
     }
     function describeSection() {
         const V = D.vocab || {};
-        let h = `<label class="f">${esc(tr("sr_effects"))}</label>${chips("effect", V.effect || [], "")}`;
-        if (shown("side")) h += `<label class="f mt-3">${esc(tr("sr_side_effects"))}</label>${chips("side", V.side || [], "side")}`;
-        h += `<label class="f mt-3">${esc(tr("sr_smell"))}</label>${chips("smell", V.smell || [], "smell")}`;
-        h += `<label class="f mt-3">${esc(tr("sr_taste"))}</label>${chips("taste", V.taste || [], "taste")}`;
-        if (shown("bud")) h += `<label class="f mt-3">${esc(tr("sr_bud"))}</label>${chips("bud", V.bud || [], "bud")}`;
-        return `<div class="sd-card"><h2 class="sd-h"><i class="fa-solid fa-tags"></i>${esc(tr("sr_describe"))}</h2>${h}</div>`;
+        // Each group's label carries a dot in the group's chip color.
+        const lbl = (key, color, first) => `<label class="f${first ? "" : " mt-3"}" data-dot style="--dot:${color}">${esc(tr(key))}</label>`;
+        let h = lbl("sr_effects", "#166534", true) + chips("effect", V.effect || [], "");
+        if (shown("side")) h += lbl("sr_side_effects", "#c2410c") + chips("side", V.side || [], "side");
+        h += lbl("sr_smell", "#7c3aed") + chips("smell", V.smell || [], "smell");
+        h += lbl("sr_taste", "#be185d") + chips("taste", V.taste || [], "taste");
+        if (shown("bud")) h += lbl("sr_bud", "#0369a1") + chips("bud", V.bud || [], "bud");
+        return `<div class="sd-card sr-c sr-c-describe"><h2 class="sd-h"><span class="sr-ic"><i class="fa-solid fa-tags"></i></span>${esc(tr("sr_describe"))}</h2>${h}</div>`;
     }
     function againSection() {
         if (!shown("again")) return "";
-        const b = (k, l) => `<button type="button" data-again="${k}" class="${S.again === k ? "on" : ""}" aria-pressed="${S.again === k}">${esc(tr(l))}</button>`;
-        return `<div class="sd-card"><h2 class="sd-h"><i class="fa-solid fa-rotate-right"></i>${esc(tr(S.source === "bought" ? "sr_again_q_buy" : "sr_again_q_grow"))}</h2>
+        const b = (k, l) => `<button type="button" data-again="${k}" class="sr-ag-${k} ${S.again === k ? "on" : ""}" aria-pressed="${S.again === k}">${esc(tr(l))}</button>`;
+        return `<div class="sd-card sr-c sr-c-again"><h2 class="sd-h"><span class="sr-ic"><i class="fa-solid fa-rotate-right"></i></span>${esc(tr(S.source === "bought" ? "sr_again_q_buy" : "sr_again_q_grow"))}</h2>
             <div class="sr-seg">${b("yes", "sr_yes")}${b("maybe", "sr_maybe")}${b("no", "sr_no")}</div></div>`;
     }
     function photosSection() {
@@ -164,7 +168,7 @@
         if (S.tab === "url") body = `<div class="input-group"><input class="form-control" id="srURL" type="url" placeholder="${esc(tr("sr_url_ph"))}"><button type="button" class="btn btn-success" id="srURLAdd">${esc(tr("sr_add"))}</button></div><p class="small sd-muted mt-2 mb-0">${esc(tr("sr_url_note"))}</p>`;
         if (S.tab === "journal") body = !S.plant_id ? `<p class="sd-muted small mb-0">${esc(tr("sr_pick_plant_first"))}</p>` : !S.journal.length ? `<p class="sd-muted small mb-0">${esc(tr("sr_no_journal"))}</p>`
             : `<div class="sr-jgrid">${S.journal.map(j => `<img src="${esc(j.url)}" data-journal="${j.id}" class="${pending.some(p => p.journal === j.id) ? "on" : ""}" alt="" tabindex="0">`).join("")}</div>`;
-        return `<div class="sd-card"><h2 class="sd-h"><i class="fa-solid fa-image"></i>${esc(tr("sr_photos"))}<span class="sd-h-r">${esc(tr("sr_photos_hint"))}</span></h2>
+        return `<div class="sd-card sr-c sr-c-photos"><h2 class="sd-h"><span class="sr-ic"><i class="fa-solid fa-image"></i></span>${esc(tr("sr_photos"))}<span class="sd-h-r">${esc(tr("sr_photos_hint"))}</span></h2>
             ${items ? `<div class="sr-plist mb-3">${items}</div>` : ""}
             <div class="sr-tabs">${tab("upload", "sr_upload")}${tab("url", "sr_image_url")}${S.source === "grown" ? tab("journal", "sr_from_journal") : ""}</div>${body}</div>`;
     }
@@ -174,16 +178,16 @@
     function render() {
         const g = S.source === "grown";
         box.innerHTML = `
-          <div class="sd-card"><div class="sr-seg mb-3" role="group">
+          <div class="sd-card sr-c sr-c-source"><div class="sr-seg sr-srcseg mb-3" role="group">
               <button type="button" data-source="grown" class="${g ? "on" : ""}"><i class="fa-solid fa-seedling me-1"></i>${esc(tr("sr_from_my_plants"))}</button>
               <button type="button" data-source="bought" class="${g ? "" : "on"}"><i class="fa-solid fa-store me-1"></i>${esc(tr("sr_bought_flower"))}</button></div>
             ${g ? plantOptions() : lookupBox()}</div>
-          <div class="sd-card"><h2 class="sd-h"><i class="fa-solid fa-joint"></i>${esc(tr("sr_the_smoke"))}</h2>${smokeSection()}</div>
+          <div class="sd-card sr-c sr-c-smoke"><h2 class="sd-h"><span class="sr-ic"><i class="fa-solid fa-joint"></i></span>${esc(tr("sr_the_smoke"))}</h2>${smokeSection()}</div>
           ${g ? growSection() : ""}
           ${scoresSection()}
           ${describeSection()}
           ${againSection()}
-          <div class="sd-card"><h2 class="sd-h"><i class="fa-solid fa-note-sticky"></i>${esc(tr("sr_notes"))}</h2><textarea class="form-control" rows="4" id="srF_notes" data-f="notes">${esc(S.f.notes)}</textarea></div>
+          <div class="sd-card sr-c sr-c-notes"><h2 class="sd-h"><span class="sr-ic"><i class="fa-solid fa-note-sticky"></i></span>${esc(tr("sr_notes"))}</h2><textarea class="form-control" rows="4" id="srF_notes" data-f="notes">${esc(S.f.notes)}</textarea></div>
           <div id="srPhotos">${photosSection()}</div>
           <div class="sr-save mb-4"><a class="sd-btn light" href="${R ? "/smoke/" + R.id : "/smoke"}">${esc(tr("sr_cancel"))}</a>
             <button type="button" class="sd-btn" id="srSave"><i class="fa-solid fa-check"></i>${esc(tr("sr_save"))}</button></div>`;
@@ -339,7 +343,7 @@
         const ag = t.closest("[data-again]");
         if (ag) {
             S.again = S.again === ag.dataset.again ? "" : ag.dataset.again;
-            box.querySelectorAll("[data-again]").forEach(b => b.classList.toggle("on", b.dataset.again === S.again));
+            box.querySelectorAll("[data-again]").forEach(b => { b.classList.toggle("on", b.dataset.again === S.again); b.setAttribute("aria-pressed", b.dataset.again === S.again); });
             return;
         }
         const tab = t.closest("[data-tab]");
@@ -442,13 +446,23 @@
         }
         rerenderPhotos();
     }
-    function addURL() {
-        const el = $("srURL");
+    // A picture from a web address is downloaded straight away (POST
+    // /smoke/draft-photo) so it shows here before saving; saving moves it in.
+    async function addURL() {
+        const el = $("srURL"), btn = $("srURLAdd");
         const u = el && el.value.trim();
         if (!u || !/^https?:\/\//i.test(u)) { if (el) el.reportValidity(); return; }
-        pending.push({ url: u, preview: u });
-        el.value = "";
-        rerenderPhotos();
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span>`;
+        try {
+            const d = await api("POST", "/smoke/draft-photo", { url: u });
+            pending.push({ draft: d.token, preview: d.url });
+            rerenderPhotos();
+        } catch (e) {
+            toast(e.message);
+            btn.disabled = false;
+            btn.textContent = tr("sr_add");
+        }
     }
     function toggleJournal(id, url) {
         const i = pending.findIndex(p => p.journal === id);
@@ -511,7 +525,7 @@
                     const r = await fetch(`/smoke/${id}/photos`, { method: "POST", body: fd, headers: { Accept: "application/json" } });
                     res = await r.json().catch(() => ({}));
                     if (!r.ok) throw new Error(res.error || r.statusText);
-                } else if (p.url) res = await api("POST", `/smoke/${id}/photos/url`, { url: p.url });
+                } else if (p.draft) res = await api("POST", `/smoke/${id}/photos/draft`, { token: p.draft });
                 else res = await api("POST", `/smoke/${id}/photos/journal`, { image_id: p.journal });
                 (res.photos || []).forEach(x => newIDs.push(x.id));
             } catch (e) { problems.push(e.message); }

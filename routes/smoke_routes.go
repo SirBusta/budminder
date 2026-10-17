@@ -92,11 +92,13 @@ func addSmokeAPIRoutes(r *gin.RouterGroup) {
 	r.GET("/smoke/journal-photos", handlers.SmokeJournalPhotosHandler)
 	r.POST("/smoke", handlers.CreateSmokeReportHandler)
 	r.POST("/smoke/settings", handlers.SaveSmokeSettingsHandler)
+	r.POST("/smoke/draft-photo", handlers.SmokeDraftPhotoHandler)
 	r.PUT("/smoke/:id", handlers.UpdateSmokeReportHandler)
 	r.DELETE("/smoke/:id", handlers.DeleteSmokeReportHandler)
 	r.POST("/smoke/:id/photos", handlers.UploadSmokePhotosHandler)
 	r.POST("/smoke/:id/photos/url", handlers.SmokePhotoFromURLHandler)
 	r.POST("/smoke/:id/photos/journal", handlers.SmokePhotoFromJournalHandler)
+	r.POST("/smoke/:id/photos/draft", handlers.SmokePhotoFromDraftHandler)
 	r.PUT("/smoke/:id/photos/order", handlers.OrderSmokePhotosHandler)
 	r.DELETE("/smoke/:id/photos/:photoID", handlers.DeleteSmokePhotoHandler)
 }

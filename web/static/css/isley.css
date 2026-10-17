@@ -4020,3 +4020,57 @@ body { --sr-scorebg: var(--sr-acc); --sr-num: var(--sr-acc); }
   background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; text-decoration: none; }
 [data-bs-theme="dark"] .pl-smoke { background: rgba(251,146,60,.12); color: #fdba74; border-color: rgba(251,146,60,.35); }
 .sr-card .ph .sr-score:not(.mid):not(.low) { background: var(--sr-scorebg-photo, var(--sr-scorebg)); }
+
+/* ---------- Smoke report form colors (Forest: solid accents, no pastel fills) ---------- */
+.sr-form .sr-c { --cc: #166534; border-left: 4px solid var(--cc); }
+.sr-form .sr-c-source { --cc: #166534; }
+.sr-form .sr-c-smoke { --cc: #166534; }
+.sr-form .sr-c-grow { --cc: #0f766e; }
+.sr-form .sr-c-scores { --cc: #b45309; }
+.sr-form .sr-c-describe { --cc: #7c3aed; }
+.sr-form .sr-c-again { --cc: #166534; }
+.sr-form .sr-c-notes { --cc: #475569; }
+.sr-form .sr-c-photos { --cc: #1d4ed8; }
+[data-bs-theme="dark"] .sr-form .sr-c-grow { --cc: #14b8a6; }
+[data-bs-theme="dark"] .sr-form .sr-c-scores { --cc: #f59e0b; }
+[data-bs-theme="dark"] .sr-form .sr-c-describe { --cc: #a78bfa; }
+[data-bs-theme="dark"] .sr-form .sr-c-notes { --cc: #94a3b8; }
+[data-bs-theme="dark"] .sr-form .sr-c-photos { --cc: #60a5fa; }
+[data-bs-theme="dark"] .sr-form .sr-c-smoke, [data-bs-theme="dark"] .sr-form .sr-c-again, [data-bs-theme="dark"] .sr-form .sr-c-source { --cc: #22c55e; }
+.sr-form .sr-ic { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--cc); color: #fff; font-size: .8rem; flex: none; }
+.sr-form .sr-c .sd-h > .sr-ic i { color: #fff; }
+.sr-form .sr-c .sd-h { font-size: 1.05rem; }
+/* "From my plants" / "Bought flower": the chosen one is filled */
+.sr-form .sr-srcseg button.on { color: #fff; }
+.sr-form .sr-srcseg button[data-source="grown"].on { background: #166534; }
+.sr-form .sr-srcseg button[data-source="bought"].on { background: #6d28d9; }
+/* Choice chips: each group in its own color; picked = filled */
+.sr-form .sr-pick button { border-width: 1.5px; }
+.sr-form .sr-pick[data-kind="effect"] button, .sr-form .sr-pick[data-method] button { --g: #166534; }
+.sr-form .sr-pick[data-kind="side"] button { --g: #c2410c; }
+.sr-form .sr-pick[data-kind="smell"] button { --g: #7c3aed; }
+.sr-form .sr-pick[data-kind="taste"] button { --g: #be185d; }
+.sr-form .sr-pick[data-kind="bud"] button { --g: #0369a1; }
+[data-bs-theme="dark"] .sr-form .sr-pick[data-kind="effect"] button, [data-bs-theme="dark"] .sr-form .sr-pick[data-method] button { --g: #4ade80; }
+[data-bs-theme="dark"] .sr-form .sr-pick[data-kind="side"] button { --g: #fb923c; }
+[data-bs-theme="dark"] .sr-form .sr-pick[data-kind="smell"] button { --g: #a78bfa; }
+[data-bs-theme="dark"] .sr-form .sr-pick[data-kind="taste"] button { --g: #f472b6; }
+[data-bs-theme="dark"] .sr-form .sr-pick[data-kind="bud"] button { --g: #38bdf8; }
+.sr-form .sr-pick button:not(.other) { color: var(--g); border-color: color-mix(in srgb, var(--g) 55%, transparent); }
+.sr-form .sr-pick button:not(.other):hover { border-color: var(--g); }
+.sr-form .sr-pick button.on, .sr-form .sr-pick button.on.side, .sr-form .sr-pick button.on.smell,
+.sr-form .sr-pick button.on.taste, .sr-form .sr-pick button.on.bud { background: var(--g); border-color: var(--g); color: #fff; }
+[data-bs-theme="dark"] .sr-form .sr-pick button.on { color: #111827; }
+.sr-form .sr-pick .otherin { border-color: color-mix(in srgb, var(--cc, #166534) 60%, transparent); }
+/* Score numbers 1 → 10 in a red → green scale */
+.sr-form .sr-ten button { color: var(--n); border-color: color-mix(in srgb, var(--n) 45%, transparent); border-width: 1.5px; }
+.sr-form .sr-ten button:hover { border-color: var(--n); }
+.sr-form .sr-ten button.in { background: transparent; border-color: var(--n); color: var(--n); }
+.sr-form .sr-ten button.on { background: var(--n); border-color: var(--n); color: #fff; }
+/* Grow/buy again */
+.sr-form .sr-ag-yes.on { background: #166534; color: #fff; }
+.sr-form .sr-ag-maybe.on { background: #b45309; color: #fff; }
+.sr-form .sr-ag-no.on { background: #b91c1c; color: #fff; }
+/* Labels above each group: a dot in the group color */
+.sr-form label.f[data-dot]::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--dot); margin-right: .4rem; vertical-align: middle; }
+.sr-form .sr-c .sr-tabs button.on { background: var(--cc); }
