@@ -30,6 +30,8 @@
 
 **See what your work does.** Each day's notes, watering and feeding sit right next to that day's photos. Scroll back through a grow and you can see how each change showed up in the plants: when you topped, when you flipped, when the frost came in.
 
+**Remember how it turned out.** Write a smoke report for each harvest, or for flower you bought. Score the bud, taste, smell and effects, and pick what you noticed from lists. BudMinder fills in the grow details for you: harvest date, days to harvest, dry and cure time, the tent, lights and medium. Months later you can see which grows were worth repeating, and how much a longer cure helped.
+
 **Don't type in every strain.** Search large public strain databases and add a strain in one click. That brings in its breeder, parents, THC and CBD, effects, terpenes and flowering time. You only fill in what's yours: how many seeds you have and where you keep them.
 
 **Use the sensors you already have.** BudMinder reads AC Infinity controllers and Ecowitt gateways directly, and any sensor Home Assistant knows about: Govee, SwitchBot, Inkbird, Zigbee, ESPHome and more. If Home Assistant can see it, BudMinder can chart it next to your plants.
@@ -74,6 +76,12 @@ Everything about a strain in one place: every time you've grown it with yields a
 
 <img src="docs/images/screenshots/strain-grape.webp" alt="The Grape OG strain page: four harvested plants with yields, the strain's family, seed vault and strain facts, and photos from the grows">
 
+### Smoke reports
+
+A tasting journal for everything you smoke, grown or bought. Score bud quality, taste, smell and effects from 1 to 10 and get an overall score, weighted the way you like. Pick effects, side effects, smells and tastes from lists or type your own, and say whether you'd grow or buy it again. For bought flower, look the strain up, add the dispensary and price, and BudMinder works out the price per gram. Add a photo by upload, from a web address, or from the plant's journal. Every report gets its own page, and plants and strains show their latest scores.
+
+<img src="docs/images/screenshots/smoke-report.webp" alt="A smoke report for Skyline Haze bought at a dispensary: the product photo, an overall score of 8.5 out of 10, price per gram, THC, top effects and smells, and bars for the bud quality, taste, smell and effects scores">
+
 ### More
 
 <table>
@@ -97,6 +105,8 @@ Everything about a strain in one place: every time you've grown it with yields a
 ### And also
 
 - One-click strain import from StrainCompass, with THC and CBD ranges, effects, terpenes and parents
+- Smoke reports for flower you grew or bought, sortable by score, price per gram or date
+- Hide the smoke report fields you never use, and choose how much each score counts
 - Imperial or metric units for heights, yields and temperatures
 - Everything is served from your own server: no outside fonts, scripts or trackers
 - Journal export to CSV or Excel (PDF coming soon)
@@ -106,7 +116,7 @@ Everything about a strain in one place: every time you've grown it with yields a
 - Guest view for sharing, read-only
 - SQLite or PostgreSQL, with backups that move between them
 
-<sub>Screenshots use a demo data set. The sensor history is a month of real readings from an AC Infinity controller in a 3x3 tent, and the photos are from real grows.</sub>
+<sub>Screenshots use a demo data set. The sensor history is a month of real readings from an AC Infinity controller in a 3x3 tent.</sub>
 
 ## Install
 
