@@ -38,6 +38,11 @@
             </a>
         </li>
         <li class="nav-item">
+            <a href="/smoke" class="nav-link{{ if hasPrefix .currentPath "/smoke" }} active{{ end }}"{{ if hasPrefix .currentPath "/smoke" }} aria-current="page"{{ end }} title="{{ .lcl.sr_title }}" aria-label="{{ .lcl.sr_title }}">
+                <i class="fa-solid fa-joint" aria-hidden="true"></i><span class="nav-lbl">{{ .lcl.title_smoke }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
             <a href="/settings" class="nav-link{{ if or (hasPrefix .currentPath "/settings") (hasPrefix .currentPath "/sensors/manage") }} active{{ end }}"{{ if or (hasPrefix .currentPath "/settings") (hasPrefix .currentPath "/sensors/manage") }} aria-current="page"{{ end }} title="{{ .lcl.title_settings }}" aria-label="{{ .lcl.title_settings }}">
                 <i class="fa fa-cog" aria-hidden="true"></i><span class="nav-lbl">{{ .lcl.title_settings }}</span>
             </a>

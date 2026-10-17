@@ -1,0 +1,181 @@
+{{ define "views/smoke-report.html"}}
+
+{{ template "common/header.html" .}}
+{{ template "common/header2.html" .}}
+
+{{/* One smoke report, product-page style (mockup data/mockups/smoke, screens 3-5).
+     Dates are ISO in data-date and shown in the reader's format by smoke-report.js. */}}
+{{ $r := .v.R }}{{ $h := .v.Hidden }}{{ $lcl := .lcl }}
+<div class="container-xxl sd sr" id="smokeReport" data-id="{{ $r.ID }}" data-lang="{{ .currentLanguage }}"
+     data-confirm="{{ .lcl.sr_delete_confirm }}" data-delete="{{ .lcl.sr_delete }}">
+    <nav aria-label="breadcrumb" class="mt-1">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/smoke">{{ .lcl.sr_title }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ $r.StrainName }}{{ if $r.SmokedOn }} · <span data-date="{{ $r.SmokedOn }}">{{ $r.SmokedOn }}</span>{{ end }}</li>
+        </ol>
+    </nav>
+
+    <div class="sr-prod">
+        <div>
+            <div class="sr-photo">
+                {{ if $r.Photos }}<img id="srMain" src="{{ (index $r.Photos 0).URL }}" alt="{{ $r.StrainName }}">
+                {{ else }}<div class="d-flex h-100 align-items-center justify-content-center text-body-tertiary flex-column gap-2"><i class="fa-solid fa-cannabis fa-4x"></i><span class="small">{{ .lcl.sr_no_photo }}</span></div>{{ end }}
+                {{ if .v.Grown }}<span class="sr-src grown"><i class="fa-solid fa-seedling"></i>{{ .lcl.sr_grown }}</span>{{ else }}<span class="sr-src bought"><i class="fa-solid fa-store"></i>{{ .lcl.sr_bought }}</span>{{ end }}
+            </div>
+            {{ if gt (len $r.Photos) 1 }}
+            <div class="sr-thumbs" id="srThumbs">
+                {{ range $i, $p := $r.Photos }}<img src="{{ $p.URL }}" class="{{ if eq $i 0 }}on{{ end }}" alt="" data-full="{{ $p.URL }}" tabindex="0">{{ end }}
+            </div>
+            {{ end }}
+        </div>
+
+        <div class="sr-info">
+            <h1>{{ $r.StrainName }}</h1>
+            <div class="by">
+                {{ if $r.BreederName }}{{ .lcl.sr_by }} {{ if $r.StrainID }}<a href="/strain/{{ $r.StrainID }}">{{ $r.BreederName }}</a>{{ else }}<b>{{ $r.BreederName }}</b>{{ end }}{{ end }}
+                {{ if .v.Grown }}{{ if $r.PlantID }} · {{ .lcl.sr_from_plant }} <a href="/plant/{{ $r.PlantID }}">{{ $r.PlantName }}</a>{{ end }}{{ if and $r.GrowSpace (not (index $h "grow_space")) }} · {{ $r.GrowSpace }}{{ end }}
+                {{ else if and $r.Dispensary (not (index $h "dispensary")) }} · {{ .lcl.sr_bought_at }} <b>{{ $r.Dispensary }}</b>{{ end }}
+            </div>
+            <div class="sr-chips">
+                {{ with .v.Strain }}
+                {{ $in := index . "indica" }}{{ $sa := index . "sativa" }}
+                <span class="sd-b">{{ if gt $in $sa }}{{ printf $lcl.sd_indica $in }}{{ else if gt $sa $in }}{{ printf $lcl.sd_sativa $sa }}{{ else }}{{ $lcl.sd_hybrid }}{{ end }}</span>
+                {{ if index . "autoflower" }}<span class="sd-b auto"><i class="fa-solid fa-bolt"></i>{{ $lcl.sp_autoflower }}</span>{{ else }}<span class="sd-b photo"><i class="fa-solid fa-sun"></i>{{ $lcl.sp_photoperiod }}</span>{{ end }}
+                {{ end }}
+                {{ if and .v.Method (not (index $h "method")) }}<span class="sd-b"><i class="fa-solid fa-joint"></i>{{ .v.Method }}</span>{{ end }}
+                {{ if and $r.Again (not (index $h "again")) }}
+                {{ if eq $r.Again "yes" }}<span class="sr-again yes"><i class="fa-solid fa-check"></i>{{ if .v.Grown }}{{ .lcl.sr_again_yes }}{{ else }}{{ .lcl.sr_buy_again_yes }}{{ end }}</span>
+                {{ else if eq $r.Again "maybe" }}<span class="sr-again maybe"><i class="fa-solid fa-question"></i>{{ .lcl.sr_again_maybe }}</span>
+                {{ else }}<span class="sr-again no"><i class="fa-solid fa-xmark"></i>{{ if .v.Grown }}{{ .lcl.sr_again_no }}{{ else }}{{ .lcl.sr_buy_again_no }}{{ end }}</span>{{ end }}
+                {{ end }}
+            </div>
+
+            {{ if .v.OverallText }}
+            <div class="sr-big">
+                <div class="num">{{ .v.OverallText }}<small>/10</small></div>
+                <div><div class="sr-dots">{{ range .v.Dots }}<i class="{{ . }}"></i>{{ end }}</div><div class="lbl">{{ .lcl.sr_overall_score }}</div></div>
+            </div>
+            {{ end }}
+
+            {{ if and (not .v.Grown) .v.PriceText (not (index $h "dispensary")) }}
+            <div class="sr-price"><span class="p">{{ .v.PriceText }}</span>{{ if $r.AmountG }}<span class="sd-muted">{{ printf "%g" (deref $r.AmountG) }} g</span>{{ end }}{{ if .v.PPGText }}<span class="pg">{{ .v.PPGText }}</span>{{ end }}{{ if $r.Batch }}<span class="sd-muted small">{{ .lcl.sr_batch }} {{ $r.Batch }}</span>{{ end }}</div>
+            {{ end }}
+
+            <div class="sr-kv">
+                {{ if and $r.THC (not (index $h "thc_cbd")) }}<div><small>{{ .lcl.sr_thc }}</small><b>{{ $r.THC }}%</b></div>{{ end }}
+                {{ if and $r.CBD (not (index $h "thc_cbd")) }}<div><small>{{ .lcl.sr_cbd }}</small><b>{{ $r.CBD }}%</b></div>{{ end }}
+                {{ if $r.SmokedOn }}<div><small>{{ .lcl.sr_col_smoked }}</small><b data-date="{{ $r.SmokedOn }}">{{ $r.SmokedOn }}</b></div>{{ end }}
+                {{ if and $r.CureDays (not (index $h "dry_cure")) }}<div><small>{{ .lcl.sr_cured }}</small><b>{{ fill .lcl.sr_days "n" (deref $r.CureDays) }}</b></div>{{ end }}
+            </div>
+
+            {{ $eff := index .v.Words "effect" }}{{ $sm := index .v.Words "smell" }}
+            {{ if or $eff $sm }}
+            <div class="sr-sec mb-3">
+                {{ if $eff }}<h4>{{ .lcl.sr_top_effects }}</h4><div class="sr-chips">{{ range $i, $w := $eff }}{{ if lt $i 4 }}<span class="sr-chip eff">{{ $w }}</span>{{ end }}{{ end }}</div>{{ end }}
+                {{ if $sm }}<h4>{{ .lcl.sr_smells_like }}</h4><div class="sr-chips">{{ range $sm }}<span class="sr-chip smell">{{ . }}</span>{{ end }}</div>{{ end }}
+            </div>
+            {{ end }}
+
+            {{ if .loggedIn }}
+            <div class="sd-acts">
+                <a class="sd-btn" href="/smoke/{{ $r.ID }}/edit"><i class="fa-solid fa-pen"></i>{{ .lcl.sr_edit }}</a>
+                {{ if $r.PlantID }}<a class="sd-btn light" href="/smoke/new?plant_id={{ $r.PlantID }}"><i class="fa-solid fa-plus"></i>{{ fill .lcl.sr_new_for_plant "name" $r.PlantName }}</a>{{ end }}
+                <button type="button" class="sd-btn light text-danger" id="srDelete"><i class="fa-solid fa-trash"></i>{{ .lcl.sr_delete }}</button>
+            </div>
+            {{ end }}
+        </div>
+    </div>
+
+    <div class="sd-cols mt-4">
+        <div class="sd-stack">
+            <div class="sd-card"><h2 class="sd-h"><i class="fa-solid fa-star-half-stroke"></i>{{ .lcl.sr_scores }}</h2>
+                <div class="sr-bars">
+                    {{ range .v.Scores }}
+                    <div class="r"><span>{{ index $lcl .Key }}</span><div class="tr"><span style="width:{{ .Pct }}%"></span></div><span class="v">{{ if .Value }}{{ .Value }}{{ else }}–{{ end }}</span><span class="w">×{{ .Weight }}</span></div>
+                    {{ end }}
+                </div>
+            </div>
+
+            {{ $side := index .v.Words "side" }}
+            {{ if or $eff (and $side (not (index $h "side"))) }}
+            <div class="sd-card sr-sec"><h2 class="sd-h"><i class="fa-solid fa-face-smile"></i>{{ .lcl.sr_how_it_felt }}</h2>
+                {{ if $eff }}<h4>{{ .lcl.sr_effects }}</h4><div class="sr-chips">{{ range $eff }}<span class="sr-chip eff">{{ . }}</span>{{ end }}</div>{{ end }}
+                {{ if and $side (not (index $h "side")) }}<h4>{{ .lcl.sr_side_effects }}</h4><div class="sr-chips">{{ range $side }}<span class="sr-chip side">{{ . }}</span>{{ end }}</div>{{ end }}
+            </div>
+            {{ end }}
+
+            {{ $ta := index .v.Words "taste" }}{{ $bud := index .v.Words "bud" }}
+            {{ if or $sm $ta (and $bud (not (index $h "bud"))) }}
+            <div class="sd-card sr-sec"><h2 class="sd-h"><i class="fa-solid fa-wind"></i>{{ .lcl.sr_nose }}</h2>
+                {{ if $sm }}<h4>{{ .lcl.sr_smell }}</h4><div class="sr-chips">{{ range $sm }}<span class="sr-chip smell">{{ . }}</span>{{ end }}</div>{{ end }}
+                {{ if $ta }}<h4>{{ .lcl.sr_taste }}</h4><div class="sr-chips">{{ range $ta }}<span class="sr-chip taste">{{ . }}</span>{{ end }}</div>{{ end }}
+                {{ if and $bud (not (index $h "bud")) }}<h4>{{ .lcl.sr_bud }}</h4><div class="sr-chips">{{ range $bud }}<span class="sr-chip bud">{{ . }}</span>{{ end }}</div>{{ end }}
+            </div>
+            {{ end }}
+
+            {{ if $r.Notes }}
+            <div class="sd-card"><h2 class="sd-h"><i class="fa-solid fa-note-sticky"></i>{{ .lcl.sr_notes }}</h2><div class="sr-note">{{ $r.Notes }}</div></div>
+            {{ end }}
+        </div>
+
+        <div class="sd-stack">
+            {{ if .v.Grown }}
+            <div class="sd-card"><h2 class="sd-h"><i class="fa-solid fa-clipboard-list"></i>{{ .lcl.sr_grow_details }}</h2>
+                <table class="sr-spec">
+                    {{ if and $r.HarvestedOn (not (index $h "harvested")) }}<tr><td>{{ .lcl.sr_f_harvested }}</td><td data-date="{{ $r.HarvestedOn }}">{{ $r.HarvestedOn }}</td></tr>{{ end }}
+                    {{ if and $r.GrowSpace (not (index $h "grow_space")) }}<tr><td>{{ .lcl.sr_f_grow_space }}</td><td>{{ $r.GrowSpace }}</td></tr>{{ end }}
+                    {{ if and $r.Lights (not (index $h "lights")) }}<tr><td>{{ .lcl.sr_f_lights }}</td><td>{{ $r.Lights }}</td></tr>{{ end }}
+                    {{ if and $r.Container (not (index $h "container")) }}<tr><td>{{ .lcl.sr_f_container }}</td><td>{{ $r.Container }}</td></tr>{{ end }}
+                    {{ if and $r.Medium (not (index $h "medium")) }}<tr><td>{{ .lcl.sr_f_medium }}</td><td>{{ $r.Medium }}</td></tr>{{ end }}
+                    {{ if and $r.Nutrients (not (index $h "nutrients")) }}<tr><td>{{ .lcl.sr_f_nutrients }}</td><td>{{ $r.Nutrients }}</td></tr>{{ end }}
+                    {{ if and $r.DaysToHarvest (not (index $h "days_to_harvest")) }}<tr><td>{{ .lcl.sr_f_days_to_harvest }}</td><td>{{ fill .lcl.sr_days "n" (deref $r.DaysToHarvest) }}</td></tr>{{ end }}
+                    {{ if and $r.DryDays (not (index $h "dry_cure")) }}<tr><td>{{ .lcl.sr_f_dry }}</td><td>{{ fill .lcl.sr_days "n" (deref $r.DryDays) }}</td></tr>{{ end }}
+                    {{ if and $r.CureDays (not (index $h "dry_cure")) }}<tr><td>{{ .lcl.sr_f_cure }}</td><td>{{ fill .lcl.sr_days "n" (deref $r.CureDays) }}</td></tr>{{ end }}
+                    {{ if and .v.Method (not (index $h "method")) }}<tr><td>{{ .lcl.sr_f_method }}</td><td>{{ .v.Method }}</td></tr>{{ end }}
+                </table>
+            </div>
+            {{ else if not (index $h "dispensary") }}
+            <div class="sd-card"><h2 class="sd-h"><i class="fa-solid fa-store"></i>{{ .lcl.sr_where_from }}</h2>
+                <table class="sr-spec">
+                    {{ if $r.Dispensary }}<tr><td>{{ .lcl.sr_f_dispensary }}</td><td>{{ $r.Dispensary }}</td></tr>{{ end }}
+                    {{ if .v.PriceText }}<tr><td>{{ .lcl.sr_f_price }}</td><td>{{ .v.PriceText }}{{ if $r.AmountG }} · {{ printf "%g" (deref $r.AmountG) }} g{{ end }}</td></tr>{{ end }}
+                    {{ if .v.PPGText }}<tr><td>{{ .lcl.sr_f_ppg }}</td><td>{{ .v.PPGText }}</td></tr>{{ end }}
+                    {{ if $r.Batch }}<tr><td>{{ .lcl.sr_f_batch }}</td><td>{{ $r.Batch }}</td></tr>{{ end }}
+                    {{ if and .v.Method (not (index $h "method")) }}<tr><td>{{ .lcl.sr_f_method }}</td><td>{{ .v.Method }}</td></tr>{{ end }}
+                    {{ if $r.StrainID }}<tr><td>{{ .lcl.sr_strain_page }}</td><td><a href="/strain/{{ $r.StrainID }}">{{ $r.StrainName }}</a></td></tr>{{ end }}
+                </table>
+            </div>
+            {{ end }}
+
+            {{ if .v.Points }}
+            <div class="sd-card"><h2 class="sd-h"><i class="fa-solid fa-chart-line"></i>{{ .lcl.sr_plant_over_time }}</h2>
+                <svg class="sr-tl" viewBox="0 0 300 118" preserveAspectRatio="none" role="img" aria-label="{{ .lcl.sr_plant_over_time }}">
+                    <polyline points="{{ range .v.Points }}{{ .X }},{{ .Y }} {{ end }}" fill="none" stroke="var(--sr-acc)" stroke-width="3"/>
+                    {{ range .v.Points }}
+                    <a href="/smoke/{{ .ID }}"><circle cx="{{ .X }}" cy="{{ .Y }}" r="{{ if .Current }}7{{ else }}5{{ end }}" fill="var(--sr-acc)" {{ if .Current }}stroke="#fff" stroke-width="2"{{ end }}/></a>
+                    <text x="{{ .X }}" y="{{ .Y }}" dy="-11" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">{{ .Label }}</text>
+                    <text x="{{ .X }}" y="114" text-anchor="middle" font-size="9" fill="currentColor" opacity=".6" data-date-short="{{ .Date }}">{{ .Date }}</text>
+                    {{ end }}
+                </svg>
+                <p class="small sd-muted mb-0">{{ fill .lcl.sr_timeline_note "name" $r.PlantName }}</p>
+            </div>
+            {{ end }}
+
+            {{ if .v.More }}
+            <div class="sd-card"><h2 class="sd-h"><i class="fa-solid fa-layer-group"></i>{{ fill .lcl.sr_more_of "name" $r.StrainName }}</h2>
+                <div class="sr-more">
+                    {{ range .v.More }}
+                    <a href="/smoke/{{ .ID }}">{{ if .Photo }}<img src="{{ .Photo }}" alt="">{{ else }}<span class="d-inline-flex align-items-center justify-content-center bg-body-tertiary rounded" style="width:46px;height:46px"><i class="fa-solid fa-cannabis text-body-tertiary"></i></span>{{ end }}
+                        <div><b>{{ .Title }}</b> {{ if .OverallText }}<span class="sr-score {{ .OverallClass }}">{{ .OverallText }}</span>{{ end }}<small data-date="{{ .Date }}">{{ .Date }}</small></div></a>
+                    {{ end }}
+                </div>
+            </div>
+            {{ end }}
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/smoke-report.js" defer></script>
+{{ template "common/footer.html" .}}
+
+{{ end }}

@@ -336,3 +336,41 @@ func TestSmokeReport_NeedsLogin(t *testing.T) {
 	assert.True(t, resp.StatusCode == http.StatusFound || resp.StatusCode == http.StatusUnauthorized, resp.StatusCode)
 	assert.False(t, strings.Contains(resp.Header.Get("Location"), "/smoke/new"))
 }
+
+func TestSmokePages_Render(t *testing.T) {
+	t.Parallel()
+	e := newSensorEnv(t)
+	strain := testutil.SeedStrain(t, e.db, testutil.SeedBreeder(t, e.db, "Cali"), "Grape OG")
+	plant := testutil.SeedPlant(t, e.db, "Grape OG #1", strain, testutil.SeedZone(t, e.db, "Tent"))
+	code, out := e.postSmoke(t, http.MethodPost, "/smoke", map[string]any{
+		"plant_id": plant, "strain_id": strain, "strain_name": "Grape OG", "breeder_name": "Cali", "smoked_on": "2025-04-12",
+		"method": "joint", "again": "yes", "score_bud": 9, "score_effects": 8, "cure_days": 59, "lights": "LED 480",
+		"tags": []map[string]any{{"kind": "effect", "name": "relaxed"}, {"kind": "smell", "name": "Grape soda", "custom": true}},
+	})
+	require.Equal(t, http.StatusOK, code, out)
+	id := int(out["id"].(float64))
+
+	list := e.page(t, "/smoke")
+	assert.Contains(t, list, `id="smokePage"`)
+	assert.Contains(t, list, "smoke-page.js")
+	assert.Contains(t, list, `href="/smoke"`, "the top-menu item")
+
+	rep := e.page(t, fmt.Sprintf("/smoke/%d", id))
+	assert.Contains(t, rep, "8.5<small>/10</small>", "overall score")
+	assert.Contains(t, rep, "Relaxed", "choice-list words are translated")
+	assert.Contains(t, rep, "Grape soda", "the user's own words as typed")
+	assert.Contains(t, rep, "LED 480")
+	assert.Contains(t, rep, "59 days")
+	assert.Contains(t, rep, fmt.Sprintf(`href="/plant/%d"`, plant))
+
+	// Hiding a field hides it on the report too (the value is kept).
+	code, _ = e.postSmoke(t, http.MethodPost, "/smoke/settings", map[string]any{"weights": map[string]int{"bud": 1, "taste": 1, "smell": 1, "effects": 1}, "hidden": []string{"lights"}})
+	require.Equal(t, http.StatusOK, code)
+	assert.NotContains(t, e.page(t, fmt.Sprintf("/smoke/%d", id)), "LED 480")
+
+	form := e.page(t, fmt.Sprintf("/smoke/%d/edit", id))
+	assert.Contains(t, form, `id="smokeForm"`)
+	assert.Contains(t, form, "smoke-form.js")
+	newForm := e.page(t, fmt.Sprintf("/smoke/new?plant_id=%d", plant))
+	assert.Contains(t, newForm, fmt.Sprintf(`&#34;plant_id&#34;:%d`, plant))
+}

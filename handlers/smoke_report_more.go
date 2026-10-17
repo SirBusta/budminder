@@ -631,8 +631,62 @@ type SmokeReportView struct {
 	Words    map[string][]string // kind → display texts
 	Method   string
 	Timeline []SmokeReport // the same plant's reports, oldest first
-	More     []SmokeReport // other reports of the same strain
+	More     []SmokeCard   // other reports of the same strain
 	Strain   gin.H         // the linked strain's type info, if any
+
+	OverallText  string   // "8.8", "" when nothing is scored
+	OverallClass string   // "" (8+), "mid" (6+), "low"
+	Dots         []string // ten dots: "on", "half" or ""
+	Scores       []SmokeScoreRow
+	Points       []SmokePoint // the plant-over-time chart
+	PriceText    string
+	PPGText      string
+	Grown        bool
+}
+
+// SmokeScoreRow is one score bar.
+type SmokeScoreRow struct {
+	Key    string // sr_bud, sr_taste, …
+	Value  int    // 0 = not scored
+	Pct    int
+	Weight int
+}
+
+// SmokePoint is one report on the plant-over-time chart (viewBox 300×110).
+type SmokePoint struct {
+	ID      int
+	X, Y    float64
+	Label   string
+	Date    string
+	Cure    string
+	Current bool
+}
+
+// SmokeCard is a small link to another report.
+type SmokeCard struct {
+	ID           int
+	Title        string
+	Photo        string
+	OverallText  string
+	OverallClass string
+	Date         string
+}
+
+func smokeScoreText(v *float64) (string, string) {
+	if v == nil {
+		return "", "low"
+	}
+	cls := "low"
+	if *v >= 8 {
+		cls = ""
+	} else if *v >= 6 {
+		cls = "mid"
+	}
+	return strconv.FormatFloat(*v, 'f', 1, 64), cls
+}
+
+func smokeMoney(lcl map[string]string, v float64) string {
+	return lcl["sr_currency"] + strconv.FormatFloat(v, 'f', 2, 64)
 }
 
 // BuildSmokeReportView loads a report and everything around it.
@@ -653,7 +707,62 @@ func BuildSmokeReportView(db *sql.DB, lcl map[string]string, id int) (SmokeRepor
 		}
 	}
 	others, _ := LoadSmokeReports(db, set.Weights, "LOWER(r.strain_name) = LOWER($1) AND r.id <> $2", r.StrainName, r.ID)
-	v.More = others
+	for _, o := range others {
+		c := SmokeCard{ID: o.ID, Title: o.PlantName, Date: o.SmokedOn}
+		if c.Title == "" {
+			c.Title = o.Dispensary
+		}
+		if c.Title == "" {
+			c.Title = o.StrainName
+		}
+		if len(o.Photos) > 0 {
+			c.Photo = o.Photos[0].URL
+		}
+		c.OverallText, c.OverallClass = smokeScoreText(o.Overall)
+		v.More = append(v.More, c)
+	}
+
+	v.Grown = r.Source != smokeSourceBought
+	v.OverallText, v.OverallClass = smokeScoreText(r.Overall)
+	for i := 1; i <= 10; i++ {
+		d := ""
+		if r.Overall != nil && *r.Overall >= float64(i) {
+			d = "on"
+		} else if r.Overall != nil && *r.Overall >= float64(i)-0.5 {
+			d = "half"
+		}
+		v.Dots = append(v.Dots, d)
+	}
+	for _, row := range []struct {
+		key string
+		val *int
+		w   int
+	}{{"sr_bud", r.ScoreBud, set.Weights.Bud}, {"sr_taste", r.ScoreTaste, set.Weights.Taste}, {"sr_smell", r.ScoreSmell, set.Weights.Smell}, {"sr_effects", r.ScoreEffects, set.Weights.Effects}} {
+		sr := SmokeScoreRow{Key: row.key, Weight: row.w}
+		if row.val != nil {
+			sr.Value, sr.Pct = *row.val, *row.val*10
+		}
+		v.Scores = append(v.Scores, sr)
+	}
+	if r.Price != nil {
+		v.PriceText = smokeMoney(lcl, *r.Price)
+	}
+	if r.PricePerGram != nil {
+		v.PPGText = smokeMoney(lcl, *r.PricePerGram) + "/g"
+	}
+	if n := len(v.Timeline); n > 1 {
+		for i, t := range v.Timeline {
+			if t.Overall == nil {
+				continue
+			}
+			p := SmokePoint{ID: t.ID, X: 40 + 220*float64(i)/float64(n-1), Y: 100 - *t.Overall*9, Date: t.SmokedOn, Current: t.ID == r.ID}
+			p.Label, _ = smokeScoreText(t.Overall)
+			if t.CureDays != nil {
+				p.Cure = strconv.Itoa(*t.CureDays)
+			}
+			v.Points = append(v.Points, p)
+		}
+	}
 	if r.StrainID != nil {
 		var indica, sativa int
 		var auto bool

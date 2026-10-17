@@ -1,0 +1,19 @@
+{{ define "views/smoke-form.html"}}
+
+{{ template "common/header.html" .}}
+{{ template "common/header2.html" .}}
+
+<!-- New / Edit smoke report (mockup data/mockups/smoke, screens 6-7). Drawn by
+     /static/js/smoke-form.js from the data-page JSON. -->
+<div class="container-xxl sd sr" id="smokeForm" data-page='{{ json .pageData }}'>
+    <div class="sr-top">
+        <div><h1>{{ if .editing }}{{ .lcl.sr_edit_title }}{{ else }}{{ .lcl.sr_new_title }}{{ end }}</h1></div>
+        <a class="sd-h-r" href="/settings#grow"><i class="fa-solid fa-sliders me-1"></i>{{ .lcl.sr_customize }}</a>
+    </div>
+    <div class="sr-form" id="srForm" style="max-width:980px"></div>
+</div>
+
+<script src="/static/js/smoke-form.js" defer></script>
+{{ template "common/footer.html" .}}
+
+{{ end }}

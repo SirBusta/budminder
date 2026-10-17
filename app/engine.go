@@ -397,6 +397,30 @@ func buildFuncMap(store *config.Store) template.FuncMap {
 		// value it points to — needed for tri-state (nil/false/true)
 		// fields like Strain.StraincompassVerified.
 		"boolPtr": func(b *bool) bool { return b != nil && *b },
+		// deref shows an optional number (*int / *float64); nil shows as 0.
+		"deref": func(v any) any {
+			switch p := v.(type) {
+			case *int:
+				if p == nil {
+					return 0
+				}
+				return *p
+			case *float64:
+				if p == nil {
+					return 0.0
+				}
+				return *p
+			}
+			return v
+		},
+		// fill puts values into a translation's {placeholders}:
+		// {{ fill .lcl.sr_days "n" 12 }} → "12 days".
+		"fill": func(tpl string, pairs ...any) string {
+			for i := 0; i+1 < len(pairs); i += 2 {
+				tpl = strings.ReplaceAll(tpl, "{"+fmt.Sprint(pairs[i])+"}", fmt.Sprint(pairs[i+1]))
+			}
+			return tpl
+		},
 		// daysToWeeks shows a day count (how cycle_time is stored) in weeks,
 		// with one decimal only when needed: 63 -> "9", 60 -> "8.6".
 		"daysToWeeks": func(days int) string {

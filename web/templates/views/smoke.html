@@ -1,0 +1,24 @@
+{{ define "views/smoke.html"}}
+
+{{ template "common/header.html" .}}
+{{ template "common/header2.html" .}}
+
+<!-- Smoke Reports (mockup data/mockups/smoke, screens 1-2): cards or a sortable
+     list of every report. Drawn by /static/js/smoke-page.js from /smoke/all. -->
+<div class="container-xxl sd sr" id="smokePage" data-page='{{ json .pageData }}'>
+    <div class="sr-top">
+        <div>
+            <h1>{{ .lcl.sr_title }}</h1>
+            <p>{{ .lcl.sr_subtitle }}</p>
+        </div>
+        {{ if .loggedIn }}<a class="sd-btn" href="/smoke/new"><i class="fa-solid fa-plus"></i>{{ .lcl.sr_new }}</a>{{ end }}
+    </div>
+    <div class="sr-bar" id="srBar"></div>
+    <p class="sd-muted small mb-2" id="srSum"></p>
+    <div id="srOut"></div>
+</div>
+
+<script src="/static/js/smoke-page.js" defer></script>
+{{ template "common/footer.html" .}}
+
+{{ end }}
