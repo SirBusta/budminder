@@ -26,6 +26,16 @@ import (
 
 func intp(n int) *int { return &n }
 
+// newSmokeEnv is newSensorEnv with photos written to a temporary folder.
+func newSmokeEnv(t *testing.T) *sensorEnv {
+	t.Helper()
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db, testutil.WithUploadDir(t.TempDir()))
+	testutil.SeedAdmin(t, db, sensorManagePassword)
+	c, token := server.LoginAndFetchCSRF(t, sensorManagePassword, "/settings")
+	return &sensorEnv{db: db, server: server, client: c, token: token}
+}
+
 func TestSmokeOverall(t *testing.T) {
 	t.Parallel()
 	r := handlers.SmokeReport{ScoreBud: intp(8), ScoreTaste: intp(7), ScoreSmell: intp(8), ScoreEffects: intp(9)}
@@ -234,7 +244,7 @@ func (e *sensorEnv) uploadSmoke(t *testing.T, id int, name string, data []byte) 
 
 func TestSmokePhotos_UploadOrderDelete(t *testing.T) {
 	t.Parallel()
-	e := newSensorEnv(t)
+	e := newSmokeEnv(t)
 	code, out := e.postSmoke(t, http.MethodPost, "/smoke", map[string]any{"strain_name": "S"})
 	require.Equal(t, http.StatusOK, code)
 	id := int(out["id"].(float64))
@@ -271,7 +281,7 @@ func TestSmokePhotos_UploadOrderDelete(t *testing.T) {
 
 func TestSmokePhoto_FromJournalIsCopied(t *testing.T) {
 	t.Parallel()
-	e := newSensorEnv(t)
+	e := newSmokeEnv(t)
 	strain := testutil.SeedStrain(t, e.db, testutil.SeedBreeder(t, e.db, "B"), "S")
 	plant := testutil.SeedPlant(t, e.db, "P", strain, testutil.SeedZone(t, e.db, "Z"))
 	src := filepath.Join(e.server.UploadDir, "plants", "journal.png")
