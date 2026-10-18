@@ -48,7 +48,15 @@ BudMinder began as a fork of the excellent [Isley](https://github.com/dwot/isley
 
 ### Plant pages
 
-Every plant has its own page and notebook. The stage track shows where it is from germination to harvest, how long it spent in each stage and when to expect harvest, based on the strain's flowering time; click a stage to move the plant along. Each day you log is one row: water and feed amounts, training, height and notes, with that day's photos right beside it. Filter by activity, search your notes, switch between weeks and a plain list, or see every plant's notebook at once. Log for a whole tent in one go, check the tent camera live, and export the notebook to CSV or Excel.
+Every plant gets its own page and notebook.
+
+**Visual stage tracking.** Follow each plant from germination through harvest. See the number of days spent in each stage and view projected harvest dates calculated from the strain's flowering window. Advance through the growth stages with a single click.
+
+**Streamlined daily logs.** Each day's entry shows water amounts, training, height measurements and notes, right beside that day's photos.
+
+**Flexible notebook views.** Filter by activity type, switch between a weekly and a list view, search your notes, or see all plant notebooks in an aggregate view.
+
+**Logging, camera and export.** Log an activity for every plant in a tent in one go, watch the tent camera live, and export the notebook to CSV or Excel.
 
 <img src="docs/images/screenshots/plant-pm1-dark.webp" alt="Permanent Marker #1's page in dark mode: the stage track at Flower week 2 with an estimated harvest of Nov 30 to Dec 7, the notebook grouped by week with water amounts, heights and notes, and the two photos from Sep 28 shown beside the selected day"><br>
 <sub>Shown in dark mode.</sub>
@@ -67,25 +75,25 @@ Every sensor in a tent on one timeline, from the last hour to the last week or a
 
 ### Seed Vault
 
-The seeds you have on hand, how old they are and where you keep them, with a warning when a batch passes two years. Use one, restock, or start a grow straight from the list, and keep a wish list of strains you want next.
+Track the seeds you have on hand, how old they are and where you keep them, with a warning when a batch passes two years. Use one, restock, or start a grow straight from the list, and keep a wish list of strains you want.
 
 <img src="docs/images/screenshots/strains.webp" alt="The Seed Vault in list view, oldest seeds first, showing each strain's lineage, type, flowering time, seed count, seed age and grows">
 
 ### Strain pages
 
-Everything about a strain in one place: every time you've grown it with yields and flowering times, its family, potency and growing facts, and the photos from your grows. Import a new strain from StrainCompass or CannaDB and most of this fills itself in.
+A complete archive for every cultivar you run. Track your full history with a strain, including past harvest yields, flowering times and photos from your grows, alongside its lineage, potency and cultivation traits. When adding a new strain, import it from public strain databases to fill in most of the profile automatically.
 
 <img src="docs/images/screenshots/strain-grape.webp" alt="The Grape OG strain page: four harvested plants with yields, the strain's family, seed vault and strain facts, and photos from the grows">
 
 ### Smoke reports
 
-A tasting journal for the flower you grow or buy. Score bud quality, taste, smell and effects from 1 to 10 and get an overall score, weighted the way you like. Pick effects, side effects, smells and tastes from lists or type your own, and say whether you'd grow or buy it again. For bought flower, look the strain up, add the dispensary and price, and BudMinder works out the price per gram. Add a photo by upload, from a web address, or from the plant's journal. Every report gets its own page, and plants and strains show their latest scores.
+A complete evaluation suite for home harvests and dispensary pickups. Rate appearance, aroma, flavor and effects on a 1 to 10 scale to generate a custom weighted overall score. Pick traits, side effects and terpene profiles from built-in lists or enter your own, then flag whether the cultivar is worth growing or buying again. For dispensary purchases, log the store and price to automatically calculate the cost per gram. Attach photos by uploading a file, pasting an image URL, or selecting a shot directly from the plant's journal history.
 
 <img src="docs/images/screenshots/smoke-report.webp" alt="A smoke report for home-grown Grape OG: a photo of two dried buds, an overall score of 7.8 out of 10, THC, CBD and cure time, top effects and smells, bars for the bud quality, taste, smell and effects scores, and the grow details BudMinder filled in from the plant">
 
 ### Home Assistant
 
-Already have sensors in Home Assistant? Connect BudMinder once and every sensor Home Assistant knows about (Govee, SwitchBot, Inkbird, Zigbee, ESPHome and more) can be added to a tent, right next to AC Infinity and Ecowitt readings. A scan lists the sensors useful for growing with their live readings; add the ones you want. BudMinder only reads values; it never changes anything in Home Assistant.
+**No sensor left behind.** Connect BudMinder to Home Assistant to pull climate readings from any device you run, from Zigbee and ESPHome probes to Govee and SwitchBot units. A quick scan shows your grow-relevant sensors so you can add them straight to your tents, right alongside your AC Infinity and Ecowitt data. It operates completely read-only, leaving your smart home configuration safe and unchanged.
 
 <img src="docs/images/screenshots/ha-scan.webp" alt="Scan Home Assistant results: seven grow sensors such as tent temperature, humidity, CO2, VPD, light level and soil moisture, each with its current reading, a tent to put it in and an Add button, plus a filter box and a Show all switch for batteries and power">
 
@@ -94,7 +102,7 @@ Already have sensors in Home Assistant? Connect BudMinder once and every sensor 
 <table>
 <tr>
 <td width="50%" valign="top"><b>Plants</b><br>Every plant with its stage, progress to harvest, and when it was last watered and fed.<br><br><img src="docs/images/screenshots/plants.webp" alt="The Plants page listing six growing plants with stage, progress bar and days since watering and feeding"></td>
-<td width="50%" valign="top"><b>Log activity</b><br>Water, feed, train or add a note for one plant or a whole tent at once, with the amount given.<br><br><img src="docs/images/screenshots/log-activity.webp" alt="The Log activity window with plants, date, activity types, water amount and a note"></td>
+<td width="50%" valign="top"><b>Log activity</b><br>Water, feed, train or add a note for one plant or a whole tent at once.<br><br><img src="docs/images/screenshots/log-activity.webp" alt="The Log activity window with plants, date, activity types, water amount and a note"></td>
 </tr>
 <tr>
 <td valign="top"><b>Manage sensors</b><br>Scan AC Infinity, Ecowitt and Home Assistant for sensors, name them, put each in a tent and choose where it shows.<br><br><img src="docs/images/screenshots/manage-sensors.webp" alt="The Manage sensors page listing a tent's sensors with their current readings"></td>
@@ -111,8 +119,7 @@ Already have sensors in Home Assistant? Connect BudMinder once and every sensor 
 
 ### And also
 
-- One-click strain import from StrainCompass, with THC and CBD ranges, effects, terpenes and parents
-- Smoke reports for flower you grew or bought, sortable by score, price per gram or date
+- One-click strain import from public strain databases, with THC and CBD ranges, effects, terpenes and lineage
 - Hide the smoke report fields you never use, and choose how much each score counts
 - Imperial or metric units for heights, yields and temperatures
 - Everything is served from your own server: no outside fonts, scripts or trackers
