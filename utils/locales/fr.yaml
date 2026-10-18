@@ -1918,3 +1918,13 @@ sr_m_edible: "Comestible"
 sr_currency: "€"
 sd_smoke_one: "1 rapport · note"
 sr_summary_one: "1 rapport · note globale {avg}"
+
+# Help manual (/manual)
+title_help: "Aide"
+mn_sections: "Sections"
+mn_search: "Rechercher dans le manuel"
+mn_no_results: "Aucune section ne correspond."
+mn_english_only: "Ce manuel n'est disponible qu'en anglais pour l'instant."
+mn_previous: "Précédent"
+mn_next: "Suivant"
+mn_on_this_page: "Sur cette page"

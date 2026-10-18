@@ -1920,3 +1920,13 @@ sr_m_edible: "Essbar"
 sr_currency: "€"
 sd_smoke_one: "1 Bericht · Wertung"
 sr_summary_one: "1 Bericht · Gesamtwertung {avg}"
+
+# Help manual (/manual)
+title_help: "Hilfe"
+mn_sections: "Abschnitte"
+mn_search: "Handbuch durchsuchen"
+mn_no_results: "Keine Abschnitte gefunden."
+mn_english_only: "Dieses Handbuch gibt es vorerst nur auf Englisch."
+mn_previous: "Zurück"
+mn_next: "Weiter"
+mn_on_this_page: "Auf dieser Seite"

@@ -48,11 +48,21 @@
             </a>
         </li>
         <li class="nav-item">
+            <a href="/manual/for?path={{ .currentPath }}" class="nav-link{{ if hasPrefix .currentPath "/manual" }} active{{ end }}"{{ if hasPrefix .currentPath "/manual" }} aria-current="page"{{ end }} title="{{ .lcl.title_help }}" aria-label="{{ .lcl.title_help }}">
+                <i class="fa-solid fa-circle-question" aria-hidden="true"></i><span class="nav-lbl">{{ .lcl.title_help }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
             <a href="/logout" class="nav-link" title="{{ .lcl.title_logout }}" aria-label="{{ .lcl.title_logout }}">
                 <i class="fa fa-sign-out" aria-hidden="true"></i><span class="nav-lbl">{{ .lcl.title_logout }}</span>
             </a>
         </li>
         {{ else }}
+        <li class="nav-item">
+            <a href="/manual/for?path={{ .currentPath }}" class="nav-link{{ if hasPrefix .currentPath "/manual" }} active{{ end }}"{{ if hasPrefix .currentPath "/manual" }} aria-current="page"{{ end }} title="{{ .lcl.title_help }}" aria-label="{{ .lcl.title_help }}">
+                <i class="fa-solid fa-circle-question" aria-hidden="true"></i><span class="nav-lbl">{{ .lcl.title_help }}</span>
+            </a>
+        </li>
         <li class="nav-item">
             <a href="/login" class="nav-link" title="{{ .lcl.title_login }}" aria-label="{{ .lcl.title_login }}">
                 <i class="fa fa-sign-in" aria-hidden="true"></i><span class="nav-lbl">{{ .lcl.title_login }}</span>

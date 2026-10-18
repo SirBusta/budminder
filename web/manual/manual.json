@@ -1,0 +1,51 @@
+{
+  "groups": [
+    {"title": "Getting started", "sections": [
+      {"slug": "welcome", "title": "Welcome"},
+      {"slug": "first-login", "title": "First login and password", "paths": ["/login", "/change-password"]},
+      {"slug": "finding-your-way", "title": "Finding your way"}
+    ]},
+    {"title": "Growing", "sections": [
+      {"slug": "today", "title": "Today", "paths": ["/"]},
+      {"slug": "plants-list", "title": "Plants list", "paths": ["/plants"]},
+      {"slug": "adding-a-plant", "title": "Adding a plant", "paths": ["/plant/new", "/plant/*/edit"]},
+      {"slug": "plant-page", "title": "Plant page", "paths": ["/plant/*"]},
+      {"slug": "notebook", "title": "The notebook"},
+      {"slug": "photos", "title": "Photos"},
+      {"slug": "harvest-and-cure", "title": "Harvest and cure"}
+    ]},
+    {"title": "Strains", "sections": [
+      {"slug": "strains-and-seed-vault", "title": "Strains and the Seed Vault", "paths": ["/strains"]},
+      {"slug": "adding-a-strain", "title": "Adding a strain", "paths": ["/strain/new", "/strain/import/review", "/strain/*/edit"]},
+      {"slug": "strain-page", "title": "Strain page", "paths": ["/strain/*"]},
+      {"slug": "breeders", "title": "Breeders"},
+      {"slug": "wish-list", "title": "Wish list"}
+    ]},
+    {"title": "Smoke reports", "sections": [
+      {"slug": "writing-a-report", "title": "Writing a report", "paths": ["/smoke", "/smoke/new", "/smoke/*/edit"]},
+      {"slug": "scores-and-weights", "title": "Scores and weights"},
+      {"slug": "report-page", "title": "Report page", "paths": ["/smoke/*"]}
+    ]},
+    {"title": "Sensors", "sections": [
+      {"slug": "environment", "title": "Environment page", "paths": ["/sensors", "/graph/*"]},
+      {"slug": "manage-sensors", "title": "Manage sensors", "paths": ["/sensors/manage"]},
+      {"slug": "ac-infinity", "title": "AC Infinity"},
+      {"slug": "ecowitt", "title": "Ecowitt"},
+      {"slug": "home-assistant", "title": "Home Assistant"},
+      {"slug": "your-own-sensors", "title": "Your own sensors"},
+      {"slug": "tent-cameras", "title": "Tent cameras"}
+    ]},
+    {"title": "Settings", "sections": [
+      {"slug": "settings-general", "title": "General", "paths": ["/settings"]},
+      {"slug": "grow-setup", "title": "Grow setup"},
+      {"slug": "integrations", "title": "Integrations and API key"}
+    ]},
+    {"title": "Your data", "sections": [
+      {"slug": "backup-and-restore", "title": "Backup and restore"},
+      {"slug": "exporting", "title": "Exporting your journal"}
+    ]},
+    {"title": "Help", "sections": [
+      {"slug": "troubleshooting", "title": "Troubleshooting"}
+    ]}
+  ]
+}

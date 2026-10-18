@@ -1,0 +1,51 @@
+{{ define "views/manual.html"}}
+
+{{ template "common/header.html" .}}
+{{ template "common/header2.html" .}}
+
+<!-- The Help manual (mockup data/mockups/manual): sections on the left, the
+     section in the middle, "On this page" on the right. Text from
+     web/manual/en/<slug>.md, rendered by handlers/manual.go. -->
+<div class="mn" id="manualPage">
+    <aside class="mn-side" aria-label="{{ .lcl.mn_sections }}">
+        <div class="mn-search">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input type="search" id="mnSearch" placeholder="{{ .lcl.mn_search }}" aria-label="{{ .lcl.mn_search }}" autocomplete="off">
+        </div>
+        <div id="mnResults" class="mn-results d-none" data-none="{{ .lcl.mn_no_results }}"></div>
+        <nav id="mnNav">
+            {{ range .manual.Groups }}
+            <div class="mn-grp">{{ .Title }}</div>
+            {{ range .Sections }}<a href="/manual/{{ .Slug }}"{{ if eq .Slug $.sec.Slug }} class="on" aria-current="page"{{ end }}>{{ .Title }}</a>{{ end }}
+            {{ end }}
+        </nav>
+    </aside>
+
+    <article class="mn-body">
+        <div class="mn-pick">
+            <select id="mnPick" aria-label="{{ .lcl.mn_sections }}">
+                {{ range .manual.Groups }}<optgroup label="{{ .Title }}">{{ range .Sections }}<option value="{{ .Slug }}"{{ if eq .Slug $.sec.Slug }} selected{{ end }}>{{ .Title }}</option>{{ end }}</optgroup>{{ end }}
+            </select>
+        </div>
+        {{ if ne .currentLanguage "en" }}<p class="mn-lang"><i class="fa-solid fa-language me-1" aria-hidden="true"></i>{{ .lcl.mn_english_only }}</p>{{ end }}
+        <div class="mn-crumb">{{ .sec.Group }}</div>
+        <h1>{{ .sec.Title }}</h1>
+        {{ .sec.HTML }}
+        <div class="mn-pn">
+            {{ with .prev }}<a href="/manual/{{ .Slug }}"><small>{{ $.lcl.mn_previous }}</small>« {{ .Title }}</a>{{ else }}<span></span>{{ end }}
+            {{ with .next }}<a class="next" href="/manual/{{ .Slug }}"><small>{{ $.lcl.mn_next }}</small>{{ .Title }} »</a>{{ end }}
+        </div>
+    </article>
+
+    <nav class="mn-toc" aria-label="{{ .lcl.mn_on_this_page }}">
+        {{ if .sec.Headings }}
+        <div class="t">{{ .lcl.mn_on_this_page }}</div>
+        {{ range .sec.Headings }}<a href="#{{ .ID }}">{{ .Title }}</a>{{ end }}
+        {{ end }}
+    </nav>
+</div>
+
+<script src="/static/js/manual-page.js" defer></script>
+{{ template "common/footer.html" .}}
+
+{{ end }}

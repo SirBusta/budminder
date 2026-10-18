@@ -1874,3 +1874,13 @@ sr_m_edible: "Edible"
 sr_currency: "$"
 sd_smoke_one: "1 report · score"
 sr_summary_one: "1 report · overall {avg}"
+
+# Help manual (/manual)
+title_help: "Help"
+mn_sections: "Sections"
+mn_search: "Search the manual"
+mn_no_results: "No sections match."
+mn_english_only: "This manual is in English for now."
+mn_previous: "Previous"
+mn_next: "Next"
+mn_on_this_page: "On this page"

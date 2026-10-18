@@ -27,7 +27,7 @@ import (
 	"isley/watcher"
 )
 
-//go:embed model/migrations/sqlite/*.sql model/migrations/postgres/*.sql web/templates/**/*.html web/static/**/* utils/fonts/* VERSION
+//go:embed model/migrations/sqlite/*.sql model/migrations/postgres/*.sql web/templates/**/*.html web/static/**/* web/manual/* web/manual/en/* utils/fonts/* VERSION
 var embeddedFiles embed.FS
 
 // trustedProxies trusts loopback, RFC-1918 private ranges, and the IPv6

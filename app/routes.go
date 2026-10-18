@@ -47,6 +47,7 @@ func registerPublicRoutes(r *gin.Engine, cfg Config) {
 
 	r.GET("/logout", handlers.HandleLogout)
 	r.GET("/health", handleHealth)
+	routes.AddManualRoutes(r.Group("/"), cfg.Version) // the Help manual: public, like /login
 
 	if cfg.GuestMode {
 		routes.AddBasicRoutes(r.Group("/"), cfg.Version)
