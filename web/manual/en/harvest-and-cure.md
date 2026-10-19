@@ -23,7 +23,7 @@ Click the pencil icon on the plant's page to edit details, and enter your final 
 
 ## Writing a smoke report
 
-Once a plant is harvested, its profile displays a **Smoke report** button, and a **Smoke** node appears on the stage track following Success. Both shortcuts open a new evaluation report pre-populated with cultivation data: strain, harvest date, tent, total flowering time, dry duration and cure length.
+Once a plant is harvested, its profile displays a **Smoke report** button, and a **Smoke** node appears on the stage track following Success. Both shortcuts open a new evaluation report pre-populated with cultivation data: strain, harvest date, tent, days from start to harvest, dry duration and cure length.
 
 You can create multiple smoke reports for the same harvest to track how flower matures, such as after two weeks of curing and again after two months in the jar. See [Writing a report](/manual/writing-a-report).
 

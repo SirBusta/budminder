@@ -1,4 +1,4 @@
-Below the stage track, each plant features a daily activity notebook: one entry per day detailing actions taken, personal notes, environment measurements and that day's photos.
+Below the stage track, each plant features a daily activity notebook: one entry per day detailing actions taken, personal notes, plant measurements and that day's photos.
 
 ![A plant's notebook: the toolbar, the entries grouped by week and the selected day's photos](fig:notebook)
 
