@@ -4,7 +4,7 @@ BudMinder is a self-hosted grow journal that runs on your own computer or home s
 
 - **Today** shows if your plants need watering or feeding, a live view of your plants and recent activity.
 - **Plants** tracks your individual plants. Each plant has a dedicated page for growth stages, photos and a complete activity log.
-- **Strains** organizes every strain you grow, your physical seed inventory in the Seed Vault and tracks your Want List.
+- **Strains** organizes every strain you grow, your physical seed inventory in the Seed Vault and tracks your Wanted list.
 - **Sensors** charts live climate readings from AC Infinity, Ecowitt, Home Assistant and custom sensor hardware.
 - **Smoke** lets you rate your harvest or dispensary pickups on appearance, aroma, flavor and effects.
 - **Settings** manages your environment setup, units of measurement, sensors, cameras and data backups.

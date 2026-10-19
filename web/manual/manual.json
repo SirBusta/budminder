@@ -19,7 +19,7 @@
       {"slug": "adding-a-strain", "title": "Adding a strain", "paths": ["/strain/new", "/strain/import/review", "/strain/*/edit"]},
       {"slug": "strain-page", "title": "Strain page", "paths": ["/strain/*"]},
       {"slug": "breeders", "title": "Breeders"},
-      {"slug": "wish-list", "title": "Wish list"}
+      {"slug": "wanted-list", "title": "Wanted list"}
     ]},
     {"title": "Smoke reports", "sections": [
       {"slug": "writing-a-report", "title": "Writing a report", "paths": ["/smoke", "/smoke/new", "/smoke/*/edit"]},

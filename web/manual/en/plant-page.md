@@ -14,13 +14,13 @@ A plant progresses through standard stages: Germinating, Planted, Seedling, Veg,
 - {2} **Total days spent in each stage** appear below every stage reached.
 - {3} **The current stage** is highlighted with an outer ring.
 - {4} **Upcoming stages** appear gray. Click any future stage to move the plant there.
-- {5} **Estimated harvest** is calculated from the strain's flowering time. For photoperiod plants, it counts from the day the plant entered Flower. For autoflowers, it counts from the start date. If the strain has no flowering time listed, it displays **Not set**.
+- {5} **Estimated harvest** is calculated from the strain's flowering time. For photoperiod plants, it counts from the day the plant entered Flower. For autoflowers, it counts from the start date. If the strain has no flowering time listed, it displays **Not set**. It also shows **Not set** for a photoperiod plant until it enters Flower.
 
 Once a plant is harvested, a **Smoke** step appears after Success. It displays the latest smoke report score. Click it to open that report or to write the first one.
 
 ## Moving to the next stage
 
-Click any stage in the track. BudMinder asks for confirmation (such as **Move to Flower?**) and pre-fills today's date. You can change the date if the transition happened earlier, then click **Move to Flower** to confirm.
+Click the next stage in the track. BudMinder asks for confirmation (such as **Move to Flower?**) and pre-fills today's date. You can change the date if the transition happened earlier, then click **Move to Flower** to confirm.
 
 > **Tip:** For photoperiod plants, moving to Flower starts the harvest estimate countdown, so be sure to update this on the day you flip your light schedule to 12/12.
 

@@ -13,4 +13,4 @@ BudMinder works the same way on a phone. The menu wraps to fit smaller screens, 
 
 ## Guest view
 
-If guest view is enabled under **Settings → General**, visitors can browse your plants, strains, photos and smoke reports without an account. They can view every page in read-only mode without being able to edit anything, and the menu shows **Login** instead of **Logout**. Any change to guest view takes effect after BudMinder restarts.
+If guest view is enabled under **Settings → General**, visitors can browse your plants, strains, photos and smoke reports without an account. They can only view in read-only mode, and the menu shows **Login** instead of **Logout**. Any change to guest view takes effect after BudMinder restarts.
