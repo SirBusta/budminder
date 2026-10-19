@@ -23,11 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Help manual.** A **Help** button in the top menu opens a manual inside
-  BudMinder, at the section for the page you're on. Sections on the left,
-  a search box, and pictures with numbered circles that match the text.
-  Pictures follow the light or dark theme; click one to see it full size.
-  Written in English for now.
 
 ### Changed
 
@@ -38,6 +33,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ### Security
+
+## [1.2.0] - 2026-10-19
+
+### Added
+- **Help manual.** A **Help** button in the top menu opens a manual inside
+  BudMinder, at the section for the page you're on. Sections on the left,
+  a search box, and pictures with numbered circles that match the text.
+  Pictures follow the light or dark theme; click one to see it full size.
+  Written in English for now.
 
 ## [1.1.0] - 2026-10-16
 
