@@ -18,11 +18,11 @@ Activities are the actions you log in a plant's notebook, such as Water, Feed, T
 
 ## Metrics
 
-Metrics represent numeric data points you track in the journal, such as Plant Height, Water Volume, pH, EC or Runoff EC, each paired with its specific **Unit**. Click **Add Metric** to create a custom tracking field. Attach metrics to specific activities above so they appear automatically when logging that action.
+Metrics represent numeric data points you track in the journal, such as Height, Water amount, pH, EC or Runoff EC, each paired with its specific **Unit**. Click **Add Metric** to create a custom tracking field. Attach metrics to specific activities above so they appear automatically when logging that action.
 
 ## VPD targets by stage
 
-Set ideal Vapor Pressure Deficit (VPD) ranges in kilopascals (kPa) for each developmental phase (for example, 0.8 to 1.2 kPa in Vegetative growth). Leave a stage unconfigured to disable target boundary shading on climate charts for that phase.
+Set ideal Vapor Pressure Deficit (VPD) ranges in kilopascals (kPa) for each developmental phase (for example, 0.8 to 1.2 kPa in Vegetative growth). Leave a stage blank if you don't use a target for it.
 
 ## Breeders
 

@@ -22,7 +22,7 @@ BudMinder generates the archive locally and lists it under **Available Backups**
 
 To migrate BudMinder to a new computer or server, generate a backup on the original machine, install BudMinder on the new hardware and restore the archive there.
 
-When running on SQLite (the default database engine), importing extensive sensor telemetry can take time on low-power hardware. Check **Skip sensor data** to perform an expedited restore containing only plant records, genetics and journal entries.
+When running on SQLite (the default database engine), importing extensive sensor telemetry can take time on low-power hardware. Check **Skip sensor data** to restore everything except the sensor history, much faster.
 
 ## SQLite file transfer
 
