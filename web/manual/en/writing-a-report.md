@@ -1,62 +1,62 @@
-A smoke report records how a harvest, or a dispensary pickup, actually turned out: scores, effects, smell and taste, and whether you'd grow or buy it again. Click **Smoke** in the top menu to see your reports.
+A smoke report records how your finished flower actually performed: sensory ratings, observed effects, aroma and flavor profiles, alongside whether you would cultivate or purchase the variety again. Click **Smoke** in the top menu to view your saved evaluations.
 
 ## The Smoke Reports page
 
 ![The Smoke Reports page: New smoke report, the filters, the summary and the report cards](fig:smoke-page)
 
-- {1} **New smoke report** starts a blank report.
-- {2} **All / Home grown / Dispensary** shows every report, or only flower you grew or only flower you bought.
-- {3} **Search** finds reports by strain, plant, dispensary or anything in the notes. Next to it, narrow the list to one strain, or by whether you'd grow or buy it again.
-- {4} **Sort** by overall score, date smoked, strain or price per gram, and switch between **Cards** and **List**.
-- {5} **Summary**: how many reports and strains, and the average overall score.
-- {6} **The overall score**, out of 10. It's green from 8, amber from 6 and red below 6.
+- {1} **New smoke report** creates a blank evaluation report.
+- {2} **All / Home grown / Dispensary** filters between all reports, harvests from your garden or purchased dispensary flower.
+- {3} **Search and filters:** search reports by cultivar, plant name, dispensary or custom keywords. Filter dropdowns let you isolate specific cultivars or filter by keeper status (grow or buy again).
+- {4} **Sort and layout:** sort reports by overall rating, evaluation date, cultivar name or price per gram, and toggle between visual **Cards** and a tabular **List** view.
+- {5} **Summary:** displays total logged reports, distinct cultivars evaluated and your cumulative average score across all reviews.
+- {6} **Overall score:** a weighted rating out of 10. Scores 8.0 and above display green, 6.0 to 7.9 appear amber and scores below 6.0 display red.
 
-Each card shows the four scores, the top effects, the date smoked, how long the flower cured, and whether you'd grow or buy it again. Click a card to open the report.
+Each summary card displays your category ratings, top reported effects, evaluation date, total cure duration and keeper verdict. Click any card to open the complete report.
 
 ## Starting a report
 
-- From a harvested plant: click **Smoke report** on its page, or the **Smoke** step on its stage track. See [Harvest and cure](/manual/harvest-and-cure#writing-a-smoke-report).
-- From a strain's page: click **New smoke report**.
-- From the Smoke Reports page: click **New smoke report**.
+- From a harvested plant: click **Smoke report** on its page, or click the **Smoke** step on its stage track. See [Harvest and cure](/manual/harvest-and-cure#writing-a-smoke-report).
+- From a strain profile: click **New smoke report**.
+- From the Smoke Reports dashboard: click **New smoke report**.
 
 ## From my plants
 
-Choose **From my plants** at the top of the form and pick the plant. Harvested plants are listed first, then growing ones. BudMinder fills in what it already knows, and marks each value with where it came from:
+Select **From my plants** at the top of the form and choose a plant. Harvested plants appear first, followed by active runs. BudMinder auto-fills known garden metrics and labels the origin of each data point:
 
-- the strain, breeder, THC and CBD, **from the strain**;
-- the harvest date, tent, days from start to harvest and dry time, **from BudMinder**;
-- the cure time, counted from the day the plant entered Curing to the date smoked;
-- the lights, **suggested** from the tent's AC Infinity light port;
-- the lights, container, medium and nutrients **from your last report in this tent**.
+- cultivar name, breeder, THC and CBD **from the strain profile**
+- harvest date, grow tent, total days from germination to harvest and dry time **from BudMinder cycle tracking**
+- cure duration, calculated from the day the plant entered Curing to the date smoked
+- lighting hardware, **suggested** from the tent's AC Infinity light controller
+- lighting, container size, medium and nutrient regimen **prefilled from your previous report in this tent**
 
-Change anything that isn't right.
+You can adjust any pre-populated field before saving.
 
 ## Bought flower
 
-Choose **Bought flower** and start typing the strain. BudMinder searches your strains and StrainCompass together. Pick one to fill in its name, breeder and THC, or use what you typed as it is. Every value can still be changed.
+Select **Bought flower** and begin typing the cultivar name. BudMinder searches both your local library and StrainCompass simultaneously. Select a matching entry to populate its name, breeder and cannabinoid profile, or enter custom details manually. All values can be edited freely.
 
-If the strain isn't in your Strains, tick **Also add it to my Strains**. Its strain page will then list this report. No seeds are added to the Seed Vault.
+If the cultivar is not yet in your collection, check **Also add it to my Strains**. This creates a dedicated profile linking this smoke report without adding seeds to your Seed Vault.
 
-Fill in the **Dispensary**, the **Price** and the **Amount (g)**, and BudMinder works out the price per gram. **Batch / lot** is there for the number on the label.
+Enter the **Dispensary**, total **Price** and purchased **Amount (g)** to calculate price per gram automatically. Use the **Batch / lot** field to record the package batch number from the dispensary label.
 
 ## Scores and descriptions
 
-- **Scores**: tap 1 to 10 for bud quality, taste, smell and effects. Tap the same number again to clear it. The overall score updates as you go. See [Scores and weights](/manual/scores-and-weights).
-- **How it was smoked**: joint, bong, vape and the rest.
-- **Describe it**: pick the effects, side effects, smells, tastes and bud qualities you noticed. To add your own word, type it in **Other** and press Enter.
-- **Would you grow it again?** (or **buy it again**, for bought flower): yes, maybe or no.
-- **Notes**: anything else.
+- **Scores**: select ratings from 1 to 10 for appearance, flavor, aroma and effects. Click an active number again to clear that score. Your weighted overall score calculates dynamically as you rate. See [Scores and weights](/manual/scores-and-weights).
+- **Consumption method**: choose how the sample was consumed (joint, pipe, bong, dry herb vaporizer or concentrate dab).
+- **Sensory descriptions**: select observed effects, physical sensations, aroma notes, flavors and bud characteristics from curated lists, or type custom tags into **Other** and press Enter.
+- **Repeat verdict**: record whether you would grow this variety again (or buy it again for dispensary flower) using Yes, Maybe or No.
+- **Notes**: record detailed subjective impressions, burn characteristics, ash color or general observations.
 
 ## Photos
 
-Add up to 12 photos in three ways:
+Attach up to 12 photos per report through three methods:
 
-- **Upload** photos from your device;
-- **Image URL**: paste the address of a picture on the web. BudMinder downloads it and keeps its own copy, so it still works if the website changes;
-- **From the plant's journal**: pick photos you've already taken of the plant.
+- **Upload**: select image files directly from your device.
+- **Image URL**: paste a direct image link from the web. BudMinder downloads and stores a local copy on your server, ensuring images remain accessible even if the source URL goes offline.
+- **From the plant's journal**: select high-resolution images already attached to that plant's grow timeline.
 
-The first photo is the main one. Click **Make main** on another to move it to the front, or **Remove** to take one off.
+The first photo in the gallery serves as the featured hero image. Click **Make main** on any photo to set it as the primary image, or click **Remove** to delete a photo.
 
-Click **Save report** and the report's page opens.
+Click **Save report** to publish and view the completed report profile.
 
-> **Tip:** Fields you never use can be hidden. Click **Customize fields** at the top of the form, or see [Scores and weights](/manual/scores-and-weights#fields-on-the-form).
+> **Tip:** You can hide form sections you do not track. Click **Customize fields** at the top of the form, or see [Scores and weights](/manual/scores-and-weights#fields-on-the-form).
