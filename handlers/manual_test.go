@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -156,4 +157,31 @@ func TestManual_HelpInTopMenu(t *testing.T) {
 	resp.Body.Close()
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Contains(t, string(body), `href="/manual/for?path=%2fplants"`)
+}
+
+// Every link to another section (and to a heading in it) goes somewhere.
+func TestManual_LinksResolve(t *testing.T) {
+	t.Parallel()
+	m := loadTestManual(t)
+	link := regexp.MustCompile(`href="(/manual/[^"]*|#[^"]*)"`)
+	for _, s := range m.Sections {
+		for _, l := range link.FindAllStringSubmatch(string(s.HTML), -1) {
+			target, slug, anchor := l[1], s.Slug, ""
+			if strings.HasPrefix(target, "/manual/") {
+				rest := strings.TrimPrefix(target, "/manual/")
+				slug, anchor, _ = strings.Cut(rest, "#")
+			} else {
+				anchor = strings.TrimPrefix(target, "#")
+			}
+			to := m.Section(slug)
+			if !assert.NotNil(t, to, "%s links to missing section %q", s.Slug, slug) || anchor == "" {
+				continue
+			}
+			found := false
+			for _, h := range to.Headings {
+				found = found || h.ID == anchor
+			}
+			assert.True(t, found, "%s links to %s#%s, but that heading doesn't exist", s.Slug, slug, anchor)
+		}
+	}
 }
