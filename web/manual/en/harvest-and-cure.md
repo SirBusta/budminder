@@ -1,32 +1,32 @@
-The last stages of a grow are Drying, Curing and Success. BudMinder uses them to work out the harvest date, the dry time and the cure time.
+The final stages of a grow cycle are Drying, Curing and Success. BudMinder uses these milestones to calculate total flowering time, dry duration and cure length automatically.
 
 ## Harvesting
 
-On harvest day, move the plant to **Drying** on its stage track. See [Moving to the next stage](/manual/plant-page#moving-to-the-next-stage). The day it enters Drying is its harvest date.
+On harvest day, advance the plant to **Drying** on its growth stage track. See [Moving to the next stage](/manual/plant-page#moving-to-the-next-stage). The date the plant enters Drying is permanently recorded as its harvest date.
 
-Once a plant is drying, it moves from the **Growing** tab to the **Harvested** tab on the Plants page, and it no longer shows on the Today page. Its page shows **Harvested** with the date instead of the harvest estimate.
+Once drying begins, the plant moves from the **Growing** tab to the **Harvested** tab on the Plants page, and active task alerts clear from the Today dashboard. The plant profile replaces estimated harvest projections with **Harvested** and the completed date.
 
 ## Drying and curing
 
-- Move the plant to **Curing** when it goes into jars. The days between Drying and Curing are its **dry time**.
-- Move it to **Success** when the cure is done. The days it spent in Curing are its **cure time**.
+- Advance the plant to **Curing** when flower moves into jars or cure bags. The elapsed days between Drying and Curing are recorded as your **dry time**.
+- Advance the plant to **Success** when your cure is complete. The elapsed days spent in Curing are recorded as your **cure time**.
 
-The stage track shows the days spent in each stage, so the dry and cure times are always on the plant's page.
+The stage track displays total days spent in each phase, keeping your post-harvest drying and curing stats readily available on the plant's profile.
 
 ## Recording the yield
 
-Click the pencil on the plant's page to edit it, and fill in **Harvest Weight**, in grams. The weight then shows:
+Click the pencil icon on the plant's page to edit details, and enter your final dry weight under **Harvest Weight** in grams. Your yield then appears:
 
-- on the plant's page, next to its other facts;
-- on the **Harvested** tab of the Plants page;
-- on the strain's page, with every other time you've grown that strain.
+- on the plant's profile next to its core stats
+- on the **Harvested** tab of the Plants list
+- on the strain's dedicated profile, alongside historical yields from previous runs of that cultivar
 
 ## Writing a smoke report
 
-Once a plant is harvested, its page has a **Smoke report** button, and a **Smoke** step appears after Success on the stage track. Both open a new smoke report with the grow details already filled in: the strain, harvest date, tent, days to harvest, and dry and cure times.
+Once a plant is harvested, its profile displays a **Smoke report** button, and a **Smoke** node appears on the stage track following Success. Both shortcuts open a new evaluation report pre-populated with cultivation data: strain, harvest date, tent, total flowering time, dry duration and cure length.
 
-You can write more than one report for the same plant, for example after two weeks and again after two months in the jar. See [Writing a report](/manual/writing-a-report).
+You can create multiple smoke reports for the same harvest to track how flower matures, such as after two weeks of curing and again after two months in the jar. See [Writing a report](/manual/writing-a-report).
 
 ## When a plant dies
 
-Click the skull on the plant's photo to mark it as dead. It moves to the **Dead** tab on the Plants page. Its page and notebook are kept.
+Click the skull icon on the plant's photo to mark it as dead. It moves to the **Dead** tab on the Plants page. Its complete profile, photos and journal logs remain preserved.
