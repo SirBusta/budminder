@@ -41,8 +41,8 @@ Enter the **Dispensary**, total **Price** and purchased **Amount (g)** to calcul
 
 ## Scores and descriptions
 
-- **Scores**: select ratings from 1 to 10 for appearance, flavor, aroma and effects. Click an active number again to clear that score. Your weighted overall score calculates dynamically as you rate. See [Scores and weights](/manual/scores-and-weights).
-- **Consumption method**: choose how the sample was consumed (joint, pipe, bong, dry herb vaporizer or concentrate dab).
+- **Scores**: select ratings from 1 to 10 for bud quality, taste, smell and effects. Click an active number again to clear that score. Your weighted overall score calculates dynamically as you rate. See [Scores and weights](/manual/scores-and-weights).
+- **Consumption method**: choose how the sample was consumed (joint, blunt, pipe, bong, dry herb vape, edible and more).
 - **Sensory descriptions**: select observed effects, physical sensations, aroma notes, flavors and bud characteristics from curated lists, or type custom tags into **Other** and press Enter.
 - **Repeat verdict**: record whether you would grow this variety again (or buy it again for dispensary flower) using Yes, Maybe or No.
 - **Notes**: record detailed subjective impressions, burn characteristics, ash color or general observations.
@@ -57,6 +57,6 @@ Attach up to 12 photos per report through three methods:
 
 The first photo in the gallery serves as the featured hero image. Click **Make main** on any photo to set it as the primary image, or click **Remove** to delete a photo.
 
-Click **Save report** to publish and view the completed report profile.
+Click **Save report** to save it and open the report.
 
 > **Tip:** You can hide form sections you do not track. Click **Customize fields** at the top of the form, or see [Scores and weights](/manual/scores-and-weights#fields-on-the-form).

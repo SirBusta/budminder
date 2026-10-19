@@ -9,8 +9,8 @@ Every smoke report evaluates four core attributes on a 1 to 10 scale, compiling 
 ## The four scores
 
 - **Bud quality**: visual appearance, trichome density, bud structure, trim quality and cure consistency.
-- **Flavor**: taste profile, vapor smoothness and flavor retention through the bowl or joint.
-- **Aroma**: terpene intensity, nose character and jar appeal.
+- **Taste**: taste profile, vapor smoothness and flavor retention through the bowl or joint.
+- **Smell**: terpene intensity, nose character and jar appeal.
 - **Effects**: onset speed, psychoactive potency and total duration.
 
 You do not need to score every attribute. Blank categories are automatically excluded from the weighted overall average without penalizing your score.
@@ -32,6 +32,6 @@ Updating weight settings recalculates the overall score across all historical an
 Under the same Settings panel, you can streamline the review workflow by disabling form fields you do not use:
 
 - **Grow info**: harvest date, grow space, lighting hardware, container size, medium, nutrients, germination-to-harvest duration, dry time and cure duration
-- **Consumer details**: consumption method, physical sensations, bud structure tags, repeat verdicts, THC and CBD percentages, dispensary location, purchase price and batch lot numbers
+- **Other**: consumption method, physical sensations, bud structure tags, repeat verdicts, THC and CBD percentages, dispensary location, purchase price and batch lot numbers
 
 Disabled fields are hidden from both the entry form and finished report profiles. Any previously entered data is safely preserved in your database and will reappear if a field is re-enabled.

@@ -8,13 +8,13 @@ Every smoke report features a clean, product-style profile highlighting tasting 
 - {4} **Overall score:** weighted score out of 10, accompanied by a visual rating bar.
 - {5} **Spec sheet:** displays THC and CBD content, date evaluated and cure length. Dispensary reports display total price, package weight and calculated price per gram. Primary effects and aroma profiles appear below.
 - {6} **Report controls:** **Edit** modifies report data. **New report for** starts an additional evaluation for the same plant (ideal for tracking how extended cures change flavor and potency). **Delete** permanently removes the report and its attached photos after confirmation.
-- {7} **Category breakdown:** visual rating bars for bud quality, flavor, aroma and effects, along with their assigned weights.
+- {7} **Category breakdown:** visual rating bars for bud quality, taste, smell and effects, along with their assigned weights.
 - {8} **Cultivation context:** for home harvests, summarizes harvest date, tent zone, lighting, container, medium, nutrients, total cycle length, dry time, cure duration and consumption method. For dispensary purchases, this panel displays **Where it came from**, detailing store name, price, cost per gram and package batch code.
 
 ## Further down
 
-- **Sensory and effect profiles**: detailed tags for physical sensations, onset traits and reported effects.
+- **Sensory and effect profiles**: the effects and side effects you selected.
 - **Aroma, flavor and bud traits**: selected terpene descriptors, flavor notes and structural bud appeal.
 - **Notes**: comprehensive subjective tasting notes, ash characteristics and cure observations.
-- **This plant over time**: for home harvests with multiple reviews, displays a chronological trend chart tracking how extended jar curing influenced overall scores.
+- **This plant over time**: for home harvests, a chronological trend chart tracking how extended jar curing influenced overall scores.
 - **More reports**: quick links to other smoke reports for this cultivar from across your garden or past dispensary purchases.
