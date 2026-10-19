@@ -1,34 +1,34 @@
-Every plant has its own page: its stages at the top, a photo or live camera on the right, and its notebook below. This section covers the top of the page. The notebook has [its own section](/manual/notebook).
+Every plant has a dedicated page displaying its growth stages across the top, the latest photo or live camera feed on the right and its notebook below. This section covers the top half of the profile. The notebook is covered in [its own section](/manual/notebook).
 
-Under the plant's name are its strain, breeder and tent, then its facts: photoperiod or autoflower, the date it started, how many days it has been growing, its current stage and week, and the harvest estimate. Once it's harvested, the harvest date and weight show instead, with a **Smoke report** button.
+Below the plant name, you will find its strain, breeder and assigned tent, followed by key stats: photoperiod or autoflower, start date, total days growing, current stage and week, and the harvest estimate. Once harvested, the actual harvest date and yield appear instead, along with a **Smoke report** button.
 
-The arrows at the top right go to the previous and next plant.
+The navigation arrows in the top right move between your previous and next plants.
 
 ## Growth stages
 
-A plant moves through the same stages: Germinating, Planted, Seedling, Veg, Flower, Drying, Curing and Success. The stage track shows them in order, with where the plant is now.
+A plant progresses through standard stages: Germinating, Planted, Seedling, Veg, Flower, Drying, Curing and Success. The stage track displays these milestones in order and highlights your plant's current stage.
 
 ![The top of a plant's page: its name, facts and the stage track, with numbered circles](fig:plant-stages)
 
-- {1} **Stages it has been through** are filled in with their color.
-- {2} **Days in each stage** show under every stage the plant reached.
-- {3} **The current stage** has a ring around it.
-- {4} **Stages still ahead** are gray. Click one to move the plant there.
-- {5} **Est. harvest** is worked out from the strain's flowering time. For a photoperiod plant it counts from the day the plant entered Flower; for an autoflower, from its start date. Until then, or if the strain has no flowering time, it says **Not set**.
+- {1} **Completed stages** are filled in with their assigned color.
+- {2} **Total days spent in each stage** appear below every stage reached.
+- {3} **The current stage** is highlighted with an outer ring.
+- {4} **Upcoming stages** appear gray. Click any future stage to move the plant there.
+- {5} **Estimated harvest** is calculated from the strain's flowering time. For photoperiod plants, it counts from the day the plant entered Flower. For autoflowers, it counts from the start date. If the strain has no flowering time listed, it displays **Not set**.
 
-Once a plant is harvested, a **Smoke** step appears after Success. It shows the latest smoke report score; click it to open that report, or to write the first one.
+Once a plant is harvested, a **Smoke** step appears after Success. It displays the latest smoke report score. Click it to open that report or to write the first one.
 
 ## Moving to the next stage
 
-Click the stage in the track. BudMinder asks **Move to Flower?** and fills in today's date. Change the date if it happened earlier, then click **Move to Flower**.
+Click any stage in the track. BudMinder asks for confirmation (such as **Move to Flower?**) and pre-fills today's date. You can change the date if the transition happened earlier, then click **Move to Flower** to confirm.
 
-> **Tip:** For photoperiod plants, moving to Flower is what starts the harvest estimate, so do it on the day you flip to 12/12.
+> **Tip:** For photoperiod plants, moving to Flower starts the harvest estimate countdown, so be sure to update this on the day you flip your light schedule to 12/12.
 
-You can also move a plant back to an earlier stage. BudMinder warns you first.
+You can also move a plant back to an earlier stage. BudMinder will display a warning before making the change.
 
 ## Changing a stage's date
 
-Click a stage the plant already reached to change the date it started. The days in each stage and the harvest estimate update straight away.
+Click any stage the plant has already reached to edit its start date. The days in each stage and the harvest estimate will update immediately.
 
 ## The photo and camera
 

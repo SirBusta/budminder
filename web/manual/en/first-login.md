@@ -3,15 +3,15 @@ The first time you open BudMinder, log in with:
 - Username: **admin**
 - Password: **budminder**
 
-BudMinder then asks you to choose a new password before you can do anything else. It needs at least 8 characters. Type it twice, and you're in.
+BudMinder will prompt you to set a new password before continuing. Your password must be at least 8 characters long. Enter it twice to confirm, and you are ready to begin.
 
 ## Staying logged in
 
-Tick **Remember Me** on the login page to stay logged in on that browser for 14 days. Without it, you're logged out when you close the browser.
+Check **Remember Me** on the login screen to keep your session active on that browser for 14 days. If left unchecked, closing your browser will log you out automatically.
 
 ## Changing your password
 
-Go to **Settings → General → Password** and click **Change Password**. Changing it logs out every other browser and phone that was logged in, so anyone using the old password is locked out straight away.
+Go to **Settings → General → Password** and click **Change Password**. Updating your password immediately logs out all other active sessions across other browsers and mobile devices.
 
 > **Tip:** The username is always **admin**. Only the password can be changed.
 
