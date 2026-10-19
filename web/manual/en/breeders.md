@@ -1,22 +1,22 @@
-Every strain has a breeder: the seed bank or person who bred it. BudMinder keeps your breeders in one list, so the same breeder is spelled the same way on every strain.
+Every cultivar is linked to a breeder (the seed bank or individual who created it). BudMinder maintains a centralized breeder directory to ensure consistent naming across your library.
 
 ## Adding breeders
 
-You rarely need to add a breeder by hand:
+You rarely need to add breeders manually:
 
-- Strains looked up on StrainCompass bring their breeder with them.
-- When you type a breeder on a strain, BudMinder suggests names as you type. Keep typing to add a new one.
+- Cultivars imported from StrainCompass automatically populate their verified breeder.
+- When entering a breeder manually, BudMinder suggests matching names as you type. Continue typing to create a new breeder entry.
 
-To add one directly, go to **Settings → Grow setup → Breeders** and click **Add Breeder**.
+To create a breeder profile directly, go to **Settings → Grow setup → Breeders** and click **Add Breeder**.
 
 ## Renaming and deleting
 
-In **Settings → Grow setup → Breeders**, every breeder is listed with the number of your strains from them. Click one to rename or delete it.
+Navigate to **Settings → Grow setup → Breeders** to view your breeder directory along with the number of linked cultivars for each. Click any entry to rename or remove it.
 
-A breeder that any of your strains use can't be deleted; BudMinder says how many strains use it. Rename it instead, or first give those strains another breeder.
+To protect data integrity, breeders linked to active strains in your library cannot be deleted. Rename the breeder instead, or reassign those strains to another breeder before deleting.
 
-> **Tip:** Click a breeder's name on a strain's page to see all your strains from that breeder.
+> **Tip:** Click any breeder name on a strain profile to view all cultivars from that breeder in your collection.
 
 ## Breeder suggestions
 
-The names suggested while you type come from a list of over a thousand breeders that ships with BudMinder. In **Settings → Integrations → Breeder Suggestions**, BudMinder can fetch a fresh copy of StrainCompass's public breeder list once a month. Turn **Refresh the list automatically once a month** on or off there, or click **Refresh now**.
+Auto-complete suggestions are powered by a built-in catalog of over a thousand verified breeders. Under **Settings → Integrations → Breeder Suggestions**, BudMinder can automatically synchronize with StrainCompass's public directory monthly. Toggle **Refresh the list automatically once a month** or click **Refresh now** to update suggestions immediately.

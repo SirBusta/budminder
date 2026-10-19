@@ -1,35 +1,35 @@
-Every strain has its own page with everything about it: your grows, its family, its seeds and its facts. Click a strain's name on the Strains page to open it.
+Each cultivar features a dedicated profile compiling past runs, parental lineage, active seed inventory and botanical specifications. Click any strain name on the Strains page to open it.
 
 ![The top of a strain's page: the name, breeder, chips and the Start a grow and Edit buttons](fig:strain-head)
 
-- {1} **The breeder.** Click it to see all your strains from that breeder. The number after it says how many you have.
-- {2} **Chips**: photoperiod or autoflower, the seed type and the indica/sativa ratio. When the strain came from StrainCompass or CannaDB, links to its listing there show here too.
-- {3} **Start a grow** opens Add Plant with this strain. **Edit** changes the strain's details. See [Adding a strain](/manual/adding-a-strain#editing-a-strain).
+- {1} **Breeder:** click the breeder name to view all cultivars from that source in your library. The adjacent count shows how many varieties you hold from them.
+- {2} **Metadata tags:** display photoperiod type, seed format and indica/sativa ratio. For strains imported from StrainCompass or CannaDB, direct links to external listings appear here.
+- {3} **Action buttons:** **Start a grow** opens the Add Plant form pre-loaded with this strain. **Edit** opens the configuration form to modify cultivar details. See [Adding a strain](/manual/adding-a-strain#editing-a-strain).
 
 ## Your grows
 
-Every plant you've grown from this strain, with its stage, start date, flowering days and yield. At the top: how many are growing, harvested or died, your average yield and your average flowering time. Until you grow it, this says so, with a **Start a grow** button.
+Displays every plant you have cultivated from this strain, detailing active stage, start date, flowering days and harvest yield. The header summarizes total plants running, harvested or lost, alongside your cumulative average yield and flowering duration. If you have not yet cultivated the strain, this panel displays a **Start a grow** shortcut.
 
-The **Smoke reports** card lists your smoke reports for the strain, with how many there are and their average score. **New smoke report** starts one for this strain.
+The **Smoke reports** card lists all completed evaluations for the cultivar, displaying report counts and average overall scores. Click **New smoke report** to record a new review for this strain.
 
 ## Family
 
-A diagram of the strain's parents, and of any of your strains bred from it. Click **Show more generations** to go further back. Parents in your strains are links; gray names aren't in your strains, and clicking one looks it up on StrainCompass.
+Displays an interactive pedigree tree showing the strain's parents along with any offspring you have bred from it. Click **Show more generations** to expand the lineage tree backward. Parents stored in your library appear as direct links; uncataloged cultivars appear gray, and clicking them initiates a lookup on StrainCompass.
 
 ## Seed Vault
 
 ![The Seed Vault card on a strain's page: the seed count, the minus and plus buttons, the date and storage, and Restock](fig:strain-vault)
 
-- {1} **Seeds on hand.**
-- {2} **−** uses a seed; **+** adds one.
-- {3} **When the seeds were added**, with their age, and where they're stored.
-- {4} **Restock** adds a new pack. See [Seeds](/manual/strains-and-seed-vault#seeds).
+- {1} **Active inventory:** total seeds currently on hand.
+- {2} **Quantity adjustments:** click **−** when germinating a seed and **+** when restocking.
+- {3} **Batch details:** acquisition date, batch age and physical storage spot.
+- {4} **Restock:** logs newly acquired packs. See [Seeds](/manual/strains-and-seed-vault#seeds).
 
-With no seeds on hand, the card offers **Add seeds**, and **Add to Wanted** to put the strain on your Wanted list. If you've saved a picture of the seed pack, it shows here too.
+When stock reaches zero, the panel provides shortcuts to **Add seeds** or **Add to Wanted** to place the cultivar on your wishlist. Saved seed pack artwork is also displayed here.
 
 ## About and facts
 
-- **About**: the strain's description.
-- **Strain facts**: flowering time (or seed to harvest, for an autoflower), indica or sativa, heights and yields indoors and outdoors.
-- **Effects & terpenes**: effects, flavors, terpenes and what it may help with, from StrainCompass. Each terpene is marked low, medium or high.
-- **Photos from your grows**: the photos of every plant of this strain.
+- **About**: strain overview and breeder description.
+- **Strain facts**: expected flowering window (or seed-to-harvest duration for autoflowers), indica/sativa ratio, canopy stretch, and expected indoor and outdoor yields.
+- **Effects & terpenes**: reported physiological effects, flavor profiles, dominant terpenes and medicinal applications imported from StrainCompass. Individual terpenes are marked low, medium or high.
+- **Photos from your grows**: a consolidated gallery of all photos taken across every run of this strain.

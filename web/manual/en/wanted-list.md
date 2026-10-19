@@ -1,13 +1,13 @@
-The Wanted list holds the strains you want to get. It's the **Wanted** tab on the Strains page.
+The Wanted list tracks cultivars you plan to acquire. Access this view via the **Wanted** tab on the Strains page.
 
 ## Adding a strain to the Wanted list
 
-- When you add a strain from StrainCompass or enter one manually, choose **I want seeds** under **Add it to**.
-- On the Strains page, click the star (**Want**) on any strain with no seeds.
-- On a strain's page with no seeds on hand, click **Add to Wanted** in the **Seed Vault** card.
+- When importing via StrainCompass or entering manually, select **I want seeds** under **Add it to**.
+- On the Strains page, click the star icon (**Want**) on any cultivar with zero seeds on hand.
+- On any strain profile lacking seeds, click **Add to Wanted** inside the **Seed Vault** card.
 
-Click the star again, or **Remove from Wanted**, to take the strain off the list.
+Click the star icon again or select **Remove from Wanted** to remove the cultivar from your wishlist.
 
 ## When you get the seeds
 
-Click **Add seeds** on the strain, on the Strains page or its own page. Fill in how many, the seed type, the date and where they're stored. The strain moves from Wanted to the Seed Vault, and comes off the Wanted list by itself.
+Click **Add seeds** on the strain card or profile page. Enter your seed count, seed type, acquisition date and storage location. BudMinder transfers the cultivar from Wanted into the active Seed Vault automatically.
