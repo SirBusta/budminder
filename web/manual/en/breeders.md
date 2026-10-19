@@ -4,7 +4,7 @@ Every cultivar is linked to a breeder (the seed bank or individual who created i
 
 You rarely need to add breeders manually:
 
-- Cultivars imported from StrainCompass automatically populate their verified breeder.
+- Cultivars imported from StrainCompass automatically populate their breeder.
 - When entering a breeder manually, BudMinder suggests matching names as you type. Continue typing to create a new breeder entry.
 
 To create a breeder profile directly, go to **Settings → Grow setup → Breeders** and click **Add Breeder**.
@@ -19,4 +19,4 @@ To protect data integrity, breeders linked to active strains in your library can
 
 ## Breeder suggestions
 
-Auto-complete suggestions are powered by a built-in catalog of over a thousand verified breeders. Under **Settings → Integrations → Breeder Suggestions**, BudMinder can automatically synchronize with StrainCompass's public directory monthly. Toggle **Refresh the list automatically once a month** or click **Refresh now** to update suggestions immediately.
+Auto-complete suggestions are powered by a built-in catalog of over a thousand breeders. Under **Settings → Integrations → Breeder Suggestions**, BudMinder can automatically synchronize with StrainCompass's public directory monthly. Toggle **Refresh the list automatically once a month** or click **Refresh now** to update suggestions immediately.

@@ -34,7 +34,7 @@ Click **Edit** on any strain profile to update its information:
 - cultivar name, breeder, external links and descriptive notes;
 - photoperiod type, indica/sativa ratio and flowering duration;
 - THC and CBD ranges, aroma notes, dominant terpenes and therapeutic benefits;
-- canopy stretch, mature height and average yields;
+- indoor and outdoor height and yield;
 - parental lineage, selected from your library or entered manually;
 - seed inventory: total count, seed type, acquisition date, storage location and Wanted status;
 - seed pack or cultivar artwork.

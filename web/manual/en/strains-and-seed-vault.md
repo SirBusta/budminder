@@ -5,10 +5,10 @@ The Strains page organizes every cultivar in your library, including seeds curre
 - {1} **Find on StrainCompass** searches public catalogs to import a strain with its lineage, flowering times and cannabinoid specs prefilled. See [Adding a strain](/manual/adding-a-strain).
 - {2} **Enter manually** lets you add custom crosses, clone-only cuts or unlisted genetics by entering the details yourself.
 - {3} **Tabs.** **Seed Vault** lists cultivars with active seed stock, **Wanted** tracks strains on your wishlist, and **All strains** shows your complete library, including depleted seed packs, clone-only cultivars and reference entries. Each tab displays an active strain count.
-- {4} **Sort and layout.** Toggle between visual **Cards** and a tabular **List**, or sort by name, oldest seeds, seed count or flowering duration. Sidebar filters allow you to narrow the view by breeder, photoperiod type or seed variety.
+- {4} **Sort and layout.** Toggle between visual **Cards** and a tabular **List**, or sort by name, oldest seeds, seed count or flowering duration. The drop-down filters let you narrow the view by breeder, photoperiod type or seed variety.
 - {5} **Summary**: displays your total seed count across all cultivars, along with alerts for seed batches older than 2 years.
 - {6} **Seed count.** Click **−** when popping a seed and **+** when restocking. The card displays seed type and pack age, with the age turning orange once a batch passes 2 years in storage.
-- {7} **Start a grow** opens the Add Plant form pre-populated with this strain and automatically deducts one seed from your vault. **Restock** logs new seed arrivals. See [Seeds](#seeds) below.
+- {7} **Start a grow** opens the Add Plant form pre-populated with this strain, with **Decrease seed count by 1** already ticked. **Restock** logs new seed arrivals. See [Seeds](#seeds) below.
 
 Each card displays the strain's breeder, parental lineage, a short description, photoperiod type, flowering window, active plants in your tents, historical grow count and storage location. Click any strain name to open its profile.
 

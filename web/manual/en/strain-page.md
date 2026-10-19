@@ -29,7 +29,7 @@ When stock reaches zero, the panel provides shortcuts to **Add seeds** or **Add 
 
 ## About and facts
 
-- **About**: strain overview and breeder description.
-- **Strain facts**: expected flowering window (or seed-to-harvest duration for autoflowers), indica/sativa ratio, canopy stretch, and expected indoor and outdoor yields.
+- **About**: the strain's description.
+- **Strain facts**: expected flowering window (or seed-to-harvest duration for autoflowers), indica/sativa ratio, and expected indoor and outdoor height and yield.
 - **Effects & terpenes**: reported physiological effects, flavor profiles, dominant terpenes and medicinal applications imported from StrainCompass. Individual terpenes are marked low, medium or high.
 - **Photos from your grows**: a consolidated gallery of all photos taken across every run of this strain.
