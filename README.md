@@ -108,6 +108,9 @@ A complete evaluation suite for home harvests and dispensary pickups. Rate appea
 <td valign="top"><b>Manage sensors</b><br>Scan AC Infinity, Ecowitt and Home Assistant for sensors, name them, put each in a tent and choose where it shows.<br><br><img src="docs/images/screenshots/manage-sensors.webp" alt="The Manage sensors page listing a tent's sensors with their current readings"></td>
 <td valign="top"><b>Settings</b><br>Grouped and searchable, and every change saves as you go.<br><br><img src="docs/images/screenshots/settings.webp" alt="The Settings page with timezone, units, language, theme, guest view and password"></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><b>Help</b><br>Click <b>Help</b> in the top menu to learn about the page you're on. Every page is explained step by step, with numbered pictures that match the text, a search box, and light and dark versions.<br><br><img src="docs/images/screenshots/manual.webp" alt="BudMinder's Help: sections listed on the left, the Growth stages section of Plant page with a picture of the stage track marked with numbered green circles 1 to 5, the matching numbered list below it, and On this page on the right"></td>
+</tr>
 </table>
 
 ### On your phone
