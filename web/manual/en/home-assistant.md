@@ -1,20 +1,20 @@
-If your sensors are already in Home Assistant, BudMinder can read them: Govee, SwitchBot, Inkbird, Zigbee, ESPHome and anything else Home Assistant shows as a number, such as temperature, humidity, CO₂, soil moisture, light or EC. BudMinder only reads values. It never changes anything in Home Assistant.
+If you already monitor climate devices through Home Assistant, BudMinder can import telemetry from any supported entity: including Govee, SwitchBot, Inkbird, Zigbee, ESPHome or custom integrations reporting numeric values (temperature, humidity, CO2, soil moisture, light levels or electrical conductivity). BudMinder operates strictly in read-only mode and never alters your Home Assistant states or entity configurations.
 
 ## Connecting
 
-1. In Home Assistant, create a separate user for BudMinder (**Settings → People → Add person**, allow login, not an administrator).
-2. Log in to Home Assistant as that user, open your profile → **Security** → **Long-lived access tokens**, and create a token. Copy it; Home Assistant shows it only once.
-3. In BudMinder, go to **Settings → Integrations → Home Assistant** and turn on **Read sensors from Home Assistant**.
-4. Enter Home Assistant's **Address** with its port, for example *http://192.168.1.20:8123*, and paste the **Access token**.
-5. Click **Test connection**. BudMinder says how many sensors it found, and how many of them are useful for growing.
-6. Go to [Manage sensors](/manual/manage-sensors) and click **Scan Home Assistant**. Add the sensors you want and put each in a tent.
+1. In Home Assistant, create a dedicated non-administrator user account for BudMinder (**Settings → People → Add person**, enabling login access).
+1. Log in to Home Assistant using that account, navigate to user profile → **Security** → **Long-lived access tokens**, and generate a new token. Copy the token immediately, as Home Assistant displays it only once.
+1. In BudMinder, go to **Settings → Integrations → Home Assistant** and toggle on **Read sensors from Home Assistant**.
+1. Enter your Home Assistant network **Address** and port (for example, *http://192.168.1.20:8123*), then paste your **Access token**.
+1. Click **Test connection**. BudMinder validates the link and reports total detected entities alongside how many are cultivation-relevant.
+1. Navigate to [Manage sensors](/manual/manage-sensors), click **Scan Home Assistant**, select your desired devices and map each to a tent zone.
 
-Once saved, the token isn't shown again.
+Once saved, access tokens are masked and cannot be viewed again.
 
 ## Choosing sensors
 
-The scan lists the sensors useful for growing first, with their current readings. Type in **Filter found sensors** to find one by name. Batteries, power meters and similar sensors are hidden until you turn on **Show all**. **Add these** adds every sensor in the list you're looking at.
+Device scans filter and prioritize cultivation-relevant sensors, displaying active readings alongside entity names. Use the **Filter found sensors** field to search specific devices. Non-environmental entities (like battery percentages and network monitors) remain hidden until you enable **Show all**. Click **Add these** to import all currently filtered entities at once.
 
 ## If readings stop
 
-If Home Assistant restarts or is offline for a while, BudMinder picks the readings back up when it returns. The Home Assistant card on Manage sensors shows **Not responding** while it can't reach it, or **Token refused** if the token was deleted or mistyped. Make a new token and paste it in Settings.
+If Home Assistant restarts or temporarily goes offline, BudMinder automatically resumes polling as soon as connectivity restores. The Home Assistant card under Manage sensors displays **Not responding** if the host is unreachable, or **Token refused** if the authentication token has been revoked or modified. If revoked, generate a replacement token and update your settings.

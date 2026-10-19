@@ -1,16 +1,16 @@
-BudMinder reads Ecowitt gateways (such as the GW1000, GW1100 and GW2000) directly on your own network. No Ecowitt account or cloud is involved.
+BudMinder communicates directly with Ecowitt local gateways (including GW1000, GW1100 and GW2000 models) across your local network. No Ecowitt cloud accounts, external servers or internet access are required.
 
 ## Connecting
 
-1. Go to **Settings → Integrations → EcoWitt** and turn on **Enable EcoWitt Sensor Monitoring**.
-2. Go to [Manage sensors](/manual/manage-sensors) and click **Scan Ecowitt**.
-3. Enter the gateway's address on your network, for example *192.168.1.40*, and scan.
-4. Put each sensor found, such as a temperature and humidity sensor or a soil moisture probe, in a tent and click **Add**.
+1. Go to **Settings → Integrations → EcoWitt** and toggle on **Enable EcoWitt Sensor Monitoring**.
+1. Navigate to [Manage sensors](/manual/manage-sensors) and click **Scan Ecowitt**.
+1. Enter the gateway's local IP address (for example, *192.168.1.40*) and run the scan.
+1. Assign each discovered sensor (such as multi-channel temperature/humidity probes or soil moisture sensors) to a tent zone and click **Add**.
 
-BudMinder then reads the gateway on the same schedule as the other sensors (the **Polling Interval** in Settings).
+BudMinder polls the gateway automatically based on the global **Polling Interval** defined in Settings.
 
-> **Tip:** Give the gateway a fixed address in your router, so it doesn't change after a restart. If the address changes, BudMinder can no longer reach the gateway.
+> **Tip:** Assign a static IP address or DHCP reservation to your Ecowitt gateway in your router settings. If the router reassigns a new IP address after a reboot, BudMinder will lose connection to the device.
 
 ## If readings stop
 
-The Ecowitt card on Manage sensors shows **Not responding** when BudMinder can't reach the gateway. Check that the gateway is powered on and connected, and that its address hasn't changed.
+The Ecowitt connection card under Manage sensors will report **Not responding** if communication drops. Confirm the gateway is powered on, connected to your Wi-Fi network and that its local IP address has not changed.

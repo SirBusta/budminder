@@ -1,37 +1,37 @@
-Manage sensors is where you find new sensors, name them, put each in the right tent and choose where its readings show. Open it from **Manage sensors** on the Environment page.
+Manage sensors is your centralized hardware dashboard for discovering new sensors, assigning custom names, mapping devices to specific tents and controlling where readings appear throughout the app. Open it by clicking **Manage sensors** on the Environment page.
 
 ## Connections
 
-At the top, a card for each source (AC Infinity, Ecowitt and Home Assistant) shows whether it's connected, how many sensors it has and when it last sent readings. If something is wrong, the card says what: for example **Sign-in expired**, **Not responding** or **No new readings**. **Account & polling** opens its settings.
+At the top of the page, status cards for each integrated platform (AC Infinity, Ecowitt and Home Assistant) show connection status, total linked sensors and the timestamp of the latest data sync. If a platform encounters an issue, the card identifies the error: such as **Sign-in expired**, **Not responding** or **No new readings**. Click **Account & polling** to modify connection credentials or adjust polling intervals.
 
 ## Finding new sensors
 
-Click **Scan AC Infinity**, **Scan Ecowitt** or **Scan Home Assistant**. For Ecowitt, enter the gateway's address on your network first.
+Click **Scan AC Infinity**, **Scan Ecowitt** or **Scan Home Assistant** to discover devices. For Ecowitt gateways, ensure you have entered the gateway's local IP address first.
 
-BudMinder lists the new sensors it found, with their current readings. For each one, choose a tent (or **New tent…** to make one) and click **Add**, or **Add all**. **Ignore** skips a sensor you don't want.
+BudMinder displays all newly detected sensors along with their live readings. For each device, select an existing tent (or choose **New tent…** to create one) and click **Add**, or click **Add all** to import the entire batch. Click **Ignore** to exclude sensors you do not wish to track.
 
-Home Assistant knows about many things that aren't grow sensors, so the scan shows the useful ones first. Type in **Filter found sensors** to narrow the list, or turn on **Show all** to see the rest, such as batteries and power.
+Because Home Assistant often manages hundreds of non-garden entities, scans automatically prioritize cultivation sensors like climate probes and soil monitors. Use the **Filter found sensors** field to search by name, or toggle **Show all** to view peripheral entities like battery levels and smart plug power draw.
 
-Sensors that send readings through the API appear here on their own. See [Your own sensors](/manual/your-own-sensors).
+Sensors transmitting data via the REST API register automatically upon their first data transmission. See [Your own sensors](/manual/your-own-sensors).
 
 ## Your sensors
 
 ![Manage sensors: the filters, a tent's header and its sensors with their chips and Edit buttons](fig:manage-sensors)
 
-- {1} **Filter sensors** finds sensors by name as you type.
-- {2} **All sources** narrows the list to AC Infinity, Ecowitt, Home Assistant or your own. Tick **Show hidden** to include hidden sensors.
-- {3} **Each tent** lists its sensors, with **View charts** to open its Environment page.
-- {4} **Where it shows**: **Environment** (the tent's charts), **Home** (the tent on the Today page), the plants it's linked to, or **Hidden**.
-- {5} **Edit** opens the sensor's settings.
+- {1} **Filter sensors:** search and filter your configured sensors by name as you type.
+- {2} **Source filters:** filter your hardware list by integration platform (AC Infinity, Ecowitt, Home Assistant or custom API sensors). Check **Show hidden** to display sensors hidden from dashboards.
+- {3} **Zone groupings:** groups sensors by tent, featuring a **View charts** shortcut to open that zone's Environment dashboard.
+- {4} **Display targets:** shows where each sensor appears: **Environment** (detailed tent graphs), **Home** (the summary panel on the Today dashboard), linked plant profiles or **Hidden**.
+- {5} **Edit:** opens configuration settings for that sensor.
 
 ## Editing a sensor
 
-- **Name**: what BudMinder calls it everywhere.
-- **Tent / zone**: which tent it belongs to.
-- **Unit**: the unit the sensor reports in. Changing it doesn't convert readings already recorded.
-- **Shows on**: the Sensors page, the Home page, both, or **Hide everywhere**. A hidden sensor keeps recording.
-- **Linked plants**: plants in the tent that this reading belongs to.
+- **Name**: the custom label BudMinder displays across all dashboards and logs.
+- **Tent / zone**: the growing space the sensor monitors.
+- **Unit**: the unit of measurement reported by the hardware. Changing this field updates future logs but does not retroactively convert historical readings.
+- **Shows on**: choose whether the sensor appears on the Sensors page, the Home dashboard, both locations, or select **Hide everywhere**. Hidden sensors continue logging telemetry in the background.
+- **Linked plants**: map the sensor directly to specific plants within that tent to display climate context on their plant profile.
 
-**Delete sensor** removes it and all its readings, after asking.
+Click **Delete sensor** to permanently remove the device and purge all historical readings after confirmation.
 
-> **Tip:** At the bottom of the page, **Troubleshooting: view the raw AC Infinity data** shows exactly what AC Infinity sends, with an option to hide personal details before sharing it.
+> **Tip:** At the bottom of the page, **Troubleshooting: view the raw AC Infinity data** displays the exact JSON payload received from the AC Infinity API. Keep **Hide personal details** enabled to redact account credentials before sharing diagnostics.

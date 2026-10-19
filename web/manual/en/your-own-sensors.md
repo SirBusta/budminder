@@ -1,15 +1,15 @@
-If you build your own sensors, for example an ESP32 board with a temperature probe, they can send their readings to BudMinder. Their readings then show on the Environment and Today pages like any other sensor.
+If you develop custom DIY hardware (such as an ESP32 or Raspberry Pi running environmental probes), your devices can transmit readings directly into BudMinder using the built-in REST API. Custom sensor feeds appear seamlessly across the Environment and Today dashboards alongside commercial hardware.
 
 ## The API key
 
-1. Go to **Settings → Integrations → Sensor API** and generate an **API Key**.
-2. Copy it straight away. It's shown only once.
+1. Navigate to **Settings → Integrations → Sensor API** and click to generate an **API Key**.
+1. Copy the key immediately. For security, it is displayed only once.
 
-Generating a new key replaces the old one at once, so update your devices when you do. **Disable API ingest**, in the same card, blocks outside readings for a while without removing the key.
+Generating a new key instantly invalidates the prior key, requiring updates across your transmitting hardware. To pause incoming transmissions temporarily without resetting credentials, toggle **Disable API ingest** on the same card.
 
 ## Sending a reading
 
-Your device sends each reading to BudMinder's address followed by `/api/sensors/ingest`, as a `POST` request with the key in an `X-API-KEY` header and the reading as JSON:
+Configure your microcontroller to transmit telemetry via an HTTP `POST` request to your BudMinder server URL followed by `/api/sensors/ingest`. Include the API key in the `X-API-KEY` request header and send the sensor payload as JSON:
 
 ```json
 {
@@ -23,14 +23,14 @@ Your device sends each reading to BudMinder's address followed by `/api/sensors/
 }
 ```
 
-- `source`, `device` and `type` together identify the sensor. The first reading with a new combination creates the sensor.
-- `value` is the reading.
-- `name`, `unit` and `new_zone` (the tent to put it in) are used when the sensor is created.
+- `source`, `device` and `type` combine to form a unique hardware fingerprint. The initial payload received with a new combination automatically provisions the sensor.
+- `value` contains the numeric measurement.
+- `name`, `unit` and `new_zone` define default labels and tent assignments when the sensor is first provisioned.
 
-New sensors appear in [Manage sensors](/manual/manage-sensors), where you can rename them, move them to another tent and choose where they show.
+Newly provisioned devices appear under [Manage sensors](/manual/manage-sensors), where you can modify names, reassign zones and configure display visibility.
 
-> **Tip:** BudMinder accepts up to 60 readings a minute. Several sensors each sending once a minute is fine; a device sending many times a second will be turned away.
+> **Tip:** The ingestion endpoint enforces a rate limit of up to 60 readings per minute. Transmitting once per minute across multiple sensors works smoothly, while rapid high-frequency transmissions exceeding the limit will be rejected.
 
 ## Reading data back out
 
-The same key also allows `GET /api/overlay`, which returns every growing plant and every sensor's latest reading. It's made for live-stream overlays, such as an OBS browser source.
+The same API key enables authenticated `GET /api/overlay` requests, returning a structured JSON payload of all active plants and current sensor metrics. This endpoint is designed specifically for automated live-stream HUD overlays (such as OBS browser sources).

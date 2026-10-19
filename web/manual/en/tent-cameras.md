@@ -1,28 +1,28 @@
-Each tent can have a camera. BudMinder shows its latest snapshot on the Today page, and its live picture on the Today page and on the pages of the plants in that tent.
+Every tent can integrate a dedicated camera. BudMinder displays periodic still previews on the Today dashboard and streams real-time video across the Today page and individual plant profiles.
 
 ## Adding a camera
 
 1. Go to **Settings → Cameras → Streams** and click **Add Stream**.
-2. Give it a **Stream Name**, choose the tent under **Stream Zone**, and paste the camera's **Stream URL**.
-3. Leave **Visibility** on **Show**. **Hide** keeps the camera without showing it anywhere.
+1. Enter a descriptive **Stream Name**, select the target tent under **Stream Zone**, and paste the camera's **Stream URL**.
+1. Ensure **Visibility** is set to **Show**. Setting visibility to **Hide** retains stream settings while suppressing display across dashboards.
 
 ## Which addresses work
 
-BudMinder works with web (`http://` or `https://`) addresses:
+BudMinder supports standard HTTP/HTTPS web endpoints:
 
-- **A snapshot address**: one that returns a single picture. Many cameras have one.
-- **An MJPEG stream**: a continuous stream of pictures. BudMinder takes the first one as its snapshot.
-- **An HLS stream**: an address ending in `.m3u8`. Only this kind plays live in BudMinder (the **Live** button). Its snapshot comes from the streaming software's own thumbnail, such as Owncast's.
+- **Snapshot endpoints**: URLs returning a static JPEG/PNG image on request. Most IP cameras provide a direct snapshot URL.
+- **MJPEG streams**: continuous video streams delivered as multipart JPEG frames. BudMinder captures the initial frame for dashboard previews.
+- **HLS streams**: stream addresses ending in `.m3u8`. Only HLS endpoints support interactive in-browser live streaming via the **Live** button. Preview thumbnails are pulled automatically from server stream metadata (such as Owncast).
 
-`rtsp://` addresses, which many security cameras use, don't work directly. A free restreaming tool such as go2rtc or Frigate can turn them into an HLS stream and a snapshot address that BudMinder can use.
+Native `rtsp://` feeds common to security cameras cannot be rendered directly in web browsers. Use a local restreaming bridge (such as go2rtc or Frigate) to convert RTSP feeds into browser-compatible HLS and snapshot URLs.
 
 ## Snapshots
 
-In **Settings → Cameras → Snapshots**, turn on **Enable Stream Grab** and set **Stream Grab Interval**, from 5 to 60 minutes. BudMinder grabs a still from each camera on that schedule and uses it as the camera's preview. Only the newest snapshot is kept.
+Under **Settings → Cameras → Snapshots**, toggle on **Enable Stream Grab** and configure the **Stream Grab Interval** (adjustable from 5 to 60 minutes). BudMinder captures a still frame from each camera on that schedule to serve as dashboard preview tiles, keeping only the most recent capture.
 
 ## Watching live
 
-- On the Today page, click **Live** on a tent's camera.
-- On a plant's page, switch the picture at the top right from **Photo** to **Live**.
+- On the Today dashboard, click **Live** on any tent camera card.
+- On a plant profile, toggle the media preview in the upper right from **Photo** to **Live**.
 
-Both need an HLS (`.m3u8`) address.
+Both live streaming interfaces require a valid HLS (`.m3u8`) stream URL.
