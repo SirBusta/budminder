@@ -28,9 +28,9 @@ Sensors transmitting data via the REST API register automatically upon their fir
 
 - **Name**: the custom label BudMinder displays across all dashboards and logs.
 - **Tent / zone**: the growing space the sensor monitors.
-- **Unit**: the unit of measurement reported by the hardware. Changing this field updates future logs but does not retroactively convert historical readings.
+- **Unit**: the unit of measurement the hardware reports in. Changing it only changes the label; no readings are converted.
 - **Shows on**: choose whether the sensor appears on the Sensors page, the Home dashboard, both locations, or select **Hide everywhere**. Hidden sensors continue logging telemetry in the background.
-- **Linked plants**: map the sensor directly to specific plants within that tent to display climate context on their plant profile.
+- **Linked plants**: link the sensor to specific plants in that tent.
 
 Click **Delete sensor** to permanently remove the device and purge all historical readings after confirmation.
 

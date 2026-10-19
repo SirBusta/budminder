@@ -13,4 +13,4 @@ BudMinder polls the gateway automatically based on the global **Polling Interval
 
 ## If readings stop
 
-The Ecowitt connection card under Manage sensors will report **Not responding** if communication drops. Confirm the gateway is powered on, connected to your Wi-Fi network and that its local IP address has not changed.
+The Ecowitt connection card under Manage sensors will report **Not responding** if communication drops. Confirm the gateway is powered on, connected to your network and that its local IP address has not changed.
