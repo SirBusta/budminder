@@ -1,33 +1,33 @@
-**Settings → Grow setup** holds the lists the rest of BudMinder is built on: your tents, the activities you log, the measurements you take, and more.
+**Settings → Grow setup** manages the foundational lists and parameters powering BudMinder: tent zones, activity types, environmental metrics, target ranges and evaluation fields.
 
 ## Zones
 
-Your tents, rooms or outdoor spaces. Plants, sensors and cameras each belong to one. The list shows how many plants and sensors each zone has. Click **Add Zone** to add one, or click a zone to rename or delete it.
+Zones represent your physical growing spaces, such as tents, rooms or outdoor gardens. Each plant, climate sensor and camera feed maps directly to a zone. The management list displays the number of active plants and sensors assigned to each space. Click **Add Zone** to create a new location, or click an existing zone to rename or delete it.
 
-> **Warning:** Deleting a zone also deletes every plant and sensor in it, with all their notebooks, photos and readings. To get rid of a tent but keep its plants, move the plants and sensors to another zone first.
-
-> **Tip:** You can also add a zone while adding a plant (**Add New Zone**) or a sensor (**New tent…**).
+> **Warning:** Deleting a zone permanently removes every plant, sensor and camera assigned to it, along with their associated activity logs, photo galleries and telemetry history. To retire a growing space while preserving plant records, reassign the plants and sensors to another zone before deleting.
+>
+> **Tip:** You can also create a new zone on the fly while setting up a plant (**Add New Zone**) or adding a sensor (**New tent…**).
 
 ## Activities
 
-The things you log for a plant, such as Water, Feed, Train or Defoliate. Click **Add Activity**, or click one to change it:
+Activities are the actions you log in a plant's notebook, such as Water, Feed, Train, Defoliate or Top. Click **Add Activity** to define a new action, or click an existing entry to edit it:
 
-- its **name**, **icon** and **color**, used in the notebook;
-- **Counts as**: tick **Watering** or **Feeding** for activities that should reset the "last watered" or "last fed" count on the Today and Plants pages;
-- **measurements**: the numbers this activity asks for when you log it. Required ones must be filled in (they're marked *); optional ones can be left empty.
+- customize its **name**, **icon** and **color**, which appear throughout the daily notebook timeline;
+- **Counts as**: check **Watering** or **Feeding** for actions that should reset the "last watered" or "last fed" warning counters on the Today dashboard and Plants list;
+- **measurements**: configure numeric metrics prompted when logging this action. Fields marked with an asterisk (*) are mandatory, while unmarked metrics remain optional.
 
 ## Metrics
 
-The measurements you can record, such as Height, Water amount, pH or EC, each with its **Unit**. Click **Add Metric** to add one. Attach it to an activity (above) so it's asked for when you log that activity.
+Metrics represent numeric data points you track in the journal, such as Plant Height, Water Volume, pH, EC or Runoff EC, each paired with its specific **Unit**. Click **Add Metric** to create a custom tracking field. Attach metrics to specific activities above so they appear automatically when logging that action.
 
 ## VPD targets by stage
 
-The ideal VPD range, in kPa, for each growth stage, for example 0.8 to 1.2 in Veg. Leave a stage blank to turn the target off for that stage.
+Set ideal Vapor Pressure Deficit (VPD) ranges in kilopascals (kPa) for each developmental phase (for example, 0.8 to 1.2 kPa in Vegetative growth). Leave a stage unconfigured to disable target boundary shading on climate charts for that phase.
 
 ## Breeders
 
-Your list of breeders. See [Breeders](/manual/breeders).
+Manage your master breeder directory. See [Breeders](/manual/breeders).
 
 ## Smoke reports
 
-The score weights and which fields the smoke report form shows. See [Scores and weights](/manual/scores-and-weights#score-weights).
+Configure rating category weights and toggle visible review fields. See [Scores and weights](/manual/scores-and-weights#score-weights).

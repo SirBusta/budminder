@@ -1,37 +1,37 @@
-A backup is a single file with everything in BudMinder: plants, notebooks, strains, sensors, smoke reports and settings, plus, if you like, your photos and sensor history. Make one regularly, and keep a copy somewhere other than the BudMinder computer.
+A BudMinder backup consolidates your complete cultivation environment into a single portable archive: plant profiles, activity notebooks, cultivar libraries, sensor mappings, smoke reports and system settings, plus optional high-resolution photos and historical climate logs. Create backups regularly and store copies off the host server to ensure data safety.
 
 ## Making a backup
 
-Go to **Settings → Backup & data → Create Backup**.
+Navigate to **Settings → Backup & data → Create Backup**.
 
-1. Choose how much **Sensor History** to include: none, the last 7, 30 or 90 days, or all of it. Sensor history is usually the biggest part of a backup.
-2. Tick **Include images** to add your photos and camera snapshots.
-3. Click **Create Backup**.
+1. Select how much **Sensor History** to include: None, 7 days, 30 days, 90 days or Full History. Historical sensor telemetry typically makes up the largest portion of archive size.
+1. Check **Include images** to package your plant photo galleries and camera snapshots.
+1. Click **Create Backup**.
 
-The backup is saved on the server and appears under **Available Backups**. Click the download button to save a copy to your computer, or the trash can to delete one.
+BudMinder generates the archive locally and lists it under **Available Backups**. Click the download icon to save a copy to your local machine, or click the trash can icon to delete older snapshots.
 
-> **Tip:** Backups kept on the server are lost if that computer's drive fails. Download the ones you want to keep.
+> **Tip:** Backups stored solely on the host server will be lost if that drive fails. Always download important backups to external or cloud storage.
 
 ## Restoring a backup
 
-> **Warning:** Restoring replaces everything in this BudMinder with the backup. Anything added since the backup was made is lost.
+> **Warning:** Restoring an archive overwrites your current BudMinder database entirely. Any entries or modifications logged after the backup was generated will be permanently replaced.
 
 1. Go to **Settings → Backup & data → Restore Backup**.
-2. Drag a BudMinder backup `.zip` file into the box, or click to choose it.
-3. Click **Restore Backup** and wait until it finishes. Sensor polling pauses while it runs.
+1. Drag and drop a BudMinder backup `.zip` archive into the upload target, or click to select the file from your computer.
+1. Click **Restore Backup** and allow the process to finish. Active sensor polling pauses automatically during the restore.
 
-To move BudMinder to a new computer, make a backup on the old one, install BudMinder on the new one, and restore the backup there.
+To migrate BudMinder to a new computer or server, generate a backup on the original machine, install BudMinder on the new hardware and restore the archive there.
 
-On SQLite, the database most people use, importing a lot of sensor history can be slow. Tick **Skip sensor data** to restore much faster without it.
+When running on SQLite (the default database engine), importing extensive sensor telemetry can take time on low-power hardware. Check **Skip sensor data** to perform an expedited restore containing only plant records, genetics and journal entries.
 
 ## SQLite file transfer
 
-Under **Advanced: SQLite File Transfer**, you can download the database file itself (**Download .db File**), or replace this BudMinder's database with one you upload (**Replace Database**). It's the quickest way to copy a whole SQLite setup. It doesn't include photos, which are kept in the uploads folder.
+Under **Advanced: SQLite File Transfer**, you can download the raw database file directly (**Download .db File**) or swap out the active database by uploading an existing file (**Replace Database**). This provides a fast method for duplicating an entire SQLite installation. Note that raw database transfers do not include media files, which reside separately in the server's uploads folder.
 
 ## Sensor history
 
-**Data Retention** sets how many days of sensor readings to keep; older ones are removed once a day. **0** keeps everything forever.
+The **Data Retention** setting specifies how many days of sensor telemetry to retain. Older readings are automatically purged once daily in the background. Setting this value to **0** preserves all historical climate logs indefinitely.
 
 ## If you run BudMinder in Docker
 
-Everything BudMinder stores is in its two folders (volumes): the data folder (`/app/data`), with the database and the backups, and the uploads folder (`/app/uploads`), with your photos and camera snapshots. Copying both, with BudMinder stopped, is a complete copy too.
+When deployed via Docker, all persistent application data lives inside two mapped directory volumes: the data volume (`/app/data`) containing the database and backup archives, and the uploads volume (`/app/uploads`) containing plant photos and camera captures. Creating a direct copy of both folders while the BudMinder container is stopped produces a full manual system clone.

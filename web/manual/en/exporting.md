@@ -1,15 +1,15 @@
-You can download a plant's notebook as a spreadsheet, to keep, print or share.
+Export a plant's notebook as a spreadsheet file to archive, print, analyze or share offline.
 
 ## Exporting a notebook
 
-1. Open the plant's page.
-2. Click **Export** in the notebook toolbar.
-3. Choose **Spreadsheet (CSV)** or **Excel (XLSX)**.
+1. Open the plant's profile page.
+1. Click **Export** in the notebook toolbar.
+1. Choose **Spreadsheet (CSV)** or **Excel (XLSX)**.
 
-The file has one row per day you logged, with these columns: **Date**, **Plant**, **Strain**, **Zone**, **Activities**, **Measurements** and **Note**. The Excel file keeps the header row in place as you scroll and has filters on every column.
+The resulting file contains one row for each logged day, formatted with standard columns: **Date**, **Plant**, **Strain**, **Zone**, **Activities**, **Measurements** and **Note**. Excel exports freeze the top header row for smooth scrolling and include interactive column filter toggles.
 
 ## Several plants at once
 
-Switch the notebook to **All plants**, choose the plants you want at the top (a whole tent, all growing plants, or everything), then click **Export**. The file holds the notebooks of all the plants you chose, so you can sort or filter by plant.
+Toggle the notebook view to **All plants**, select your target group using the top filter menu (a specific tent zone, all active plants or your complete grow archive) and click **Export**. The generated spreadsheet consolidates logs across all selected plants, allowing easy sorting and filtering by plant name or cultivar.
 
-> **Tip:** An export is a copy of your notes to read elsewhere. It can't be imported back into BudMinder. To keep everything safe, use a [backup](/manual/backup-and-restore).
+> **Tip:** An export spreadsheet is designed for offline reading and analysis; it cannot be imported back into BudMinder to restore a database. To safeguard your records, use the [backup](/manual/backup-and-restore) tool.
