@@ -11,7 +11,7 @@
 [![Docker image](https://img.shields.io/badge/docker-ghcr.io%2Fsirbusta%2Fbudminder-16a34a?logo=docker&logoColor=white)](https://github.com/SirBusta/budminder/pkgs/container/budminder)
 [![License: MIT](https://img.shields.io/badge/license-MIT-16a34a)](LICENSE)
 
-[Install](#install) · [Tour](#tour) · [Releases](https://github.com/SirBusta/budminder/releases)
+[Website](https://budminder.app) · [Install](#install) · [Tour](#tour) · [Releases](https://github.com/SirBusta/budminder/releases)
 
 </div>
 
