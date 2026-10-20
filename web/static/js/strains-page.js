@@ -329,11 +329,21 @@
         el.querySelector(".modal-body").innerHTML = `
             <div class="sp-pick mb-3"><b>${esc(r.name)}</b> <span class="text-muted">— ${esc(r.breeder || tr("sp_unknown_breeder"))}</span><div class="small text-muted">${esc(tr("sp_from_sc"))}</div></div>
             ${destPicker()}
-            <p class="small text-muted mt-3 mb-0"><i class="fa-solid fa-circle-info me-1"></i>${esc(tr("sp_review_next"))}</p>`;
-        el.querySelector(".modal-footer").innerHTML = `<button class="btn btn-light" data-bs-dismiss="modal">${esc(tr("sp_cancel"))}</button><button class="btn btn-success" id="spReviewGo">${esc(tr("sp_continue_review"))}</button>`;
+            ${window.BM_DEMO ? "" : `<p class="small text-muted mt-3 mb-0"><i class="fa-solid fa-circle-info me-1"></i>${esc(tr("sp_review_next"))}</p>`}`;
+        el.querySelector(".modal-footer").innerHTML = `<button class="btn btn-light" data-bs-dismiss="modal">${esc(tr("sp_cancel"))}</button><button class="btn btn-success" id="spReviewGo">${esc(tr(window.BM_DEMO ? "sp_add" : "sp_continue_review"))}</button>`;
         wireDest(el);
-        $("spReviewGo").addEventListener("click", () => {
+        $("spReviewGo").addEventListener("click", async () => {
             const d = readDest(el);
+            if (window.BM_DEMO) {
+                // Demo: no review page (it would let you type); import, place it, open it.
+                try {
+                    const imp = await api("POST", "/strains/straincompass/import", { slug: r.slug, name: r.name, listing_breeder: r.breeder || "" });
+                    if (d.dest === "vault") await api("POST", `/strains/${imp.id}/seeds`, { count: d.seeds, seed_type: d.seedType, seeds_added_on: d.added });
+                    await api("POST", `/strains/${imp.id}/wanted`, { wanted: d.dest === "wanted" });
+                    location.href = "/strain/" + imp.id;
+                } catch (ex) { /* demo.js shows why */ }
+                return;
+            }
             const q = new URLSearchParams({ source: "straincompass", slug: r.slug, name: r.name, listing_breeder: r.breeder || "", dest: d.dest });
             if (d.dest === "vault") { q.set("seed_count", d.seeds); q.set("seed_type", d.seedType); q.set("seeds_added_on", d.added); }
             location.href = "/strain/import/review?" + q.toString();

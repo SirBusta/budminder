@@ -79,6 +79,7 @@ type ServerOption func(*serverOptions)
 
 type serverOptions struct {
 	guestMode          bool
+	demo               bool
 	sessionSecret      []byte
 	dataDir            string
 	uploadDir          string
@@ -94,6 +95,11 @@ type serverOptions struct {
 // (basic routes are public, mirroring the Store's GuestMode == 1).
 func WithGuestMode() ServerOption {
 	return func(o *serverOptions) { o.guestMode = true }
+}
+
+// WithDemo boots the engine in demo mode (handlers/demo.go).
+func WithDemo() ServerOption {
+	return func(o *serverOptions) { o.demo = true }
 }
 
 // WithSessionSecret overrides the default 32-byte test session secret.
@@ -238,6 +244,7 @@ func NewTestServer(t *testing.T, db *sql.DB, opts ...ServerOption) *TestServer {
 		SessionSecret:      options.sessionSecret,
 		SecureCookies:      false,
 		GuestMode:          options.guestMode,
+		Demo:               options.demo,
 		TrustedProxies:     nil,
 		DataDir:            options.dataDir,
 		UploadDir:          options.uploadDir,

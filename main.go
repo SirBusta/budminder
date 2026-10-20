@@ -99,21 +99,31 @@ func main() {
 	// for in-flight iterations to complete before exiting.
 	var bgWG sync.WaitGroup
 
+	// Demo mode: a public, locked-down demo (handlers/demo.go). It runs no
+	// background jobs that reach outside: no sensor polling, camera
+	// snapshots or breeder-list refresh.
+	demo := env.Get("DEMO") == "1" || strings.EqualFold(env.Get("DEMO"), "true")
+	if demo {
+		logger.Log.Warn("Demo mode is on: visitors are signed in automatically and changes are limited")
+	}
+
 	w := watcher.New(db, configStore)
 	w.ACIRelogin = handlers.NewACIRelogin(db, configStore, "data", "") // same data folder as the engine
 
-	// Prune old sensor data once before the watcher loop kicks in.
-	if err := w.PruneSensorData(); err != nil {
-		logger.Log.WithError(err).Error("Initial sensor data prune failed")
-	} else {
-		logger.Log.Info("Initial sensor data prune completed")
-	}
+	if !demo {
+		// Prune old sensor data once before the watcher loop kicks in.
+		if err := w.PruneSensorData(); err != nil {
+			logger.Log.WithError(err).Error("Initial sensor data prune failed")
+		} else {
+			logger.Log.Info("Initial sensor data prune completed")
+		}
 
-	bgWG.Add(1)
-	go func() {
-		defer bgWG.Done()
-		w.Run(ctx)
-	}()
+		bgWG.Add(1)
+		go func() {
+			defer bgWG.Done()
+			w.Run(ctx)
+		}()
+	}
 
 	// Resolve the session secret: BUDMINDER_SESSION_SECRET if set, otherwise
 	// a key BudMinder made once and keeps in its database, so logins survive
@@ -162,6 +172,7 @@ func main() {
 		HSTSIncludeSubdomains: strings.EqualFold(env.Get("HSTS_INCLUDE_SUBDOMAINS"), "true"),
 		HSTSPreload:           strings.EqualFold(env.Get("HSTS_PRELOAD"), "true"),
 		GuestMode:             configStore.GuestMode() == 1,
+		Demo:                  demo,
 		TrustedProxies:        trustedProxies,
 		DataDir:               "data",
 		ConfigStore:           configStore,
@@ -171,18 +182,20 @@ func main() {
 		logger.Log.WithError(err).Fatal("Failed to construct HTTP engine")
 	}
 
-	grabber := watcher.NewGrabber(configStore, engineCfg.FrameDir)
-	bgWG.Add(1)
-	go func() {
-		defer bgWG.Done()
-		grabber.Run(ctx)
-	}()
+	if !demo {
+		grabber := watcher.NewGrabber(configStore, engineCfg.FrameDir)
+		bgWG.Add(1)
+		go func() {
+			defer bgWG.Done()
+			grabber.Run(ctx)
+		}()
 
-	bgWG.Add(1)
-	go func() {
-		defer bgWG.Done()
-		handlers.RunBreederReferenceRefresher(ctx, db, embeddedFiles)
-	}()
+		bgWG.Add(1)
+		go func() {
+			defer bgWG.Done()
+			handlers.RunBreederReferenceRefresher(ctx, db, embeddedFiles)
+		}()
+	}
 
 	srv := &http.Server{
 		Addr:    ":" + port,

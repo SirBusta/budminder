@@ -101,7 +101,7 @@ func NewEngine(cfg Config) (*gin.Engine, error) {
 	r.Use(securityHeadersMiddleware(configStore, hstsHeaderValue(cfg)))
 	r.Use(currentPathMiddleware())
 
-	templ, err := parseTemplates(cfg.Assets, configStore)
+	templ, err := parseTemplates(cfg.Assets, configStore, cfg.Demo)
 	if err != nil {
 		return nil, fmt.Errorf("parse templates: %w", err)
 	}
@@ -116,6 +116,10 @@ func NewEngine(cfg Config) (*gin.Engine, error) {
 		Secure:   cfg.SecureCookies,
 		SameSite: http.SameSiteLaxMode,
 	})
+	if cfg.Demo {
+		r.Use(handlers.DemoGuard())
+		handlers.SetupDemo(configStore)
+	}
 	r.Use(sessions.Sessions("isley_session", store))
 	r.Use(csrfMiddleware())
 	r.Use(dbMiddleware(cfg.DB))
@@ -143,6 +147,9 @@ func NewEngine(cfg Config) (*gin.Engine, error) {
 		)
 	}
 	r.Use(sensorCacheServiceMiddleware(sensorCacheSvc))
+	if cfg.Demo {
+		r.Use(handlers.DemoMiddleware())
+	}
 
 	registerPublicRoutes(r, cfg)
 	registerProtectedRoutes(r, cfg)
@@ -366,8 +373,11 @@ func pathDirsMiddleware(uploadDir, streamDir, logsDir string) gin.HandlerFunc {
 // Templates and static assets
 // ---------------------------------------------------------------------------
 
-func parseTemplates(assets fs.FS, store *config.Store) (*template.Template, error) {
+func parseTemplates(assets fs.FS, store *config.Store, demo bool) (*template.Template, error) {
 	funcMap := buildFuncMap(store)
+	// demoMode / demoNotes: the demo banner, script and sample notes (header.html).
+	funcMap["demoMode"] = func() bool { return demo }
+	funcMap["demoNotes"] = func() []string { return handlers.DemoNotes }
 	return template.New("").Funcs(funcMap).ParseFS(assets, "web/templates/**/*.html")
 }
 

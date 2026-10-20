@@ -4,6 +4,7 @@
 
 <body>
 <a class="skip-to-content" href="#main-content">Skip to content</a>
+{{ if demoMode }}<div class="bm-demo-banner"><i class="fa-solid fa-flask me-1"></i>{{ .lcl.demo_banner }}</div>{{ end }}
 <header class="d-flex flex-wrap justify-content-between align-items-center py-2 mb-2 border-bottom container-xxl">
     <!-- Logo and Title -->
     <a href="/" class="d-flex align-items-center text-decoration-none link-body-emphasis">

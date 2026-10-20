@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Demo mode** (`BUDMINDER_DEMO=1`), for running a public demo: visitors are
+  signed in automatically, text comes from sample choices, uploads, exports,
+  settings and integrations are off, and the server checks every change. Off
+  unless you turn it on.
 - **Training and Defoliate activities** come standard, with their own icons
   and colors. Installs that already have their own training or defoliation
   activity keep theirs, without a duplicate.

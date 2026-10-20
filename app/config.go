@@ -63,6 +63,10 @@ type Config struct {
 	// tests pass it explicitly.
 	GuestMode bool
 
+	// Demo turns on demo mode (BUDMINDER_DEMO=1): a public, locked-down
+	// BudMinder for the live demo. See handlers/demo.go.
+	Demo bool
+
 	// TrustedProxies is forwarded to Gin's SetTrustedProxies so that
 	// c.ClientIP() returns the real client IP behind a reverse proxy.
 	// Tests typically pass nil to disable trust entirely.
