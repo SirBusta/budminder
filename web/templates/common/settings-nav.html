@@ -6,7 +6,7 @@
 <aside class="st-aside">
     <form class="st-search" action="/settings" method="get" role="search">
         <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-        <input type="search" name="q" id="stQ" placeholder="{{ .lcl.st_search_placeholder }}" aria-label="{{ .lcl.st_search }}" autocomplete="off">
+        <input type="search" name="q" id="stQ" maxlength="60" placeholder="{{ .lcl.st_search_placeholder }}" aria-label="{{ .lcl.st_search }}" autocomplete="off">
     </form>
     <nav class="st-side" id="stSide" aria-label="{{ .lcl.st_sections }}">
         <h6>{{ .lcl.title_settings }}</h6>

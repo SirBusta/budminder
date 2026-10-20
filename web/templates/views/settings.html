@@ -359,7 +359,7 @@
                     <div class="st-card-h"><i class="fa-solid fa-image"></i><div><h3>{{ .lcl.st_card_logo }}</h3><p>{{ .lcl.add_logo_info }}</p></div></div>
                     <div class="st-row">
                         <div class="st-row-l"><small>{{ .lcl.add_logo_note }}</small></div>
-                        <div class="st-row-r"><button type="button" class="st-btn light" data-bs-toggle="modal" data-bs-target="#uploadImagesModal"><i class="fa-solid fa-upload me-1"></i>{{ .lcl.add_logo }}</button></div>
+                        <div class="st-row-r">{{ if demoMode }}<button type="button" class="st-btn light" disabled title="{{ .lcl.demo_not_available }}"><i class="fa-solid fa-upload me-1"></i>{{ .lcl.add_logo }}</button>{{ else }}<button type="button" class="st-btn light" data-bs-toggle="modal" data-bs-target="#uploadImagesModal"><i class="fa-solid fa-upload me-1"></i>{{ .lcl.add_logo }}</button>{{ end }}</div>
                     </div>
                 </div>
 

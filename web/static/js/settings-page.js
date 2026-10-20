@@ -280,6 +280,6 @@
     document.addEventListener("DOMContentLoaded", () => {
         const pre = new URLSearchParams(location.search).get("q");
         showSection(current, false);
-        if (pre) { q.value = pre; search(); }
+        if (pre) { q.value = pre.slice(0, 60); search(); }
     });
 })();
