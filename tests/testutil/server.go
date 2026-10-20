@@ -12,6 +12,7 @@ import (
 
 	"isley/app"
 	"isley/config"
+	"isley/demo"
 	"isley/handlers"
 )
 
@@ -37,6 +38,9 @@ type TestServer struct {
 	DB      *sql.DB
 	Assets  string // absolute path to the repo root used as the assets fs
 	DataDir string // root data directory used by the engine (e.g. for backups)
+
+	// DemoCopies is the visitor-copy manager in demo mode (WithDemo), else nil.
+	DemoCopies *demo.Copies
 
 	// UploadDir, StreamDir, LogsDir, FrameDir mirror the dirs the engine
 	// was constructed with so tests that need to assert against
@@ -256,6 +260,16 @@ func NewTestServer(t *testing.T, db *sql.DB, opts ...ServerOption) *TestServer {
 		RateLimiterService: rateLimiterSvc,
 		SensorCacheService: sensorCacheSvc,
 	}
+	var demoCopies *demo.Copies
+	if options.demo {
+		var err error
+		demoCopies, err = demo.New(db, "", configStore, filepath.Join(t.TempDir(), "demo-copies"), 0)
+		if err != nil {
+			t.Fatalf("NewTestServer: demo.New: %v", err)
+		}
+		t.Cleanup(demoCopies.Close)
+		engineCfg.DemoCopies = demoCopies
+	}
 	// Resolve defaults so the TestServer's exported path fields reflect
 	// the same values the engine middleware injects into request context.
 	resolved := app.ResolvePathDefaults(engineCfg)
@@ -270,6 +284,7 @@ func NewTestServer(t *testing.T, db *sql.DB, opts ...ServerOption) *TestServer {
 
 	return &TestServer{
 		Server:             srv,
+		DemoCopies:         demoCopies,
 		DB:                 db,
 		Assets:             root,
 		DataDir:            options.dataDir,

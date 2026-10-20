@@ -148,7 +148,7 @@ func NewEngine(cfg Config) (*gin.Engine, error) {
 	}
 	r.Use(sensorCacheServiceMiddleware(sensorCacheSvc))
 	if cfg.Demo {
-		r.Use(handlers.DemoMiddleware())
+		r.Use(handlers.DemoMiddleware(cfg.DemoCopies))
 	}
 
 	registerPublicRoutes(r, cfg)

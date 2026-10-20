@@ -37,6 +37,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 
+	"isley/config"
 	"isley/logger"
 )
 
@@ -637,9 +638,16 @@ func DemoGuard() gin.HandlerFunc {
 	}
 }
 
+// DemoCopies hands each demo visitor their own database and settings
+// (package demo). A visitor reads the shared demo until their first change.
+type DemoCopies interface {
+	ForRequest(id, ip string, write bool) (newID string, db *sql.DB, store *config.Store, err error)
+}
+
 // DemoMiddleware applies demo mode to every request. Register it after the
-// session, CSRF and database middlewares and before the routes.
-func DemoMiddleware() gin.HandlerFunc {
+// session, CSRF and database middlewares and before the routes. copies may
+// be nil (every visitor then shares one database).
+func DemoMiddleware(copies DemoCopies) gin.HandlerFunc {
 	var mu sync.Mutex
 	writes := map[string]int{}
 	window := time.Now()
@@ -650,16 +658,19 @@ func DemoMiddleware() gin.HandlerFunc {
 
 		demoSignIn(c)
 
-		switch c.Request.Method {
-		case http.MethodGet, http.MethodHead:
+		read := c.Request.Method == http.MethodGet || c.Request.Method == http.MethodHead
+		if read {
 			switch {
 			case route == "/login" || route == "/change-password":
 				c.Redirect(http.StatusFound, "/")
 				c.Abort()
+				return
 			case demoBlockedReads[route]:
 				c.String(http.StatusForbidden, T(c, "demo_not_available"))
 				c.Abort()
-			default:
+				return
+			}
+			if demoUseCopy(c, copies, false) {
 				c.Next()
 			}
 			return
@@ -687,6 +698,10 @@ func DemoMiddleware() gin.HandlerFunc {
 		// the CSRF check may already have read it.
 		if ct := c.ContentType(); ct != "" && ct != "application/json" {
 			demoRefuse(c, "content type")
+			return
+		}
+		// The visitor's own copy, before any check reads the database.
+		if !demoUseCopy(c, copies, true) {
 			return
 		}
 		raw, err := io.ReadAll(c.Request.Body)
@@ -720,6 +735,29 @@ func DemoMiddleware() gin.HandlerFunc {
 		c.Request.ContentLength = int64(len(raw))
 		c.Next()
 	}
+}
+
+// demoUseCopy points this request at the visitor's copy (making one for a
+// change) and remembers it in their session. False means it answered.
+func demoUseCopy(c *gin.Context, copies DemoCopies, write bool) bool {
+	if copies == nil {
+		return true
+	}
+	session := sessions.Default(c)
+	id, _ := session.Get("demo_copy").(string)
+	newID, db, store, err := copies.ForRequest(id, c.ClientIP(), write)
+	if err != nil {
+		logger.Log.WithError(err).Warn("Demo: no copy for this visitor")
+		c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": T(c, "demo_slow_down"), "demo": true})
+		return false
+	}
+	if newID != id {
+		session.Set("demo_copy", newID)
+		_ = session.Save()
+	}
+	c.Set(contextKeyDB, db)
+	SetConfigStoreOnContext(c, store)
+	return true
 }
 
 func demoRefuse(c *gin.Context, why string) {

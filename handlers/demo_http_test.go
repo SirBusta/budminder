@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"isley/demo"
 	"isley/handlers"
 	"isley/tests/testutil"
 )
@@ -66,6 +67,14 @@ func (e *demoEnv) json(t *testing.T, method, path string, body any) (int, map[st
 	b, err := json.Marshal(body)
 	require.NoError(t, err)
 	return e.send(t, method, path, "application/json", b)
+}
+
+func (e *demoEnv) getJSON(t *testing.T, path string, out any) {
+	t.Helper()
+	resp := e.client.Get(path)
+	defer testutil.DrainAndClose(resp)
+	require.Equal(t, http.StatusOK, resp.StatusCode, path)
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(out))
 }
 
 func assertRefused(t *testing.T, code int, out map[string]any, what string) {
@@ -202,9 +211,15 @@ func TestDemo_AddPlantIsNamedByTheServer(t *testing.T) {
 	base := map[string]any{"name": "<b>mine</b>", "strain_id": e.strain, "zone_id": e.zone, "status_id": veg, "date": "2026-10-01", "sensors": "[]"}
 	code, out := e.json(t, "POST", "/plants", base)
 	require.Equal(t, http.StatusOK, code, out)
-	var name string
-	require.NoError(t, e.server.DB.QueryRow(`SELECT name FROM plant ORDER BY id DESC LIMIT 1`).Scan(&name))
-	assert.Equal(t, "Permanent Marker #2", name)
+	var living []struct {
+		Name string `json:"name"`
+	}
+	e.getJSON(t, "/plants/living", &living)
+	names := []string{}
+	for _, p := range living {
+		names = append(names, p.Name)
+	}
+	assert.Contains(t, names, "Permanent Marker #2", "named by the server, in the visitor's copy")
 
 	for k, v := range map[string]any{"new_zone": "Evil tent", "new_strain": map[string]any{"name": "x"}} {
 		bad := map[string]any{}
@@ -226,11 +241,13 @@ func TestDemo_StrainEditKeepsTheText(t *testing.T) {
 		"growing": map[string]any{"height_indoor": "tall"},
 	})
 	require.Equal(t, http.StatusOK, code)
-	var name string
-	var indica int
-	require.NoError(t, e.server.DB.QueryRow(`SELECT name, indica FROM strain WHERE id = $1`, e.strain).Scan(&name, &indica))
-	assert.Equal(t, "Permanent Marker", name, "the name can't change")
-	assert.Equal(t, 70, indica, "numbers can")
+	var got struct {
+		Name   string `json:"name"`
+		Indica int    `json:"indica"`
+	}
+	e.getJSON(t, "/strains/"+itoa(e.strain), &got)
+	assert.Equal(t, "Permanent Marker", got.Name, "the name can't change")
+	assert.Equal(t, 70, got.Indica, "numbers can")
 
 	code, out := e.json(t, "PUT", "/strains/"+itoa(e.strain), map[string]any{"indica": 170})
 	assertRefused(t, code, out, "indica over 100")
@@ -296,3 +313,47 @@ func TestDemo_LimitsChangesPerVisitor(t *testing.T) {
 }
 
 func itoa(n int) string { return strconv.Itoa(n) }
+
+func TestDemo_EachVisitorHasTheirOwnCopy(t *testing.T) {
+	t.Parallel()
+	e := newDemo(t)
+	other := e.server.NewClient(t)
+	other.FetchMetaCSRFToken("/plants")
+	seeds := func(c *testutil.Client) int {
+		var s struct {
+			SeedCount int `json:"seed_count"`
+		}
+		resp := c.Get("/strains/" + itoa(e.strain))
+		defer testutil.DrainAndClose(resp)
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&s))
+		return s.SeedCount
+	}
+	before := seeds(other)
+	assert.Zero(t, e.server.DemoCopies.Count(), "reading makes no copy")
+
+	code, _ := e.json(t, "POST", "/strains/"+itoa(e.strain)+"/seeds", map[string]any{"count": 3})
+	require.Equal(t, http.StatusOK, code)
+	assert.Equal(t, 1, e.server.DemoCopies.Count(), "the first change makes this visitor's copy")
+	assert.Equal(t, before+3, seeds(e.client), "the visitor sees their change")
+	assert.Equal(t, before, seeds(other), "another visitor doesn't")
+
+	var base int
+	require.NoError(t, e.server.DB.QueryRow(`SELECT seed_count FROM strain WHERE id = $1`, e.strain).Scan(&base))
+	assert.Equal(t, before, base, "the shared demo is never written")
+}
+
+func TestDemo_LimitsNewCopiesPerAddress(t *testing.T) {
+	t.Parallel()
+	e := newDemo(t)
+	path := "/strains/" + itoa(e.strain) + "/wanted"
+	last := 0
+	for i := 0; i <= demo.CopiesPerIPPerHour; i++ {
+		c := e.server.NewClient(t) // a new visitor each time, from the same address
+		token := c.FetchMetaCSRFToken("/plants")
+		resp := c.SessionPostJSON(t, path, token, map[string]any{"wanted": true})
+		last = resp.StatusCode
+		testutil.DrainAndClose(resp)
+	}
+	assert.Equal(t, http.StatusTooManyRequests, last)
+	assert.Equal(t, demo.CopiesPerIPPerHour, e.server.DemoCopies.Count())
+}

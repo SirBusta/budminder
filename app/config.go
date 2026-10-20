@@ -67,6 +67,10 @@ type Config struct {
 	// BudMinder for the live demo. See handlers/demo.go.
 	Demo bool
 
+	// DemoCopies gives each demo visitor a private copy of the database
+	// (package demo). Nil in demo mode means everyone shares one.
+	DemoCopies handlers.DemoCopies
+
 	// TrustedProxies is forwarded to Gin's SetTrustedProxies so that
 	// c.ClientIP() returns the real client IP behind a reverse proxy.
 	// Tests typically pass nil to disable trust entirely.

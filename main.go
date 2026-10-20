@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,6 +19,7 @@ import (
 
 	"isley/app"
 	"isley/config"
+	"isley/demo"
 	"isley/env"
 	"isley/handlers"
 	"isley/homeassistant"
@@ -102,15 +104,30 @@ func main() {
 	// Demo mode: a public, locked-down demo (handlers/demo.go). It runs no
 	// background jobs that reach outside: no sensor polling, camera
 	// snapshots or breeder-list refresh.
-	demo := env.Get("DEMO") == "1" || strings.EqualFold(env.Get("DEMO"), "true")
-	if demo {
+	demoMode := env.Get("DEMO") == "1" || strings.EqualFold(env.Get("DEMO"), "true")
+	var demoCopies *demo.Copies
+	if demoMode {
 		logger.Log.Warn("Demo mode is on: visitors are signed in automatically and changes are limited")
+		if !model.IsSQLite() {
+			logger.Log.Fatal("Demo mode needs SQLite (each visitor gets a copy of the database file)")
+		}
+		maxCopies, _ := strconv.Atoi(env.Get("DEMO_MAX_COPIES"))
+		basePath, _, _ := strings.Cut(model.DbPath(), "?")
+		demoCopies, err = demo.New(db, basePath, configStore, filepath.Join("data", "demo-copies"), maxCopies)
+		if err != nil {
+			logger.Log.WithError(err).Fatal("Demo mode: couldn't prepare visitor copies")
+		}
+		bgWG.Add(1)
+		go func() {
+			defer bgWG.Done()
+			demoCopies.Start(ctx)
+		}()
 	}
 
 	w := watcher.New(db, configStore)
 	w.ACIRelogin = handlers.NewACIRelogin(db, configStore, "data", "") // same data folder as the engine
 
-	if !demo {
+	if !demoMode {
 		// Prune old sensor data once before the watcher loop kicks in.
 		if err := w.PruneSensorData(); err != nil {
 			logger.Log.WithError(err).Error("Initial sensor data prune failed")
@@ -172,17 +189,20 @@ func main() {
 		HSTSIncludeSubdomains: strings.EqualFold(env.Get("HSTS_INCLUDE_SUBDOMAINS"), "true"),
 		HSTSPreload:           strings.EqualFold(env.Get("HSTS_PRELOAD"), "true"),
 		GuestMode:             configStore.GuestMode() == 1,
-		Demo:                  demo,
+		Demo:                  demoMode,
 		TrustedProxies:        trustedProxies,
 		DataDir:               "data",
 		ConfigStore:           configStore,
 	})
+	if demoCopies != nil { // never a typed nil in the interface
+		engineCfg.DemoCopies = demoCopies
+	}
 	engine, err := app.NewEngine(engineCfg)
 	if err != nil {
 		logger.Log.WithError(err).Fatal("Failed to construct HTTP engine")
 	}
 
-	if !demo {
+	if !demoMode {
 		grabber := watcher.NewGrabber(configStore, engineCfg.FrameDir)
 		bgWG.Add(1)
 		go func() {
