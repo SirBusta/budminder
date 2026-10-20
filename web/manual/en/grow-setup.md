@@ -10,7 +10,7 @@ Zones represent your physical growing spaces, such as tents, rooms or outdoor ga
 
 ## Activities
 
-Activities are the actions you log in a plant's notebook, such as Water, Feed, Train, Defoliate or Top. Click **Add Activity** to define a new action, or click an existing entry to edit it:
+Activities are the actions you log in a plant's notebook, such as Water, Feed, Training, Defoliate or Height. Click **Add Activity** to define a new action, or click an existing entry to edit it:
 
 - customize its **name**, **icon** and **color**, which appear throughout the daily notebook timeline;
 - **Counts as**: check **Watering** or **Feeding** for actions that should reset the "last watered" or "last fed" warning counters on the Today dashboard and Plants list;

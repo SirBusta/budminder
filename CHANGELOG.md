@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Training and Defoliate activities** come standard, with their own icons
+  and colors. Installs that already have their own training or defoliation
+  activity keep theirs, without a duplicate.
 
 ### Changed
 
