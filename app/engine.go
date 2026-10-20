@@ -215,13 +215,14 @@ func securityHeadersMiddleware(store *config.Store, hsts string) gin.HandlerFunc
 
 		c.Header("Content-Security-Policy",
 			"default-src 'self'; "+
-				"script-src 'self' 'unsafe-eval' 'nonce-"+nonce+"'; "+
+				"script-src 'self' 'nonce-"+nonce+"'; "+
 				"style-src 'self' 'unsafe-inline'; "+
 				"font-src 'self' data:; "+
 				"img-src 'self' data: blob:; "+
 				"worker-src 'self' blob:; "+
 				"media-src "+mediaSrc+"; "+
-				"connect-src "+connectSrc)
+				"connect-src "+connectSrc+"; "+
+				"object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
 		c.Next()
 	}
 }

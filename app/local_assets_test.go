@@ -76,4 +76,9 @@ func TestSecurityPolicyAllowsOnlyThisServer(t *testing.T) {
 			assert.NotContains(t, directive, "http", "%s must not allow other sites", name)
 		}
 	}
+	assert.NotContains(t, csp, "unsafe-eval", "no script may turn text into code")
+	// Rules that don't fall back to default-src are spelled out (ZAP 10055).
+	for _, want := range []string{"object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'"} {
+		assert.Contains(t, csp, want)
+	}
 }

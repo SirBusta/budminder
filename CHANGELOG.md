@@ -47,6 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Guest view can no longer create images.** With guest view on, visitors who
   weren't signed in could reach the photo-decorating action, which saves a
   new image on the server. It now needs a sign-in, like every other change.
+- **Stricter page security policy.** Scripts can no longer turn text into code
+  (`unsafe-eval` removed; nothing in BudMinder used it), and the policy now
+  also blocks plugins, embedding BudMinder in other sites, and forms or base
+  links pointing elsewhere. Found with an OWASP ZAP scan.
 
 ## [1.2.0] - 2026-10-19
 
