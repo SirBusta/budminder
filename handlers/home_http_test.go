@@ -39,6 +39,9 @@ type homeData struct {
 		Ports []struct {
 			ID int `json:"id"`
 		} `json:"ports"`
+		Quiet []struct {
+			ID int `json:"id"`
+		} `json:"quiet"`
 		Cameras []struct {
 			ID       int    `json:"id"`
 			Snapshot string `json:"snapshot"`
@@ -164,6 +167,38 @@ func TestHomeData(t *testing.T) {
 
 	require.NotNil(t, d.OldSeeds)
 	assert.Equal(t, 1, *d.OldSeeds)
+}
+
+// A sensor left off the tent summary still reaches Needs attention when it
+// stops reporting; a fresh one or a hidden one does not.
+func TestHomeData_QuietSensorsOffTheSummary(t *testing.T) {
+	t.Parallel()
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db)
+	testutil.SeedAdmin(t, db, homePassword)
+	c, token := server.LoginAndFetchCSRF(t, homePassword, "/settings")
+	e := &sensorEnv{db: db, server: server, client: c, token: token}
+
+	tent := testutil.SeedZone(t, db, "Tent")
+	livingPlant(t, e, "Alpha", tent, "Veg")
+	sensor := func(kind, vis, at string) int {
+		id := testutil.SeedSensor(t, db, "acinfinity", "D", kind)
+		e.exec(t, `UPDATE sensors SET zone_id = $1, visibility = $2 WHERE id = $3`, tent, vis, id)
+		e.exec(t, `INSERT INTO sensor_data (sensor_id, value, create_dt) VALUES ($1, 70, $2)`, id, at)
+		return id
+	}
+	old := time.Now().UTC().Add(-6 * time.Hour).Format("2006-01-02 15:04:05")
+	now := time.Now().UTC().Format("2006-01-02 15:04:05")
+	quiet := sensor("ACI.2.4", "plant", old)
+	sensor("ACI.1.0", "plant", now)
+	sensor("ACI.1.2", "hide", old)
+
+	code, d := getHomeData(t, c)
+	require.Equal(t, http.StatusOK, code)
+	require.Len(t, d.Tents, 1)
+	assert.Empty(t, d.Tents[0].Readings, "none of them is on the summary")
+	require.Len(t, d.Tents[0].Quiet, 1, "only the stopped, not hidden sensor")
+	assert.Equal(t, quiet, d.Tents[0].Quiet[0].ID)
 }
 
 func TestHomeData_GuestRules(t *testing.T) {

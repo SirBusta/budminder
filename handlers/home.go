@@ -60,6 +60,7 @@ type HomeTent struct {
 	Name     string        `json:"name"`
 	Readings []HomeReading `json:"readings"`
 	Ports    []HomeReading `json:"ports"` // AC Infinity ports (lights, fans)
+	Quiet    []HomeReading `json:"quiet"` // off the summary but stopped reporting
 	Cameras  []HomeCamera  `json:"cameras"`
 	Plants   []int         `json:"plants"`
 }
@@ -210,14 +211,15 @@ func addHomePlantExtras(db *sql.DB, plants []HomePlant) error {
 }
 
 // homeTents builds a section per tent that has growing plants, with its
-// Home-visible readings, ports and cameras; plants without a tent come last.
+// Home-visible readings, ports, cameras and any other sensor that stopped
+// reporting; plants without a tent come last.
 func homeTents(c *gin.Context, db *sql.DB, pollSeconds int, plants []HomePlant) []HomeTent {
 	byZone := map[int]*HomeTent{}
 	var order []int
 	for _, p := range plants {
 		t := byZone[p.ZoneID]
 		if t == nil {
-			t = &HomeTent{ID: p.ZoneID, Name: p.Zone, Readings: []HomeReading{}, Ports: []HomeReading{}, Cameras: []HomeCamera{}, Plants: []int{}}
+			t = &HomeTent{ID: p.ZoneID, Name: p.Zone, Readings: []HomeReading{}, Ports: []HomeReading{}, Quiet: []HomeReading{}, Cameras: []HomeCamera{}, Plants: []int{}}
 			byZone[p.ZoneID] = t
 			order = append(order, p.ZoneID)
 		}
@@ -234,6 +236,8 @@ func homeTents(c *gin.Context, db *sql.DB, pollSeconds int, plants []HomePlant) 
 			t.Ports = append(t.Ports, r)
 		} else if s.ShowHome {
 			t.Readings = append(t.Readings, r)
+		} else if s.Stale && s.LastAt > 0 {
+			t.Quiet = append(t.Quiet, r)
 		}
 	}
 

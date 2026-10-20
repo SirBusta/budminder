@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Fixed
+- **Today: every quiet sensor gets a warning.** A sensor that stops reporting
+  now shows in Needs attention even when it isn't set to show in the tent
+  summary on the Home page. Hidden sensors still stay out.
 
 ### Deprecated
 

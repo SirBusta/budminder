@@ -114,7 +114,7 @@
         });
         // Sensors that stopped reporting: one line per tent.
         (D.tents || []).forEach(tent => {
-            const stale = [...tent.readings, ...tent.ports].filter(r => r.stale && r.last_at);
+            const stale = [...tent.readings, ...tent.ports, ...(tent.quiet || [])].filter(r => r.stale && r.last_at);
             if (!stale.length) return;
             const oldest = Math.min(...stale.map(r => r.last_at)), where = tent.name || t("hm_no_tent");
             const txt = stale.length === 1 ? t("hm_alert_stale", { sensor: stale[0].name, tent: where, ago: ago(oldest) })
