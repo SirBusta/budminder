@@ -39,6 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ### Security
+- **Guest view can no longer create images.** With guest view on, visitors who
+  weren't signed in could reach the photo-decorating action, which saves a
+  new image on the server. It now needs a sign-in, like every other change.
 
 ## [1.2.0] - 2026-10-19
 

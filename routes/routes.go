@@ -269,7 +269,6 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 	r.GET("/strains/all", handlers.AllStrainsHandler)
 	r.GET("/strains/out-of-stock", handlers.OutOfStockStrainsHandler)
 	r.GET("/strains/wanted", handlers.WantedStrainsHandler)
-	r.POST("/decorateImage", utils.DecorateImageHandler)
 	r.GET("/streams", handlers.GetStreamsByZoneHandler)
 
 	// Lineage (public read)
@@ -298,6 +297,8 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.DELETE("/plant/:id/day/:date", handlers.DeletePlantDayHandler)
 	r.POST("/plants/day", handlers.LogPlantsDayHandler)
 	r.POST("/plant/:plantID/images/upload", handlers.UploadPlantImages)
+	// Writes a new image into uploads, so never open to guests.
+	r.POST("/decorateImage", utils.DecorateImageHandler)
 	r.DELETE("/plant/images/:imageID/delete", handlers.DeletePlantImage)
 
 	r.POST("/sensors/scanACI", handlers.ScanACInfinitySensors)
