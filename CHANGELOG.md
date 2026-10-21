@@ -25,6 +25,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Deprecated
+
+### Removed
+
+### Security
+
+## [1.4.0] - 2026-10-21
+
+### Changed
 - **Demo mode keeps its grow at the same point.** Once a day the demo moves its
   plant, notebook, photo, seed and smoke report dates forward by the days that
   passed, so visitors always see the same stage of the grow ("Day 76, watered
@@ -34,15 +46,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   amounts already recorded stay and can still be edited.
 - **Demo: visitors can type notes** (up to 500 characters) instead of picking
   from sample notes, since each visitor works in a private copy; changes are
-  limited to 15 a minute per visitor.
+  limited to 15 a minute per visitor, and the banner says that changes reset
+  after an hour of inactivity.
 
 ### Fixed
 - **Plant page: ticking Water and Feed showed two "Water amount" boxes.** Each
   measurement now appears once, as on the Today page.
-
-### Deprecated
-
-### Removed
 
 ### Security
 - **Photos no longer carry hidden location data.** Every photo BudMinder takes
