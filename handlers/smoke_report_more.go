@@ -285,6 +285,9 @@ func saveSmokePhoto(db *sql.DB, uploadDir string, reportID int, body []byte) (Sm
 	if err != nil {
 		return SmokePhoto{}, errSmokeNotImage
 	}
+	if body, err = utils.StripImageMetadata(body); err != nil {
+		return SmokePhoto{}, errSmokeNotImage
+	}
 	var n int
 	_ = db.QueryRow(`SELECT COUNT(*) FROM smoke_report_photo WHERE report_id = $1`, reportID).Scan(&n)
 	if n >= maxSmokePhotos {
@@ -883,6 +886,10 @@ func SmokeDraftPhotoHandler(c *gin.Context) {
 	}
 	token := hex.EncodeToString(b)
 	path := filepath.Join(smokeDraftDir(uploadDir), token+ext)
+	if body, err = utils.StripImageMetadata(body); err != nil {
+		smokePhotoError(c, errSmokeNotImage)
+		return
+	}
 	if err := os.WriteFile(path, body, 0o644); err != nil {
 		apiInternalError(c, "api_failed_to_save_file")
 		return

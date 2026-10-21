@@ -28,6 +28,7 @@ import (
 	_ "golang.org/x/image/webp" // CannaDB serves webp
 
 	"isley/logger"
+	"isley/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -169,6 +170,16 @@ func (f atprotoBlobFetcher) fetchBlob(ctx context.Context, did, cid string) ([]b
 	return body, ext, err
 }
 
+// writeStrippedImage saves an image without its hidden metadata (location,
+// camera, ...); see utils.StripImageMetadata.
+func writeStrippedImage(path string, body []byte) error {
+	clean, err := utils.StripImageMetadata(body)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, clean, 0o644)
+}
+
 // validateImageBytes checks the content is a JPEG/PNG/GIF/WebP that decodes,
 // returning its file extension.
 func validateImageBytes(b []byte) (string, error) {
@@ -296,7 +307,7 @@ func stageDraftPackagingImage(uploadDir string, body []byte, ext string) (token,
 		return "", "", err
 	}
 	p := filepath.Join(pendingPackagingDir(uploadDir), "draft_"+token+ext)
-	if err = os.WriteFile(p, body, 0o644); err != nil {
+	if err = writeStrippedImage(p, body); err != nil {
 		return "", "", err
 	}
 	return token, webPath(p), nil
@@ -340,7 +351,7 @@ func offerCannadbPackagingImage(ctx context.Context, db *sql.DB, uploadDir strin
 	}
 	removePendingPackaging(uploadDir, strainID)
 	p := filepath.Join(pendingPackagingDir(uploadDir), fmt.Sprintf("strain_%d%s", strainID, ext))
-	if err := os.WriteFile(p, body, 0o644); err != nil {
+	if err := writeStrippedImage(p, body); err != nil {
 		return ""
 	}
 	return webPath(p)
@@ -486,7 +497,7 @@ func UploadPackagingImageHandler(c *gin.Context) {
 		return
 	}
 	final := filepath.Join(strainsUploadDir(uploadDir), fmt.Sprintf("strain_%d_packaging_%d%s", strainID, time.Now().UnixNano(), ext))
-	if err := os.WriteFile(final, body, 0o644); err != nil {
+	if err := writeStrippedImage(final, body); err != nil {
 		apiInternalError(c, "api_failed_to_save_file")
 		return
 	}

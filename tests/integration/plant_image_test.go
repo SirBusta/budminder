@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"image"
+	"image/color"
+	"image/jpeg"
+	"image/png"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -21,13 +25,19 @@ import (
 // Fixtures
 // ---------------------------------------------------------------------------
 
-// jpegMagic is a tiny but valid JPEG byte sequence — enough that
-// http.DetectContentType returns "image/jpeg". The file content beyond
-// the magic doesn't matter for the upload handler's MIME-sniff check.
-var jpegMagic = []byte{0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 'J', 'F', 'I', 'F', 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00}
+// jpegMagic and pngMagic are tiny complete images. Uploads must be whole,
+// readable images: BudMinder strips their metadata before storing them
+// (utils.StripImageMetadata), and refuses a file it can't read.
+var jpegMagic, pngMagic = tinyImages()
 
-// pngMagic recognised as image/png.
-var pngMagic = []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52}
+func tinyImages() ([]byte, []byte) {
+	img := image.NewRGBA(image.Rect(0, 0, 2, 2))
+	img.Set(0, 0, color.RGBA{0, 128, 0, 255})
+	var j, p bytes.Buffer
+	_ = jpeg.Encode(&j, img, nil)
+	_ = png.Encode(&p, img)
+	return j.Bytes(), p.Bytes()
+}
 
 type plantImageFixture struct {
 	APIKey  string

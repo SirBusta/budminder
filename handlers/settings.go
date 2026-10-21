@@ -1220,16 +1220,19 @@ func UploadLogo(c *gin.Context) {
 		return
 	}
 
-	// Save the file to the filesystem
-	out, err := os.Create(savePath)
+	// Save the logo without its hidden metadata (location, camera, ...).
+	body, err := io.ReadAll(file)
 	if err != nil {
-		fieldLogger.WithError(err).Error("Failed to save file")
-		apiInternalError(c, "api_failed_to_save_file")
+		fieldLogger.WithError(err).Error("Failed to read logo file")
+		apiInternalError(c, "api_failed_to_process_file")
 		return
 	}
-	defer out.Close()
-	_, err = io.Copy(out, file)
-	if err != nil {
+	if body, err = utils.StripImageMetadata(body); err != nil {
+		fieldLogger.WithError(err).Warn("Rejected logo that isn't a readable image")
+		apiBadRequest(c, "api_invalid_file_type")
+		return
+	}
+	if err = os.WriteFile(savePath, body, 0o644); err != nil {
 		fieldLogger.WithError(err).Error("Failed to save file")
 		apiInternalError(c, "api_failed_to_save_file")
 		return

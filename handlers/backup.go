@@ -19,6 +19,7 @@ import (
 	"isley/env"
 	"isley/logger"
 	"isley/model"
+	"isley/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -961,6 +962,8 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 				extractedBytes += written
 				if copyErr != nil {
 					fieldLogger.WithError(copyErr).Errorf("Failed to write file %s", dest)
+				} else {
+					stripRestoredImage(dest)
 				}
 				filesRestored++
 			}
@@ -1264,4 +1267,28 @@ func coerceJSONValue(v interface{}) interface{} {
 		return n.String()
 	}
 	return v
+}
+
+// stripRestoredImage removes hidden metadata (location, camera, ...) from a
+// photo restored from a backup, like every other photo BudMinder takes in.
+// A file that can't be read as an image is kept as it was: a restore must
+// not lose the grower's own files.
+func stripRestoredImage(path string) {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".jpg", ".jpeg", ".png", ".webp", ".gif":
+	default:
+		return
+	}
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	clean, err := utils.StripImageMetadata(body)
+	if err != nil {
+		logger.Log.WithField("file", path).Warn("Restored a photo whose metadata couldn't be checked; kept as is")
+		return
+	}
+	if len(clean) != len(body) {
+		_ = os.WriteFile(path, clean, 0o644)
+	}
 }

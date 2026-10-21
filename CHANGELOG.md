@@ -33,6 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ### Security
+- **Photos no longer carry hidden location data.** Every photo BudMinder takes
+  in (plant photos, smoke report photos, seed-pack pictures, the logo, and
+  photos restored from a backup) is stored without its metadata: no GPS
+  location, camera make or serial, dates, editing history or comments, and
+  nothing hidden after the end of the image (such as a phone's motion photo).
+  Only the color profile and the orientation are kept, and the picture itself
+  is untouched. Uploads must now be complete, readable images.
 
 ## [1.3.0] - 2026-10-20
 

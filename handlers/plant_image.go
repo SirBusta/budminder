@@ -103,16 +103,19 @@ func UploadPlantImages(c *gin.Context) {
 			return
 		}
 
-		// Save the file to the filesystem
-		out, err := os.Create(savePath)
+		// Save the photo without its hidden metadata (location, camera, ...).
+		body, err := io.ReadAll(file)
 		if err != nil {
-			fileLogger.WithError(err).Error("Failed to create file on filesystem")
-			apiInternalError(c, "api_failed_to_save_file")
+			fileLogger.WithError(err).Error("Failed to read uploaded file")
+			apiInternalError(c, "api_failed_to_process_file")
 			return
 		}
-		defer out.Close()
-		_, err = io.Copy(out, file)
-		if err != nil {
+		if body, err = utils.StripImageMetadata(body); err != nil {
+			fileLogger.WithError(err).Warn("Rejected upload that isn't a readable image")
+			apiBadRequest(c, "api_invalid_file_type")
+			return
+		}
+		if err = os.WriteFile(savePath, body, 0o644); err != nil {
 			fileLogger.WithError(err).Error("Failed to save file to disk")
 			apiInternalError(c, "api_failed_to_save_file")
 			return
