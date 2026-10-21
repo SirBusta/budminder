@@ -23,6 +23,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Deprecated
+
+### Removed
+
+### Security
+
+## [1.3.0] - 2026-10-20
+
+### Added
 - **Demo mode** (`BUDMINDER_DEMO=1`), for running a public demo: visitors are
   signed in automatically, text comes from sample choices, uploads, exports,
   settings and integrations are off, and the server checks every change. Each
@@ -32,16 +46,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and colors. Installs that already have their own training or defoliation
   activity keep theirs, without a duplicate.
 
-### Changed
-
 ### Fixed
 - **Today: every quiet sensor gets a warning.** A sensor that stops reporting
   now shows in Needs attention even when it isn't set to show in the tent
   summary on the Home page. Hidden sensors still stay out.
-
-### Deprecated
-
-### Removed
 
 ### Security
 - **Guest view can no longer create images.** With guest view on, visitors who
