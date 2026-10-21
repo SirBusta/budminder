@@ -7,6 +7,11 @@
 // hour. Nobody sees anyone else's changes, and reading alone (bots, a quick
 // look) never makes a copy.
 //
+// The grow itself stays at the same point forever: once a day the base's
+// dates (plant starts, stage changes, notebook days, photos, seed and smoke
+// dates) move forward by the days that passed, so it is always "Day 76,
+// watered yesterday". Only the calendar dates shown move along.
+//
 // Sensor readings stay live: every minute the base and each copy repeat each
 // sensor's reading from a day earlier, as the demo build does. Only two days
 // of per-minute readings are kept (charts use the hourly table beyond 24
@@ -66,6 +71,7 @@ type Copies struct {
 	baseStore *config.Store
 	max       int
 	copies    map[string]*visitorCopy
+	datesOn   string                 // the local day the base's dates were last rolled to
 	started   map[string][]time.Time // new copies per address, for CopiesPerIPPerHour
 	now       func() time.Time
 }
@@ -97,6 +103,7 @@ func New(base *sql.DB, basePath string, store *config.Store, dir string, max int
 		}
 	}
 	m.keepLive(base, m.now())
+	m.roll(m.now())
 	if _, err := base.Exec(rollupSQL); err != nil {
 		logger.Log.WithError(err).Warn("Demo: hourly rollup failed")
 	}
@@ -132,6 +139,9 @@ func (m *Copies) Start(ctx context.Context) {
 // Tick does one minute's work: live readings for the base and every copy,
 // idle copies dropped, and (rollup) the hourly table refreshed.
 func (m *Copies) Tick(now time.Time, rollup bool) {
+	if now.Format("2006-01-02") != m.datesOn {
+		m.roll(now)
+	}
 	m.mu.Lock()
 	dbs := []*sql.DB{m.base}
 	for id, cp := range m.copies {
@@ -149,6 +159,103 @@ func (m *Copies) Tick(now time.Time, rollup bool) {
 				logger.Log.WithError(err).Warn("Demo: hourly rollup failed")
 			}
 		}
+	}
+}
+
+// rolledColumns are the base's dates that describe the grow. Record-keeping
+// timestamps (created_at and the like) stay as they are, and sensor readings
+// are kept live by keepLive instead.
+var rolledColumns = []struct{ table, col string }{
+	{"plant", "start_dt"},
+	{"plant_status_log", "date"},
+	{"plant_activity", "date"},
+	{"plant_measurements", "date"},
+	{"plant_day_entry", "entry_date"},
+	{"plant_images", "image_date"},
+	{"strain", "seeds_added_on"},
+	{"smoke_report", "smoked_on"},
+	{"smoke_report", "harvested_on"},
+}
+
+// datesOnSetting records the local day the demo's dates are set to.
+const datesOnSetting = "demo_dates_on"
+
+// RollDates moves every date in rolledColumns forward by the days between
+// the day the data was last set to and today (local time), keeping each
+// value's format, and records today. It returns how many days it moved.
+// A snapshot that doesn't record its day yet is taken to be from the day it
+// was built (when its notebook rows were written).
+func RollDates(db *sql.DB, today time.Time) (int, error) {
+	var on sql.NullString
+	_ = db.QueryRow(`SELECT value FROM settings WHERE name = $1`, datesOnSetting).Scan(&on)
+	if !on.Valid || on.String == "" {
+		_ = db.QueryRow(`SELECT date(MAX(created_at), 'localtime') FROM plant_day_entry`).Scan(&on)
+	}
+	day := today.Format("2006-01-02")
+	from, err := time.ParseInLocation("2006-01-02", on.String, time.Local)
+	if err != nil {
+		return 0, saveDatesOn(db, day) // nothing to go by: start counting today
+	}
+	to, _ := time.ParseInLocation("2006-01-02", day, time.Local)
+	days := int(to.Sub(from).Hours()/24 + 0.5)
+	if days <= 0 {
+		return 0, saveDatesOn(db, day)
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	// Two steps, far ahead and then back: one step would trip unique dates
+	// (one notebook entry per plant per day) whenever a row moves onto a
+	// date its neighbor hasn't left yet.
+	const away = 40000 // days, about 110 years
+	for _, shift := range []string{fmt.Sprintf("+%d days", days+away), fmt.Sprintf("-%d days", away)} {
+		for _, rc := range rolledColumns {
+			// Table and column names are fixed above, never visitor input.
+			q := fmt.Sprintf(`UPDATE %[1]s SET %[2]s = CASE
+					WHEN length(%[2]s) = 10 THEN date(%[2]s, $1)
+					WHEN instr(%[2]s, 'T') > 0 THEN strftime('%%Y-%%m-%%dT%%H:%%M:%%S', %[2]s, $1)
+					ELSE datetime(%[2]s, $1) END
+				WHERE %[2]s IS NOT NULL AND %[2]s != ''`, rc.table, rc.col)
+			if _, err := tx.Exec(q, shift); err != nil {
+				return 0, fmt.Errorf("demo: roll %s.%s: %w", rc.table, rc.col, err)
+			}
+		}
+	}
+	if err := saveDatesOn(tx, day); err != nil {
+		return 0, err
+	}
+	return days, tx.Commit()
+}
+
+type execer interface {
+	Exec(query string, args ...any) (sql.Result, error)
+}
+
+func saveDatesOn(db execer, day string) error {
+	res, err := db.Exec(`UPDATE settings SET value = $1 WHERE name = $2`, day, datesOnSetting)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		_, err = db.Exec(`INSERT INTO settings (name, value) VALUES ($1, $2)`, datesOnSetting, day)
+	}
+	return err
+}
+
+// roll rolls the base's dates to now's day and reloads what the base's
+// store caches from them (the strains' seed dates).
+func (m *Copies) roll(now time.Time) {
+	days, err := RollDates(m.base, now.In(time.Local))
+	if err != nil {
+		logger.Log.WithError(err).Warn("Demo: couldn't move the grow's dates forward")
+		return
+	}
+	m.datesOn = now.In(time.Local).Format("2006-01-02")
+	if days > 0 {
+		handlers.LoadSettings(m.base, m.baseStore)
+		logger.Log.WithField("days", days).Info("Demo: moved the grow's dates forward")
 	}
 }
 

@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Changed
+- **Demo mode keeps its grow at the same point.** Once a day the demo moves its
+  plant, notebook, photo, seed and smoke report dates forward by the days that
+  passed, so visitors always see the same stage of the grow ("Day 76, watered
+  yesterday") without the data ever needing a refresh.
 
 ### Fixed
 

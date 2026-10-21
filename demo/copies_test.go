@@ -104,3 +104,59 @@ func TestForRequest_CapDropsTheOldest(t *testing.T) {
 	id, _, _, _ := m.ForRequest(first, "1.1.1.1", false)
 	assert.Empty(t, id, "the oldest copy went first")
 }
+
+func TestRollDates_KeepsTheGrowAtTheSamePoint(t *testing.T) {
+	t.Parallel()
+	db := testutil.NewTestDB(t)
+	strain := testutil.SeedStrain(t, db, testutil.SeedBreeder(t, db, "B"), "S")
+	plant := testutil.SeedPlant(t, db, "P", strain, testutil.SeedZone(t, db, "Z"))
+	exec := func(q string, args ...any) {
+		t.Helper()
+		_, err := db.Exec(q, args...)
+		require.NoError(t, err)
+	}
+	exec(`UPDATE plant SET start_dt = '2026-01-01' WHERE id = $1`, plant)
+	exec(`UPDATE strain SET seeds_added_on = '2025-12-01' WHERE id = $1`, strain)
+	exec(`INSERT INTO plant_status_log (plant_id, status_id, date) VALUES ($1, 1, '2026-01-01T09:00:00')`, plant)
+	exec(`INSERT INTO plant_day_entry (plant_id, entry_date, note) VALUES ($1, '2026-01-02', 'n')`, plant)
+	// Ten days later: moving rows one at a time, the first would land on this one.
+	exec(`INSERT INTO plant_day_entry (plant_id, entry_date, note) VALUES ($1, '2026-01-12', 'm')`, plant)
+	exec(`INSERT INTO smoke_report (strain_name, smoked_on, harvested_on) VALUES ('S', '2026-01-02', '')`)
+	exec(`INSERT INTO settings (name, value) VALUES ('demo_dates_on', '2026-01-03')`)
+
+	today := time.Date(2026, 1, 13, 15, 0, 0, 0, time.Local)
+	days, err := demo.RollDates(db, today)
+	require.NoError(t, err)
+	assert.Equal(t, 10, days)
+
+	one := func(q string, args ...any) string {
+		t.Helper()
+		var v string
+		require.NoError(t, db.QueryRow(q, args...).Scan(&v))
+		return v
+	}
+	assert.Equal(t, "2026-01-11", one(`SELECT CAST(start_dt AS TEXT) FROM plant WHERE id = $1`, plant))
+	assert.Equal(t, "2025-12-11", one(`SELECT CAST(seeds_added_on AS TEXT) FROM strain WHERE id = $1`, strain))
+	assert.Equal(t, "2026-01-11T09:00:00", one(`SELECT CAST(date AS TEXT) FROM plant_status_log WHERE plant_id = $1`, plant), "same format")
+	assert.Equal(t, "2026-01-12", one(`SELECT CAST(entry_date AS TEXT) FROM plant_day_entry WHERE note = 'n'`))
+	assert.Equal(t, "2026-01-22", one(`SELECT CAST(entry_date AS TEXT) FROM plant_day_entry WHERE note = 'm'`))
+	assert.Equal(t, "2026-01-12", one(`SELECT CAST(smoked_on AS TEXT) FROM smoke_report`))
+	assert.Equal(t, "", one(`SELECT CAST(harvested_on AS TEXT) FROM smoke_report`), "an empty date stays empty")
+	assert.Equal(t, "2026-01-13", one(`SELECT value FROM settings WHERE name = 'demo_dates_on'`))
+
+	days, err = demo.RollDates(db, today.Add(5*time.Hour))
+	require.NoError(t, err)
+	assert.Zero(t, days, "once a day")
+	assert.Equal(t, "2026-01-11", one(`SELECT CAST(start_dt AS TEXT) FROM plant WHERE id = $1`, plant))
+}
+
+func TestRollDates_SnapshotWithoutItsDay(t *testing.T) {
+	t.Parallel()
+	db := testutil.NewTestDB(t)
+	days, err := demo.RollDates(db, time.Now())
+	require.NoError(t, err)
+	assert.Zero(t, days, "nothing to go by: counting starts today")
+	var v string
+	require.NoError(t, db.QueryRow(`SELECT value FROM settings WHERE name = 'demo_dates_on'`).Scan(&v))
+	assert.Equal(t, time.Now().Format("2006-01-02"), v)
+}
