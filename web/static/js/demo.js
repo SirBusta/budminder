@@ -12,6 +12,10 @@
     const textEl = document.getElementById("bmDemoText");
     const T = textEl ? JSON.parse(textEl.textContent || "{}") : {};
     window.BM_DEMO = {};
+
+    // The Plants list opens "Oldest first", so the demo's two showcase plants
+    // (Permanent Marker #1 and #2) are at the top. A visitor's own choice wins.
+    try { if (!localStorage.getItem("isley.plants.sort")) localStorage.setItem("isley.plants.sort", "oldest"); } catch (e) { /* private mode */ }
     const SCRIPTED = "Grape OG";
 
     // ---------- Messages ----------
