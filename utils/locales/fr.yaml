@@ -1932,5 +1932,3 @@ demo_banner: "Ceci est une démo. Vos modifications sont privées et effacées �
 demo_not_available: "Non disponible dans la démo."
 demo_slow_down: "Trop de modifications à la fois. Patientez un instant et réessayez."
 demo_no_typing: "La saisie est désactivée dans la démo."
-demo_pick_note: "Choisir une note"
-demo_no_note: "Aucune note"

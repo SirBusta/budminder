@@ -147,23 +147,43 @@ func TestDemo_NoExportsLogsOrBackups(t *testing.T) {
 	}
 }
 
-func TestDemo_NotebookTakesOnlySampleNotes(t *testing.T) {
+func TestDemo_NotesCanBeTypedButAreShort(t *testing.T) {
 	t.Parallel()
 	e := newDemo(t)
-	day := func(note any) (int, map[string]any) {
+	day := func(date string, note any) (int, map[string]any) {
 		return e.json(t, "POST", "/plants/day", map[string]any{
-			"plant_ids": []int{e.plant}, "date": "2026-10-01", "activity_ids": []int{e.water}, "note": note,
+			"plant_ids": []int{e.plant}, "date": date, "activity_ids": []int{e.water}, "note": note,
 		})
 	}
-	for _, bad := range []any{"hello", "'; DROP TABLE plant; --", "<script>alert(1)</script>", 42,
-		handlers.DemoNotes[0] + " ", strings.Repeat("x", 5000)} {
-		code, out := day(bad)
+	for _, bad := range []any{42, strings.Repeat("x", handlers.DemoMaxNote+1)} {
+		code, out := day("2026-10-01", bad)
 		assertRefused(t, code, out, "note")
 	}
-	code, _ := day(handlers.DemoNotes[0])
-	assert.Equal(t, http.StatusOK, code, "a sample note is fine")
-	code, _ = day("")
-	assert.Equal(t, http.StatusOK, code, "so is no note")
+	// Typed notes are stored as plain text, even ones that look like attacks.
+	notes := map[string]string{
+		"2026-10-02": "Watered until runoff.",
+		"2026-10-03": "'; DROP TABLE plant; --",
+		"2026-10-04": "<script>alert(1)</script>",
+		"2026-10-05": strings.Repeat("é", handlers.DemoMaxNote),
+	}
+	for date, note := range notes {
+		code, out := day(date, note)
+		require.Equal(t, http.StatusOK, code, out)
+	}
+	var nb struct {
+		Days []struct {
+			Date string `json:"date"`
+			Note string `json:"note"`
+		} `json:"days"`
+	}
+	e.getJSON(t, "/plant/"+itoa(e.plant)+"/notebook", &nb)
+	got := map[string]string{}
+	for _, d := range nb.Days {
+		got[d.Date] = d.Note
+	}
+	for date, note := range notes {
+		assert.Equal(t, note, got[date], "stored exactly, as text")
+	}
 }
 
 func TestDemo_RefusesOddRequests(t *testing.T) {
@@ -279,7 +299,7 @@ func TestDemo_SmokeReportsUseBuiltInChoices(t *testing.T) {
 	e := newDemo(t)
 	report := func(extra map[string]any) map[string]any {
 		r := map[string]any{"source": "grown", "plant_id": e.plant, "strain_id": e.strain, "strain_name": "Permanent Marker",
-			"smoked_on": "2026-10-10", "score_bud": 8, "score_taste": 9, "notes": handlers.DemoNotes[6]}
+			"smoked_on": "2026-10-10", "score_bud": 8, "score_taste": 9, "notes": "Smooth, sweet grape finish."}
 		for k, v := range extra {
 			r[k] = v
 		}
@@ -289,7 +309,7 @@ func TestDemo_SmokeReportsUseBuiltInChoices(t *testing.T) {
 	require.Equal(t, http.StatusOK, code, out)
 
 	for name, extra := range map[string]map[string]any{
-		"typed note":     {"notes": "my own words"},
+		"note too long":  {"notes": strings.Repeat("x", handlers.DemoMaxNote+1)},
 		"custom tag":     {"tags": []any{map[string]any{"kind": "effects", "name": "Hacked", "custom": true}}},
 		"score over 10":  {"score_bud": 11},
 		"typed strain":   {"strain_name": "Made Up Kush"},

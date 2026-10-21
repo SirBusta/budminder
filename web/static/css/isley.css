@@ -4165,7 +4165,3 @@ body { --sr-scorebg: var(--sr-acc); --sr-num: var(--sr-acc); }
 [data-bs-theme="dark"] .bm-demo-banner { background: #422006; color: #fde68a; }
 .bm-demo-toast { position: fixed; left: 50%; bottom: 1.5rem; transform: translate(-50%, 1rem); z-index: 2000; background: #1f2937; color: #fff; padding: .6rem 1.1rem; border-radius: 999px; font-size: .9rem; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: calc(100% - 2rem); text-align: center; }
 .bm-demo-toast.show { opacity: 1; transform: translate(-50%, 0); }
-.bm-demo-picker { position: absolute; z-index: 2000; background: var(--bs-body-bg); border: 1px solid var(--bs-border-color); border-radius: .6rem; box-shadow: 0 10px 30px rgba(0,0,0,.18); padding: .3rem; max-height: 320px; overflow-y: auto; }
-.bm-demo-picker .h { font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; color: var(--bs-secondary-color); padding: .3rem .6rem; }
-.bm-demo-picker button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: .45rem .6rem; border-radius: .4rem; color: inherit; }
-.bm-demo-picker button:hover { background: var(--bs-tertiary-bg); }

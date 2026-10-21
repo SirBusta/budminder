@@ -29,8 +29,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   plant, notebook, photo, seed and smoke report dates forward by the days that
   passed, so visitors always see the same stage of the grow ("Day 76, watered
   yesterday") without the data ever needing a refresh.
+- **Feeding no longer asks for a water amount.** The feed's details go in the
+  day's note. An activity that is both watering and feeding still asks, and
+  amounts already recorded stay and can still be edited.
+- **Demo: visitors can type notes** (up to 500 characters) instead of picking
+  from sample notes, since each visitor works in a private copy; changes are
+  limited to 15 a minute per visitor.
 
 ### Fixed
+- **Plant page: ticking Water and Feed showed two "Water amount" boxes.** Each
+  measurement now appears once, as on the Today page.
 
 ### Deprecated
 

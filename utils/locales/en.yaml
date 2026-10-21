@@ -1888,5 +1888,3 @@ demo_banner: "This is a demo. Your changes are private and erased when you leave
 demo_not_available: "Not available in the demo."
 demo_slow_down: "Too many changes at once. Wait a moment and try again."
 demo_no_typing: "Typing is turned off in the demo."
-demo_pick_note: "Pick a note"
-demo_no_note: "No note"

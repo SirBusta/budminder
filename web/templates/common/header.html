@@ -28,8 +28,7 @@
     <script src="/static/js/csrf.js"></script>
     {{ if demoMode }}
     <meta name="robots" content="noindex, nofollow">
-    <script type="application/json" id="bmDemoNotes">{{ demoNotes }}</script>
-    <script type="application/json" id="bmDemoText">{"notAvailable": {{ .lcl.demo_not_available }}, "noTyping": {{ .lcl.demo_no_typing }}, "pickNote": {{ .lcl.demo_pick_note }}, "noNote": {{ .lcl.demo_no_note }}}</script>
+    <script type="application/json" id="bmDemoText">{"notAvailable": {{ .lcl.demo_not_available }}, "noTyping": {{ .lcl.demo_no_typing }}}</script>
     <script src="/static/js/demo.js"></script>
     {{ end }}
     <!-- Reusable autocomplete select widget (loaded early for page scripts) -->

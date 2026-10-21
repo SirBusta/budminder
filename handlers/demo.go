@@ -14,8 +14,10 @@ package handlers
 //   - A change (POST/PUT/DELETE) is refused unless its route is in demoRules.
 //     Each rule lists the JSON fields it accepts and checks every value:
 //     numbers within limits, dates within a window, choices from fixed
-//     lists, and text only from the demo's samples or values the server
-//     fills in itself. Unknown fields are refused.
+//     lists, short notes (DemoMaxNote), and other text only from values the
+//     demo already holds or the server fills in itself. Unknown fields are
+//     refused. Notes can be typed freely because each visitor works in a
+//     private copy (package demo) that nobody else sees.
 //   - Request bodies are capped and changes are rate-limited per visitor.
 //   - StrainCompass answers come from a recording in demodata/, so the demo
 //     never contacts an outside service.
@@ -33,6 +35,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -45,24 +48,13 @@ const (
 	// DemoMaxBody caps every request body; nothing in the demo needs more.
 	DemoMaxBody = 64 << 10
 	// DemoWritesPerMinute is how many changes one visitor may send a minute.
-	DemoWritesPerMinute = 60
+	DemoWritesPerMinute = 15
+	// DemoMaxNote caps a typed note (about 80-90 words).
+	DemoMaxNote = 500
 	// DemoStraincompassHost is the made-up address the demo's StrainCompass
 	// lookups go to; demoTransport answers it from the recording.
 	DemoStraincompassHost = "straincompass.demo.invalid"
 )
-
-// DemoNotes are the only notes the demo accepts, in the notebook and in
-// smoke reports. The pages offer them as a list instead of a text box.
-var DemoNotes = []string{
-	"Watered until about 10% runoff.",
-	"Leaves look healthy, no pests.",
-	"Raised the light a little.",
-	"Tucked a few branches under the net.",
-	"Smells great today.",
-	"Started the flush.",
-	"Smooth smoke, sweet grape finish.",
-	"Strong and relaxing, good for evenings.",
-}
 
 //go:embed demodata/straincompass_grape_og.json
 var demoData embed.FS
@@ -325,12 +317,14 @@ func dList(max int, fields map[string]demoCheck) demoCheck {
 	}
 }
 
-// dSampleNote accepts "" or one of DemoNotes.
-func dSampleNote(c *gin.Context, v any) (any, error) {
-	if v == "" {
-		return v, nil
+// dNote accepts a typed note up to DemoMaxNote characters. It is stored
+// as plain text like any note and only shown in this visitor's copy.
+func dNote(_ *gin.Context, v any) (any, error) {
+	s, ok := v.(string)
+	if !ok || utf8.RuneCountInString(s) > DemoMaxNote {
+		return nil, errDemo
 	}
-	return dOneOf(DemoNotes...)(c, v)
+	return v, nil
 }
 
 // dKnown accepts "" or text the demo already holds: the values query returns.
@@ -415,7 +409,7 @@ var (
 
 	demoDayFields = map[string]demoCheck{
 		"activity_ids": dIntList(20),
-		"note":         dSampleNote,
+		"note":         dNote,
 		"measurements": dList(20, map[string]demoCheck{
 			"activity_id": demoID, "metric_id": demoID, "value": dOpt(dNum(-1000, 100000)),
 		}),
@@ -441,7 +435,7 @@ var (
 		"again":     dOneOf("", "yes", "no", "maybe"),
 		"score_bud": dOpt(dInt(1, 10)), "score_taste": dOpt(dInt(1, 10)),
 		"score_smell": dOpt(dInt(1, 10)), "score_effects": dOpt(dInt(1, 10)),
-		"notes": dSampleNote,
+		"notes": dNote,
 		// Tags only from BudMinder's built-in lists (the save checks the name).
 		"tags": dList(maxSmokeTags, map[string]demoCheck{
 			"kind": demoTagKind, "name": dTagName, "custom": dOneOfBool(false),

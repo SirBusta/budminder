@@ -558,15 +558,34 @@
             const box = el.querySelector("#ppWinNumbers");
             const keep = {};
             box.querySelectorAll("input[data-metric]").forEach(i => { keep[i.dataset.act + ":" + i.dataset.metric] = i.value; });
-            const on = [...el.querySelectorAll("#ppWinTypes .on")].map(b => TYPES.get(+b.dataset.t)).filter(t => t && t.metrics && t.metrics.length);
-            box.innerHTML = on.map(t => t.metrics.map(l => {
+            const ticked = [...el.querySelectorAll("#ppWinTypes .on")].map(b => TYPES.get(+b.dataset.t)).filter(Boolean);
+            const saved = values || {};
+            const has = k => (k in keep && keep[k] !== "") || saved[k] != null;
+            // One box per measurement: Water and Feed ticked together ask for the
+            // water amount once. A number saved earlier keeps its own box, even
+            // under a type that no longer asks for it, so editing never drops it.
+            const seen = new Set(), fields = [];
+            ticked.forEach(t => {
+                const links = [...(t.metrics || [])];
+                Object.keys(saved).forEach(k => {
+                    const [a, mid] = k.split(":").map(Number);
+                    if (a === t.id && saved[k] != null && !links.some(l => l.metric_id === mid)) links.push({ metric_id: mid, required: false });
+                });
+                links.forEach(l => {
+                    const k = t.id + ":" + l.metric_id;
+                    if (seen.has(l.metric_id) && !has(k)) return;
+                    seen.add(l.metric_id);
+                    fields.push([t, l]);
+                });
+            });
+            box.innerHTML = fields.map(([t, l]) => {
                 const m = METRICS.get(l.metric_id) || { name: "", unit: "" };
                 const k = t.id + ":" + l.metric_id;
-                const v = k in keep ? keep[k] : (values[k] != null ? values[k] : "");
+                const v = k in keep ? keep[k] : (saved[k] != null ? saved[k] : "");
                 return `<div class="input-group input-group-sm mb-1" style="max-width:280px"><span class="input-group-text">${esc(m.name)}${l.required ? " *" : ""}</span>
                     <input type="number" step="any" class="form-control" data-act="${t.id}" data-metric="${l.metric_id}" data-required="${l.required ? 1 : 0}" value="${esc(v)}">
                     ${m.unit ? `<span class="input-group-text">${esc(m.unit)}</span>` : ""}</div>`;
-            }).join("")).join("");
+            }).join("");
         };
         el.querySelectorAll("#ppWinTypes .pp-tchip, #ppWinPlants .pp-tchip").forEach(c => c.addEventListener("click", () => {
             c.classList.toggle("on");

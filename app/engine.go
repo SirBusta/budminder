@@ -376,9 +376,8 @@ func pathDirsMiddleware(uploadDir, streamDir, logsDir string) gin.HandlerFunc {
 
 func parseTemplates(assets fs.FS, store *config.Store, demo bool) (*template.Template, error) {
 	funcMap := buildFuncMap(store)
-	// demoMode / demoNotes: the demo banner, script and sample notes (header.html).
+	// demoMode: the demo banner and script (header.html).
 	funcMap["demoMode"] = func() bool { return demo }
-	funcMap["demoNotes"] = func() []string { return handlers.DemoNotes }
 	return template.New("").Funcs(funcMap).ParseFS(assets, "web/templates/**/*.html")
 }
 

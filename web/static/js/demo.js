@@ -3,17 +3,15 @@
  * decides what is allowed; this only makes the demo pleasant to use).
  *
  * - Says why when the server refuses something ("Not available in the demo").
- * - Text boxes can't be typed in: notes are picked from sample notes, other
- *   text stays as it is. Search and filter boxes still work.
+ * - Notes can be typed (up to 500 characters); other text boxes stay as
+ *   they are. Search and filter boxes still work.
  * - The strain lookups type "Grape OG" by themselves.
  * - Uploads and exports are turned off.
  */
 (function () {
-    const notesEl = document.getElementById("bmDemoNotes");
-    const NOTES = notesEl ? JSON.parse(notesEl.textContent || "[]") : [];
     const textEl = document.getElementById("bmDemoText");
     const T = textEl ? JSON.parse(textEl.textContent || "{}") : {};
-    window.BM_DEMO = { notes: NOTES };
+    window.BM_DEMO = {};
     const SCRIPTED = "Grape OG";
 
     // ---------- Messages ----------
@@ -44,45 +42,24 @@
     };
 
     // ---------- Text boxes ----------
+    // Notes (text areas) can be typed in, up to the server's limit; they stay
+    // in this visitor's private copy. Other text boxes (names and the like)
+    // stay as they are. Search and filter boxes still work.
+    const MAX_NOTE = 500;
     const TYPES = ["text", "url", "email", "tel", "password", ""];
     const free = el => el.type === "search" || el.classList.contains("isley-ac-input") ||
         el.id === "spFindQ" || el.id === "srLookup" || el.closest("[data-demo-free]");
-    const lockable = el => (el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && TYPES.includes(el.type))) && !free(el);
-
-    let picker;
-    function closePicker() { if (picker) { picker.remove(); picker = null; } }
-    function openPicker(area) {
-        closePicker();
-        picker = document.createElement("div");
-        picker.className = "bm-demo-picker";
-        picker.innerHTML = `<div class="h">${T.pickNote || "Pick a note"}</div>`;
-        ["", ...NOTES].forEach(n => {
-            const b = document.createElement("button");
-            b.type = "button";
-            b.textContent = n || (T.noNote || "No note");
-            b.addEventListener("mousedown", e => {
-                e.preventDefault();
-                area.value = n;
-                area.dispatchEvent(new Event("input", { bubbles: true }));
-                area.dispatchEvent(new Event("change", { bubbles: true }));
-                closePicker();
-            });
-            picker.appendChild(b);
-        });
-        const r = area.getBoundingClientRect();
-        picker.style.left = (r.left + window.scrollX) + "px";
-        picker.style.top = (r.bottom + window.scrollY + 4) + "px";
-        picker.style.width = Math.max(260, r.width) + "px";
-        document.body.appendChild(picker);
-    }
     document.addEventListener("focusin", e => {
         const el = e.target;
-        if (!lockable(el)) return;
+        if (el.tagName === "TEXTAREA") {
+            el.maxLength = MAX_NOTE;
+            if (el.value.length > MAX_NOTE) say(T.noteTooLong || "Notes in the demo are limited to 500 characters.");
+            return;
+        }
+        if (el.tagName !== "INPUT" || !TYPES.includes(el.type) || free(el)) return;
         el.readOnly = true;
-        if (el.tagName === "TEXTAREA") openPicker(el);
-        else say(T.noTyping || "Typing is turned off in the demo.");
+        say(T.noTyping || "Typing is turned off in the demo.");
     });
-    document.addEventListener("focusout", e => { if (e.target.tagName === "TEXTAREA") setTimeout(closePicker, 150); });
 
     // ---------- Scripted strain lookups ----------
     function typeInto(input, then) {
