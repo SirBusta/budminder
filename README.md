@@ -15,10 +15,10 @@
 
 </div>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/screenshots/plant-dark.webp">
-  <img src="docs/images/screenshots/plant.webp" alt="A plant's page in BudMinder: the stage track from germination to harvest, a notebook with one entry per day, and the three photos taken on the selected day">
-</picture>
+<a href="docs/images/screenshots/plant.webp"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/readme/plant-dark.webp">
+  <img src="docs/images/readme/plant.webp" alt="A plant's page in BudMinder: the stage track from germination to harvest, a notebook with one entry per day, and the three photos taken on the selected day">
+</picture></a>
 
 <p align="center"><sub>Every plant gets a stage track from seed to harvest and a notebook with one entry per day, shown next to that day's photos.</sub></p>
 
@@ -60,66 +60,66 @@ Every plant gets its own page and notebook.
 
 **Logging, camera and export.** Log an activity for every plant in a tent in one go, watch the tent camera live, and export the notebook to CSV or Excel.
 
-<img src="docs/images/screenshots/plant-pm1-dark.webp" alt="Permanent Marker #1's page in dark mode: the stage track at Flower week 2 with an estimated harvest of Nov 30 to Dec 7, the notebook grouped by week with water amounts, heights and notes, and the two photos from Sep 28 shown beside the selected day"><br>
+<a href="docs/images/screenshots/plant-pm1-dark.webp"><img src="docs/images/readme/plant-pm1-dark.webp" alt="Permanent Marker #1's page in dark mode: the stage track at Flower week 2 with an estimated harvest of Nov 30 to Dec 7, the notebook grouped by week with water amounts, heights and notes, and the two photos from Sep 28 shown beside the selected day"></a><br>
 <sub>Shown in dark mode.</sub>
 
 ### Today
 
 Open BudMinder and see what needs doing: plants you haven't watered or fed in a while, seeds getting old, and every tent's live temperature, humidity, VPD and CO₂ next to its camera and plants. Log water or feeding right from a plant's card.
 
-<img src="docs/images/screenshots/home.webp" alt="The Today page: a needs-attention list, then each tent with its live readings, camera snapshot and plant cards">
+<a href="docs/images/screenshots/home.webp"><img src="docs/images/readme/home.webp" alt="The Today page: a needs-attention list, then each tent with its live readings, camera snapshot and plant cards"></a>
 
 ### Environment
 
 Every sensor in a tent on one timeline, from the last hour to the last week or any range you pick. Click anywhere on a chart and a marker line shows what every sensor read at that moment; drag it to scrub through the day. Works with AC Infinity controllers, Ecowitt gateways and any sensor in Home Assistant. If you build your own sensors, a simple API lets you send in their readings.
 
-<img src="docs/images/screenshots/environment.webp" alt="The Environment page for a tent: current readings, then temperature, humidity and VPD charts for the last 24 hours with a marker line showing the readings at 3:25 AM">
+<a href="docs/images/screenshots/environment.webp"><img src="docs/images/readme/environment.webp" alt="The Environment page for a tent: current readings, then temperature, humidity and VPD charts for the last 24 hours with a marker line showing the readings at 3:25 AM"></a>
 
 ### Seed Vault
 
 Track the seeds you have on hand, how old they are and where you keep them, with a warning when a batch passes two years. Use one, restock, or start a grow straight from the list, and keep a wish list of strains you want.
 
-<img src="docs/images/screenshots/strains.webp" alt="The Seed Vault in list view, oldest seeds first, showing each strain's lineage, type, flowering time, seed count, seed age and grows">
+<a href="docs/images/screenshots/strains.webp"><img src="docs/images/readme/strains.webp" alt="The Seed Vault in list view, oldest seeds first, showing each strain's lineage, type, flowering time, seed count, seed age and grows"></a>
 
 ### Strain pages
 
 A complete archive for every cultivar you run. Track your full history with a strain, including past harvest yields, flowering times and photos from your grows, alongside its lineage, potency and cultivation traits. When adding a new strain, import it from public strain databases to fill in most of the profile automatically.
 
-<img src="docs/images/screenshots/strain-grape.webp" alt="The Grape OG strain page: four harvested plants with yields, the strain's family, seed vault and strain facts, and photos from the grows">
+<a href="docs/images/screenshots/strain-grape.webp"><img src="docs/images/readme/strain-grape.webp" alt="The Grape OG strain page: four harvested plants with yields, the strain's family, seed vault and strain facts, and photos from the grows"></a>
 
 ### Smoke reports
 
 A complete evaluation suite for home harvests and dispensary pickups. Rate appearance, aroma, flavor and effects on a 1 to 10 scale to generate a custom weighted overall score. Pick traits, side effects and terpene profiles from built-in lists or enter your own, then flag whether the cultivar is worth growing or buying again. For dispensary purchases, log the store and price to automatically calculate the cost per gram. Attach photos by uploading a file, pasting an image URL, or selecting a shot directly from the plant's journal history.
 
-<img src="docs/images/screenshots/smoke-report.webp" alt="A smoke report for home-grown Grape OG: a photo of two dried buds, an overall score of 7.8 out of 10, THC, CBD and cure time, top effects and smells, bars for the bud quality, taste, smell and effects scores, and the grow details BudMinder filled in from the plant">
+<a href="docs/images/screenshots/smoke-report.webp"><img src="docs/images/readme/smoke-report.webp" alt="A smoke report for home-grown Grape OG: a photo of two dried buds, an overall score of 7.8 out of 10, THC, CBD and cure time, top effects and smells, bars for the bud quality, taste, smell and effects scores, and the grow details BudMinder filled in from the plant"></a>
 
 ### Home Assistant
 
 **No sensor left behind.** Connect BudMinder to Home Assistant to pull climate readings from any device you run, from Zigbee and ESPHome probes to Govee and SwitchBot units. A quick scan shows your grow-relevant sensors so you can add them straight to your tents, right alongside your AC Infinity and Ecowitt data. It operates completely read-only, leaving your smart home configuration safe and unchanged.
 
-<img src="docs/images/screenshots/ha-scan.webp" alt="Scan Home Assistant results: seven grow sensors such as tent temperature, humidity, CO2, VPD, light level and soil moisture, each with its current reading, a tent to put it in and an Add button, plus a filter box and a Show all switch for batteries and power">
+<a href="docs/images/screenshots/ha-scan.webp"><img src="docs/images/readme/ha-scan.webp" alt="Scan Home Assistant results: seven grow sensors such as tent temperature, humidity, CO2, VPD, light level and soil moisture, each with its current reading, a tent to put it in and an Add button, plus a filter box and a Show all switch for batteries and power"></a>
 
 ### More
 
 <table>
 <tr>
-<td width="50%" valign="top"><b>Plants</b><br>Every plant with its stage, progress to harvest, and when it was last watered and fed.<br><br><img src="docs/images/screenshots/plants.webp" alt="The Plants page listing six growing plants with stage, progress bar and days since watering and feeding"></td>
-<td width="50%" valign="top"><b>Log activity</b><br>Water, feed, train or add a note for one plant or a whole tent at once.<br><br><img src="docs/images/screenshots/log-activity.webp" alt="The Log activity window with plants, date, activity types, water amount and a note"></td>
+<td width="50%" valign="top"><b>Plants</b><br>Every plant with its stage, progress to harvest, and when it was last watered and fed.<br><br><a href="docs/images/screenshots/plants.webp"><img src="docs/images/readme/plants.webp" alt="The Plants page listing six growing plants with stage, progress bar and days since watering and feeding"></a></td>
+<td width="50%" valign="top"><b>Log activity</b><br>Water, feed, train or add a note for one plant or a whole tent at once.<br><br><a href="docs/images/screenshots/log-activity.webp"><img src="docs/images/readme/log-activity.webp" alt="The Log activity window with plants, date, activity types, water amount and a note"></a></td>
 </tr>
 <tr>
-<td valign="top"><b>Manage sensors</b><br>Scan AC Infinity, Ecowitt and Home Assistant for sensors, name them, put each in a tent and choose where it shows.<br><br><img src="docs/images/screenshots/manage-sensors.webp" alt="The Manage sensors page listing a tent's sensors with their current readings"></td>
-<td valign="top"><b>Settings</b><br>Grouped and searchable, and every change saves as you go.<br><br><img src="docs/images/screenshots/settings.webp" alt="The Settings page with timezone, units, language, theme, guest view and password"></td>
+<td valign="top"><b>Manage sensors</b><br>Scan AC Infinity, Ecowitt and Home Assistant for sensors, name them, put each in a tent and choose where it shows.<br><br><a href="docs/images/screenshots/manage-sensors.webp"><img src="docs/images/readme/manage-sensors.webp" alt="The Manage sensors page listing a tent's sensors with their current readings"></a></td>
+<td valign="top"><b>Settings</b><br>Grouped and searchable, and every change saves as you go.<br><br><a href="docs/images/screenshots/settings.webp"><img src="docs/images/readme/settings.webp" alt="The Settings page with timezone, units, language, theme, guest view and password"></a></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><b>Help</b><br>Click <b>Help</b> in the top menu to learn about the page you're on. Every page is explained step by step, with numbered pictures that match the text, a search box, and light and dark versions.<br><br><img src="docs/images/screenshots/manual.webp" alt="BudMinder's Help: sections listed on the left, the Growth stages section of Plant page with a picture of the stage track marked with numbered green circles 1 to 5, the matching numbered list below it, and On this page on the right"></td>
+<td colspan="2" valign="top"><b>Help</b><br>Click <b>Help</b> in the top menu to learn about the page you're on. Every page is explained step by step, with numbered pictures that match the text, a search box, and light and dark versions.<br><br><a href="docs/images/screenshots/manual.webp"><img src="docs/images/readme/manual.webp" alt="BudMinder's Help: sections listed on the left, the Growth stages section of Plant page with a picture of the stage track marked with numbered green circles 1 to 5, the matching numbered list below it, and On this page on the right"></a></td>
 </tr>
 </table>
 
 ### On your phone
 
 <p align="center">
-<img src="docs/images/screenshots/phone-home.webp" alt="The Today page on a phone" width="260">&nbsp;&nbsp;&nbsp;
-<img src="docs/images/screenshots/phone-plant.webp" alt="A harvested plant's page on a phone in dark mode" width="260">
+<a href="docs/images/screenshots/phone-home.webp"><img src="docs/images/readme/phone-home.webp" alt="The Today page on a phone" width="260"></a>&nbsp;&nbsp;&nbsp;
+<a href="docs/images/screenshots/phone-plant.webp"><img src="docs/images/readme/phone-plant.webp" alt="A harvested plant's page on a phone in dark mode" width="260"></a>
 </p>
 
 ### And also
