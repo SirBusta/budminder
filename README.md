@@ -212,9 +212,73 @@ SQLite is used automatically. To use PostgreSQL instead, see the PostgreSQL sect
 Download the program for your system from the [latest release](https://github.com/SirBusta/budminder/releases/latest), put it in its own folder and run it. BudMinder starts on `http://localhost:8080` and keeps its database and photos in `data` and `uploads` folders next to the program. Set the same `BUDMINDER_…` settings below as environment variables if you need them.
 
 - **Windows:** the program isn't signed, so Windows may say "Windows protected your PC". Click **More info → Run anyway**. When Windows Firewall asks, allow it on **private networks** so other devices can connect.
-- **macOS:** make it runnable with `chmod +x budminder-macos-*`. The first time, right-click the file → **Open** (or allow it in System Settings → Privacy & Security), because it isn't signed by Apple.
-- **Linux:** `chmod +x budminder-linux-*`, then run it.
+- **macOS** and **Linux:** see the step-by-step guides below.
 - **From your phone:** on the same Wi-Fi, open `http://<your computer's address>:8080`, for example `http://192.168.1.108:8080`. The computer has to stay on with BudMinder running.
+
+BudMinder has no window of its own: it runs in the background and you use it in your web browser.
+
+#### Linux, step by step
+
+1. **Pick the download.** Run `uname -m` in a terminal: `x86_64` means **budminder-linux-amd64** (most PCs), `aarch64` means **budminder-linux-arm64** (for example a Raspberry Pi). Download it from the [latest release](https://github.com/SirBusta/budminder/releases/latest).
+2. **Give it a folder.** Make a folder called `budminder` in your home folder and move the download into it. Your data will live in this folder too.
+3. **Make it runnable.** In a terminal:
+
+   ```bash
+   chmod +x ~/budminder/budminder-linux-amd64
+   ```
+
+   (Use `arm64` instead of `amd64` here and below if that's the file you downloaded.)
+4. **Start it:**
+
+   ```bash
+   ~/budminder/budminder-linux-amd64
+   ```
+
+5. **Open it** at [http://localhost:8080](http://localhost:8080). Sign in with **admin** / **budminder**, and BudMinder asks you to choose a new password.
+6. **To stop it,** press **Ctrl+C** in that terminal, or close the terminal.
+7. **A shortcut (optional).** With BudMinder running, open it in Chrome, Chromium or Edge and install it from the browser's menu (in Chrome: **Cast, save and share → Install page as app**). You get a start-menu entry and a taskbar icon that open BudMinder in its own window. BudMinder itself still has to be running.
+8. **Start it with the computer (optional).** Instead of steps 4 and 6, let your system run it in the background:
+
+   ```bash
+   mkdir -p ~/.config/systemd/user
+   cat > ~/.config/systemd/user/budminder.service <<'EOF'
+   [Unit]
+   Description=BudMinder
+
+   [Service]
+   WorkingDirectory=%h/budminder
+   ExecStart=%h/budminder/budminder-linux-amd64
+   Restart=on-failure
+
+   [Install]
+   WantedBy=default.target
+   EOF
+   systemctl --user enable --now budminder
+   loginctl enable-linger "$USER"
+   ```
+
+   It now starts when the computer does, even before you sign in. Stop it with `systemctl --user stop budminder`, and turn this off with `systemctl --user disable --now budminder`.
+9. **Updating.** Stop BudMinder, replace the program file with the new download (keep the same name), and start it again. If you set up step 8, run `systemctl --user restart budminder` after replacing the file. Your data stays in the `data` and `uploads` folders.
+10. **Using it from your phone** works as described above. If you've turned on the firewall (`ufw`), open the port first with `sudo ufw allow 8080/tcp`.
+
+#### macOS, step by step
+
+1. **Pick the download.** Open the Apple menu → **About This Mac**. If it lists an **Apple M** chip, download **budminder-macos-arm64**; if it lists an **Intel** processor, download **budminder-macos-amd64**. Both are on the [latest release](https://github.com/SirBusta/budminder/releases/latest).
+2. **Give it a folder.** In Finder, open your home folder, make a new folder called `BudMinder`, and move the download into it. Your data will live in this folder too.
+3. **Make it runnable.** Open **Terminal** (in Applications → Utilities) and run these two lines:
+
+   ```bash
+   chmod +x ~/BudMinder/budminder-macos-arm64
+   xattr -d com.apple.quarantine ~/BudMinder/budminder-macos-arm64
+   ```
+
+   (Use `amd64` instead of `arm64` here and below if that's the file you downloaded.) The second line tells macOS it may run a program that isn't signed by Apple. If it says "No such xattr", that's fine.
+4. **Start it** by double-clicking the program in Finder. A Terminal window opens with BudMinder running in it; leave that window open. The first time, macOS may ask whether BudMinder may accept incoming network connections: click **Allow** if you want to use it from your phone.
+5. **Open it** at [http://localhost:8080](http://localhost:8080). Sign in with **admin** / **budminder**, and BudMinder asks you to choose a new password.
+6. **To stop it,** close that Terminal window, or press **Ctrl+C** in it.
+7. **A shortcut (optional).** With BudMinder running, open it in Safari and choose **File → Add to Dock**, or in Chrome or Edge install it from the browser's menu (in Chrome: **Cast, save and share → Install page as app**). You get an icon that opens BudMinder in its own window. BudMinder itself still has to be running.
+8. **Start it when you sign in (optional).** Open System Settings → **General → Login Items**, click **+** under "Open at Login", and choose the program in your `BudMinder` folder. It then opens in a Terminal window each time you sign in.
+9. **Updating.** Stop BudMinder, replace the program file with the new download (keep the same name), repeat step 3 for the new file, and start it again. Your data stays in the `data` and `uploads` folders.
 
 </details>
 
