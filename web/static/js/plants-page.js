@@ -53,6 +53,15 @@
         layout: store.get("isley.plants.layout") || "list",
     };
     const count = g => plants.filter(p => p.group === g).length;
+    // Each tab's sorts: harvest dates only mean something on Harvested, water and
+    // the harvest estimate only while growing.
+    const SORTS = {
+        living: [["name", "pl_sort_name"], ["newest", "pl_sort_newest"], ["oldest", "pl_sort_oldest"], ["water", "pl_sort_water"], ["harvest", "pl_sort_harvest"]],
+        harvested: [["name", "pl_sort_name"], ["harvested_new", "pl_sort_harvested_new"], ["harvested_old", "pl_sort_harvested_old"], ["newest", "pl_sort_newest"], ["oldest", "pl_sort_oldest"]],
+        dead: [["name", "pl_sort_name"], ["newest", "pl_sort_newest"], ["oldest", "pl_sort_oldest"]],
+    };
+    const sortKey = () => (SORTS[S.group] || []).some(([v]) => v === S.sort) ? S.sort : "name";
+    const longDate = d => new Date(d + "T12:00:00").toLocaleDateString(D.lang || undefined, { month: "short", day: "numeric", year: "numeric" });
 
     function filtered() {
         const q = S.q.toLowerCase();
@@ -65,8 +74,10 @@
             oldest: (a, b) => (a.start || "").localeCompare(b.start || "") || byName(a, b),
             water: (a, b) => (b.water ?? -1) - (a.water ?? -1) || byName(a, b),
             harvest: (a, b) => ((a.harvest || [1e9])[0]) - ((b.harvest || [1e9])[0]) || byName(a, b),
+            harvested_new: (a, b) => (b.harvested || "").localeCompare(a.harvested || "") || byName(a, b),
+            harvested_old: (a, b) => (a.harvested || "9999").localeCompare(b.harvested || "9999") || byName(a, b),
         };
-        return list.sort(sorts[S.sort] || byName);
+        return list.sort(sorts[sortKey()] || byName);
     }
 
     // ---------- Building blocks ----------
@@ -130,13 +141,13 @@
             <div class="pl-who"><a class="nm" href="${url(p)}">${esc(p.name)}</a><div class="sub">${esc(p.strain)}${p.breeder ? ` · ${esc(p.breeder)}` : ""}</div>
                 <div class="meta">${p.zone ? `<span class="pl-tag zone"><i class="fa-solid ${zoneIcon}"></i>${esc(p.zone)}</span>` : ""}${typeTag(p)}${p.clone ? `<span class="pl-tag zone"><i class="fa-solid fa-clone"></i>${esc(t("pl_clone"))}</span>` : ""}${smokeTag(p, true)}</div></div>
             ${progress(p)}
-            <div class="wfs">${p.group === "living" ? wf("water", p.water) + wf("feed", p.feed) : ""}</div>
+            <div class="wfs">${p.group === "living" ? wf("water", p.water) + wf("feed", p.feed) : p.harvested && p.group === "harvested" ? `<span class="pl-hv"><i class="fa-solid fa-scissors"></i>${esc(t("pl_harvested_on", { date: longDate(p.harvested) }))}</span>` : ""}</div>
             <div class="acts">${actions(p)}</div>
         </div>`;
     }
     const tile = p => `<a class="pl-t" href="${url(p)}">${photo(p)}${stagePill(p)}
         ${p.group === "living" && p.water != null ? `<span class="wfx">${wf("water", p.water)}</span>` : ""}
-        <span class="ov"><b>${esc(p.name)}</b><small>${esc(p.zone)}${p.group === "living" && p.day ? ` · ${esc(t("pl_day", { n: p.day }))}` : ""} ${smokeTag(p, false)}</small></span></a>`;
+        <span class="ov"><b>${esc(p.name)}</b><small>${esc(p.zone)}${p.group === "living" && p.day ? ` · ${esc(t("pl_day", { n: p.day }))}` : ""}${p.group === "harvested" && p.harvested ? ` · ${esc(longDate(p.harvested))}` : ""} ${smokeTag(p, false)}</small></span></a>`;
 
     // ---------- Drawing ----------
     function renderTabs() {
@@ -160,13 +171,13 @@
         const stages = [...new Set(inGroup.map(p => p.stage).filter(Boolean))].sort((a, b) => stageOrder(a) - stageOrder(b));
         const opt = (v, l, cur) => `<option value="${esc(v)}" ${v === cur ? "selected" : ""}>${esc(l)}</option>`;
         const n = filtered().length;
-        const sorts = [["name", "pl_sort_name"], ["newest", "pl_sort_newest"], ["oldest", "pl_sort_oldest"], ["water", "pl_sort_water"], ["harvest", "pl_sort_harvest"]];
+        const sorts = SORTS[S.group] || SORTS.living;
         document.getElementById("plBar").innerHTML = `<div class="pl-bar">
             <div class="pl-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="plQ" placeholder="${esc(t("pl_filter"))}" aria-label="${esc(t("pl_filter"))}" value="${esc(S.q)}"></div>
             <select class="form-select form-select-sm" data-f="zone" aria-label="${esc(t("pl_all_tents"))}">${opt("", t("pl_all_tents"), S.zone)}${uniq("zone").map(z => opt(z, z, S.zone)).join("")}</select>
             <select class="form-select form-select-sm" data-f="breeder" aria-label="${esc(t("pl_all_breeders"))}">${opt("", t("pl_all_breeders"), S.breeder)}${uniq("breeder").map(b => opt(b, b, S.breeder)).join("")}</select>
             <select class="form-select form-select-sm" data-f="stage" aria-label="${esc(t("pl_all_stages"))}">${opt("", t("pl_all_stages"), S.stage)}${stages.map(s => opt(s, stageLabel(s), S.stage)).join("")}</select>
-            <select class="form-select form-select-sm" data-f="sort" aria-label="${esc(t("pl_sort"))}">${sorts.map(([v, k]) => opt(v, t("pl_sort") + ": " + t(k), S.sort)).join("")}</select>
+            <select class="form-select form-select-sm" data-f="sort" aria-label="${esc(t("pl_sort"))}">${sorts.map(([v, k]) => opt(v, t("pl_sort") + ": " + t(k), sortKey())).join("")}</select>
             ${S.zone || S.breeder || S.stage || S.q ? `<button type="button" class="pl-clear" data-clear><i class="fa-solid fa-xmark me-1"></i>${esc(t("pl_clear"))}</button>` : ""}
             <span class="spacer"></span>
             <span class="pl-count">${esc(n === 1 ? t("pl_count_one") : t("pl_count", { n }))}</span>

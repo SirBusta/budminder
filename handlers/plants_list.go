@@ -32,6 +32,7 @@ type PlantListRow struct {
 	EstMin        string  `json:"est_min"` // estimated harvest window
 	EstMax        string  `json:"est_max"`
 	HarvestWeight float64 `json:"harvest_weight"`
+	Harvested     string  `json:"harvested"` // the day it moved past Flower (Drying, Curing or Success); "" if never
 	Photo         string  `json:"photo"`
 	// Smoke reports: how many, and the latest one's overall score / id.
 	Smoke SmokeSummary `json:"smoke"`
@@ -132,10 +133,23 @@ func LoadPlantsList(db *sql.DB) ([]PlantListRow, error) {
 		if n := len(p.History); n > 0 {
 			r.StageSince = p.History[n-1].Date
 		}
+		r.Harvested = harvestedOn(p.History)
 		r.EstMin, r.EstMax = estimateHarvest(p, e.auto, e.cycleMn, e.cycle)
 		out = append(out, r)
 	}
 	return out, nil
+}
+
+// harvestedOn is the day a plant was harvested, as its Plant page shows it:
+// the first move to Drying, Curing or Success.
+func harvestedOn(history []NotebookStage) string {
+	for _, h := range history {
+		switch h.Status {
+		case "Drying", "Curing", "Success":
+			return h.Date
+		}
+	}
+	return ""
 }
 
 // estimateHarvest is the Plant page's harvest window for a list row:

@@ -3392,6 +3392,8 @@ th, td {
 .pl-wf.ok { background: #dcfce7; color: #166534; }
 .pl-wf.due { background: #fef3c7; color: #92400e; }
 .pl-wf.over { background: #fee2e2; color: #b91c1c; }
+.pl-hv { display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; font-weight: 600; white-space: nowrap; opacity: .85; }
+.pl-hv i { color: #d97706; }
 .pl-qa { border: 1px solid var(--pl-line); background: var(--pl-card); color: var(--pl-ink); border-radius: 8px; font-size: .76rem; font-weight: 600; padding: .26rem .6rem; display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; text-decoration: none; }
 .pl-qa:hover { border-color: var(--pl-acc); color: var(--pl-acc); }
 .pl-qa.icon { width: 30px; justify-content: center; padding: .26rem 0; }

@@ -49,6 +49,8 @@ func TestLoadPlantsList(t *testing.T) {
 	dead := testutil.SeedPlant(t, db, "Gone", photoStrain, zone)
 	e.exec(t, `INSERT INTO plant_status_log (plant_id, status_id, date) VALUES ($1, $2, '2026-01-05')`, dead, statusIDByName(t, db, "Dead"))
 	done := testutil.SeedPlant(t, db, "Done", photoStrain, zone)
+	e.exec(t, `INSERT INTO plant_status_log (plant_id, status_id, date) VALUES ($1, $2, '2026-04-20')`, done, statusIDByName(t, db, "Drying"))
+	e.exec(t, `INSERT INTO plant_status_log (plant_id, status_id, date) VALUES ($1, $2, '2026-04-30')`, done, statusIDByName(t, db, "Curing"))
 	e.exec(t, `INSERT INTO plant_status_log (plant_id, status_id, date) VALUES ($1, $2, '2026-05-05')`, done, statusIDByName(t, db, "Success"))
 	e.exec(t, `UPDATE plant SET harvest_weight = 87.5 WHERE id = $1`, done)
 
@@ -82,6 +84,8 @@ func TestLoadPlantsList(t *testing.T) {
 	assert.Equal(t, "dead", by[dead].Group)
 	assert.Equal(t, "harvested", by[done].Group)
 	assert.Equal(t, 87.5, by[done].HarvestWeight)
+	assert.Equal(t, "2026-04-20", by[done].Harvested, "harvested: the move to Drying, as the plant page shows it")
+	assert.Empty(t, f.Harvested, "still growing")
 }
 
 func TestPlantsPage_Renders(t *testing.T) {
