@@ -11,7 +11,7 @@
 [![Docker image](https://img.shields.io/badge/docker-ghcr.io%2Fsirbusta%2Fbudminder-16a34a?logo=docker&logoColor=white)](https://github.com/SirBusta/budminder/pkgs/container/budminder)
 [![License: MIT](https://img.shields.io/badge/license-MIT-16a34a)](LICENSE)
 
-[Website](https://budminder.app) · [Install](#install) · [Tour](#tour) · [Releases](https://github.com/SirBusta/budminder/releases)
+**[Live demo](https://demo.budminder.app)** · [Website](https://budminder.app) · [Install](#install) · [Tour](#tour) · [Releases](https://github.com/SirBusta/budminder/releases)
 
 </div>
 
@@ -21,6 +21,8 @@
 </picture>
 
 <p align="center"><sub>Every plant gets a stage track from seed to harvest and a notebook with one entry per day, shown next to that day's photos.</sub></p>
+
+**Try it first:** the [live demo](https://demo.budminder.app) runs in your browser with six growing plants, a month of sensor history and smoke reports. Nothing to install, and your changes are private and reset after an hour of inactivity.
 
 ## Why BudMinder?
 
@@ -122,6 +124,7 @@ A complete evaluation suite for home harvests and dispensary pickups. Rate appea
 
 ### And also
 
+- A short guided tour for new users, with animated tips, which you can take again any time from Help
 - One-click strain import from public strain databases, with THC and CBD ranges, effects, terpenes and lineage
 - Hide the smoke report fields you never use, and choose how much each score counts
 - Imperial or metric units for heights, yields and temperatures
@@ -133,7 +136,7 @@ A complete evaluation suite for home harvests and dispensary pickups. Rate appea
 - Guest view for sharing, read-only
 - SQLite or PostgreSQL
 
-<sub>Screenshots use a demo data set. The sensor history is a month of real readings from an AC Infinity controller in a 3x3 tent.</sub>
+<sub>Screenshots use the same data set as the [live demo](https://demo.budminder.app). The sensor history is a month of real readings from an AC Infinity controller in a 3x3 tent.</sub>
 
 ## Install
 
