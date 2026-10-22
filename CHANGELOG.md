@@ -34,6 +34,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [1.5.1] - 2026-10-22
+
+### Changed
+- **Plants, Harvested:** each plant shows the date it was harvested (the day it
+  moved to Drying), and the list can be sorted by harvest date, newest or
+  oldest first. The sort menu now only offers what fits each tab.
+- **README:** every picture has a magnifying-glass badge and opens the
+  full-size screenshot.
+
+### Fixed
+- **Strain lineage:** parent strains carried over from older data could be
+  split at a bracket, like "(Creme de la Chem" and "Mango Smile)", and their
+  StrainCompass search found nothing. They are now rejoined into one parent
+  when BudMinder starts and after a restore, and the search link ignores
+  brackets.
+- **Backup & data:** removed an outdated warning that restoring sensor data
+  into SQLite is very slow; restores have been fast since 1.0.1.
+
 ## [1.5.0] - 2026-10-22
 
 ### Added
