@@ -25,6 +25,7 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 		}
 		c.HTML(http.StatusOK, "views/index.html", gin.H{
 			"pageData":        pageData,
+			"tour":            handlers.TourPageData(c, loggedIn, translations),
 			"hasCamera":       homeHasCamera(pageData),
 			"title":           "Today",
 			"currentPath":     currentPath,
@@ -391,6 +392,7 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.POST("/record-multi-activity", handlers.RecordMultiPlantActivity)
 	r.POST("/settings", handlers.SaveSettings)
 	r.POST("/settings/homeassistant/test", handlers.TestHomeAssistantHandler)
+	r.POST("/tour/answered", handlers.TourAnsweredHandler)
 	addSmokeAPIRoutes(r)
 }
 

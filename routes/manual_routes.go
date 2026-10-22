@@ -11,6 +11,7 @@ import (
 
 	"isley/handlers"
 	"isley/logger"
+	"isley/utils"
 )
 
 // AddManualRoutes registers /manual, /manual/:slug, /manual/for and the
@@ -26,7 +27,10 @@ func AddManualRoutes(r *gin.RouterGroup, version string) {
 		return m
 	}
 	show := func(c *gin.Context, m *handlers.Manual, s *handlers.ManualSection) {
+		// The tour starts from the Welcome card here; only Today asks about it.
+		translations := utils.TranslationService.GetTranslations(utils.GetLanguage(c))
 		smokePage(c, version, "views/manual.html", s.Title+" · Help", gin.H{
+			"tour":   handlers.TourPageData(c, false, translations),
 			"manual": m,
 			"sec":    s,
 			"prev":   m.Prev(s),

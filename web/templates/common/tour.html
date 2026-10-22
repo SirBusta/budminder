@@ -1,0 +1,5 @@
+{{ define "common/tour.html" }}
+<!-- The first-run tour (web/static/js/tour.js); data from handlers.TourPageData. -->
+<script type="application/json" id="tourData">{"tour": {{ .tour }}, "demo": {{ demoMode }}}</script>
+<script src="/static/js/tour.js" defer></script>
+{{ end }}

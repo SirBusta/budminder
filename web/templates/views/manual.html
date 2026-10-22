@@ -14,6 +14,7 @@
         </div>
         <div id="mnResults" class="mn-results d-none" data-none="{{ .lcl.mn_no_results }}"></div>
         <nav id="mnNav">
+            <a href="/manual" class="mn-tourlink" data-tour-start="1"><i class="fa-solid fa-seedling" aria-hidden="true"></i>{{ .lcl.tour_side }}</a>
             {{ range .manual.Groups }}
             <div class="mn-grp">{{ .Title }}</div>
             {{ range .Sections }}<a href="/manual/{{ .Slug }}"{{ if eq .Slug $.sec.Slug }} class="on" aria-current="page"{{ end }}>{{ .Title }}</a>{{ end }}
@@ -30,6 +31,23 @@
         {{ if ne .currentLanguage "en" }}<p class="mn-lang"><i class="fa-solid fa-language me-1" aria-hidden="true"></i>{{ .lcl.mn_english_only }}</p>{{ end }}
         <div class="mn-crumb">{{ .sec.Group }}</div>
         <h1>{{ .sec.Title }}</h1>
+        {{ if eq .sec.Slug (index .manual.Sections 0).Slug }}
+        <div class="mn-tour">
+            <i class="fa-solid fa-seedling" aria-hidden="true"></i>
+            <div>
+                <h2>{{ .lcl.tour_help_title }}</h2>
+                <p>{{ .lcl.tour_help_text }}</p>
+                <div class="jump">
+                    <button type="button" class="btn btn-success btn-sm" data-tour-start="1"><i class="fa-solid fa-play me-1" aria-hidden="true"></i>{{ .lcl.tour_help_start }}</button>
+                    <span class="text-muted">{{ .lcl.tour_help_jump }}</span>
+                    <a href="/manual" data-tour-start="1">{{ .lcl.tour_tip1 }}</a>
+                    <a href="/manual" data-tour-start="2">{{ .lcl.tour_tip2 }}</a>
+                    <a href="/manual" data-tour-start="3">{{ .lcl.tour_tip3 }}</a>
+                    <a href="/manual" data-tour-start="4">{{ .lcl.tour_tip4 }}</a>
+                </div>
+            </div>
+        </div>
+        {{ end }}
         {{ .sec.HTML }}
         <div class="mn-pn">
             {{ with .prev }}<a href="/manual/{{ .Slug }}"><small>{{ $.lcl.mn_previous }}</small>« {{ .Title }}</a>{{ else }}<span></span>{{ end }}
@@ -46,6 +64,7 @@
 </div>
 
 <script src="/static/js/manual-page.js" defer></script>
+{{ template "common/tour.html" . }}
 {{ template "common/footer.html" .}}
 
 {{ end }}

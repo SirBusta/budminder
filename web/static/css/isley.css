@@ -4165,3 +4165,85 @@ body { --sr-scorebg: var(--sr-acc); --sr-num: var(--sr-acc); }
 [data-bs-theme="dark"] .bm-demo-banner { background: #422006; color: #fde68a; }
 .bm-demo-toast { position: fixed; left: 50%; bottom: 1.5rem; transform: translate(-50%, 1rem); z-index: 2000; background: #1f2937; color: #fff; padding: .6rem 1.1rem; border-radius: 999px; font-size: .9rem; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: calc(100% - 2rem); text-align: center; }
 .bm-demo-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ===== First-run tour (web/static/js/tour.js) ===== */
+.bm-tour {
+    --bt-paper: #fbf9f3; --bt-rule: #cdbf97; --bt-line: #e3e6ea; --bt-muted: #5d6573; --bt-green: #16a34a;
+    --bt-ring: #9333ea; --bt-ring-soft: rgba(147, 51, 234, .08); --bt-clip: #fff; --bt-bg: #f8f9fa;
+    position: fixed; inset: 0; z-index: 1070; display: grid; place-items: center; padding: 16px;
+}
+[data-bs-theme="dark"] .bm-tour {
+    --bt-paper: #1b231f; --bt-rule: #4f6b56; --bt-line: #323a42; --bt-muted: #a3acb6; --bt-green: #22c55e;
+    --bt-ring: #c084fc; --bt-ring-soft: rgba(192, 132, 252, .1); --bt-clip: #11161a; --bt-bg: #15191d;
+}
+.bm-tour[hidden] { display: none; }
+body.bm-tour-open { overflow: hidden; }
+.bt-veil { position: fixed; inset: 0; background: rgba(15, 20, 18, .55); backdrop-filter: blur(2px); }
+[data-bs-theme="dark"] .bt-veil { background: rgba(0, 0, 0, .62); }
+.bt-wrap { position: relative; width: min(680px, 100%); display: flex; justify-content: center; }
+.bt-card { width: 100%; max-height: calc(100vh - 32px); display: flex; flex-direction: column; background: var(--bt-paper); color: var(--color-fg);
+    border-radius: 18px; box-shadow: 0 24px 60px rgba(0, 0, 0, .3); overflow: hidden; }
+.bt-card.bt-ask { width: min(470px, 100%); }
+.bt-top { display: flex; align-items: center; gap: 10px; padding: 14px 18px 0; color: var(--bt-muted); font-size: 13px; }
+.bt-tipno { font-weight: 700; color: var(--bt-green); letter-spacing: .02em; }
+.bt-x { margin-left: auto; border: 0; background: none; color: var(--bt-muted); font-size: 18px; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+.bt-body { padding: 8px 18px 4px; overflow-y: auto; }
+.bt-card h2 { margin: 2px 0 12px; font-size: 22px; line-height: 1.25; text-align: center; font-weight: 700; }
+.bt-divider { display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--bt-green); margin: 4px auto 6px; max-width: 260px; font-size: 15px; }
+.bt-divider::before, .bt-divider::after { content: ""; flex: 1; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--bt-rule)); }
+.bt-divider::after { background: linear-gradient(90deg, var(--bt-rule), transparent); }
+.bt-ask-text { text-align: center; margin: 0 0 8px; }
+.bt-after { text-align: center; color: var(--bt-muted); font-size: 14px; margin: 4px 0 10px; }
+/* A picture, and the rings drawn over it */
+.bt-fig { position: relative; margin: 0 0 12px; border: 1px solid var(--bt-line); border-radius: 10px; overflow: hidden; background: var(--bt-bg); }
+.bt-fig img { display: block; width: 100%; height: auto; }
+.bt-fig img.on { position: absolute; top: 0; left: 0; opacity: 0; transition: opacity .5s; }
+.bt-fig.lit img.on { opacity: 1; }
+/* The ring: two quick beats, then a rest; the line moves out a fixed 3px, so big and small spots beat alike. */
+.bt-spot { position: absolute; outline: 2px solid var(--bt-ring); outline-offset: 0; border-radius: 10px; opacity: 0; transform: scale(1.2);
+    transition: opacity .3s, transform .35s; pointer-events: none; }
+.bt-spot.round { border-radius: 50%; }
+.bt-spot.on { opacity: 1; transform: scale(1); animation: bt-beat 1.8s ease-in-out .35s infinite; }
+@keyframes bt-beat { 0%, 40%, 100% { outline-offset: 0; opacity: .75; } 12%, 32% { outline-offset: 3px; opacity: 1; } 24% { outline-offset: 0; opacity: .75; } }
+/* Lines fill in one at a time; the newest one has a purple bar while it types. */
+.bt-ln { position: relative; margin: 0 0 10px; padding: 2px 0 2px 12px; border-left: 3px solid transparent; border-radius: 0 6px 6px 0;
+    transition: border-color .6s, background-color .6s; }
+.bt-ln.now { border-left-color: var(--bt-ring); background: var(--bt-ring-soft); transition: none; }
+.bt-ln.muted { color: var(--bt-muted); font-size: 14px; }
+.bt-ghost { color: transparent; }
+.bt-caret { display: inline-block; width: 2px; height: 1.05em; margin: 0 1px -2px; background: var(--bt-ring); animation: bt-blink .8s steps(1) infinite; }
+@keyframes bt-blink { 50% { opacity: 0; } }
+/* A clip, its steps listed under it */
+.bt-clip { position: relative; margin: 0 0 10px; border: 1px solid var(--bt-line); border-radius: 12px; overflow: hidden; background: var(--bt-clip); }
+.bt-clip video, .bt-clip img { display: block; width: 100%; height: auto; aspect-ratio: 880 / 576; max-height: calc(100vh - 430px); min-height: 180px; object-fit: contain; }
+.bt-ctl { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 6px; }
+.bt-ctl button { width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(20, 30, 24, .72); color: #fff; cursor: pointer; display: grid; place-items: center; }
+.bt-caps { list-style: none; margin: 0 0 10px; padding: 0; }
+.bt-caps .bt-ln { margin-bottom: 4px; padding-left: 30px; }
+.bt-caps .bt-ln::before { content: ""; position: absolute; left: 10px; top: .62em; width: 9px; height: 9px; border-radius: 50%; background: var(--bt-line); }
+.bt-caps .bt-ln.seen::before { content: "\f00c"; font: 900 11px/1 "Font Awesome 6 Free"; background: none; color: var(--bt-green); top: .5em; left: 9px; width: auto; height: auto; }
+.bt-caps .bt-ln.now::before { background: var(--bt-ring); }
+.bt-caps .bt-ln.seen { color: var(--bt-muted); }
+.bt-foot { display: flex; align-items: center; gap: 10px; padding: 12px 18px 16px; border-top: 1px solid var(--bt-line); flex-wrap: wrap; }
+.bt-dots { display: flex; gap: 6px; margin-right: auto; }
+.bt-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--bt-line); }
+.bt-dots i.on { background: var(--bt-green); width: 20px; border-radius: 99px; }
+.bt-skip { color: var(--bt-muted); text-decoration: none; }
+.bm-tour .btn:focus-visible, .bt-x:focus-visible, .bt-ctl button:focus-visible { outline: 2px solid var(--bt-green); outline-offset: 2px; }
+@media (max-width: 640px) {
+    .bm-tour { place-items: end center; padding: 0; }
+    .bt-card { max-height: 92vh; border-radius: 18px 18px 0 0; }
+    .bt-card h2 { font-size: 20px; }
+    .bt-skip { order: 9; width: 100%; text-align: center; }
+}
+@media (prefers-reduced-motion: reduce) { .bt-spot.on { animation: none; } }
+
+/* Help manual: the "Take the tour" card on Welcome and the side-menu link */
+.mn-tour { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; margin: 0 0 18px; border-radius: 12px;
+    background: #fbf9f3; border: 1px solid #e8dfc4; }
+[data-bs-theme="dark"] .mn-tour { background: #1b231f; border-color: #33463a; }
+.mn-tour > i { font-size: 22px; color: #16a34a; margin-top: 2px; }
+.mn-tour h2 { font-size: 1.05rem; margin: 0 0 2px; font-weight: 700; }
+.mn-tour p { margin: 0 0 8px; }
+.mn-tour .jump { font-size: .9rem; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.mn-side .mn-tourlink { display: flex; align-items: center; gap: 6px; font-weight: 600; color: #16a34a; margin: 0 0 8px; }
