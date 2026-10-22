@@ -129,6 +129,11 @@ func HomePageData(c *gin.Context, loggedIn bool, lang string, translations map[s
 		"t":         t,
 	}
 	if loggedIn {
+		// No strains yet: Today's empty state starts with "add a strain", not "add plant".
+		var strains int
+		if err := db.QueryRow("SELECT COUNT(*) FROM strain").Scan(&strains); err == nil {
+			data["strain_count"] = strains
+		}
 		data["old_seed_batches"] = countOldSeedBatches(db, time.Now())
 		data["integrations"] = IntegrationStatuses(db, store)
 	}

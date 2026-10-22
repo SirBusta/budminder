@@ -3588,7 +3588,8 @@ th, td {
 .hm-recent .msr { color: var(--hm-muted); font-weight: 600; white-space: nowrap; }
 .hm-ico { --c: #888; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--c); font-size: .66rem; }
 .hm-none { text-align: center; color: var(--hm-muted); padding: 2.5rem 1rem; background: var(--hm-card); border-radius: 14px; box-shadow: var(--hm-shadow); }
-.hm-none i { font-size: 1.8rem; display: block; margin-bottom: .5rem; color: var(--hm-faint); }
+.hm-none > i { font-size: 1.8rem; display: block; margin-bottom: .5rem; color: var(--hm-faint); }
+.hm-none-acts { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; }
 
 .hm-dialog { border: 0; border-radius: 14px; }
 .hm-chips { display: flex; flex-wrap: wrap; gap: .35rem; }

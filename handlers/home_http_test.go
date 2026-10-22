@@ -283,3 +283,28 @@ func TestTopMenu_SelectedItem(t *testing.T) {
 		assert.Equal(t, want, got[0][1], path)
 	}
 }
+
+// With no strains yet, Today's empty state starts with "add your first strain"
+// (home-page.js), so the data says how many strains there are.
+func TestHomeData_StrainCount(t *testing.T) {
+	t.Parallel()
+	db := testutil.NewTestDB(t)
+	testutil.SeedAdmin(t, db, homePassword)
+	server := testutil.NewTestServer(t, db)
+	c := server.LoginAsAdmin(t, homePassword)
+
+	var d struct {
+		StrainCount *int `json:"strain_count"`
+	}
+	read := func() int {
+		resp := c.Get("/home/data")
+		defer testutil.DrainAndClose(resp)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&d))
+		require.NotNil(t, d.StrainCount)
+		return *d.StrainCount
+	}
+	assert.Equal(t, 0, read(), "a new install")
+	testutil.SeedStrain(t, db, testutil.SeedBreeder(t, db, "Seed Junky"), "Permanent Marker")
+	assert.Equal(t, 1, read())
+}

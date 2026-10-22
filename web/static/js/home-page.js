@@ -182,7 +182,12 @@
     function renderTents() {
         const tents = D.tents || [];
         if (!tents.length) {
-            $("hmTents").innerHTML = `<div class="hm-none"><i class="fa-solid fa-seedling"></i><p>${esc(t("hm_no_plants"))}</p>${LOGGED_IN ? `<a class="hm-btn" href="/plant/new"><i class="fa-solid fa-plus me-1"></i>${esc(t("hm_add_plant"))}</a>` : ""}</div>`;
+            // Every grow starts from a strain: with none yet, that's the first step.
+            const firstStrain = LOGGED_IN && D.strain_count === 0;
+            const acts = !LOGGED_IN ? "" : firstStrain
+                ? `<div class="hm-none-acts"><a class="hm-btn" href="/strains"><i class="fa-solid fa-seedling me-1"></i>${esc(t("hm_add_first_strain"))}</a><button type="button" class="hm-btn light" data-tour-start="1"><i class="fa-solid fa-play me-1"></i>${esc(t("hm_take_tour"))}</button></div>`
+                : `<a class="hm-btn" href="/plant/new"><i class="fa-solid fa-plus me-1"></i>${esc(t("hm_add_plant"))}</a>`;
+            $("hmTents").innerHTML = `<div class="hm-none"><i class="fa-solid fa-seedling"></i><p>${esc(t(firstStrain ? "hm_first_strain" : "hm_no_plants"))}</p>${acts}</div>`;
             return;
         }
         $("hmTents").innerHTML = tents.map(tent => {
