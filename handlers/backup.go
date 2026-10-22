@@ -459,6 +459,7 @@ func runSQLiteFileRestore(svc *BackupService, data []byte, store *config.Store) 
 	// Reload in-memory config from the newly reopened DB.
 	if reopenedDB, dbErr := model.GetDB(); dbErr == nil {
 		LoadSettings(reopenedDB, store)
+		repairRestoredLineage(reopenedDB)
 	} else {
 		fieldLogger.WithError(dbErr).Error("Failed to obtain DB after reopen for LoadSettings")
 	}
@@ -980,6 +981,7 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 
 	// Reload in-memory config from the newly restored DB.
 	LoadSettings(db, store)
+	repairRestoredLineage(db)
 }
 
 // ---------------------------------------------------------------------------

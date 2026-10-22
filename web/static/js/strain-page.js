@@ -31,7 +31,8 @@
     function node(n, small, extra) {
         const name = esc(n.parent_name);
         const sub = small ? `<small>${esc(small)}</small>` : "";
-        const scURL = "https://straincompass.com/en/strains?q=" + encodeURIComponent(n.parent_name);
+        // Brackets (from a cross, e.g. "(A x B)") make the search find nothing.
+        const scURL = "https://straincompass.com/en/strains?q=" + encodeURIComponent(n.parent_name.replace(/[()[\]{}]/g, " ").replace(/\s+/g, " ").trim());
         const scTitle = esc(fill(D.searchSc, { name: n.parent_name }));
         let link;
         if (n.parent_strain_id) {

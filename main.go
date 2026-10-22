@@ -80,6 +80,11 @@ func main() {
 	if err := handlers.SeedDefaultAdmin(db); err != nil {
 		logger.Log.WithError(err).Error("Error checking if default admin credentials are present")
 	}
+	if n, err := handlers.RepairLineageBrackets(db); err != nil {
+		logger.Log.WithError(err).Error("Failed to repair split parent strain names")
+	} else if n > 0 {
+		logger.Log.WithField("strains", n).Info("Repaired parent strain names split inside brackets")
+	}
 
 	// Construct the per-process configuration store and load DB-backed
 	// settings into it before any background work runs. The same store is
