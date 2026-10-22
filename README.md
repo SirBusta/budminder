@@ -7,6 +7,8 @@
 
 **A self-hosted cannabis grow journal.** Daily notes and photos for every plant, live sensors from AC Infinity, Ecowitt or Home Assistant, and your seed vault, all on your own hardware.
 
+Runs in **Docker** (preferred), for example on Unraid, a Synology NAS or a Raspberry Pi, or as a download for **Windows**, **macOS** and **Linux**.
+
 [![Latest release](https://img.shields.io/github/v/release/SirBusta/budminder?color=16a34a&label=release)](https://github.com/SirBusta/budminder/releases)
 [![Docker image](https://img.shields.io/badge/docker-ghcr.io%2Fsirbusta%2Fbudminder-16a34a?logo=docker&logoColor=white)](https://github.com/SirBusta/budminder/pkgs/container/budminder)
 [![License: MIT](https://img.shields.io/badge/license-MIT-16a34a)](LICENSE)
@@ -140,7 +142,10 @@ A complete evaluation suite for home harvests and dispensary pickups. Rate appea
 
 ## Install
 
-BudMinder runs in Docker. You need [Docker](https://docs.docker.com/get-docker/) with Compose.
+There are two ways to run BudMinder:
+
+- **In Docker (preferred):** on a home server or any computer with Docker, so BudMinder keeps running all the time. Follow the steps right below. You need [Docker](https://docs.docker.com/get-docker/) with Compose.
+- **As a program on your computer:** download it for Windows, macOS or Linux and run it. See **Without Docker** further down, with step-by-step guides for Linux and macOS.
 
 **1. Save this as `docker-compose.yml`** (or use [`docker-compose.sqlite.yml`](docker-compose.sqlite.yml) from this repository):
 
@@ -219,7 +224,7 @@ BudMinder has no window of its own: it runs in the background and you use it in 
 
 #### Linux, step by step
 
-1. **Pick the download.** Run `uname -m` in a terminal: `x86_64` means **budminder-linux-amd64** (most PCs), `aarch64` means **budminder-linux-arm64** (for example a Raspberry Pi). Download it from the [latest release](https://github.com/SirBusta/budminder/releases/latest).
+1. **Download BudMinder.** Open the [latest release](https://github.com/SirBusta/budminder/releases/latest) page and scroll down to **Assets**. Most computers need **budminder-linux-amd64**: click it to download. Only ARM computers, such as a Raspberry Pi, need **budminder-linux-arm64**. Not sure? Open a terminal and type `uname -m`: `x86_64` means amd64, `aarch64` means arm64.
 2. **Give it a folder.** Make a folder called `budminder` in your home folder and move the download into it. Your data will live in this folder too.
 3. **Make it runnable.** In a terminal:
 
@@ -263,7 +268,7 @@ BudMinder has no window of its own: it runs in the background and you use it in 
 
 #### macOS, step by step
 
-1. **Pick the download.** Open the Apple menu → **About This Mac**. If it lists an **Apple M** chip, download **budminder-macos-arm64**; if it lists an **Intel** processor, download **budminder-macos-amd64**. Both are on the [latest release](https://github.com/SirBusta/budminder/releases/latest).
+1. **Download BudMinder.** First check which Mac you have: open the Apple menu → **About This Mac**. Then open the [latest release](https://github.com/SirBusta/budminder/releases/latest) page and scroll down to **Assets**. If your Mac says **Apple M1, M2, M3 or M4** (or later), click **budminder-macos-arm64** to download it; if it says **Intel**, click **budminder-macos-amd64**.
 2. **Give it a folder.** In Finder, open your home folder, make a new folder called `BudMinder`, and move the download into it. Your data will live in this folder too.
 3. **Make it runnable.** Open **Terminal** (in Applications → Utilities) and run these two lines:
 
