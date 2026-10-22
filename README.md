@@ -239,9 +239,10 @@ BudMinder has no window of its own: it runs in the background and you use it in 
    ~/budminder/budminder-linux-amd64
    ```
 
+   When it's ready, a box at the end shows the address to open, and on the first run the sign-in. BudMinder also adds a **BudMinder** icon to your desktop and app menu.
 5. **Open it** at [http://localhost:8080](http://localhost:8080). Sign in with **admin** / **budminder**, and BudMinder asks you to choose a new password.
 6. **To stop it,** press **Ctrl+C** in that terminal, or close the terminal.
-7. **A shortcut (optional).** With BudMinder running, open it in Chrome, Chromium or Edge and install it from the browser's menu (in Chrome: **Cast, save and share → Install page as app**). You get a start-menu entry and a taskbar icon that open BudMinder in its own window. BudMinder itself still has to be running.
+7. **Next time, use the icon.** Double-click **BudMinder** on your desktop or in the app menu: it starts BudMinder in the background if needed and opens it in your browser. No terminal needed. To stop it, right-click the icon → **Stop BudMinder**. The first time, your desktop may ask whether to trust the new icon: allow it. If you move the `budminder` folder, start the program once from the terminal to update the icon.
 8. **Start it with the computer (optional).** Instead of steps 4 and 6, let your system run it in the background:
 
    ```bash

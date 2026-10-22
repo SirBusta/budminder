@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"embed"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -23,6 +25,7 @@ import (
 	"isley/env"
 	"isley/handlers"
 	"isley/homeassistant"
+	"isley/launcher"
 	"isley/logger"
 	"isley/model"
 	"isley/utils"
@@ -70,6 +73,30 @@ func main() {
 	port := env.Get("PORT")
 	if port == "" {
 		port = "8080"
+	}
+
+	// The desktop icon's jobs (launcher.MakeIcons): --stop stops the BudMinder
+	// running from this folder; --open opens the browser, starting BudMinder
+	// first when it isn't running yet.
+	openWhenReady := false
+	for _, a := range os.Args[1:] {
+		switch a {
+		case launcher.StopFlag:
+			if err := launcher.Stop("data"); err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			fmt.Println("BudMinder is stopping.")
+			return
+		case launcher.OpenFlag:
+			if launcher.Running(port) {
+				if err := launcher.OpenBrowser("http://localhost:" + port); err != nil {
+					logger.Log.WithError(err).Error("Couldn't open the browser")
+				}
+				return
+			}
+			openWhenReady = true
+		}
 	}
 
 	model.MigrateDB()
@@ -238,13 +265,31 @@ func main() {
 		Handler: engine,
 	}
 
+	listener, err := net.Listen("tcp", srv.Addr)
+	if err != nil {
+		logger.Log.WithError(err).Fatal("HTTP server error")
+	}
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := srv.Serve(listener); err != nil && err != http.ErrServerClosed {
 			logger.Log.WithError(err).Fatal("HTTP server error")
 		}
 	}()
 
 	logger.Log.WithField("port", port).Info("Server started")
+
+	// The downloadable program: the welcome box, the desktop icon, and the
+	// browser when the icon started BudMinder. Not in Docker or the demo.
+	if !demoMode && !launcher.InDocker() {
+		launcher.WritePID("data")
+		defer launcher.RemovePID("data")
+		time.Sleep(1500 * time.Millisecond) // let the startup jobs log first, so the box ends up last
+		welcome(db, port)
+		if openWhenReady {
+			if err := launcher.OpenBrowser("http://localhost:" + port); err != nil {
+				logger.Log.WithError(err).Error("Couldn't open the browser")
+			}
+		}
+	}
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -263,6 +308,29 @@ func main() {
 	}
 
 	logger.Log.Info("Server exited cleanly")
+}
+
+// welcome makes the desktop icon on first run (Linux) and prints the welcome
+// box: where to open BudMinder and, while it still works, the first sign-in.
+func welcome(db *sql.DB, port string) {
+	w := launcher.Welcome{Port: port, LANAddress: launcher.LANAddress(), FromConsole: launcher.IsTerminal(os.Stdout)}
+	if force, _ := handlers.GetSetting(db, "force_password_change"); force == "true" {
+		w.Username, _ = handlers.GetSetting(db, "auth_username")
+		w.Password = handlers.DefaultAdminPassword
+	}
+	if exe, err := os.Executable(); err == nil {
+		if real, err := filepath.EvalSymlinks(exe); err == nil {
+			exe = real
+		}
+		if icon, err := embeddedFiles.ReadFile("web/static/img/brand/budminder-256.png"); err == nil {
+			made, err := launcher.MakeIcons(exe, "data", icon)
+			if err != nil {
+				logger.Log.WithError(err).Warn("Couldn't add the desktop icon")
+			}
+			w.IconsMade = made
+		}
+	}
+	fmt.Print(launcher.Box(w, w.FromConsole))
 }
 
 func getVersion() string {
