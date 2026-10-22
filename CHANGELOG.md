@@ -25,8 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Changed
-- **Demo: the Plants list opens "Oldest first"**, so the two showcase plants
-  are at the top. Visitors can still pick another sort.
 
 ### Fixed
 
@@ -35,6 +33,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ### Security
+
+## [1.5.0] - 2026-10-22
+
+### Added
+- **A short guided tour for new users.** Four tips (Strains, Stage track,
+  Notebook, Sensors) with pictures whose lines fill in one at a time, a ring
+  around the spot each line describes, and short clips that play one step at
+  a time. A new install is asked once on Today whether it wants the tour;
+  existing installs are never asked. Take it again any time, or jump to one
+  tip, from the new "Take the tour" card on Help's Welcome page or the link at
+  the top of Help's side menu. In English, German, Spanish and French.
+- **The live demo offers the tour** to each visitor once, on Today. The answer
+  stays in the visitor's browser.
+
+### Changed
+- **Demo: the Plants list opens "Oldest first"**, so the two showcase plants
+  are at the top. Visitors can still pick another sort.
+- **README:** links the live demo and mentions the tour.
+
+### Fixed
+- **Settings:** the Integrations section's description now mentions Home
+  Assistant.
 
 ## [1.4.0] - 2026-10-21
 
