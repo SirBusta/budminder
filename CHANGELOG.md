@@ -34,6 +34,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [1.5.2] - 2026-10-22
+
+### Added
+- **README:** step-by-step install guides for Linux and macOS: which file to
+  download, starting and stopping, a shortcut installed from the browser,
+  starting with the computer, and updating.
+
+### Fixed
+- **The downloadable programs keep their data next to them.** Started from a
+  terminal in another folder, a shortcut, or a double-click in macOS Finder,
+  BudMinder used to make new, empty `data` and `uploads` folders wherever it
+  was started. It now always runs in its own folder. An install that has
+  always kept its data elsewhere keeps using it, and Docker is unaffected.
+
 ## [1.5.1] - 2026-10-22
 
 ### Changed
