@@ -27,6 +27,7 @@ import (
 	"isley/model"
 	"isley/utils"
 	"isley/watcher"
+	"isley/workdir"
 )
 
 //go:embed model/migrations/sqlite/*.sql model/migrations/postgres/*.sql web/templates/**/*.html web/static/**/* web/manual/* web/manual/en/* utils/fonts/* VERSION
@@ -46,7 +47,17 @@ var trustedProxies = []string{
 }
 
 func main() {
+	// Run in the program's own folder, so data, uploads and logs sit next to
+	// it however it was started (workdir explains when it stays put).
+	where, whereErr := workdir.Apply()
 	logger.InitLogger()
+	if whereErr != nil {
+		logger.Log.WithError(whereErr).Warn("Couldn't move to the program's folder; data stays in the current folder")
+	} else if where.Moved {
+		logger.Log.Info("Running in the program's folder: ", where.Dir)
+	} else if where.Reason != "" {
+		logger.Log.Info("Running in ", where.Dir, " (", where.Reason, ")")
+	}
 
 	version := fmt.Sprintf("BudMinder %s", getVersion())
 	logger.Log.Info("Starting application version:", version)
