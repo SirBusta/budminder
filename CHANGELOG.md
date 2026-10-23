@@ -24,6 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [1.5.4] - 2026-10-23
+
+### Added
+
 - README: **Using BudMinder away from home**, with Tailscale step by step, and why not to forward a port.
 
 ### Changed
