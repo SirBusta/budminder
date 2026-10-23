@@ -4,6 +4,7 @@ package routes
 // view off (registered with the public routes in app/routes.go).
 
 import (
+	"io/fs"
 	"net/http"
 	"net/url"
 
@@ -11,6 +12,7 @@ import (
 
 	"isley/handlers"
 	"isley/logger"
+	"isley/model"
 	"isley/utils"
 )
 
@@ -29,7 +31,23 @@ func AddManualRoutes(r *gin.RouterGroup, version string) {
 	show := func(c *gin.Context, m *handlers.Manual, s *handlers.ManualSection) {
 		// The tour starts from the Welcome card here; only Today asks about it.
 		translations := utils.TranslationService.GetTranslations(utils.GetLanguage(c))
+		// About BudMinder, at the end of Welcome: version, database, credits
+		// and the license (which the downloadable programs need to carry).
+		var about gin.H
+		if s == m.Sections[0] {
+			license, _ := fs.ReadFile(handlers.AssetsFromContext(c), "LICENSE")
+			v := handlers.Version
+			if v == "" {
+				v = "dev"
+			}
+			db := "SQLite"
+			if model.IsPostgres() {
+				db = "PostgreSQL"
+			}
+			about = gin.H{"version": v, "db": db, "license": string(license)}
+		}
 		smokePage(c, version, "views/manual.html", s.Title+" · Help", gin.H{
+			"about":  about,
 			"tour":   handlers.TourPageData(c, false, translations),
 			"manual": m,
 			"sec":    s,

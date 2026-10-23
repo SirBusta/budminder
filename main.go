@@ -34,7 +34,7 @@ import (
 	"isley/workdir"
 )
 
-//go:embed model/migrations/sqlite/*.sql model/migrations/postgres/*.sql web/templates/**/*.html web/static/**/* web/manual/* web/manual/en/* utils/fonts/* VERSION
+//go:embed model/migrations/sqlite/*.sql model/migrations/postgres/*.sql web/templates/**/*.html web/static/**/* web/manual/* web/manual/en/* utils/fonts/* VERSION LICENSE
 var embeddedFiles embed.FS
 
 // trustedProxies trusts loopback, RFC-1918 private ranges, and the IPv6

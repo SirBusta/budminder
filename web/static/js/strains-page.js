@@ -211,7 +211,7 @@
         if (!loaded) { out.innerHTML = `<div class="sp-empty"><span class="spinner-border spinner-border-sm"></span></div>`; return; }
         if (!list.length) {
             const anyFilter = filter.q || filter.breeder || filter.type || filter.seedType;
-            out.innerHTML = `<div class="sp-empty">${iconHTML(TABS[tab].icon)}${esc(tr(anyFilter ? "sp_no_match" : tab === "vault" ? "sp_empty_vault" : tab === "wanted" ? "sp_empty_wanted" : "sp_empty_all"))}</div>`;
+            out.innerHTML = `<div class="sp-empty">${iconHTML(TABS[tab].icon)}${esc(tr(anyFilter ? "sp_no_match" : tab === "vault" ? (STRAINS.length ? "sp_empty_vault" : "sp_empty_vault_first") : tab === "wanted" ? "sp_empty_wanted" : "sp_empty_all"))}</div>`;
             return;
         }
         out.innerHTML = layout === "cards" ? `<div class="sp-grid">${list.map(card).join("")}</div>` : table(list);

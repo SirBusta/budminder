@@ -1,7 +1,7 @@
 package handlers_test
 
-// The BudMinder name and logo: page title, header wordmark, footer credit
-// to Isley, the icons, the web app manifest, and the first-run login.
+// The BudMinder name and logo: page title, header wordmark, the credit
+// to Isley (Help, Welcome → About), the icons, the web app manifest, and the first-run login.
 
 import (
 	"encoding/json"
@@ -27,9 +27,17 @@ func TestBranding_Pages(t *testing.T) {
 	assert.Contains(t, body, `src="/static/img/brand/budminder-wordmark-dark.svg"`, "and its dark version")
 	assert.Contains(t, body, `<link rel="manifest" href="/static/manifest.json">`)
 	assert.Contains(t, body, `href="/static/img/brand/apple-touch-icon.png"`)
-	assert.Contains(t, body, `href="https://github.com/dwot/isley"`, "footer credits Isley")
-	assert.Contains(t, body, "Based on")
+	assert.NotContains(t, body, "<footer", "no footer on every page: the credits are in Help")
 	assert.NotContains(t, body, "isley_logo.png", "old logo gone")
+
+	// Help, Welcome → About BudMinder: version, credit to Isley and the license.
+	welcome := e.page(t, "/manual")
+	assert.Contains(t, welcome, `id="mnAbout"`)
+	assert.Contains(t, welcome, `href="https://github.com/dwot/isley"`, "credits Isley")
+	assert.Contains(t, welcome, "Based on")
+	assert.Contains(t, welcome, "Permission is hereby granted", "carries the MIT license text")
+	assert.Contains(t, welcome, "Copyright (c) 2024 dwot")
+	assert.NotContains(t, e.page(t, "/manual/plant-page"), `id="mnAbout"`, "only on Welcome")
 
 	resp := testutil.NewTestServer(t, testutil.NewTestDB(t)).NewClient(t).Get("/login")
 	login, err := io.ReadAll(resp.Body)

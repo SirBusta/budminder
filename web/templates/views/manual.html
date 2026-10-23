@@ -49,6 +49,14 @@
         </div>
         {{ end }}
         {{ .sec.HTML }}
+        {{ with .about }}
+        <section class="mn-about" aria-labelledby="mnAbout">
+            <h2 id="mnAbout">{{ $.lcl.mn_about }}</h2>
+            <p>{{ $.lcl.mn_about_version }} <b>{{ .version }}</b> · {{ $.lcl.mn_about_db }} {{ .db }}</p>
+            <p>{{ $.lcl.ft_based_on }} <a href="https://github.com/dwot/isley" target="_blank" rel="noopener">Isley</a> {{ $.lcl.ft_by }} dwot. {{ $.lcl.mn_about_source }} <a href="https://github.com/SirBusta/budminder" target="_blank" rel="noopener">github.com/SirBusta/budminder</a></p>
+            {{ if .license }}<details><summary>{{ $.lcl.mn_about_license }}</summary><pre>{{ .license }}</pre></details>{{ end }}
+        </section>
+        {{ end }}
         <div class="mn-pn">
             {{ with .prev }}<a href="/manual/{{ .Slug }}"><small>{{ $.lcl.mn_previous }}</small>« {{ .Title }}</a>{{ else }}<span></span>{{ end }}
             {{ with .next }}<a class="next" href="/manual/{{ .Slug }}"><small>{{ $.lcl.mn_next }}</small>{{ .Title }} »</a>{{ end }}
