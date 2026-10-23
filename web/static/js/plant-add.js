@@ -32,7 +32,17 @@ document.addEventListener("DOMContentLoaded", () => {
         newZoneInput.classList.toggle("d-none", zoneSelect.value !== "new");
     });
 
+    // "Decrease seed count by 1" only means something for a strain with seeds
+    // in the Seed Vault: hidden (and unticked) for any other.
+    function syncSeedBox() {
+        const opt = strainSelect.selectedOptions[0];
+        const hasSeeds = !!opt && Number(opt.dataset.seeds || 0) > 0;
+        document.getElementById("seedBox").classList.toggle("d-none", !hasSeeds);
+        if (!hasSeeds) document.getElementById("decrementSeedCount").checked = false;
+    }
+
     strainSelect.addEventListener("change", () => {
+        syncSeedBox();
         formHelpers.clearFieldError(strainAC.input);
         // Load parent plants for selected strain
         if (strainSelect.value) {
@@ -142,6 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (params.get("name")) document.getElementById("plantName").value = params.get("name");
     if (params.get("use_seed") === "1") document.getElementById("decrementSeedCount").checked = true;
+    syncSeedBox();
     if (draft && strainSelect.value) {
         const label = strainAC.input.value;
         uiMessages._ready().then(() => {

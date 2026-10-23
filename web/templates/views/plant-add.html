@@ -81,7 +81,7 @@
                                 <select class="form-select" id="strainSelect" required data-ac-did-you-mean="{{ .lcl.sf_did_you_mean }}" data-ac-placeholder="{{ .lcl.sf_search_placeholder }}">
                                     <option value="" disabled selected>Select strain...</option>
                                     {{ range .strains }}
-                                    <option value="{{ .ID }}" data-name="{{ .Name }}">{{ .Name }} ({{ .Breeder }})</option>
+                                    <option value="{{ .ID }}" data-name="{{ .Name }}" data-seeds="{{ .SeedCount }}">{{ .Name }} ({{ .Breeder }})</option>
                                     {{ end }}
                                 </select>
                             </div>
@@ -125,8 +125,8 @@
                                 </div>
                             </div>
 
-                            <!-- Decrement Seed Count Checkbox -->
-                            <div class="col-md-6">
+                            <!-- Decrement Seed Count Checkbox: only for a strain with seeds in the vault (plant-add.js) -->
+                            <div class="col-md-6 d-none" id="seedBox">
                                 <div class="form-check mt-2">
                                     <input type="checkbox" class="form-check-input" id="decrementSeedCount">
                                     <label class="form-check-label" for="decrementSeedCount">{{ .lcl.decrement_seed_count }}</label>

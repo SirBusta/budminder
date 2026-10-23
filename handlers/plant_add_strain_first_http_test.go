@@ -73,3 +73,22 @@ func TestPlantEditPage_StrainFirst(t *testing.T) {
 	assert.NotContains(t, body, `id="newStrainCard"`)
 	assert.NotContains(t, body, `id="breederSelect"`)
 }
+
+// "Decrease seed count by 1" is shown only for a strain with seeds in the
+// vault (plant-add.js reads data-seeds; the box starts hidden).
+func TestPlantAddPage_SeedCounts(t *testing.T) {
+	t.Parallel()
+	var stocked, wanted int
+	e := strainFirstEnv(t, func(db *sql.DB) {
+		b := testutil.SeedBreeder(t, db, "Seed Breeder")
+		stocked = testutil.SeedStrain(t, db, b, "Stocked Kush")
+		wanted = testutil.SeedStrain(t, db, b, "Wanted Haze")
+		testutil.MustExec(t, db, `UPDATE strain SET seed_count = 4 WHERE id = $1`, stocked)
+		testutil.MustExec(t, db, `UPDATE strain SET seed_count = 0, wanted = true WHERE id = $1`, wanted)
+	})
+
+	body := e.page(t, "/plant/new")
+	assert.Contains(t, body, fmt.Sprintf(`value="%d" data-name="Stocked Kush" data-seeds="4"`, stocked))
+	assert.Contains(t, body, fmt.Sprintf(`value="%d" data-name="Wanted Haze" data-seeds="0"`, wanted))
+	assert.Contains(t, body, `class="col-md-6 d-none" id="seedBox"`, "hidden until a strain with seeds is chosen")
+}
