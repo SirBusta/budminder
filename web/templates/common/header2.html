@@ -6,25 +6,26 @@
 <a class="skip-to-content" href="#main-content">Skip to content</a>
 {{ if demoMode }}<div class="bm-demo-banner"><i class="fa-solid fa-flask me-1"></i>{{ .lcl.demo_banner }}</div>{{ end }}
 <header class="d-flex flex-wrap justify-content-between align-items-center py-2 mb-2 border-bottom container-xxl">
-    <!-- Logo and Title -->
+    <!-- Logo and Title, with the "Update available" pill next to it when a
+         newer release is out (handlers.Updates); the pill opens the update
+         window (update.js). -->
+    <div class="d-flex align-items-center gap-2">
     <a href="/" class="d-flex align-items-center text-decoration-none link-body-emphasis">
         <img src="/static/img/brand/budminder-wordmark.svg" alt="BudMinder" class="brand-wm brand-light">
         <img src="/static/img/brand/budminder-wordmark-dark.svg" alt="BudMinder" class="brand-wm brand-dark">
     </a>
+    {{ if .loggedIn }}{{ with updateAvailable }}
+    <button type="button" class="bm-update-pill" id="bmUpdateBtn" title="{{ $.lcl.upd_title }}" aria-label="{{ $.lcl.upd_title }}">
+        <span class="dot" aria-hidden="true"></span><span class="lbl-long">{{ $.lcl.upd_new_release }}</span><span class="lbl-short">{{ $.lcl.upd_pill_short }}</span>
+    </button>
+    {{ end }}{{ end }}
+    </div>
 
     <!-- Navigation Links -->
     <!-- Top menu: icon with its name underneath; the page you're on is green
          with a bar on the header line, the others gray (mockup M2, option F). Home, Plants and Sensors are
          drawn SVGs (Plants reuses Font Awesome Free's cannabis leaf). -->
     <ul class="nav isley-nav">
-        {{ if .loggedIn }}{{ with updateAvailable }}
-        <!-- A newer release (handlers.Updates): opens the update window (update.js). -->
-        <li class="nav-item">
-            <button type="button" class="nav-link bm-update-btn" id="bmUpdateBtn" title="{{ $.lcl.upd_title }}" aria-label="{{ $.lcl.upd_title }}">
-                <i class="fa-solid fa-circle-arrow-up" aria-hidden="true"></i><span class="nav-lbl">{{ $.lcl.upd_new_release }}</span>
-            </button>
-        </li>
-        {{ end }}{{ end }}
         <li class="nav-item">
             <a href="/" class="nav-link{{ if eq .currentPath "/" }} active{{ end }}"{{ if eq .currentPath "/" }} aria-current="page"{{ end }} title="{{ .lcl.title_home }}" aria-label="{{ .lcl.title_home }}">
                 <svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="f" fill-rule="evenodd" d="M5.5 10.6V21h4.4v-5.2h4.2V21h4.4V10.6L12 5z"/><path class="l" d="M2.8 11.6 12 3.8l9.2 7.8"/></svg><span class="nav-lbl">{{ .lcl.title_home }}</span>

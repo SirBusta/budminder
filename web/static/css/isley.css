@@ -4258,11 +4258,16 @@ body.bm-tour-open { overflow: hidden; }
 .mn-about summary { cursor: pointer; }
 
 /* The "New release" item in the top menu (header2.html, update.js) */
-header .isley-nav .bm-update-btn { border: 0; background: none; color: #16a34a; }
-header .isley-nav .bm-update-btn i { animation: bm-update-nudge 2.4s ease-in-out 3; }
-header .isley-nav .bm-update-btn .nav-lbl { font-weight: 700; }
-@keyframes bm-update-nudge { 0%, 70%, 100% { transform: translateY(0); } 80% { transform: translateY(-3px); } 90% { transform: translateY(0); } }
-@media (prefers-reduced-motion: reduce) { header .isley-nav .bm-update-btn i { animation: none; } }
+/* "Update available" pill next to the logo: soft amber, so it doesn't look
+   like a menu item; "Update" on narrow screens. */
+.bm-update-pill { display: inline-flex; align-items: center; gap: .4rem; border: 1px solid #fcd34d; background: #fef3c7; color: #92400e; border-radius: 99px; font-size: .78rem; font-weight: 600; padding: .2rem .7rem; white-space: nowrap; line-height: 1.3; }
+.bm-update-pill:hover { background: #fde68a; }
+.bm-update-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: #d97706; }
+.bm-update-pill .lbl-short { display: none; }
+@media (max-width: 575.98px) { .bm-update-pill .lbl-long { display: none; } .bm-update-pill .lbl-short { display: inline; } }
+[data-bs-theme="dark"] .bm-update-pill { background: rgba(245, 158, 11, .15); border-color: rgba(252, 211, 77, .45); color: #fcd34d; }
+[data-bs-theme="dark"] .bm-update-pill:hover { background: rgba(245, 158, 11, .25); }
+[data-bs-theme="dark"] .bm-update-pill .dot { background: #f59e0b; }
 .bm-upd-vers { display: grid; grid-template-columns: auto 1fr; gap: .25rem 1rem; margin: 0 0 1rem; }
 .bm-upd-vers dt { font-weight: 500; color: var(--bs-secondary-color); }
 .bm-upd-vers dd { margin: 0; font-weight: 700; }

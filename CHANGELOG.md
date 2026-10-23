@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The new-release notice is now an amber **Update available** pill next to the BudMinder logo (was **New release** among the menu items, too easy to mistake for one). It shows "Update" on phones.
+
 ### Fixed
 
 ## [1.5.4] - 2026-10-23

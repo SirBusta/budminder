@@ -1,4 +1,4 @@
-// The "New release" window (header2.html, handlers/updates.go): your version
+// The "Update available" window (header2.html, handlers/updates.go): your version
 // and the new one, what's new, and Update now for the downloadable
 // programs: install, wait for BudMinder to restart, then reload.
 (() => {
