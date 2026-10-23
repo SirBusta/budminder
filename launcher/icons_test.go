@@ -46,12 +46,22 @@ func TestMakeIcons(t *testing.T) {
 		}
 	}
 
+	if !HaveIcons(exe, data) {
+		t.Error("HaveIcons: the icon from this run isn't found")
+	}
+
 	// Deleted icons stay deleted...
 	if err := os.Remove(filepath.Join(desk, "budminder.desktop")); err != nil {
 		t.Fatal(err)
 	}
 	if made, _, _ := MakeIcons(exe, data, []byte("png")); made {
 		t.Error("icons made again after the user deleted them")
+	}
+	if err := os.Remove(filepath.Join(home, ".local", "share", "applications", "budminder.desktop")); err != nil {
+		t.Fatal(err)
+	}
+	if HaveIcons(exe, data) {
+		t.Error("HaveIcons: the app-menu icon was deleted, so there's none to point at")
 	}
 	// ...until the program moves, when they're made to point at the new place.
 	if made, _, _ := MakeIcons("/home/dave/budminder/budminder-linux-amd64", data, []byte("png")); !made {

@@ -73,6 +73,21 @@ func MakeIcons(exe, dataDir string, icon []byte) (made, onDesktop bool, err erro
 	return true, onDesktop, os.WriteFile(marker, []byte(exe+"\n"), 0o644)
 }
 
+// HaveIcons reports whether this program's icon from an earlier run is still
+// in the app menu (the user may have deleted it).
+func HaveIcons(exe, dataDir string) bool {
+	b, err := os.ReadFile(filepath.Join(dataDir, markerFile))
+	if err != nil || strings.TrimSpace(string(b)) != exe {
+		return false
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(filepath.Join(home, ".local", "share", "applications", "budminder.desktop"))
+	return err == nil
+}
+
 // DesktopEntry is the icon's .desktop file: double-click opens BudMinder
 // (starting it first if needed); its right-click menu can stop it.
 func DesktopEntry(exe, icon string) string {

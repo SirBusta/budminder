@@ -30,6 +30,7 @@ type Welcome struct {
 	Username    string // the first sign-in, shown only while it still works
 	Password    string
 	IconsMade   bool // the app-menu icon was just added
+	HasIcon     bool // an icon from an earlier run is in place
 	IconDesktop bool // ...and one on the desktop
 	FromConsole bool // started in a terminal (the stop hint only makes sense there)
 }
@@ -51,14 +52,20 @@ func Box(w Welcome, color bool) string {
 			"  password:  "+w.Password,
 			"You'll then be asked to choose a new password.")
 	}
-	lines = append(lines, "", "Tip: bookmark the page to open BudMinder quickly.")
-	if w.IconsMade {
+	// How to get back to it next time: the icon where there is one, else a bookmark.
+	lines = append(lines, "")
+	switch {
+	case w.IconsMade:
 		where := "app menu"
 		if w.IconDesktop {
 			where = "desktop and app menu"
 		}
 		lines = append(lines, "A BudMinder icon was added to your "+where+".",
-			"Double-click it to start BudMinder and open it next time.")
+			"Next time, double-click it to start BudMinder and open it.")
+	case w.HasIcon:
+		lines = append(lines, "Next time, double-click the BudMinder icon to start and open it.")
+	default:
+		lines = append(lines, "Tip: bookmark the page to open BudMinder quickly.")
 	}
 	if w.FromConsole {
 		lines = append(lines, "To stop BudMinder, press Ctrl+C or close this window.")

@@ -328,6 +328,7 @@ func welcome(db *sql.DB, port string) {
 				logger.Log.WithError(err).Warn("Couldn't add the desktop icon")
 			}
 			w.IconsMade, w.IconDesktop = made, onDesktop
+			w.HasIcon = !made && launcher.HaveIcons(exe, "data")
 		}
 	}
 	fmt.Print(launcher.Box(w, w.FromConsole))

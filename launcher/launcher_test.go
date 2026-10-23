@@ -31,6 +31,17 @@ func TestBox(t *testing.T) {
 	if strings.Contains(later, "password") || strings.Contains(later, "phone") || strings.Contains(later, "Ctrl+C") {
 		t.Errorf("after the password is changed (no LAN address, no terminal) the box shows too much:\n%s", later)
 	}
+	if !strings.Contains(later, "bookmark") {
+		t.Errorf("no icon: the box should suggest a bookmark:\n%s", later)
+	}
+	made := Box(Welcome{Port: "8080", IconsMade: true, IconDesktop: true}, false)
+	if strings.Contains(made, "bookmark") || !strings.Contains(made, "desktop and app menu") {
+		t.Errorf("icon just made: no bookmark tip, and say where it went:\n%s", made)
+	}
+	again := Box(Welcome{Port: "8080", HasIcon: true}, false)
+	if strings.Contains(again, "bookmark") || !strings.Contains(again, "double-click the BudMinder icon") {
+		t.Errorf("icon in place: point at it instead of a bookmark:\n%s", again)
+	}
 	if !strings.Contains(later, "http://localhost:9000") {
 		t.Errorf("box uses the wrong port:\n%s", later)
 	}
