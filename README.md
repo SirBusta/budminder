@@ -295,6 +295,17 @@ BudMinder has no window of its own: it runs in the background and you use it in 
 8. **Start it when you sign in (optional).** Open System Settings → **General → Login Items**, click **+** under "Open at Login", and choose the program in your `BudMinder` folder. It then opens in a Terminal window each time you sign in.
 9. **Updating.** Stop BudMinder, replace the program file with the new download (keep the same name), repeat step 3 for the new file, and start it again. Your data stays in the `data` and `uploads` folders.
 
+#### Nothing is installed: it's a portable program
+
+There's no installer, no admin rights needed, and nothing goes into Program Files or the Windows registry, so BudMinder doesn't appear in your list of installed apps. Everything it creates is a plain file you can see:
+
+- **Its folder** (for example `C:\Users\<you>\BudMinder` or `~/budminder`), holding the program, `data` (the database), `uploads` (your photos) and `logs`.
+- **Its shortcuts:** on Windows, **BudMinder** on the desktop plus **BudMinder** and **Stop BudMinder** in the Start menu; on Linux, a `budminder.desktop` file on the desktop and one in `~/.local/share/applications`.
+
+**Moving to another computer:** stop BudMinder, copy the whole folder over, and start the program there once. It makes new shortcuts.
+
+**Removing it:** stop BudMinder, then delete its folder and its shortcuts. Deleting the folder deletes your grow journal too, so make a backup first (**Settings → Backup & data**) if you might want it later.
+
 </details>
 
 <details>
