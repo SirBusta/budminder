@@ -102,3 +102,25 @@ func TestPNGToICO(t *testing.T) {
 		t.Errorf("bad icon header: % x", ico[:22])
 	}
 }
+
+func TestNote_WriteAndRead(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("APPDATA", home)         // Windows
+	t.Setenv("XDG_CONFIG_HOME", home) // Linux
+	t.Setenv("HOME", home)            // macOS
+	if _, ok := ReadNote(); ok {
+		t.Fatal("no note yet")
+	}
+	exe := filepath.Join(home, "BudMinder", "budminder.exe")
+	if err := WriteNote(exe, "1.5.3"); err != nil {
+		t.Fatal(err)
+	}
+	n, ok := ReadNote()
+	if !ok || n.Exe != exe || n.Version != "1.5.3" {
+		t.Errorf("ReadNote = %+v, %v", n, ok)
+	}
+	p, _ := NotePath()
+	if !strings.HasPrefix(p, home) {
+		t.Errorf("note at %s, want under %s", p, home)
+	}
+}

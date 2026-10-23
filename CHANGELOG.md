@@ -24,7 +24,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- New releases: **New release** appears in the top menu when a new version is out, with what's new. The downloadable programs can **Update now**: BudMinder backs up the database, installs the new version and restarts by itself. Docker installs are told how to update. Settings → Updates turns the check off.
+- Updating from a download: double-click a newer download (for example in Downloads) and BudMinder offers to update your existing install, wherever it is. It stops BudMinder, backs up the database, swaps the program and starts it again; afterwards the download can be deleted. An older or the same download just opens your BudMinder. BudMinder remembers its folder in a small note: `%AppData%\BudMinder\home.txt` (Windows), `~/.config/budminder/home` (Linux), `~/Library/Application Support/BudMinder/home` (macOS).
+- Downloadable programs: a welcome box when BudMinder is ready (where to open it, the first sign-in), and icons: desktop and app menu on Linux, desktop and Start menu on Windows, plus **Stop BudMinder**.
+- Windows and Linux: started from Downloads or OneDrive, BudMinder offers to set itself up in a folder of its own.
+
 ### Changed
+
+- Today, on a new install: start with **Add your first strain** and **Take the tour** instead of Add plant.
+- Add Plant: "Decrease seed count by 1" shows only for a strain with seeds in the Seed Vault.
+- The footer moved into Help (Welcome → About), with the license.
+- Clearer Seed Vault messages when it's empty.
+- Tour wording for adding a strain and starting a grow.
+- README: Docker (preferred) or a download for Windows, macOS or Linux, with step-by-step guides and a note that the program is portable.
 
 ### Fixed
 

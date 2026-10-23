@@ -107,7 +107,7 @@ func main() {
 				}
 			}
 			openWhenReady = true
-		case launcher.BackgroundFlag, launcher.InstalledFromFlag:
+		case launcher.BackgroundFlag, launcher.InstalledFromFlag, launcher.UpdatedFromFlag:
 			openWhenReady = true
 		case launcher.RestartedFlag:
 			// back after an update: the browser page is already open and waiting
@@ -331,6 +331,9 @@ func main() {
 			defer ctl.Close()
 			stopRequested = ctl.Stop
 		}
+		if _, dbFileSet := env.Lookup("DB_FILE"); !dbFileSet && where.Reason != "development build" {
+			writeNote()
+		}
 		time.Sleep(1500 * time.Millisecond) // let the startup jobs log first, so the box ends up last
 		welcome(db, port)
 		if openWhenReady {
@@ -390,14 +393,40 @@ func relaunch() {
 	}
 }
 
-// firstRunHome: a program started from Downloads or OneDrive with no data
-// there yet asks for a proper folder, copies itself into it and runs from
-// there (launcher.ChooseHome). Cancel carries on here, with a warning.
+// firstRunHome: a download double-clicked where it has no data of its own.
+// When the note (launcher.NotePath) names an install elsewhere, a newer
+// download offers to update it and an older or the same one opens it.
+// Otherwise a program started from Downloads or OneDrive asks for a proper
+// folder, copies itself into it and runs from there (launcher.ChooseHome).
+// Cancel carries on here, with a warning.
 func firstRunHome() {
 	exe := exePath()
 	_, dbFileSet := env.Lookup("DB_FILE")
-	if exe == "" || len(os.Args) > 1 || dbFileSet || env.Get("DEMO") != "" || launcher.InDocker() {
+	if exe == "" || len(os.Args) > 1 || dbFileSet || env.Get("DEMO") != "" || launcher.InDocker() ||
+		strings.Contains(filepath.ToSlash(exe), "/go-build") {
 		return
+	}
+	here, _ := os.Getwd()
+	note, ok := launcher.ReadNote()
+	exists := func(p string) bool { _, err := os.Stat(p); return err == nil }
+	switch launcher.Decide(exe, here, getVersion(), note, ok, updates.Newer, exists) {
+	case launcher.PlanUpdate:
+		if launcher.ConfirmUpdate(filepath.Dir(note.Exe), note.Version, getVersion()) {
+			fmt.Println("Updating BudMinder in", filepath.Dir(note.Exe), "...")
+			if err := launcher.UpdateInstall(exe, note, getVersion()); err != nil {
+				fmt.Println("The update didn't work, and your BudMinder is unchanged:", err)
+				waitForEnter()
+				os.Exit(1)
+			}
+			os.Exit(launcher.RunUpdated(note.Exe, exe))
+		}
+		fmt.Println("Nothing was changed. Start BudMinder with its icon as usual.")
+		os.Exit(0)
+	case launcher.PlanOpen:
+		fmt.Println("BudMinder", note.Version, "is installed in", filepath.Dir(note.Exe), "- opening that one.")
+		if err := launcher.OpenInstalled(note.Exe); err == nil {
+			os.Exit(0)
+		}
 	}
 	dir := filepath.Dir(exe)
 	risky := launcher.RiskyFolder(dir)
@@ -419,14 +448,38 @@ func firstRunHome() {
 	os.Exit(launcher.RunInstalled(installed, exe))
 }
 
-// installedFrom is the download this copy was set up from (--installed-from).
-func installedFrom() string {
+// argValue is the value after flag on the command line ("" when absent).
+func argValue(flag string) string {
 	for i, a := range os.Args {
-		if a == launcher.InstalledFromFlag && i+1 < len(os.Args) {
+		if a == flag && i+1 < len(os.Args) {
 			return os.Args[i+1]
 		}
 	}
 	return ""
+}
+
+// waitForEnter keeps a double-clicked window open long enough to read it.
+func waitForEnter() {
+	if launcher.IsTerminal(os.Stdin) {
+		fmt.Print("Press Enter to close this window.")
+		_, _ = fmt.Scanln()
+	}
+}
+
+// writeNote records this program in the note, so a later download finds it:
+// only a real install, with its database next to it and not in Downloads
+// or OneDrive.
+func writeNote() {
+	exe := exePath()
+	if exe == "" || launcher.RiskyFolder(filepath.Dir(exe)) != "" {
+		return
+	}
+	if _, err := os.Stat(filepath.Join(filepath.Dir(exe), "data", "isley.db")); err != nil {
+		return
+	}
+	if err := launcher.WriteNote(exe, getVersion()); err != nil {
+		logger.Log.WithError(err).Warn("Couldn't write the install note")
+	}
 }
 
 // exePath is this program's file, links followed.
@@ -445,7 +498,7 @@ func exePath() string {
 // prints the welcome box: where to open BudMinder, the first sign-in while it
 // still works, and a warning when the program sits in Downloads or OneDrive.
 func welcome(db *sql.DB, port string) {
-	w := launcher.Welcome{Port: port, LANAddress: launcher.LANAddress(), FromConsole: launcher.IsTerminal(os.Stdout), OS: runtime.GOOS, Installed: installedFrom()}
+	w := launcher.Welcome{Port: port, LANAddress: launcher.LANAddress(), FromConsole: launcher.IsTerminal(os.Stdout), OS: runtime.GOOS, Installed: argValue(launcher.InstalledFromFlag), Updated: argValue(launcher.UpdatedFromFlag)}
 	if force, _ := handlers.GetSetting(db, "force_password_change"); force == "true" {
 		w.Username, _ = handlers.GetSetting(db, "auth_username")
 		w.Password = handlers.DefaultAdminPassword

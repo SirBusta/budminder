@@ -37,6 +37,7 @@ type Welcome struct {
 	Risky       string // "Downloads" or "OneDrive" when the program sits there (RiskyFolder)
 	Suggest     string // where to move it instead (SuggestedHome)
 	Installed   string // the download this copy was set up from (ChooseHome); may be deleted
+	Updated     string // the download this install was just updated from (UpdateInstall); may be deleted
 }
 
 // Box draws the welcome box. color adds green to the border on terminals.
@@ -70,6 +71,15 @@ func Box(w Welcome, color bool) string {
 			"  "+here,
 			"Your data is kept there. You can delete the file you downloaded:",
 			"  "+w.Installed, "")
+	}
+	if w.Updated != "" {
+		here, _ := os.Getwd()
+		lines = append(lines,
+			"BudMinder was updated in",
+			"  "+here,
+			"A copy of your database from before is in data/backups.",
+			"You can delete the file you downloaded:",
+			"  "+w.Updated, "")
 	}
 	lines = append(lines,
 		"BudMinder is running",
