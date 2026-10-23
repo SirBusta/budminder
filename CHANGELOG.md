@@ -24,6 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [1.5.3] - 2026-10-23
+
+### Added
+
 - New releases: **New release** appears in the top menu when a new version is out, with what's new. The downloadable programs can **Update now**: BudMinder backs up the database, installs the new version and restarts by itself. Docker installs are told how to update. Settings → Updates turns the check off.
 - The version an update replaces stays next to the program (`.old`) until the next update, and the database is backed up as one file in `data/backups`, so going back is a rename and a file swap. The README explains how.
 - Updating from a download: double-click a newer download (for example in Downloads) and BudMinder offers to update your existing install, wherever it is. It stops BudMinder, backs up the database, swaps the program and starts it again; afterwards the download can be deleted. An older or the same download just opens your BudMinder. BudMinder remembers its folder in a small note: `%AppData%\BudMinder\home.txt` (Windows), `~/.config/budminder/home` (Linux), `~/Library/Application Support/BudMinder/home` (macOS).
@@ -39,7 +47,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tour wording for adding a strain and starting a grow.
 - README: Docker (preferred) or a download for Windows, macOS or Linux, with step-by-step guides and a note that the program is portable.
 
-### Fixed
 
 ### Deprecated
 
