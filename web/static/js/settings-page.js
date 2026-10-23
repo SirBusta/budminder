@@ -131,6 +131,7 @@
             },
             polling_interval: val("pollingInterval").value,
             guest_mode: val("guestMode").checked,
+            disable_update_check: !val("updateCheck").checked,
             stream_grab_enabled: val("streamGrabEnabled").checked,
             stream_grab_interval: String(val("streamGrabInterval").value * 60),
             api_key: "",

@@ -183,6 +183,8 @@ type Settings struct {
 	HomeAssistant      *HomeAssistantSettingsInput `json:"homeassistant"`
 	PollingInterval    string                      `json:"polling_interval"`
 	GuestMode          bool                        `json:"guest_mode"`
+	// DisableUpdateCheck turns off the daily check for new releases.
+	DisableUpdateCheck bool `json:"disable_update_check"`
 	StreamGrabEnabled  bool                        `json:"stream_grab_enabled"`
 	StreamGrabInterval string                      `json:"stream_grab_interval"`
 	APIKey             string                      `json:"api_key"`
@@ -242,6 +244,8 @@ type SettingsData struct {
 	HomeAssistant      HomeAssistantSettings `json:"homeassistant"`
 	PollingInterval    int                   `json:"polling_interval"`
 	GuestMode          bool                  `json:"guest_mode"`
+	// UpdateCheck: the daily check for new releases is on (the default).
+	UpdateCheck bool `json:"update_check"`
 	StreamGrabEnabled  bool                  `json:"stream_grab_enabled"`
 	StreamGrabInterval int                   `json:"stream_grab_interval"`
 	APIKey             string                `json:"api_key"`

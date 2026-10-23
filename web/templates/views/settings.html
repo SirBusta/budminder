@@ -71,6 +71,14 @@
                 </div>
 
                 <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-circle-arrow-up"></i><div><h3>{{ .lcl.st_card_updates }}</h3><p>{{ .lcl.st_card_updates_desc }}</p></div></div>
+                    <label class="st-row st-switch">
+                        <div class="st-row-l"><span class="st-label">{{ .lcl.st_update_check }}</span></div>
+                        <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="updateCheck" data-autosave {{ if .settings.UpdateCheck }}checked{{ end }}></div>
+                    </label>
+                </div>
+
+                <div class="st-card">
                     <div class="st-card-h"><i class="fa-solid fa-lock"></i><div><h3>{{ .lcl.st_card_password }}</h3><p>{{ .lcl.st_card_password_desc }}</p></div></div>
                     <div class="st-row">
                         <div class="st-row-l"></div>

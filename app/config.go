@@ -71,6 +71,10 @@ type Config struct {
 	// (package demo). Nil in demo mode means everyone shares one.
 	DemoCopies handlers.DemoCopies
 
+	// Updates checks for new releases and installs them (handlers.Updates,
+	// package updates). Nil (tests, the demo) means no "New release" notice.
+	Updates *handlers.Updates
+
 	// TrustedProxies is forwarded to Gin's SetTrustedProxies so that
 	// c.ClientIP() returns the real client IP behind a reverse proxy.
 	// Tests typically pass nil to disable trust entirely.

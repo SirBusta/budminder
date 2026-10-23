@@ -4256,3 +4256,16 @@ body.bm-tour-open { overflow: hidden; }
 .mn-about h2 { font-size: 1.05rem; }
 .mn-about pre { white-space: pre-wrap; font-size: .8rem; background: var(--color-card); border: 1px solid var(--color-card-border); border-radius: 8px; padding: .8rem 1rem; margin-top: .5rem; }
 .mn-about summary { cursor: pointer; }
+
+/* The "New release" item in the top menu (header2.html, update.js) */
+header .isley-nav .bm-update-btn { border: 0; background: none; color: #16a34a; }
+header .isley-nav .bm-update-btn i { animation: bm-update-nudge 2.4s ease-in-out 3; }
+header .isley-nav .bm-update-btn .nav-lbl { font-weight: 700; }
+@keyframes bm-update-nudge { 0%, 70%, 100% { transform: translateY(0); } 80% { transform: translateY(-3px); } 90% { transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { header .isley-nav .bm-update-btn i { animation: none; } }
+.bm-upd-vers { display: grid; grid-template-columns: auto 1fr; gap: .25rem 1rem; margin: 0 0 1rem; }
+.bm-upd-vers dt { font-weight: 500; color: var(--bs-secondary-color); }
+.bm-upd-vers dd { margin: 0; font-weight: 700; }
+.bm-upd-notes { max-height: 40vh; overflow: auto; border: 1px solid var(--color-card-border); border-radius: 8px; padding: .6rem .9rem; font-size: .9rem; }
+.bm-upd-notes h2, .bm-upd-notes h3 { font-size: 1rem; margin: .6rem 0 .3rem; }
+.bm-upd-msg { margin: .8rem 0 0; }

@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"runtime"
@@ -29,6 +30,7 @@ import (
 	"isley/launcher"
 	"isley/logger"
 	"isley/model"
+	"isley/updates"
 	"isley/utils"
 	"isley/watcher"
 	"isley/workdir"
@@ -107,6 +109,8 @@ func main() {
 			openWhenReady = true
 		case launcher.BackgroundFlag, launcher.InstalledFromFlag:
 			openWhenReady = true
+		case launcher.RestartedFlag:
+			// back after an update: the browser page is already open and waiting
 		}
 	}
 
@@ -233,6 +237,33 @@ func main() {
 		}
 	}
 
+	// New releases: checked at start and daily (Settings can turn it off),
+	// shown as "New release" in the top menu. The downloadable programs can
+	// install one and restart; Docker installs are only told. Not the demo.
+	var releases *handlers.Updates
+	restartCh := make(chan struct{}, 1)
+	if !demoMode {
+		checker := updates.New(getVersion(), env.Get("UPDATE_URL"), func() bool { // UPDATE_URL: a stand-in release list, for testing
+			v, _ := handlers.GetSetting(db, handlers.UpdateCheckDisabledSetting)
+			return v == "1"
+		})
+		releases = &handlers.Updates{Checker: checker, DataDir: "data"}
+		if !launcher.InDocker() {
+			releases.Restart = func() {
+				select {
+				case restartCh <- struct{}{}:
+				default:
+				}
+			}
+			updates.RemoveOld(exePath()) // the fallback from the last update
+		}
+		bgWG.Add(1)
+		go func() {
+			defer bgWG.Done()
+			checker.Run(ctx)
+		}()
+	}
+
 	engineCfg := app.ResolvePathDefaults(app.Config{
 		DB:                    db,
 		Assets:                embeddedFiles,
@@ -247,6 +278,7 @@ func main() {
 		TrustedProxies:        trustedProxies,
 		DataDir:               "data",
 		ConfigStore:           configStore,
+		Updates:               releases,
 	})
 	if demoCopies != nil { // never a typed nil in the interface
 		engineCfg.DemoCopies = demoCopies
@@ -290,6 +322,7 @@ func main() {
 
 	// The downloadable program: the welcome box, the desktop icon, and the
 	// browser when the icon started BudMinder. Not in Docker or the demo.
+	restarting := false
 	var stopRequested <-chan struct{} // "Stop BudMinder" (--stop); nil blocks forever
 	if !demoMode && !launcher.InDocker() {
 		if ctl, err := launcher.StartControl("data"); err != nil {
@@ -312,6 +345,8 @@ func main() {
 	select {
 	case <-quit:
 	case <-stopRequested:
+	case <-restartCh:
+		restarting = true
 	}
 
 	logger.Log.Info("Shutdown signal received, stopping gracefully...")
@@ -327,6 +362,32 @@ func main() {
 	}
 
 	logger.Log.Info("Server exited cleanly")
+	if restarting {
+		relaunch()
+	}
+}
+
+// relaunch starts the program again after an update swapped it, the same
+// way it was running: hidden on Windows when started from the icon, in the
+// same terminal otherwise. Under systemd (the README's service) it exits
+// instead, and Restart=on-failure starts the new program.
+func relaunch() {
+	if os.Getenv("INVOCATION_ID") != "" {
+		logger.Log.Info("Exiting so systemd starts the new version")
+		os.Exit(75)
+	}
+	exe := exePath()
+	var err error
+	if runtime.GOOS == "windows" && !launcher.IsTerminal(os.Stdout) {
+		err = launcher.StartHidden(exe, launcher.RestartedFlag)
+	} else {
+		cmd := exec.Command(exe, launcher.RestartedFlag)
+		cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+		err = cmd.Start()
+	}
+	if err != nil {
+		logger.Log.WithError(err).Error("Couldn't start the new version; start BudMinder again yourself")
+	}
 }
 
 // firstRunHome: a program started from Downloads or OneDrive with no data

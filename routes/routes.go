@@ -393,6 +393,8 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.POST("/settings", handlers.SaveSettings)
 	r.POST("/settings/homeassistant/test", handlers.TestHomeAssistantHandler)
 	r.POST("/tour/answered", handlers.TourAnsweredHandler)
+	r.GET("/updates/status", handlers.UpdateStatusHandler)
+	r.POST("/updates/install", handlers.UpdateInstallHandler)
 	addSmokeAPIRoutes(r)
 }
 

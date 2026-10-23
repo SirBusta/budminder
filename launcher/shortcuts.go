@@ -21,6 +21,9 @@ const (
 	// program it starts with no window, which runs BudMinder and opens the
 	// browser once ready. Not for people to type.
 	BackgroundFlag = "--background"
+	// RestartedFlag marks the restart after an update: no browser to open,
+	// the page is already waiting. Not for people to type.
+	RestartedFlag = "--restarted"
 )
 
 const (

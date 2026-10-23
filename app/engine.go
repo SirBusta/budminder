@@ -101,7 +101,7 @@ func NewEngine(cfg Config) (*gin.Engine, error) {
 	r.Use(securityHeadersMiddleware(configStore, hstsHeaderValue(cfg)))
 	r.Use(currentPathMiddleware())
 
-	templ, err := parseTemplates(cfg.Assets, configStore, cfg.Demo)
+	templ, err := parseTemplates(cfg.Assets, configStore, cfg.Demo, cfg.Updates)
 	if err != nil {
 		return nil, fmt.Errorf("parse templates: %w", err)
 	}
@@ -124,6 +124,9 @@ func NewEngine(cfg Config) (*gin.Engine, error) {
 	r.Use(csrfMiddleware())
 	r.Use(dbMiddleware(cfg.DB))
 	r.Use(assetsMiddleware(cfg.Assets))
+	if cfg.Updates != nil {
+		r.Use(updatesMiddleware(cfg.Updates))
+	}
 	r.Use(configStoreMiddleware(configStore))
 	r.Use(pathDirsMiddleware(cfg.UploadDir, cfg.StreamDir, cfg.LogsDir))
 
@@ -278,6 +281,14 @@ func dbMiddleware(db *sql.DB) gin.HandlerFunc {
 	}
 }
 
+// updatesMiddleware injects the release checker for /updates/*.
+func updatesMiddleware(u *handlers.Updates) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		handlers.SetUpdatesOnContext(c, u)
+		c.Next()
+	}
+}
+
 // assetsMiddleware injects the engine's embedded asset FS so handlers can
 // read bundled data files (e.g. the breeder reference list).
 func assetsMiddleware(assets fs.FS) gin.HandlerFunc {
@@ -374,10 +385,21 @@ func pathDirsMiddleware(uploadDir, streamDir, logsDir string) gin.HandlerFunc {
 // Templates and static assets
 // ---------------------------------------------------------------------------
 
-func parseTemplates(assets fs.FS, store *config.Store, demo bool) (*template.Template, error) {
+func parseTemplates(assets fs.FS, store *config.Store, demo bool, up *handlers.Updates) (*template.Template, error) {
 	funcMap := buildFuncMap(store)
 	// demoMode: the demo banner and script (header.html).
 	funcMap["demoMode"] = func() bool { return demo }
+	// updateAvailable: the newer release's version, or "" (the "New release"
+	// icon in header2.html).
+	funcMap["updateAvailable"] = func() string {
+		if up == nil || up.Checker == nil {
+			return ""
+		}
+		if r := up.Checker.Available(); r != nil {
+			return r.Version
+		}
+		return ""
+	}
 	return template.New("").Funcs(funcMap).ParseFS(assets, "web/templates/**/*.html")
 }
 

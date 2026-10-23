@@ -135,6 +135,7 @@ func SaveSettings(c *gin.Context) {
 		{"guest_mode", settings.GuestMode, store.SetGuestMode},
 		{"stream_grab_enabled", settings.StreamGrabEnabled, store.SetStreamGrabEnabled},
 		{"api_ingest_enabled", !settings.DisableAPIIngest, store.SetAPIIngestEnabled},
+		{UpdateCheckDisabledSetting, settings.DisableUpdateCheck, func(int) {}}, // read per check, nothing to cache
 	}
 
 	for _, bs := range boolSettings {
@@ -368,7 +369,7 @@ func UpdateSetting(db *sql.DB, store *config.Store, name string, value string) e
 func GetSettings(db *sql.DB) types.SettingsData {
 	fieldLogger := logger.Log.WithField("func", "GetSettings")
 
-	settingsData := types.SettingsData{}
+	settingsData := types.SettingsData{UpdateCheck: true}
 
 	rows, err := db.Query("SELECT * FROM settings")
 	if err != nil {
@@ -421,6 +422,8 @@ func GetSettings(db *sql.DB) types.SettingsData {
 			settingsData.PollingInterval, _ = strconv.Atoi(value)
 		case "guest_mode":
 			settingsData.GuestMode = value == "1"
+		case UpdateCheckDisabledSetting:
+			settingsData.UpdateCheck = value != "1"
 		case "stream_grab_enabled":
 			settingsData.StreamGrabEnabled = value == "1"
 		case "stream_grab_interval":

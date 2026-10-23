@@ -17,6 +17,14 @@
          with a bar on the header line, the others gray (mockup M2, option F). Home, Plants and Sensors are
          drawn SVGs (Plants reuses Font Awesome Free's cannabis leaf). -->
     <ul class="nav isley-nav">
+        {{ if .loggedIn }}{{ with updateAvailable }}
+        <!-- A newer release (handlers.Updates): opens the update window (update.js). -->
+        <li class="nav-item">
+            <button type="button" class="nav-link bm-update-btn" id="bmUpdateBtn" title="{{ $.lcl.upd_title }}" aria-label="{{ $.lcl.upd_title }}">
+                <i class="fa-solid fa-circle-arrow-up" aria-hidden="true"></i><span class="nav-lbl">{{ $.lcl.upd_new_release }}</span>
+            </button>
+        </li>
+        {{ end }}{{ end }}
         <li class="nav-item">
             <a href="/" class="nav-link{{ if eq .currentPath "/" }} active{{ end }}"{{ if eq .currentPath "/" }} aria-current="page"{{ end }} title="{{ .lcl.title_home }}" aria-label="{{ .lcl.title_home }}">
                 <svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="f" fill-rule="evenodd" d="M5.5 10.6V21h4.4v-5.2h4.2V21h4.4V10.6L12 5z"/><path class="l" d="M2.8 11.6 12 3.8l9.2 7.8"/></svg><span class="nav-lbl">{{ .lcl.title_home }}</span>
@@ -97,6 +105,10 @@
 </header>
 
 <script src="/static/js/header.js"></script>
+{{ if .loggedIn }}{{ with updateAvailable }}
+<script type="application/json" id="bmUpdateText">{"heading": {{ $.lcl.upd_heading }}, "current": {{ $.lcl.upd_current }}, "latest": {{ $.lcl.upd_latest }}, "whatsNew": {{ $.lcl.upd_whats_new }}, "onGitHub": {{ $.lcl.upd_on_github }}, "later": {{ $.lcl.upd_later }}, "now": {{ $.lcl.upd_now }}, "safety": {{ $.lcl.upd_safety }}, "downloading": {{ $.lcl.upd_downloading }}, "restarting": {{ $.lcl.upd_restarting }}, "done": {{ $.lcl.upd_done }}, "slow": {{ $.lcl.upd_slow }}, "failed": {{ $.lcl.upd_failed }}, "docker": {{ $.lcl.upd_docker }}, "manual": {{ $.lcl.upd_manual }}, "close": {{ $.lcl.title_close }}}</script>
+<script src="/static/js/update.js" defer></script>
+{{ end }}{{ end }}
 
 <main id="main-content">
 {{ end }}

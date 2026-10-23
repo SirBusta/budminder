@@ -93,12 +93,18 @@ type serverOptions struct {
 	configStore        *config.Store
 	rateLimiterService *handlers.RateLimiterService
 	sensorCacheService *handlers.SensorCacheService
+	updates            *handlers.Updates
 }
 
 // WithGuestMode boots the engine with guest-mode semantics
 // (basic routes are public, mirroring the Store's GuestMode == 1).
 func WithGuestMode() ServerOption {
 	return func(o *serverOptions) { o.guestMode = true }
+}
+
+// WithUpdates gives the engine a release checker (handlers/updates.go).
+func WithUpdates(u *handlers.Updates) ServerOption {
+	return func(o *serverOptions) { o.updates = u }
 }
 
 // WithDemo boots the engine in demo mode (handlers/demo.go).
@@ -259,6 +265,7 @@ func NewTestServer(t *testing.T, db *sql.DB, opts ...ServerOption) *TestServer {
 		ConfigStore:        configStore,
 		RateLimiterService: rateLimiterSvc,
 		SensorCacheService: sensorCacheSvc,
+		Updates:            options.updates,
 	}
 	var demoCopies *demo.Copies
 	if options.demo {
