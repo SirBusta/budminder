@@ -14,9 +14,8 @@ qodana.yaml
 *.swo
 *~
 
-# Documentation
+# Documentation (LICENSE stays: it's embedded for Help → About)
 *.md
-LICENSE
 audits/
 
 # Scripts and tooling
