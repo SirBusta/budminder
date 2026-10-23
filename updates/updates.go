@@ -320,11 +320,11 @@ func (c *Checker) download(ctx context.Context, url, dst, wantSum string) error 
 	return os.Chmod(dst, 0o755)
 }
 
-// RemoveOld deletes the fallback copy a previous update left (exe.old), once
-// the new version runs.
-func RemoveOld(exe string) {
+// RemoveLeftovers deletes a half-finished download (exe.new) from an update
+// that didn't complete. The previous version (exe.old) stays as a fallback
+// until the next update replaces it, so going back is a rename away.
+func RemoveLeftovers(exe string) {
 	if exe != "" {
-		_ = os.Remove(exe + ".old")
 		_ = os.Remove(exe + ".new")
 	}
 }

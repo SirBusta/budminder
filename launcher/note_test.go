@@ -78,7 +78,7 @@ func TestUpdateInstall(t *testing.T) {
 		close(stopped)
 	}()
 
-	if err := UpdateInstall(download, Note{Exe: exe, Version: "1.5.2"}, "1.5.3"); err != nil {
+	if err := UpdateInstall(download, Note{Exe: exe, Version: "1.5.2"}, "1.5.3", copyFile); err != nil {
 		t.Fatal(err)
 	}
 	select {

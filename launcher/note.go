@@ -155,9 +155,10 @@ if ($r -eq 'Yes') { Write-Output 'yes' }
 }
 
 // UpdateInstall stops the noted install if it's running, backs up its
-// database, and puts this program (download) in its place, keeping the old
-// one as exe.old.
-func UpdateInstall(download string, note Note, to string) error {
+// database with backup(db, copy) (main uses SQLite's VACUUM INTO, so the copy
+// is one complete file), and puts this program (download) in its place,
+// keeping the old one as exe.old.
+func UpdateInstall(download string, note Note, to string, backup func(db, dst string) error) error {
 	dir := filepath.Dir(note.Exe)
 	data := filepath.Join(dir, "data")
 	if err := Stop(data); err == nil {
@@ -174,15 +175,9 @@ func UpdateInstall(download string, note Note, to string) error {
 	if err := os.MkdirAll(backups, 0o755); err != nil {
 		return err
 	}
-	stamp := fmt.Sprintf("before-%s-%s", to, time.Now().Format("20060102-150405"))
-	for _, ext := range []string{"", "-wal"} {
-		src := filepath.Join(data, "isley.db"+ext)
-		if _, err := os.Stat(src); err != nil {
-			continue
-		}
-		if err := copyFile(src, filepath.Join(backups, stamp+".db"+ext)); err != nil {
-			return fmt.Errorf("backup: %w", err)
-		}
+	dst := filepath.Join(backups, fmt.Sprintf("before-%s-%s.db", to, time.Now().Format("20060102-150405")))
+	if err := backup(filepath.Join(data, "isley.db"), dst); err != nil {
+		return fmt.Errorf("backup: %w", err)
 	}
 	old := note.Exe + ".old"
 	_ = os.Remove(old)

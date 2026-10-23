@@ -255,7 +255,7 @@ func main() {
 				default:
 				}
 			}
-			updates.RemoveOld(exePath()) // the fallback from the last update
+			updates.RemoveLeftovers(exePath()) // a download an interrupted update left
 		}
 		bgWG.Add(1)
 		go func() {
@@ -413,7 +413,7 @@ func firstRunHome() {
 	case launcher.PlanUpdate:
 		if launcher.ConfirmUpdate(filepath.Dir(note.Exe), note.Version, getVersion()) {
 			fmt.Println("Updating BudMinder in", filepath.Dir(note.Exe), "...")
-			if err := launcher.UpdateInstall(exe, note, getVersion()); err != nil {
+			if err := launcher.UpdateInstall(exe, note, getVersion(), backupDB); err != nil {
 				fmt.Println("The update didn't work, and your BudMinder is unchanged:", err)
 				waitForEnter()
 				os.Exit(1)
@@ -446,6 +446,18 @@ func firstRunHome() {
 		return
 	}
 	os.Exit(launcher.RunInstalled(installed, exe))
+}
+
+// backupDB copies the SQLite database at src into one complete file at dst
+// (VACUUM INTO, which also takes in its -wal journal).
+func backupDB(src, dst string) error {
+	db, err := sql.Open("sqlite", "file:"+filepath.ToSlash(src))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	_, err = db.Exec("VACUUM INTO ?", dst)
+	return err
 }
 
 // argValue is the value after flag on the command line ("" when absent).

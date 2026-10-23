@@ -87,9 +87,15 @@ func TestCheckAndInstall(t *testing.T) {
 	if !backedUp {
 		t.Error("no backup before the swap")
 	}
-	RemoveOld(exe)
-	if _, err := os.Stat(exe + ".old"); err == nil {
-		t.Error("RemoveOld left the fallback")
+	if err := os.WriteFile(exe+".new", []byte("half a download"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	RemoveLeftovers(exe)
+	if _, err := os.Stat(exe + ".new"); err == nil {
+		t.Error("RemoveLeftovers left the half-finished download")
+	}
+	if _, err := os.Stat(exe + ".old"); err != nil {
+		t.Error("the fallback must stay until the next update")
 	}
 }
 

@@ -303,6 +303,9 @@ There's no installer, no admin rights needed, and nothing goes into Program File
 
 - **Its folder** (for example `C:\Users\<you>\BudMinder` or `~/budminder`), holding the program, `data` (the database), `uploads` (your photos) and `logs`.
 - **Its shortcuts:** on Windows, **BudMinder** on the desktop plus **BudMinder** and **Stop BudMinder** in the Start menu; on Linux, a `budminder.desktop` file on the desktop and one in `~/.local/share/applications`.
+- **A one-line note** saying where BudMinder is, so a newer download can find it and offer to update it: `%AppData%\BudMinder\home.txt` on Windows, `~/.config/budminder/home` on Linux, `~/Library/Application Support/BudMinder/home` on macOS.
+
+**Going back to the previous version:** each update keeps the version it replaced next to the program, with `.old` added to its name, until the next update. To go back, stop BudMinder, delete the program, and remove `.old` from the old one's name. The database is backed up in `data/backups` before every update (`before-<version>-<date>.db`). If the new version changed it, also put that backup back: replace `data/isley.db` with it (this undoes anything entered since the update).
 
 **Moving to another computer:** stop BudMinder, copy the whole folder over, and start the program there once. It makes new shortcuts.
 
