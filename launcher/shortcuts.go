@@ -31,44 +31,46 @@ const (
 // time BudMinder runs from a folder (Linux only). Deleted icons stay deleted:
 // a marker in the data folder records that they were made. Run from another
 // folder after a move, the program makes them again, pointing at its new home.
-// Returns whether icons were made now.
-func MakeIcons(exe, dataDir string, icon []byte) (bool, error) {
+// Returns whether icons were made now, and whether one went on the desktop
+// (some systems have none, such as WSL).
+func MakeIcons(exe, dataDir string, icon []byte) (made, onDesktop bool, err error) {
 	if runtime.GOOS != "linux" || InDocker() {
-		return false, nil
+		return false, false, nil
 	}
 	marker := filepath.Join(dataDir, markerFile)
 	if b, err := os.ReadFile(marker); err == nil && strings.TrimSpace(string(b)) == exe {
-		return false, nil
+		return false, false, nil
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
 	iconPath, err := filepath.Abs(filepath.Join(dataDir, iconFile))
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
 	if err := os.WriteFile(iconPath, icon, 0o644); err != nil {
-		return false, err
+		return false, false, err
 	}
 	entry := DesktopEntry(exe, iconPath)
 
 	// The app menu (Kubuntu's launcher, GNOME's app grid, ...).
 	apps := filepath.Join(home, ".local", "share", "applications")
 	if err := os.MkdirAll(apps, 0o755); err != nil {
-		return false, err
+		return false, false, err
 	}
 	if err := os.WriteFile(filepath.Join(apps, "budminder.desktop"), []byte(entry), 0o755); err != nil {
-		return false, err
+		return false, false, err
 	}
 	// The desktop, when there is one. Plasma runs desktop icons only when
 	// they're marked executable.
 	if desk := desktopDir(home); desk != "" {
 		if err := os.WriteFile(filepath.Join(desk, "budminder.desktop"), []byte(entry), 0o755); err != nil {
-			return false, err
+			return false, false, err
 		}
+		onDesktop = true
 	}
-	return true, os.WriteFile(marker, []byte(exe+"\n"), 0o644)
+	return true, onDesktop, os.WriteFile(marker, []byte(exe+"\n"), 0o644)
 }
 
 // DesktopEntry is the icon's .desktop file: double-click opens BudMinder

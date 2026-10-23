@@ -29,7 +29,8 @@ type Welcome struct {
 	LANAddress  string // "" when none was found
 	Username    string // the first sign-in, shown only while it still works
 	Password    string
-	IconsMade   bool // the desktop and app-menu icon were just added
+	IconsMade   bool // the app-menu icon was just added
+	IconDesktop bool // ...and one on the desktop
 	FromConsole bool // started in a terminal (the stop hint only makes sense there)
 }
 
@@ -52,7 +53,11 @@ func Box(w Welcome, color bool) string {
 	}
 	lines = append(lines, "", "Tip: bookmark the page to open BudMinder quickly.")
 	if w.IconsMade {
-		lines = append(lines, "A BudMinder icon was added to your desktop and app menu.",
+		where := "app menu"
+		if w.IconDesktop {
+			where = "desktop and app menu"
+		}
+		lines = append(lines, "A BudMinder icon was added to your "+where+".",
 			"Double-click it to start BudMinder and open it next time.")
 	}
 	if w.FromConsole {

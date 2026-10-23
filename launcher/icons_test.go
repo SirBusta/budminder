@@ -28,9 +28,9 @@ func TestMakeIcons(t *testing.T) {
 	}
 	exe := "/opt/budminder/budminder-linux-amd64"
 
-	made, err := MakeIcons(exe, data, []byte("png"))
-	if err != nil || !made {
-		t.Fatalf("first run: made=%v err=%v", made, err)
+	made, onDesktop, err := MakeIcons(exe, data, []byte("png"))
+	if err != nil || !made || !onDesktop {
+		t.Fatalf("first run: made=%v onDesktop=%v err=%v", made, onDesktop, err)
 	}
 	for _, p := range []string{filepath.Join(desk, "budminder.desktop"), filepath.Join(home, ".local", "share", "applications", "budminder.desktop")} {
 		st, err := os.Stat(p)
@@ -50,11 +50,11 @@ func TestMakeIcons(t *testing.T) {
 	if err := os.Remove(filepath.Join(desk, "budminder.desktop")); err != nil {
 		t.Fatal(err)
 	}
-	if made, _ := MakeIcons(exe, data, []byte("png")); made {
+	if made, _, _ := MakeIcons(exe, data, []byte("png")); made {
 		t.Error("icons made again after the user deleted them")
 	}
 	// ...until the program moves, when they're made to point at the new place.
-	if made, _ := MakeIcons("/home/dave/budminder/budminder-linux-amd64", data, []byte("png")); !made {
+	if made, _, _ := MakeIcons("/home/dave/budminder/budminder-linux-amd64", data, []byte("png")); !made {
 		t.Error("icons not remade after the program moved")
 	}
 }

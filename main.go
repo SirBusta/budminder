@@ -323,11 +323,11 @@ func welcome(db *sql.DB, port string) {
 			exe = real
 		}
 		if icon, err := embeddedFiles.ReadFile("web/static/img/brand/budminder-256.png"); err == nil {
-			made, err := launcher.MakeIcons(exe, "data", icon)
+			made, onDesktop, err := launcher.MakeIcons(exe, "data", icon)
 			if err != nil {
 				logger.Log.WithError(err).Warn("Couldn't add the desktop icon")
 			}
-			w.IconsMade = made
+			w.IconsMade, w.IconDesktop = made, onDesktop
 		}
 	}
 	fmt.Print(launcher.Box(w, w.FromConsole))
