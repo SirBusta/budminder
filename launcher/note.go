@@ -107,6 +107,20 @@ func Decide(exe, here, version string, note Note, ok bool, newer func(a, b strin
 	return PlanOpen
 }
 
+// OtherInstall reports the noted install when it isn't this program (exe)
+// and is still there with its database. Such a second copy (a test, a USB
+// stick) leaves the note and the icons to the noted install.
+func OtherInstall(exe string, note Note, ok bool, exists func(string) bool) (string, bool) {
+	if !ok || note.Exe == "" || sameFile(exe, note.Exe) {
+		return "", false
+	}
+	dir := filepath.Dir(note.Exe)
+	if !exists(note.Exe) || !exists(filepath.Join(dir, "data", "isley.db")) {
+		return "", false
+	}
+	return dir, true
+}
+
 func sameFile(a, b string) bool {
 	a, b = filepath.Clean(a), filepath.Clean(b)
 	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {

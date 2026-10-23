@@ -331,11 +331,16 @@ func main() {
 			defer ctl.Close()
 			stopRequested = ctl.Stop
 		}
+		elsewhere, other := "", false
 		if _, dbFileSet := env.Lookup("DB_FILE"); !dbFileSet && where.Reason != "development build" {
-			writeNote()
+			// A second copy leaves the note and the icons to the noted install.
+			note, ok := launcher.ReadNote()
+			if elsewhere, other = launcher.OtherInstall(exePath(), note, ok, fileExists); !other {
+				writeNote()
+			}
 		}
 		time.Sleep(1500 * time.Millisecond) // let the startup jobs log first, so the box ends up last
-		welcome(db, port)
+		welcome(db, port, elsewhere)
 		if openWhenReady {
 			if err := launcher.OpenBrowser("http://localhost:" + port); err != nil {
 				logger.Log.WithError(err).Error("Couldn't open the browser")
@@ -408,8 +413,7 @@ func firstRunHome() {
 	}
 	here, _ := os.Getwd()
 	note, ok := launcher.ReadNote()
-	exists := func(p string) bool { _, err := os.Stat(p); return err == nil }
-	switch launcher.Decide(exe, here, getVersion(), note, ok, updates.Newer, exists) {
+	switch launcher.Decide(exe, here, getVersion(), note, ok, updates.Newer, fileExists) {
 	case launcher.PlanUpdate:
 		if launcher.ConfirmUpdate(filepath.Dir(note.Exe), note.Version, getVersion()) {
 			fmt.Println("Updating BudMinder in", filepath.Dir(note.Exe), "...")
@@ -494,6 +498,8 @@ func writeNote() {
 	}
 }
 
+func fileExists(p string) bool { _, err := os.Stat(p); return err == nil }
+
 // exePath is this program's file, links followed.
 func exePath() string {
 	exe, err := os.Executable()
@@ -509,8 +515,8 @@ func exePath() string {
 // welcome makes the desktop and menu icons on first run (Linux, Windows) and
 // prints the welcome box: where to open BudMinder, the first sign-in while it
 // still works, and a warning when the program sits in Downloads or OneDrive.
-func welcome(db *sql.DB, port string) {
-	w := launcher.Welcome{Port: port, LANAddress: launcher.LANAddress(), FromConsole: launcher.IsTerminal(os.Stdout), OS: runtime.GOOS, Installed: argValue(launcher.InstalledFromFlag), Updated: argValue(launcher.UpdatedFromFlag)}
+func welcome(db *sql.DB, port, elsewhere string) {
+	w := launcher.Welcome{Port: port, Elsewhere: elsewhere, LANAddress: launcher.LANAddress(), FromConsole: launcher.IsTerminal(os.Stdout), OS: runtime.GOOS, Installed: argValue(launcher.InstalledFromFlag), Updated: argValue(launcher.UpdatedFromFlag)}
 	if force, _ := handlers.GetSetting(db, "force_password_change"); force == "true" {
 		w.Username, _ = handlers.GetSetting(db, "auth_username")
 		w.Password = handlers.DefaultAdminPassword
@@ -520,6 +526,8 @@ func welcome(db *sql.DB, port string) {
 		// file that's about to be moved.
 		if w.Risky = launcher.RiskyFolder(filepath.Dir(exe)); w.Risky != "" {
 			w.Suggest = launcher.SuggestedHome()
+		} else if elsewhere != "" {
+			// a second copy: the icons stay with the install they open
 		} else if icon, err := embeddedFiles.ReadFile("web/static/img/brand/budminder-256.png"); err == nil {
 			made, err := launcher.MakeIcons(exe, "data", icon)
 			if err != nil {
@@ -529,7 +537,7 @@ func welcome(db *sql.DB, port string) {
 			w.HasIcon = !made.Made && launcher.HaveIcons(exe, "data")
 		}
 	}
-	fmt.Print(launcher.Box(w, w.FromConsole))
+	fmt.Print(launcher.Box(w, w.FromConsole && launcher.EnableColor()))
 }
 
 func getVersion() string {

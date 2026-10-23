@@ -15,3 +15,6 @@ func hideWindow(*exec.Cmd) {}
 func StartHidden(string, ...string) error {
 	return errors.New("not needed on this system")
 }
+
+// EnableColor: terminals here understand color codes.
+func EnableColor() bool { return true }

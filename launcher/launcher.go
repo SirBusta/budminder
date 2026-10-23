@@ -38,6 +38,7 @@ type Welcome struct {
 	Suggest     string // where to move it instead (SuggestedHome)
 	Installed   string // the download this copy was set up from (ChooseHome); may be deleted
 	Updated     string // the download this install was just updated from (UpdateInstall); may be deleted
+	Elsewhere   string // the install the icons open, when this is a second copy (OtherInstall)
 }
 
 // Box draws the welcome box. color adds green to the border on terminals.
@@ -99,6 +100,10 @@ func Box(w Welcome, color bool) string {
 	lines = append(lines, "")
 	stop := "To stop BudMinder, press Ctrl+C or close this window."
 	switch {
+	case w.Elsewhere != "":
+		lines = append(lines, "This is a second copy of BudMinder, with its own data.",
+			"Your BudMinder icons open the one in",
+			"  "+w.Elsewhere)
 	case w.IconsMade:
 		where := menu
 		if w.IconDesktop {
@@ -158,12 +163,24 @@ func IsTerminal(f *os.File) bool {
 // LANAddress is this computer's address on the home network (the first
 // private IPv4 address of a network card that's up), or "".
 func LANAddress() string {
+	// The address this computer uses to reach the internet is the one on the
+	// home network. Dialing UDP sends nothing; it only picks the route.
+	if c, err := net.Dial("udp4", "192.0.2.1:9"); err == nil {
+		ip := c.LocalAddr().(*net.UDPAddr).IP.To4()
+		c.Close()
+		if ip != nil && ip.IsPrivate() {
+			return ip.String()
+		}
+	}
+	// No route out: the first private address on a real network card.
+	// Virtual adapters (WSL, Hyper-V, Docker, virtual machines) can't be
+	// reached from a phone.
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		return ""
 	}
 	for _, ifc := range ifaces {
-		if ifc.Flags&net.FlagUp == 0 || ifc.Flags&net.FlagLoopback != 0 {
+		if ifc.Flags&net.FlagUp == 0 || ifc.Flags&net.FlagLoopback != 0 || virtualAdapter(ifc.Name) {
 			continue
 		}
 		addrs, _ := ifc.Addrs()
@@ -176,6 +193,16 @@ func LANAddress() string {
 		}
 	}
 	return ""
+}
+
+func virtualAdapter(name string) bool {
+	n := strings.ToLower(name)
+	for _, v := range []string{"vethernet", "wsl", "hyper-v", "docker", "virtualbox", "vmware", "vbox", "veth", "virbr", "br-", "cni", "flannel"} {
+		if strings.Contains(n, v) {
+			return true
+		}
+	}
+	return false
 }
 
 // Running reports whether a BudMinder already answers on port.

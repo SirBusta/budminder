@@ -314,6 +314,30 @@ There's no installer, no admin rights needed, and nothing goes into Program File
 </details>
 
 <details>
+<summary><b>Using BudMinder away from home</b></summary>
+
+<br>
+
+At home, your phone reaches BudMinder at the "From your phone" address in the welcome box, for example `http://192.168.1.108:8080`. That's your computer's address on your home network, so it only works on your home Wi-Fi.
+
+From anywhere else, the safe way is **Tailscale**, which is free for personal use. It joins your phone and your computer in a private network of your own, encrypted end to end. Nothing on your router is opened, and nobody else can reach BudMinder.
+
+1. **Make a Tailscale account** at [tailscale.com](https://tailscale.com). You can sign in with Google, Microsoft, Apple or GitHub.
+2. **Install Tailscale on the computer that runs BudMinder** and sign in:
+   - Windows and macOS: download it from [tailscale.com/download](https://tailscale.com/download).
+   - Linux: run `curl -fsSL https://tailscale.com/install.sh | sh`, then `sudo tailscale up` and open the link it prints.
+   - Unraid: install the **Tailscale** plugin from the Apps tab, then sign in from its settings page.
+3. **Install the Tailscale app on your phone** (App Store or Google Play), sign in with the same account and switch it on.
+4. **Find your computer's Tailscale name.** In the phone app, or at [login.tailscale.com](https://login.tailscale.com/admin/machines), your computer is listed with a name such as `my-pc` and an address starting with `100.`.
+5. **Open BudMinder on your phone** at `http://my-pc:8080` (your computer's name), or `http://100.x.y.z:8080` if the name doesn't work. Bookmark it, or add it to your home screen. It works at home too, so one bookmark is enough.
+
+Tailscale has to stay on, on both the computer and the phone. If the page doesn't load, check that the computer is awake and BudMinder is running. On Windows, also check that Windows Firewall allows BudMinder (Windows step 3 above).
+
+**Don't forward a port on your router to BudMinder.** That puts it on the open internet, where it's probed all day, and without HTTPS your password travels unencrypted. If you want a public web address anyway, put BudMinder behind HTTPS (see **Reverse proxy (HTTPS)** under Reference).
+
+</details>
+
+<details>
 <summary><b>PostgreSQL instead of SQLite</b></summary>
 
 <br>

@@ -112,3 +112,36 @@ func TestNotePath(t *testing.T) {
 		t.Errorf("NotePath = %q", p)
 	}
 }
+
+func TestOtherInstall(t *testing.T) {
+	t.Parallel()
+	inst := filepath.Join("home", "BudMinder", "budminder.exe")
+	files := map[string]bool{inst: true, filepath.Join("home", "BudMinder", "data", "isley.db"): true}
+	exists := func(p string) bool { return files[p] }
+	note := Note{Exe: inst, Version: "1.5.3"}
+	if dir, ok := OtherInstall(filepath.Join("tmp", "test", "budminder.exe"), note, true, exists); !ok || dir != filepath.Dir(inst) {
+		t.Errorf("a second copy: got %q, %v", dir, ok)
+	}
+	if _, ok := OtherInstall(inst, note, true, exists); ok {
+		t.Error("the install itself isn't another install")
+	}
+	if _, ok := OtherInstall(filepath.Join("tmp", "test", "budminder.exe"), Note{Exe: filepath.Join("moved", "budminder.exe")}, true, exists); ok {
+		t.Error("a noted install that's gone (moved) gives way")
+	}
+	if _, ok := OtherInstall(filepath.Join("tmp", "test", "budminder.exe"), Note{}, false, exists); ok {
+		t.Error("no note, no other install")
+	}
+}
+
+func TestVirtualAdapter(t *testing.T) {
+	t.Parallel()
+	for name, want := range map[string]bool{
+		"vEthernet (WSL (Hyper-V firewall))": true, "docker0": true, "br-3f2a": true, "VirtualBox Host-Only Network": true,
+		"Ethernet": false, "Wi-Fi": false, "eth0": false, "wlp2s0": false, "en0": false,
+	} {
+		if got := virtualAdapter(name); got != want {
+			t.Errorf("virtualAdapter(%q) = %v, want %v", name, got, want)
+		}
+	}
+	t.Log("this computer's address for phones:", LANAddress())
+}

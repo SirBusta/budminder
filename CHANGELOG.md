@@ -24,9 +24,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- README: **Using BudMinder away from home**, with Tailscale step by step, and why not to forward a port.
+
 ### Changed
 
+- A second copy of BudMinder (a test, a USB stick) no longer takes over the icons and the install note while your install is still there. Its welcome box says which copy the icons open.
+
 ### Fixed
+
+- Windows: the welcome box showed `←[32m` codes around it in the classic console window. Colors are now switched on, or left out when that isn't possible.
+- The welcome box's "From your phone" address could be a virtual adapter's (WSL, Hyper-V, Docker) that a phone can't reach. It's now the address the computer uses on the home network.
 
 ## [1.5.3] - 2026-10-23
 

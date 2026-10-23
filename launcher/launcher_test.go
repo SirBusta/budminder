@@ -72,4 +72,8 @@ func TestDesktopEntry(t *testing.T) {
 	if got := quoteExec(`/a "b"/$c`); got != `"/a \\"b\\"/\\$c"` {
 		t.Errorf("quoteExec = %q", got)
 	}
+	second := Box(Welcome{Port: "8080", Elsewhere: `C:\Users\you\BudMinder`, IconsMade: true}, false)
+	if !strings.Contains(second, "second copy") || strings.Contains(second, "icon was added") {
+		t.Errorf("second copy box:\n%s", second)
+	}
 }
