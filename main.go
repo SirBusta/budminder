@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -53,6 +54,7 @@ func main() {
 	// Run in the program's own folder, so data, uploads and logs sit next to
 	// it however it was started (workdir explains when it stays put).
 	where, whereErr := workdir.Apply()
+	firstRunHome()
 	logger.InitLogger()
 	if whereErr != nil {
 		logger.Log.WithError(whereErr).Warn("Couldn't move to the program's folder; data stays in the current folder")
@@ -77,8 +79,10 @@ func main() {
 
 	// The desktop icon's jobs (launcher.MakeIcons): --stop stops the BudMinder
 	// running from this folder; --open opens the browser, starting BudMinder
-	// first when it isn't running yet.
-	openWhenReady := false
+	// first when it isn't running yet. On Windows that start happens in a
+	// second, windowless copy (--background), so no console stays open.
+	// Double-clicking the .exe itself also opens the browser once ready.
+	openWhenReady := runtime.GOOS == "windows" && len(os.Args) == 1 && launcher.IsTerminal(os.Stdout)
 	for _, a := range os.Args[1:] {
 		switch a {
 		case launcher.StopFlag:
@@ -95,6 +99,13 @@ func main() {
 				}
 				return
 			}
+			if runtime.GOOS == "windows" {
+				if err := launcher.StartHidden(exePath(), launcher.BackgroundFlag); err == nil {
+					return
+				}
+			}
+			openWhenReady = true
+		case launcher.BackgroundFlag, launcher.InstalledFromFlag:
 			openWhenReady = true
 		}
 	}
@@ -279,9 +290,14 @@ func main() {
 
 	// The downloadable program: the welcome box, the desktop icon, and the
 	// browser when the icon started BudMinder. Not in Docker or the demo.
+	var stopRequested <-chan struct{} // "Stop BudMinder" (--stop); nil blocks forever
 	if !demoMode && !launcher.InDocker() {
-		launcher.WritePID("data")
-		defer launcher.RemovePID("data")
+		if ctl, err := launcher.StartControl("data"); err != nil {
+			logger.Log.WithError(err).Warn("Stop BudMinder won't work this time")
+		} else {
+			defer ctl.Close()
+			stopRequested = ctl.Stop
+		}
 		time.Sleep(1500 * time.Millisecond) // let the startup jobs log first, so the box ends up last
 		welcome(db, port)
 		if openWhenReady {
@@ -293,7 +309,10 @@ func main() {
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	select {
+	case <-quit:
+	case <-stopRequested:
+	}
 
 	logger.Log.Info("Shutdown signal received, stopping gracefully...")
 
@@ -310,25 +329,78 @@ func main() {
 	logger.Log.Info("Server exited cleanly")
 }
 
-// welcome makes the desktop icon on first run (Linux) and prints the welcome
-// box: where to open BudMinder and, while it still works, the first sign-in.
+// firstRunHome: a program started from Downloads or OneDrive with no data
+// there yet asks for a proper folder, copies itself into it and runs from
+// there (launcher.ChooseHome). Cancel carries on here, with a warning.
+func firstRunHome() {
+	exe := exePath()
+	_, dbFileSet := env.Lookup("DB_FILE")
+	if exe == "" || len(os.Args) > 1 || dbFileSet || env.Get("DEMO") != "" || launcher.InDocker() {
+		return
+	}
+	dir := filepath.Dir(exe)
+	risky := launcher.RiskyFolder(dir)
+	if risky == "" {
+		return
+	}
+	if _, err := os.Stat(filepath.Join(dir, "data", "isley.db")); err == nil {
+		return // already running from there: the welcome box warns instead
+	}
+	chosen := launcher.ChooseHome(risky)
+	if chosen == "" {
+		return
+	}
+	installed, err := launcher.Install(exe, chosen)
+	if err != nil {
+		fmt.Println("Couldn't set BudMinder up there:", err)
+		return
+	}
+	os.Exit(launcher.RunInstalled(installed, exe))
+}
+
+// installedFrom is the download this copy was set up from (--installed-from).
+func installedFrom() string {
+	for i, a := range os.Args {
+		if a == launcher.InstalledFromFlag && i+1 < len(os.Args) {
+			return os.Args[i+1]
+		}
+	}
+	return ""
+}
+
+// exePath is this program's file, links followed.
+func exePath() string {
+	exe, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	if real, err := filepath.EvalSymlinks(exe); err == nil {
+		exe = real
+	}
+	return exe
+}
+
+// welcome makes the desktop and menu icons on first run (Linux, Windows) and
+// prints the welcome box: where to open BudMinder, the first sign-in while it
+// still works, and a warning when the program sits in Downloads or OneDrive.
 func welcome(db *sql.DB, port string) {
-	w := launcher.Welcome{Port: port, LANAddress: launcher.LANAddress(), FromConsole: launcher.IsTerminal(os.Stdout)}
+	w := launcher.Welcome{Port: port, LANAddress: launcher.LANAddress(), FromConsole: launcher.IsTerminal(os.Stdout), OS: runtime.GOOS, Installed: installedFrom()}
 	if force, _ := handlers.GetSetting(db, "force_password_change"); force == "true" {
 		w.Username, _ = handlers.GetSetting(db, "auth_username")
 		w.Password = handlers.DefaultAdminPassword
 	}
-	if exe, err := os.Executable(); err == nil {
-		if real, err := filepath.EvalSymlinks(exe); err == nil {
-			exe = real
-		}
-		if icon, err := embeddedFiles.ReadFile("web/static/img/brand/budminder-256.png"); err == nil {
-			made, onDesktop, err := launcher.MakeIcons(exe, "data", icon)
+	if exe := exePath(); exe != "" {
+		// No icons for a program in Downloads or OneDrive: they'd point at a
+		// file that's about to be moved.
+		if w.Risky = launcher.RiskyFolder(filepath.Dir(exe)); w.Risky != "" {
+			w.Suggest = launcher.SuggestedHome()
+		} else if icon, err := embeddedFiles.ReadFile("web/static/img/brand/budminder-256.png"); err == nil {
+			made, err := launcher.MakeIcons(exe, "data", icon)
 			if err != nil {
 				logger.Log.WithError(err).Warn("Couldn't add the desktop icon")
 			}
-			w.IconsMade, w.IconDesktop = made, onDesktop
-			w.HasIcon = !made && launcher.HaveIcons(exe, "data")
+			w.IconsMade, w.IconDesktop = made.Made, made.OnDesktop
+			w.HasIcon = !made.Made && launcher.HaveIcons(exe, "data")
 		}
 	}
 	fmt.Print(launcher.Box(w, w.FromConsole))

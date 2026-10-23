@@ -29,19 +29,52 @@ type Welcome struct {
 	LANAddress  string // "" when none was found
 	Username    string // the first sign-in, shown only while it still works
 	Password    string
-	IconsMade   bool // the app-menu icon was just added
-	HasIcon     bool // an icon from an earlier run is in place
-	IconDesktop bool // ...and one on the desktop
-	FromConsole bool // started in a terminal (the stop hint only makes sense there)
+	IconsMade   bool   // icons were just made
+	IconDesktop bool   // ...and one is on the desktop
+	HasIcon     bool   // icons from an earlier run are in place
+	FromConsole bool   // started in a terminal (the stop hint only makes sense there)
+	OS          string // runtime.GOOS: the words differ ("Start menu", "this program file")
+	Risky       string // "Downloads" or "OneDrive" when the program sits there (RiskyFolder)
+	Suggest     string // where to move it instead (SuggestedHome)
+	Installed   string // the download this copy was set up from (ChooseHome); may be deleted
 }
 
 // Box draws the welcome box. color adds green to the border on terminals.
 func Box(w Welcome, color bool) string {
-	lines := []string{
+	menu, file := "app menu", "it from the terminal"
+	if w.OS == "windows" {
+		menu, file = "Start menu", "this program file"
+	}
+	var lines []string
+	// A program in Downloads or OneDrive keeps the grow journal there: say so first.
+	switch w.Risky {
+	case "Downloads":
+		lines = append(lines,
+			"Heads up: BudMinder is running from your Downloads folder,",
+			"and keeps your data there, where clean-ups can delete it.",
+			"Stop it, move the program into its own folder, for example",
+			"  "+w.Suggest,
+			"and start it again from there.", "")
+	case "OneDrive":
+		lines = append(lines,
+			"Heads up: BudMinder is running from a OneDrive folder, and",
+			"OneDrive's syncing can damage its database. Stop it, move",
+			"the program into its own folder, for example",
+			"  "+w.Suggest,
+			"and start it again from there.", "")
+	}
+	if w.Installed != "" {
+		here, _ := os.Getwd()
+		lines = append(lines,
+			"BudMinder set itself up in",
+			"  "+here,
+			"Your data is kept there. You can delete the file you downloaded:",
+			"  "+w.Installed, "")
+	}
+	lines = append(lines,
 		"BudMinder is running",
 		"",
-		"Open it in your browser:  http://localhost:" + w.Port,
-	}
+		"Open it in your browser:  http://localhost:"+w.Port)
 	if w.LANAddress != "" {
 		lines = append(lines, "From your phone:          http://"+w.LANAddress+":"+w.Port)
 	}
@@ -54,21 +87,26 @@ func Box(w Welcome, color bool) string {
 	}
 	// How to get back to it next time: the icon where there is one, else a bookmark.
 	lines = append(lines, "")
+	stop := "To stop BudMinder, press Ctrl+C or close this window."
 	switch {
 	case w.IconsMade:
-		where := "app menu"
+		where := menu
 		if w.IconDesktop {
-			where = "desktop and app menu"
+			where = "desktop and " + menu
 		}
 		lines = append(lines, "A BudMinder icon was added to your "+where+".",
-			"Next time, double-click it to start BudMinder and open it.")
+			"From now on, start BudMinder with that icon. You don't need",
+			"to run "+file+" again, but keep the program and its folder:",
+			"the icon uses the program, and your data is stored in the folder.")
+		stop = "Closing this window stops BudMinder; the icon starts it again."
 	case w.HasIcon:
-		lines = append(lines, "Next time, double-click the BudMinder icon to start and open it.")
+		lines = append(lines, "Next time, use the BudMinder icon on your desktop or in the",
+			menu+" instead of "+strings.TrimPrefix(file, "it from ")+".")
 	default:
 		lines = append(lines, "Tip: bookmark the page to open BudMinder quickly.")
 	}
 	if w.FromConsole {
-		lines = append(lines, "To stop BudMinder, press Ctrl+C or close this window.")
+		lines = append(lines, stop)
 	}
 
 	width := 0

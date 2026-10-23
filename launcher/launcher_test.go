@@ -39,8 +39,18 @@ func TestBox(t *testing.T) {
 		t.Errorf("icon just made: no bookmark tip, and say where it went:\n%s", made)
 	}
 	again := Box(Welcome{Port: "8080", HasIcon: true}, false)
-	if strings.Contains(again, "bookmark") || !strings.Contains(again, "double-click the BudMinder icon") {
+	if strings.Contains(again, "bookmark") || !strings.Contains(again, "use the BudMinder icon") {
 		t.Errorf("icon in place: point at it instead of a bookmark:\n%s", again)
+	}
+	win := Box(Welcome{Port: "8080", OS: "windows", IconsMade: true, IconDesktop: true, FromConsole: true}, false)
+	for _, want := range []string{"desktop and Start menu", "this program file", "keep the program and its folder", "Closing this window stops BudMinder"} {
+		if !strings.Contains(win, want) {
+			t.Errorf("Windows first run: missing %q:\n%s", want, win)
+		}
+	}
+	risky := Box(Welcome{Port: "8080", Risky: "Downloads", Suggest: `C:\Users\dave\BudMinder`}, false)
+	if first := strings.Split(strings.TrimSpace(risky), "\n")[2]; !strings.Contains(first, "Heads up: BudMinder is running from your Downloads folder") {
+		t.Errorf("the Downloads warning should come first, got %q:\n%s", first, risky)
 	}
 	if !strings.Contains(later, "http://localhost:9000") {
 		t.Errorf("box uses the wrong port:\n%s", later)

@@ -216,16 +216,25 @@ SQLite is used automatically. To use PostgreSQL instead, see the PostgreSQL sect
 
 Download the program for your system from the [latest release](https://github.com/SirBusta/budminder/releases/latest), put it in its own folder and run it. BudMinder starts on `http://localhost:8080` and keeps its database and photos in `data` and `uploads` folders next to the program. Set the same `BUDMINDER_…` settings below as environment variables if you need them.
 
-- **Windows:** the program isn't signed, so Windows may say "Windows protected your PC". Click **More info → Run anyway**. When Windows Firewall asks, allow it on **private networks** so other devices can connect.
-- **macOS** and **Linux:** see the step-by-step guides below.
+- **Windows**, **Linux** and **macOS:** see the step-by-step guides below.
 - **From your phone:** on the same Wi-Fi, open `http://<your computer's address>:8080`, for example `http://192.168.1.108:8080`. The computer has to stay on with BudMinder running.
 
 BudMinder has no window of its own: it runs in the background and you use it in your web browser.
 
+#### Windows, step by step
+
+1. **Download BudMinder.** Open the [latest release](https://github.com/SirBusta/budminder/releases/latest) page, scroll down to **Assets** and click **budminder-windows-amd64.exe**.
+2. **Give it a home.** Make a folder called `BudMinder` in your user folder (`C:\Users\<you>\BudMinder`) and move the downloaded file into it. BudMinder keeps all your data (database and photos) in this folder, so don't run it from **Downloads**, and don't put it in **OneDrive** (on many PCs that includes Documents and Desktop) or Program Files. If you start it from Downloads anyway, BudMinder explains this and lets you pick a folder, then sets itself up there.
+3. **Start it** by double-clicking the file. The program isn't signed, so Windows may say "Windows protected your PC": click **More info → Run anyway**. If Windows Firewall asks, allow it on **private networks** so your phone can connect.
+4. **Sign in.** A window opens with BudMinder running in it, and your browser opens BudMinder. Sign in with **admin** / **budminder**, and BudMinder asks you to choose a new password.
+5. **From now on, use the icon.** BudMinder adds a **BudMinder** icon to your desktop and Start menu. Double-click it to start BudMinder in the background (no window) and open it in your browser. You don't need to run the downloaded file again, but keep it and its folder: the icon uses the file, and your data is in the folder.
+6. **To stop it,** open the Start menu and click **Stop BudMinder**. (If you started it from the file, closing its window stops it too.)
+7. **Updating.** Click **Stop BudMinder**, download the new **budminder-windows-amd64.exe**, and put it in your BudMinder folder in place of the old one (same name). Then start it with the icon as usual. Your data stays in the folder.
+
 #### Linux, step by step
 
 1. **Download BudMinder.** Open the [latest release](https://github.com/SirBusta/budminder/releases/latest) page and scroll down to **Assets**. Most computers need **budminder-linux-amd64**: click it to download. Only ARM computers, such as a Raspberry Pi, need **budminder-linux-arm64**. Not sure? Open a terminal and type `uname -m`: `x86_64` means amd64, `aarch64` means arm64.
-2. **Give it a folder.** Make a folder called `budminder` in your home folder and move the download into it. Your data will live in this folder too.
+2. **Give it a home.** Make a folder called `budminder` in your home folder and move the download into it. BudMinder keeps all your data in this folder, so don't run it from **Downloads**. If you start it from Downloads anyway, BudMinder explains this and lets you pick a folder, then sets itself up there.
 3. **Make it runnable.** In a terminal:
 
    ```bash
@@ -242,7 +251,7 @@ BudMinder has no window of its own: it runs in the background and you use it in 
    When it's ready, a box at the end shows the address to open, and on the first run the sign-in. BudMinder also adds a **BudMinder** icon to your desktop and app menu.
 5. **Open it** at [http://localhost:8080](http://localhost:8080). Sign in with **admin** / **budminder**, and BudMinder asks you to choose a new password.
 6. **To stop it,** press **Ctrl+C** in that terminal, or close the terminal.
-7. **Next time, use the icon.** Double-click **BudMinder** on your desktop or in the app menu: it starts BudMinder in the background if needed and opens it in your browser. No terminal needed. To stop it, right-click the icon → **Stop BudMinder**. The first time, your desktop may ask whether to trust the new icon: allow it. If you move the `budminder` folder, start the program once from the terminal to update the icon.
+7. **From now on, use the icon.** Double-click **BudMinder** on your desktop or in the app menu: it starts BudMinder in the background if needed and opens it in your browser. No terminal needed, but keep the program and its folder: the icon uses the program, and your data is in the folder. To stop it, right-click the icon → **Stop BudMinder**. The first time, your desktop may ask whether to trust the new icon: allow it. If you move the `budminder` folder, start the program once from the terminal to update the icon.
 8. **Start it with the computer (optional).** Instead of steps 4 and 6, let your system run it in the background:
 
    ```bash
