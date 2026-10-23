@@ -150,7 +150,7 @@ A complete evaluation suite for home harvests and dispensary pickups. Rate appea
 There are two ways to run BudMinder:
 
 - **In Docker (preferred):** on a home server or any computer with Docker, so BudMinder keeps running all the time. Follow the steps right below. You need [Docker](https://docs.docker.com/get-docker/) with Compose.
-- **As a program on your computer:** download it for Windows, macOS or Linux and run it. See **Without Docker** further down, with step-by-step guides for Linux and macOS.
+- **As a program on your computer:** download it for Windows, macOS or Linux and run it. See **Download for Windows, macOS or Linux** further down, with step-by-step guides for each.
 
 **1. Save this as `docker-compose.yml`** (or use [`docker-compose.sqlite.yml`](docker-compose.sqlite.yml) from this repository):
 
@@ -215,7 +215,7 @@ SQLite is used automatically. To use PostgreSQL instead, see the PostgreSQL sect
 </details>
 
 <details>
-<summary><b>Without Docker (Windows, macOS, Linux)</b></summary>
+<summary><b>Download for Windows, macOS or Linux</b></summary>
 
 <br>
 
