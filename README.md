@@ -22,10 +22,8 @@ Runs in **Docker** (preferred), for example on Unraid, a Synology NAS or a Raspb
 
 </div>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/plant-dark.webp">
-  <img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/plant.webp" alt="A plant's page in BudMinder: the stage track from germination to harvest, a notebook with one entry per day, and the three photos taken on the selected day">
-</picture>
+<img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/plant.webp#gh-light-mode-only" alt="A plant's page in BudMinder: the stage track from germination to harvest, a notebook with one entry per day, and the three photos taken on the selected day">
+<img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/plant-dark.webp#gh-dark-mode-only" alt="A plant's page in BudMinder: the stage track from germination to harvest, a notebook with one entry per day, and the three photos taken on the selected day">
 
 <p align="center"><sub>Every plant gets a stage track from seed to harvest and a notebook with one entry per day, shown next to that day's photos.</sub></p>
 
