@@ -3693,15 +3693,15 @@ th, td {
 .sd-b.wanted { background: #fef3c7; color: #92400e; }
 .sd-b.src:hover { background: #cbd5e1; color: var(--sd-ink); }
 .sd-chip { font-size: .78rem; font-weight: 600; padding: .2rem .6rem; border-radius: 99px; background: var(--sd-soft); border: 1px solid var(--sd-line); }
-.sd-chip.fl { background: #fff7ed; border-color: #fed7aa; color: #9a3412; }
-.sd-chip.md { background: #f0f9ff; border-color: #bae6fd; color: #075985; }
+.sd-chip.fl { background: #fdf2f8; border-color: #fbcfe8; color: #9d174d; }
+.sd-chip.md { background: #f0fdfa; border-color: #99f6e4; color: #115e59; }
 [data-bs-theme="dark"] .sd-b.photo { background: rgba(56, 189, 248, .14); color: #7dd3fc; }
 [data-bs-theme="dark"] .sd-b.auto,
 [data-bs-theme="dark"] .sd-b.wanted { background: rgba(251, 191, 36, .14); color: #fcd34d; }
 [data-bs-theme="dark"] .sd-b.ok { background: rgba(74, 222, 128, .14); color: #86efac; }
 [data-bs-theme="dark"] .sd-b.src:hover { background: #3a4047; }
-[data-bs-theme="dark"] .sd-chip.fl { background: rgba(251, 146, 60, .12); border-color: rgba(251, 146, 60, .3); color: #fdba74; }
-[data-bs-theme="dark"] .sd-chip.md { background: rgba(56, 189, 248, .1); border-color: rgba(56, 189, 248, .3); color: #7dd3fc; }
+[data-bs-theme="dark"] .sd-chip.fl { background: rgba(236, 72, 153, .12); border-color: rgba(236, 72, 153, .3); color: #f9a8d4; }
+[data-bs-theme="dark"] .sd-chip.md { background: rgba(45, 212, 191, .1); border-color: rgba(45, 212, 191, .3); color: #5eead4; }
 
 /* Your grows */
 .sd-stats { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .3rem; }
@@ -4269,3 +4269,16 @@ header .isley-nav .bm-update-btn .nav-lbl { font-weight: 700; }
 .bm-upd-notes { max-height: 40vh; overflow: auto; border: 1px solid var(--color-card-border); border-radius: 8px; padding: .6rem .9rem; font-size: .9rem; }
 .bm-upd-notes h2, .bm-upd-notes h3 { font-size: 1rem; margin: .6rem 0 .3rem; }
 .bm-upd-msg { margin: .8rem 0 0; }
+
+/* Strain edit/review form: the effects, flavors, terpenes and may-help-with
+   chips use the strain page's colors (effects blue, flavors pink, terpenes
+   amber, may help with teal), so each group looks the same everywhere. */
+.strain-attr-chip { border: 1px solid; font-weight: 600; }
+.strain-attr-chip.g-effects { background: #e0f2fe; border-color: #7dd3fc; color: #075985; }
+.strain-attr-chip.g-flavors { background: #fdf2f8; border-color: #fbcfe8; color: #9d174d; }
+.strain-attr-chip.g-terpenes { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
+.strain-attr-chip.g-medical_uses { background: #f0fdfa; border-color: #99f6e4; color: #115e59; }
+[data-bs-theme="dark"] .strain-attr-chip.g-effects { background: rgba(56, 189, 248, .12); border-color: rgba(56, 189, 248, .35); color: #7dd3fc; }
+[data-bs-theme="dark"] .strain-attr-chip.g-flavors { background: rgba(236, 72, 153, .12); border-color: rgba(236, 72, 153, .3); color: #f9a8d4; }
+[data-bs-theme="dark"] .strain-attr-chip.g-terpenes { background: rgba(245, 158, 11, .12); border-color: rgba(245, 158, 11, .35); color: #fcd34d; }
+[data-bs-theme="dark"] .strain-attr-chip.g-medical_uses { background: rgba(45, 212, 191, .1); border-color: rgba(45, 212, 191, .3); color: #5eead4; }

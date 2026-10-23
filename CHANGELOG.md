@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - A second copy of BudMinder (a test, a USB stick) no longer takes over the icons and the install note while your install is still there. Its welcome box says which copy the icons open.
+- Strains: each group has its own color everywhere. Effects blue, terpenes amber, flavors pink (were orange, too close to terpenes), may help with teal (was blue, like effects). The edit form's chips, which were all gray, use the same colors.
 
 ### Fixed
 

@@ -427,8 +427,8 @@
     <label class="form-label small text-muted mb-1">{{ .label }}</label>
     <div class="d-flex flex-wrap gap-1 mb-1 strain-attr-chips">
         {{ range .items }}
-        <span class="badge text-bg-secondary strain-attr-chip" data-name="{{ .Name }}"{{ with .Intensity }} data-intensity="{{ . }}"{{ end }}{{ with .Level }} data-level="{{ . }}"{{ end }}>
-            {{ .Name }}<button type="button" class="btn-close btn-close-white ms-1 strain-attr-remove" style="font-size:.55em"></button>
+        <span class="badge strain-attr-chip g-{{ $.group }}" data-name="{{ .Name }}"{{ with .Intensity }} data-intensity="{{ . }}"{{ end }}{{ with .Level }} data-level="{{ . }}"{{ end }}>
+            {{ .Name }}<button type="button" class="btn-close ms-1 strain-attr-remove" style="font-size:.55em"></button>
         </span>
         {{ end }}
     </div>

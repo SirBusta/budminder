@@ -93,12 +93,12 @@ document.addEventListener("DOMContentLoaded", () => {
             .some(c => c.dataset.name.toLowerCase() === name.toLowerCase());
         if (exists) return;
         const chip = document.createElement("span");
-        chip.className = "badge text-bg-secondary strain-attr-chip";
+        chip.className = "badge strain-attr-chip g-" + editor.dataset.group;
         chip.dataset.name = name;
         chip.textContent = name;
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "btn-close btn-close-white ms-1 strain-attr-remove";
+        btn.className = "btn-close ms-1 strain-attr-remove";
         btn.style.fontSize = ".55em";
         btn.setAttribute("aria-label", removeLabel);
         chip.appendChild(btn);
