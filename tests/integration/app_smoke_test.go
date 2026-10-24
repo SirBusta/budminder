@@ -27,6 +27,7 @@ func TestAppSmoke(t *testing.T) {
 
 	db := testutil.NewTestDB(t)
 	server := testutil.NewTestServer(t, db)
+	testutil.SeedAdmin(t, db, "smoke-pw-12345") // an install with an account
 
 	t.Run("health is reachable without auth", func(t *testing.T) {
 		c := server.NewClient(t)
@@ -60,7 +61,7 @@ func TestAppSmoke(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 
-	t.Run("forced password change redirects post-login", func(t *testing.T) {
+	t.Run("the old default sign-in goes to the setup page", func(t *testing.T) {
 		// Fresh server + DB so this subtest's force flag does not
 		// affect the LoginAsAdmin subtest above (cookie jars are per
 		// client, but the server-side state lives in the DB).
@@ -69,12 +70,12 @@ func TestAppSmoke(t *testing.T) {
 		testutil.SeedAdminWithForceChange(t, db2, "needs-change")
 
 		c := s2.NewClient(t)
-		token := c.FetchCSRFToken("/login")
+		token := c.FetchCSRFToken("/setup")
 		resp := c.PostForm("/login", loginForm("admin", "needs-change", token))
 		defer resp.Body.Close()
 
 		require.Equal(t, http.StatusFound, resp.StatusCode)
-		assert.Equal(t, "/change-password", resp.Header.Get("Location"))
+		assert.Equal(t, "/setup", resp.Header.Get("Location"))
 	})
 
 	t.Run("login with wrong password returns 401", func(t *testing.T) {

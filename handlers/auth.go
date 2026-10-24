@@ -3,13 +3,11 @@ package handlers
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"fmt"
 	"isley/env"
 	"isley/logger"
 	"isley/utils"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -50,17 +48,21 @@ func ValidatePasswordComplexity(password string) string {
 // Auth handlers
 // ---------------------------------------------------------------------------
 
-// HandleLogin processes the POST /login form submission.
+// HandleLogin processes the POST /login form submission. An install with
+// no account of its own yet goes to the setup page instead (NeedsSetup).
 func HandleLogin(c *gin.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
 	remember := c.PostForm("remember")
 
 	db := DBFromContext(c)
+	if NeedsSetup(db) {
+		c.Redirect(http.StatusFound, "/setup")
+		return
+	}
 
 	storedUsername, _ := GetSetting(db, "auth_username")
 	storedPasswordHash, _ := GetSetting(db, "auth_password")
-	forcePasswordChange, _ := GetSetting(db, "force_password_change")
 
 	if username != storedUsername || !utils.CheckPasswordHash(password, storedPasswordHash) {
 		lang := utils.GetLanguage(c)
@@ -76,44 +78,10 @@ func HandleLogin(c *gin.Context) {
 		return
 	}
 
-	session := sessions.Default(c)
-
-	// SECURITY: Regenerate session to prevent session fixation attacks.
-	// Clear the old session data and generate a new CSRF token.
-	session.Clear()
-	session.Options(sessions.Options{
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   SecureCookies,
-		SameSite: http.SameSiteLaxMode,
-	})
-
-	// If the user checked 'remember', extend session MaxAge to 14 days
-	if remember == "on" || remember == "true" {
-		session.Options(sessions.Options{
-			Path:     "/",
-			MaxAge:   14 * 24 * 60 * 60, // 14 days
-			HttpOnly: true,
-			Secure:   SecureCookies,
-			SameSite: http.SameSiteLaxMode,
-		})
-	}
-
-	// Generate a fresh CSRF token for the new session
-	session.Set("csrf_token", GenerateCSRFToken())
-	session.Set("logged_in", true)
-	session.Set("force_password_change", forcePasswordChange == "true")
-
-	// Store current session version so it can be validated later
+	// SECURITY: a fresh session (no fixation) with a new CSRF token and the
+	// current session version, so a later password change can sign it out.
 	sessionVersion, _ := GetSetting(db, "session_version")
-	session.Set("session_version", sessionVersion)
-	session.Save()
-
-	if forcePasswordChange == "true" {
-		c.Redirect(http.StatusFound, "/change-password")
-		return
-	}
-
+	startSession(c, remember == "on" || remember == "true", sessionVersion)
 	c.Redirect(http.StatusFound, "/")
 }
 
@@ -123,61 +91,6 @@ func HandleLogout(c *gin.Context) {
 	session.Clear()
 	session.Save()
 	c.Redirect(http.StatusFound, "/login")
-}
-
-// HandleChangePassword processes the POST /change-password form submission.
-func HandleChangePassword(c *gin.Context) {
-	newPassword := c.PostForm("new_password")
-	confirmPassword := c.PostForm("confirm_password")
-
-	if newPassword != confirmPassword {
-		lang := utils.GetLanguage(c)
-		translations := utils.TranslationService.GetTranslations(lang)
-		csrfToken, _ := c.Get("csrf_token")
-		c.HTML(http.StatusBadRequest, "views/change-password.html", gin.H{
-			"Error":           "Passwords do not match",
-			"lcl":             translations,
-			"languages":       utils.AvailableLanguages,
-			"currentLanguage": lang,
-			"csrfToken":       csrfToken,
-		})
-		return
-	}
-
-	// SECURITY: Enforce password complexity requirements
-	if errMsg := ValidatePasswordComplexity(newPassword); errMsg != "" {
-		lang := utils.GetLanguage(c)
-		translations := utils.TranslationService.GetTranslations(lang)
-		csrfToken, _ := c.Get("csrf_token")
-		c.HTML(http.StatusBadRequest, "views/change-password.html", gin.H{
-			"Error":           errMsg,
-			"lcl":             translations,
-			"languages":       utils.AvailableLanguages,
-			"currentLanguage": lang,
-			"csrfToken":       csrfToken,
-		})
-		return
-	}
-
-	hashedPassword, _ := utils.HashPassword(newPassword)
-
-	db := DBFromContext(c)
-	store := ConfigStoreFromContext(c)
-
-	UpdateSetting(db, store, "auth_password", hashedPassword)
-	UpdateSetting(db, store, "force_password_change", "false")
-
-	// SECURITY: Bump session version to invalidate all other sessions.
-	// Only the current session gets the new version, so all others become stale.
-	newVersion := fmt.Sprintf("%d", time.Now().UnixNano())
-	UpdateSetting(db, store, "session_version", newVersion)
-
-	session := sessions.Default(c)
-	session.Set("force_password_change", false)
-	session.Set("session_version", newVersion)
-	session.Save()
-
-	c.Redirect(http.StatusFound, "/")
 }
 
 // ---------------------------------------------------------------------------
@@ -245,6 +158,19 @@ func AuthMiddleware() gin.HandlerFunc {
 		session := sessions.Default(c)
 		loggedIn := session.Get("logged_in")
 
+		if NeedsSetup(DBFromContext(c)) {
+			// No account of its own yet (or the old default sign-in): an
+			// earlier sign-in no longer counts, and the setup page comes
+			// first. The rest of the session (its CSRF token) stays, or a
+			// background request would void the setup form being filled in.
+			if loggedIn != nil {
+				session.Delete("logged_in")
+				_ = session.Save()
+			}
+			c.Redirect(http.StatusFound, "/setup")
+			c.Abort()
+			return
+		}
 		if loggedIn == nil || !loggedIn.(bool) {
 			c.Redirect(http.StatusFound, "/login")
 			c.Abort()
@@ -261,27 +187,6 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Redirect(http.StatusFound, "/login")
 			c.Abort()
 			return
-		}
-
-		c.Next()
-	}
-}
-
-// ForcePasswordChangeMiddleware returns middleware that redirects to
-// /change-password if the session flag is set, except when the user is
-// already on that page.
-func ForcePasswordChangeMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		session := sessions.Default(c)
-		forcePasswordChange := session.Get("force_password_change")
-
-		// Allow access to /change-password (both GET and POST) if force password change is required
-		if forcePasswordChange != nil && forcePasswordChange.(bool) {
-			if c.FullPath() != "/change-password" {
-				c.Redirect(http.StatusFound, "/change-password")
-				c.Abort()
-				return
-			}
 		}
 
 		c.Next()

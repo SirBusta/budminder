@@ -19,7 +19,7 @@ Screenshots highlight the features being explained. Numbered green callouts on e
 
 ## Where to start
 
-New to BudMinder? The tour at the top of this page shows the basics in about 3 minutes. You can start it again any time from **Take the tour** at the top of the sidebar. Then read [First login and password](/manual/first-login), followed by [Finding your way](/manual/finding-your-way). After that, a good order is:
+New to BudMinder? The tour at the top of this page shows the basics in about 3 minutes. You can start it again any time from **Take the tour** at the top of the sidebar. Then read [First login and your account](/manual/first-login), followed by [Finding your way](/manual/finding-your-way). After that, a good order is:
 
 1. Add your tents in Settings, under **Grow setup** (BudMinder calls them zones).
 2. Add a strain on the **Strains** page.

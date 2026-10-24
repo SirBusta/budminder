@@ -18,6 +18,10 @@ import (
 // /login, /logout, /health, and the dashboard suite when guest mode is on.
 func registerPublicRoutes(r *gin.Engine, cfg Config) {
 	r.GET("/login", func(c *gin.Context) {
+		if handlers.NeedsSetup(handlers.DBFromContext(c)) {
+			c.Redirect(http.StatusFound, "/setup")
+			return
+		}
 		session := sessions.Default(c)
 		loggedIn := session.Get("logged_in")
 		if loggedIn != nil && loggedIn.(bool) {
@@ -45,6 +49,16 @@ func registerPublicRoutes(r *gin.Engine, cfg Config) {
 		handlers.HandleLogin(c)
 	})
 
+	// First run: choose the username and password (handlers/setup.go).
+	r.GET("/setup", handlers.SetupPageHandler)
+	r.POST("/setup", func(c *gin.Context) {
+		if !handlers.RateLimiterServiceFromContext(c).Login().Allow(c.ClientIP()) {
+			c.AbortWithStatus(http.StatusTooManyRequests)
+			return
+		}
+		handlers.HandleSetup(c)
+	})
+
 	r.GET("/logout", handlers.HandleLogout)
 	r.GET("/health", handleHealth)
 	routes.AddManualRoutes(r.Group("/"), cfg.Version) // the Help manual: public, like /login
@@ -59,21 +73,9 @@ func registerPublicRoutes(r *gin.Engine, cfg Config) {
 func registerProtectedRoutes(r *gin.Engine, cfg Config) {
 	protected := r.Group("/")
 	protected.Use(handlers.AuthMiddleware())
-	protected.Use(handlers.ForcePasswordChangeMiddleware())
 
-	protected.GET("/change-password", func(c *gin.Context) {
-		lang := utils.GetLanguage(c)
-		translations := utils.TranslationService.GetTranslations(lang)
-		csrfToken, _ := c.Get("csrf_token")
-		c.HTML(http.StatusOK, "views/change-password.html", gin.H{
-			"lcl":             translations,
-			"languages":       utils.AvailableLanguages,
-			"currentLanguage": lang,
-			"csrfToken":       csrfToken,
-			"cspNonce":        c.GetString("cspNonce"),
-		})
-	})
-
+	// Settings > Account: change the username and/or password.
+	protected.GET("/change-password", handlers.AccountPageHandler)
 	protected.POST("/change-password", handlers.HandleChangePassword)
 
 	routes.AddProtectedRoutes(protected, cfg.Version)

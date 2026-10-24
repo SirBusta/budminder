@@ -146,97 +146,138 @@ func TestAuth_SessionVersionInvalidation(t *testing.T) {
 	assert.Equal(t, "/login", resp.Header.Get("Location"))
 }
 
-// TestAuth_ChangePasswordFlow exercises the full force-change path:
-// admin logs in, gets redirected to /change-password, posts a new
-// password, ends up at "/", and can re-login with the new credentials.
-func TestAuth_ChangePasswordFlow(t *testing.T) {
+// TestAuth_SetupFlow: a new install sends every page to /setup; the first
+// person to submit it chooses the username and password and is signed in;
+// after that /setup can't be used again.
+func TestAuth_SetupFlow(t *testing.T) {
 	t.Parallel()
 
 	db := testutil.NewTestDB(t)
 	server := testutil.NewTestServer(t, db)
-	testutil.SeedAdminWithForceChange(t, db, "old-pw")
-
 	c := server.NewClient(t)
+	token := c.FetchCSRFToken("/setup")
 
-	// Initial login lands on /change-password (force flag set).
-	loginToken := c.FetchCSRFToken("/login")
-	loginResp := c.PostForm("/login", loginForm("admin", "old-pw", loginToken))
-	loginResp.Body.Close()
-	require.Equal(t, http.StatusFound, loginResp.StatusCode)
-	require.Equal(t, "/change-password", loginResp.Header.Get("Location"))
+	// Other requests while the page is open (the browser's background
+	// requests, another tab) mustn't void the form's CSRF token.
+	for _, path := range []string{"/", "/login", "/plants"} {
+		resp := c.Get(path)
+		resp.Body.Close()
+		require.Equal(t, http.StatusFound, resp.StatusCode, path)
+		assert.Equal(t, "/setup", resp.Header.Get("Location"), path)
+	}
 
-	// Fetch the change-password form to pick up its CSRF token.
-	cpToken := c.FetchCSRFToken("/change-password")
-
-	// Submit a new password.
-	cpForm := url.Values{}
-	cpForm.Set("new_password", "new-pw-12345")
-	cpForm.Set("confirm_password", "new-pw-12345")
-	cpForm.Set("csrf_token", cpToken)
-
-	cpResp := c.PostForm("/change-password", cpForm)
-	cpResp.Body.Close()
-	require.Equal(t, http.StatusFound, cpResp.StatusCode)
-	require.Equal(t, "/", cpResp.Header.Get("Location"))
-
-	// The dashboard should now render directly — force flag cleared.
+	form := url.Values{}
+	form.Set("username", "  grower  ")
+	form.Set("password", "first-pw-123")
+	form.Set("confirm_password", "first-pw-123")
+	form.Set("csrf_token", token)
+	resp := c.PostForm("/setup", form)
+	resp.Body.Close()
+	require.Equal(t, http.StatusFound, resp.StatusCode)
+	require.Equal(t, "/", resp.Header.Get("Location"))
 	dash := c.Get("/")
 	dash.Body.Close()
-	assert.Equal(t, http.StatusOK, dash.StatusCode)
+	assert.Equal(t, http.StatusOK, dash.StatusCode, "signed in straight away")
 
-	// And the new credentials should authenticate from a brand-new
-	// client. The per-engine RateLimiterService is scoped to this test,
-	// so the single login attempt above is well under the limit.
-	c2 := server.LoginAsAdmin(t, "new-pw-12345")
-	again := c2.Get("/")
+	user, _ := handlers.GetSetting(db, "auth_username")
+	assert.Equal(t, "grower", user, "trimmed")
+
+	// Nobody can set it up a second time.
+	other := server.NewClient(t)
+	again := other.Get("/setup")
 	again.Body.Close()
-	assert.Equal(t, http.StatusOK, again.StatusCode)
+	assert.Equal(t, "/login", again.Header.Get("Location"))
+	form.Set("username", "intruder")
+	form.Set("csrf_token", other.FetchCSRFToken("/login"))
+	take := other.PostForm("/setup", form)
+	take.Body.Close()
+	assert.Equal(t, "/login", take.Header.Get("Location"))
+	user, _ = handlers.GetSetting(db, "auth_username")
+	assert.Equal(t, "grower", user)
+
+	// And the chosen sign-in works from a new browser.
+	c3 := server.NewClient(t)
+	login := c3.PostForm("/login", loginForm("grower", "first-pw-123", c3.FetchCSRFToken("/login")))
+	login.Body.Close()
+	assert.Equal(t, "/", login.Header.Get("Location"))
 }
 
-// TestAuth_ChangePasswordValidation verifies the input checks: mismatched
-// passwords and too-short passwords both return 400 without persisting
-// anything.
-func TestAuth_ChangePasswordValidation(t *testing.T) {
+// TestAuth_SetupValidation: a blank username, mismatched or short
+// passwords are refused and nothing is saved.
+func TestAuth_SetupValidation(t *testing.T) {
 	t.Parallel()
 
 	db := testutil.NewTestDB(t)
 	server := testutil.NewTestServer(t, db)
-	testutil.SeedAdminWithForceChange(t, db, "starting-pw")
-
 	c := server.NewClient(t)
-	loginToken := c.FetchCSRFToken("/login")
-	loginResp := c.PostForm("/login", loginForm("admin", "starting-pw", loginToken))
-	loginResp.Body.Close()
-	require.Equal(t, http.StatusFound, loginResp.StatusCode)
 
-	cases := []struct {
-		name, newPw, confirmPw string
-	}{
-		{"mismatch", "abcdefgh", "abcdefgX"},
-		{"too short", "1234567", "1234567"},
+	for _, tc := range []struct{ name, user, pw, confirm string }{
+		{"blank username", "   ", "abcdefgh", "abcdefgh"},
+		{"mismatch", "grower", "abcdefgh", "abcdefgX"},
+		{"too short", "grower", "1234567", "1234567"},
+	} {
+		form := url.Values{}
+		form.Set("username", tc.user)
+		form.Set("password", tc.pw)
+		form.Set("confirm_password", tc.confirm)
+		form.Set("csrf_token", c.FetchCSRFToken("/setup"))
+		resp := c.PostForm("/setup", form)
+		resp.Body.Close()
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode, tc.name)
 	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			cpToken := c.FetchCSRFToken("/change-password")
-			form := url.Values{}
-			form.Set("new_password", tc.newPw)
-			form.Set("confirm_password", tc.confirmPw)
-			form.Set("csrf_token", cpToken)
+	assert.True(t, handlers.NeedsSetup(db), "nothing was saved")
+}
 
-			resp := c.PostForm("/change-password", form)
-			resp.Body.Close()
-			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-		})
+// TestAuth_AccountChange: Settings > Account needs the current password,
+// can rename the account and change the password, and a new password signs
+// out other browsers.
+func TestAuth_AccountChange(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db)
+	testutil.SeedAdmin(t, db, "start-pw-123")
+	c := server.LoginAsAdmin(t, "start-pw-123")
+	elsewhere := server.LoginAsAdmin(t, "start-pw-123")
+
+	post := func(user, current, pw, confirm string) *http.Response {
+		form := url.Values{}
+		form.Set("username", user)
+		form.Set("current_password", current)
+		form.Set("new_password", pw)
+		form.Set("confirm_password", confirm)
+		form.Set("csrf_token", c.FetchCSRFToken("/change-password"))
+		resp := c.PostForm("/change-password", form)
+		resp.Body.Close()
+		return resp
 	}
 
-	// The original password should still work. The per-engine
-	// RateLimiterService is scoped to this test, so the rejected
-	// change-password POSTs above did not consume login attempts.
+	assert.Equal(t, http.StatusBadRequest, post("grower", "wrong-pw", "", "").StatusCode, "the current password is required")
+	assert.Equal(t, http.StatusBadRequest, post("grower", "start-pw-123", "abcdefgh", "abcdefgX").StatusCode)
+	user, _ := handlers.GetSetting(db, "auth_username")
+	assert.Equal(t, "admin", user, "nothing saved yet")
+
+	// Rename only: the password stays and other browsers stay signed in.
+	resp := post("grower", "start-pw-123", "", "")
+	require.Equal(t, http.StatusFound, resp.StatusCode)
+	assert.Equal(t, "/settings", resp.Header.Get("Location"))
+	still := elsewhere.Get("/")
+	still.Body.Close()
+	assert.Equal(t, http.StatusOK, still.StatusCode)
+
+	// New password: this browser stays in, the other one is signed out.
+	require.Equal(t, http.StatusFound, post("grower", "start-pw-123", "new-pw-4567", "new-pw-4567").StatusCode)
+	mine := c.Get("/")
+	mine.Body.Close()
+	assert.Equal(t, http.StatusOK, mine.StatusCode)
+	gone := elsewhere.Get("/")
+	gone.Body.Close()
+	assert.Equal(t, "/login", gone.Header.Get("Location"))
+
 	c2 := server.NewClient(t)
-	tok := c2.FetchCSRFToken("/login")
-	resp := c2.PostForm("/login", loginForm("admin", "starting-pw", tok))
-	resp.Body.Close()
-	assert.Equal(t, http.StatusFound, resp.StatusCode, "original password must still authenticate after rejected changes")
+	login := c2.PostForm("/login", loginForm("grower", "new-pw-4567", c2.FetchCSRFToken("/login")))
+	login.Body.Close()
+	assert.Equal(t, "/", login.Header.Get("Location"))
 }
 
 // TestAuth_APIKey_HappyPath verifies that an X-API-KEY header satisfies

@@ -8,10 +8,10 @@ import (
 
 func TestBox(t *testing.T) {
 	t.Parallel()
-	first := Box(Welcome{Port: "8080", LANAddress: "192.168.1.108", Username: "admin", Password: "budminder", FromConsole: true}, false)
+	first := Box(Welcome{Port: "8080", LANAddress: "192.168.1.108", Setup: true, FromConsole: true}, false)
 	for _, want := range []string{
 		"http://localhost:8080", "http://192.168.1.108:8080",
-		"  user:      admin", "  password:  budminder", "To stop BudMinder",
+		"create your account", "To stop BudMinder",
 	} {
 		if !strings.Contains(first, want) {
 			t.Errorf("first-run box is missing %q:\n%s", want, first)

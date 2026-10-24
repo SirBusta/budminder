@@ -1,0 +1,46 @@
+{{ define "views/setup.html" }}
+{{ template "common/header.html" .}}
+</head>
+
+<body>
+<main id="main-content">
+<!-- First run (handlers/setup.go): choose the username and password. -->
+<div class="container">
+    <div class="text-center mb-3">
+        <img src="/static/img/brand/budminder-wordmark.svg" alt="BudMinder" class="brand-wm-lg brand-light">
+        <img src="/static/img/brand/budminder-wordmark-dark.svg" alt="BudMinder" class="brand-wm-lg brand-dark">
+    </div>
+    <h1 class="text-center text-primary">{{ .lcl.setup_title }}</h1>
+    <p class="text-center text-muted">{{ .lcl.setup_intro }}</p>
+    <div class="card shadow-sm">
+        <form action="/setup" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ .csrfToken }}">
+            <div class="mb-3">
+                <label for="username" class="form-label required">{{ .lcl.username }}</label>
+                <input type="text" id="username" name="username" class="form-control" value="{{ .Username }}" maxlength="64" autocomplete="username" required autofocus>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label required">{{ .lcl.password }}</label>
+                <input type="password" id="password" name="password" class="form-control" minlength="8" autocomplete="new-password" required>
+                <div class="form-text">{{ .lcl.setup_password_hint }}</div>
+            </div>
+            <div class="mb-3">
+                <label for="confirmPassword" class="form-label required">{{ .lcl.confirm_password }}</label>
+                <input type="password" id="confirmPassword" name="confirm_password" class="form-control" minlength="8" autocomplete="new-password" required>
+            </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="remember" name="remember" checked>
+                <label class="form-check-label" for="remember">{{ .lcl.remember_me }}</label>
+            </div>
+            {{ if .Error }}
+            <div class="alert alert-danger">{{ .Error }}</div>
+            {{ end }}
+            <button type="submit" class="btn btn-primary w-100">{{ .lcl.setup_submit }}</button>
+        </form>
+    </div>
+</div>
+
+<!--Embed the footer.html template at this location-->
+{{ template "common/footer.html" .}}
+
+{{ end }}

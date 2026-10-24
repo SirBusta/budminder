@@ -2,7 +2,7 @@
   "groups": [
     {"title": "Getting started", "sections": [
       {"slug": "welcome", "title": "Welcome"},
-      {"slug": "first-login", "title": "First login and password", "paths": ["/login", "/change-password"]},
+      {"slug": "first-login", "title": "First login and your account", "paths": ["/login", "/setup", "/change-password"]},
       {"slug": "finding-your-way", "title": "Finding your way"}
     ]},
     {"title": "Growing", "sections": [

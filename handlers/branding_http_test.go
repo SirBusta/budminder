@@ -14,7 +14,6 @@ import (
 
 	"isley/handlers"
 	"isley/tests/testutil"
-	"isley/utils"
 )
 
 func TestBranding_Pages(t *testing.T) {
@@ -39,7 +38,16 @@ func TestBranding_Pages(t *testing.T) {
 	assert.Contains(t, welcome, "Copyright (c) 2024 dwot")
 	assert.NotContains(t, e.page(t, "/manual/plant-page"), `id="mnAbout"`, "only on Welcome")
 
-	resp := testutil.NewTestServer(t, testutil.NewTestDB(t)).NewClient(t).Get("/login")
+	fresh := testutil.NewTestServer(t, testutil.NewTestDB(t)).NewClient(t)
+	resp := fresh.Get("/setup")
+	setup, err := io.ReadAll(resp.Body)
+	testutil.DrainAndClose(resp)
+	require.NoError(t, err)
+	assert.Contains(t, string(setup), "brand-wm-lg", "the setup page shows the wordmark")
+
+	db := testutil.NewTestDB(t)
+	testutil.SeedAdmin(t, db, "brand-pw-123")
+	resp = testutil.NewTestServer(t, db).NewClient(t).Get("/login")
 	login, err := io.ReadAll(resp.Body)
 	testutil.DrainAndClose(resp)
 	require.NoError(t, err)
@@ -80,26 +88,14 @@ func TestBranding_IconsAndManifest(t *testing.T) {
 	assert.Equal(t, "maskable", m.Icons[2].Purpose)
 }
 
-func TestSeedDefaultAdmin(t *testing.T) {
+func TestNeedsSetup(t *testing.T) {
 	t.Parallel()
 	db := testutil.NewTestDB(t)
-	require.NoError(t, handlers.SeedDefaultAdmin(db))
+	assert.True(t, handlers.NeedsSetup(db), "a new install has no account")
 
-	user, err := handlers.GetSetting(db, "auth_username")
-	require.NoError(t, err)
-	assert.Equal(t, "admin", user)
-	hash, err := handlers.GetSetting(db, "auth_password")
-	require.NoError(t, err)
-	assert.True(t, utils.CheckPasswordHash("budminder", hash), "first login is admin / budminder")
-	force, err := handlers.GetSetting(db, "force_password_change")
-	require.NoError(t, err)
-	assert.Equal(t, "true", force, "and it has to be changed at once")
+	testutil.SeedAdminWithForceChange(t, db, "budminder")
+	assert.True(t, handlers.NeedsSetup(db), "the old default sign-in still needs setting up")
 
-	// An existing account is never touched.
-	_, err = db.Exec(`UPDATE settings SET value = 'grower' WHERE name = 'auth_username'`)
-	require.NoError(t, err)
-	require.NoError(t, handlers.SeedDefaultAdmin(db))
-	user, err = handlers.GetSetting(db, "auth_username")
-	require.NoError(t, err)
-	assert.Equal(t, "grower", user)
+	testutil.SeedAdmin(t, db, "a-real-password")
+	assert.False(t, handlers.NeedsSetup(db))
 }

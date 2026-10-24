@@ -107,7 +107,7 @@ func TestDemo_RefusesEverythingNotOnTheList(t *testing.T) {
 	t.Parallel()
 	e := newDemo(t)
 	for _, r := range []struct{ method, path string }{
-		{"POST", "/login"}, {"POST", "/change-password"}, {"POST", "/settings"},
+		{"POST", "/login"}, {"POST", "/setup"}, {"POST", "/change-password"}, {"POST", "/settings"},
 		{"POST", "/settings/backup/create"}, {"POST", "/settings/backup/restore"}, {"POST", "/settings/backup/sqlite/upload"},
 		{"POST", "/settings/upload-logo"}, {"POST", "/settings/homeassistant/test"},
 		{"POST", "/sensors/scanACI"}, {"POST", "/sensors/scanEC"}, {"POST", "/sensors/scanHA"},

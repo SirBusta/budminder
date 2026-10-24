@@ -11,9 +11,9 @@ Click **Settings** in the top navigation menu to open system configuration. Sett
 
 Enable **Enable Guest Access** to let visitors browse your plants, strain library, photo galleries and smoke reports without credentials. Guests have read-only access and cannot alter data or configuration. BudMinder requires a server restart for this toggle to take effect. See [Finding your way](/manual/finding-your-way#guest-view).
 
-## Password
+## Account
 
-Click **Change Password** to update your master credentials. See [First login and password](/manual/first-login#changing-your-password).
+Click **Change username or password** to change what you sign in with. See [First login and your account](/manual/first-login#changing-your-username-or-password).
 
 ## Other sections
 

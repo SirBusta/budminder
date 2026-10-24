@@ -127,12 +127,6 @@ func main() {
 		logger.Log.WithError(err).Fatal("Failed to open database for credential init")
 	}
 
-	// Seed default admin credentials if absent. Pass nil for the store
-	// because the engine (and its Store) hasn't been constructed yet —
-	// these rows are loaded into the Store by the LoadSettings call below.
-	if err := handlers.SeedDefaultAdmin(db); err != nil {
-		logger.Log.WithError(err).Error("Error checking if default admin credentials are present")
-	}
 	if n, err := handlers.RepairLineageBrackets(db); err != nil {
 		logger.Log.WithError(err).Error("Failed to repair split parent strain names")
 	} else if n > 0 {
@@ -331,8 +325,13 @@ func main() {
 			defer ctl.Close()
 			stopRequested = ctl.Stop
 		}
+		// Only a normal run is an install: a set database file or a go run /
+		// go test build (tests, the demo build, trying things out) never
+		// writes the note or makes icons.
+		_, dbFileSet := env.Lookup("DB_FILE")
+		install := !dbFileSet && where.Reason != "development build"
 		elsewhere, other := "", false
-		if _, dbFileSet := env.Lookup("DB_FILE"); !dbFileSet && where.Reason != "development build" {
+		if install {
 			// A second copy leaves the note and the icons to the noted install.
 			note, ok := launcher.ReadNote()
 			if elsewhere, other = launcher.OtherInstall(exePath(), note, ok, fileExists); !other {
@@ -340,7 +339,7 @@ func main() {
 			}
 		}
 		time.Sleep(1500 * time.Millisecond) // let the startup jobs log first, so the box ends up last
-		welcome(db, port, elsewhere)
+		welcome(db, port, elsewhere, install)
 		if openWhenReady {
 			if err := launcher.OpenBrowser("http://localhost:" + port); err != nil {
 				logger.Log.WithError(err).Error("Couldn't open the browser")
@@ -513,21 +512,18 @@ func exePath() string {
 }
 
 // welcome makes the desktop and menu icons on first run (Linux, Windows) and
-// prints the welcome box: where to open BudMinder, the first sign-in while it
-// still works, and a warning when the program sits in Downloads or OneDrive.
-func welcome(db *sql.DB, port, elsewhere string) {
+// prints the welcome box: where to open BudMinder, that the first page creates
+// the account, and a warning when the program sits in Downloads or OneDrive.
+func welcome(db *sql.DB, port, elsewhere string, install bool) {
 	w := launcher.Welcome{Port: port, Elsewhere: elsewhere, LANAddress: launcher.LANAddress(), FromConsole: launcher.IsTerminal(os.Stdout), OS: runtime.GOOS, Installed: argValue(launcher.InstalledFromFlag), Updated: argValue(launcher.UpdatedFromFlag)}
-	if force, _ := handlers.GetSetting(db, "force_password_change"); force == "true" {
-		w.Username, _ = handlers.GetSetting(db, "auth_username")
-		w.Password = handlers.DefaultAdminPassword
-	}
+	w.Setup = handlers.NeedsSetup(db)
 	if exe := exePath(); exe != "" {
 		// No icons for a program in Downloads or OneDrive: they'd point at a
 		// file that's about to be moved.
 		if w.Risky = launcher.RiskyFolder(filepath.Dir(exe)); w.Risky != "" {
 			w.Suggest = launcher.SuggestedHome()
-		} else if elsewhere != "" {
-			// a second copy: the icons stay with the install they open
+		} else if elsewhere != "" || !install {
+			// a second copy or a test run: the icons stay with the install they open
 		} else if icon, err := embeddedFiles.ReadFile("web/static/img/brand/budminder-256.png"); err == nil {
 			made, err := launcher.MakeIcons(exe, "data", icon)
 			if err != nil {

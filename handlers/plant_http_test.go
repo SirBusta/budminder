@@ -255,6 +255,7 @@ func TestPlantHTTP_LivingPlants_RequiresLogin(t *testing.T) {
 
 	db := testutil.NewTestDB(t)
 	server := testutil.NewTestServer(t, db)
+	testutil.SeedAdmin(t, db, "living-pw-123") // an install with an account: signed out means /login
 
 	c := server.NewClient(t)
 	resp := c.Get("/plants/living")

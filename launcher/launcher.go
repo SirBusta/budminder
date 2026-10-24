@@ -27,8 +27,7 @@ func InDocker() bool {
 type Welcome struct {
 	Port        string
 	LANAddress  string // "" when none was found
-	Username    string // the first sign-in, shown only while it still works
-	Password    string
+	Setup       bool   // no account yet: the first page asks for a username and password
 	IconsMade   bool   // icons were just made
 	IconDesktop bool   // ...and one is on the desktop
 	HasIcon     bool   // icons from an earlier run are in place
@@ -89,12 +88,10 @@ func Box(w Welcome, color bool) string {
 	if w.LANAddress != "" {
 		lines = append(lines, "From your phone:          http://"+w.LANAddress+":"+w.Port)
 	}
-	if w.Password != "" {
+	if w.Setup {
 		lines = append(lines, "",
-			"First sign-in",
-			"  user:      "+w.Username,
-			"  password:  "+w.Password,
-			"You'll then be asked to choose a new password.")
+			"First, open that page and create your account:",
+			"choose the username and password you'll sign in with.")
 	}
 	// How to get back to it next time: the icon where there is one, else a bookmark.
 	lines = append(lines, "")
