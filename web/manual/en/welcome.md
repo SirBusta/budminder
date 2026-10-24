@@ -1,4 +1,4 @@
-BudMinder is a self-hosted grow journal that runs on your own computer or home server. It keeps your plants, their daily notes and photos, your strains and seeds, your sensor readings and your smoke reports in one place.
+BudMinder is a self-hosted cannabis grow journal that runs on your own computer or home server. It keeps your plants, their daily notes and photos, your strains and seeds, your sensor readings and your smoke reports in one place.
 
 ## What's in BudMinder
 

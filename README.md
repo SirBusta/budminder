@@ -30,7 +30,7 @@ Runs in **Docker** (preferred), for example on Unraid, a Synology NAS or a Raspb
 
 ## Why BudMinder?
 
-**Your grow, on your hardware.** BudMinder is a self-hosted grow journal designed to run entirely on your own machine or home server. No cloud accounts, no corporate tracking, and no treating your cultivation logs as a commodity. What you record stays on your own hardware.
+**Your grow, on your hardware.** BudMinder is a self-hosted cannabis grow journal designed to run entirely on your own machine or home server. No cloud accounts, no corporate tracking, and no treating your cultivation logs as a commodity. What you record stays on your own hardware.
 
 **Free and open source.** BudMinder is free, with no subscriptions or paid tiers. Its code is public under the MIT license, so anyone can check exactly what it does with your data, suggest improvements, or build on it.
 

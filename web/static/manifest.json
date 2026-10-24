@@ -1,7 +1,7 @@
 {
   "name": "BudMinder",
   "short_name": "BudMinder",
-  "description": "Self-hosted grow journal",
+  "description": "Self-hosted cannabis grow journal",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
