@@ -7,7 +7,7 @@
   <MyIP/>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
-  <Support>https://github.com/SirBusta/budminder/issues</Support>
+  <Support>https://forums.unraid.net/topic/201028-support-sirbusta-budminder-self-hosted-cannabis-grow-journal/</Support>
   <Project>https://github.com/SirBusta/budminder</Project>
   <ReadMe>https://github.com/SirBusta/budminder#readme</ReadMe>
   <Overview>A self-hosted cannabis grow journal for home growers. Keep daily notes, measurements and photos for every plant from seed to harvest, see live temperature, humidity, VPD and CO2 from AC Infinity, Ecowitt or Home Assistant sensors, and track your strains and seed vault. Everything stays on your server: SQLite by default (PostgreSQL optional), with backups you can download and restore in Settings.

@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
 <CommunityApplications>
-  <Profile>BudMinder is a self-hosted cannabis grow journal for home growers: daily notes, measurements and photos for every plant, live AC Infinity, Ecowitt and Home Assistant sensors, strains and a seed vault. Maintained by SirBusta; open source (MIT), based on Isley by dwot. Report bugs and ask questions on GitHub Issues.</Profile>
+  <Profile>BudMinder is a self-hosted cannabis grow journal for home growers: daily notes, measurements and photos for every plant, live AC Infinity, Ecowitt and Home Assistant sensors, strains and a seed vault. Maintained by SirBusta; open source (MIT), based on Isley by dwot. Ask questions in the Unraid forum support thread; report bugs there or on GitHub Issues.</Profile>
   <Icon>https://raw.githubusercontent.com/SirBusta/budminder/main/web/static/img/brand/budminder-256.png</Icon>
   <WebPage>https://github.com/SirBusta/budminder</WebPage>
-  <!-- Added once the Unraid forum support thread exists: -->
-  <!-- <Forum>https://forums.unraid.net/topic/...</Forum> -->
+  <Forum>https://forums.unraid.net/topic/201028-support-sirbusta-budminder-self-hosted-cannabis-grow-journal/</Forum>
 </CommunityApplications>
