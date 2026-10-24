@@ -243,7 +243,7 @@ jobs:
 
   # BudMinder images go to the GitHub Container Registry under this
   # account, pushed with the workflow's own GITHUB_TOKEN (no secrets).
-  # Push to main: :latest and :sha-<short>. Tag vX.Y.Z: :X.Y.Z and :latest.
+  # Push to main: :edge and :sha-<short>. Tag vX.Y.Z: :X.Y.Z and :latest.
   image:
     name: Docker image
     needs: [test, test-postgres]
@@ -269,7 +269,9 @@ jobs:
             fi
             echo "tags=${IMAGE}:${VERSION},${IMAGE}:latest" >> "$GITHUB_OUTPUT"
           else
-            echo "tags=${IMAGE}:latest,${IMAGE}:sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+            # Uploads to main publish "edge": "latest" is releases only, so
+            # Docker and Unraid installs on latest never get unreleased work.
+            echo "tags=${IMAGE}:edge,${IMAGE}:sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
@@ -291,7 +293,12 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: true
+          # Docker-format manifest list, no attestations: ghcr.io answers an
+          # update check that only accepts Docker formats (Unraid's) with 404
+          # for an OCI index, so Unraid never saw a new version.
+          provenance: false
+          sbom: false
+          outputs: type=image,push=true,oci-mediatypes=false
           tags: ${{ steps.tags.outputs.tags }}
           labels: |
             org.opencontainers.image.title=budminder

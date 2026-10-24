@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Unraid never showed "update ready" for BudMinder. The image is now published in the classic Docker format that Unraid's update check reads (ghcr.io refused it the newer format). Also, `latest` now only changes with releases; uploads between releases publish `edge`.
+
 ## [1.5.4] - 2026-10-23
 
 ### Added
