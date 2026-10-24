@@ -24,10 +24,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [1.5.6] - 2026-10-24
+
+### Added
+
 - A new install starts with **Create your account**: you choose your own username and password. There's no default sign-in any more (it was admin / budminder). An existing install still on that default gets the same page once.
 - Settings → **Account**: change your username and/or password. Your current password is needed to save.
-
-### Changed
 
 ### Fixed
 
