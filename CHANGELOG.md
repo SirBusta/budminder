@@ -26,11 +26,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+### Fixed
+
+## [1.5.5] - 2026-10-24
+
+### Changed
+
 - The new-release notice is now an amber **Update available** pill next to the BudMinder logo (was **New release** among the menu items, too easy to mistake for one). It shows "Update" on phones.
+- README: closing the browser doesn't stop BudMinder (all systems), and on a Mac, start it the same way each time.
 
 ### Fixed
 
-- Unraid never showed "update ready" for BudMinder. The image is now published in the classic Docker format that Unraid's update check reads (ghcr.io refused it the newer format). Also, `latest` now only changes with releases; uploads between releases publish `edge`.
+- Unraid never showed "update ready" for BudMinder. The image is now published in the classic Docker format that Unraid's update check reads (GitHub's registry wouldn't hand it the newer format). Also, `latest` now only changes with releases; uploads between releases publish `edge`.
 
 ## [1.5.4] - 2026-10-23
 
