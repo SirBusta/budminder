@@ -3,6 +3,7 @@
     {"title": "Getting started", "sections": [
       {"slug": "welcome", "title": "Welcome"},
       {"slug": "first-login", "title": "First login and your account", "paths": ["/login", "/setup", "/change-password"]},
+      {"slug": "starting-and-stopping", "title": "Starting and stopping BudMinder"},
       {"slug": "finding-your-way", "title": "Finding your way"}
     ]},
     {"title": "Growing", "sections": [
