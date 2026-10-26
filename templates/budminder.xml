@@ -12,7 +12,7 @@
   <ReadMe>https://github.com/SirBusta/budminder#readme</ReadMe>
   <Overview>A self-hosted cannabis grow journal for home growers. Keep daily notes, measurements and photos for every plant from seed to harvest, see live temperature, humidity, VPD and CO2 from AC Infinity, Ecowitt or Home Assistant sensors, and track your strains and seed vault. Everything stays on your server: SQLite by default (PostgreSQL optional), with backups you can download and restore in Settings.
 
-The first time you open it, BudMinder asks you to create your account: choose your own username and password.
+The first time you open it, BudMinder asks you to create a local account: choose your own username and password. It stays on your server; there is nothing to sign up for anywhere else.
 
 Your database lives in the Data folder and your photos in the Uploads folder; both survive container updates. Based on Isley by dwot.</Overview>
   <Category>HomeAutomation: Tools:Utilities</Category>
