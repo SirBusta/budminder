@@ -80,9 +80,33 @@ func HandleLogin(c *gin.Context) {
 
 	// SECURITY: a fresh session (no fixation) with a new CSRF token and the
 	// current session version, so a later password change can sign it out.
+	next := pageAfterLogin(sessions.Default(c).Get(afterLoginKey))
 	sessionVersion, _ := GetSetting(db, "session_version")
 	startSession(c, remember == "on" || remember == "true", sessionVersion)
-	c.Redirect(http.StatusFound, "/")
+	c.Redirect(http.StatusFound, next)
+}
+
+// afterLoginKey (in the session) is the page someone was opening when they
+// were sent to sign in, e.g. /phone from the tray icon; signing in goes there.
+const afterLoginKey = "after_login"
+
+// rememberPage keeps the page being opened for after sign-in: only a page a
+// browser navigates to (GET, wants HTML), not a background request.
+func rememberPage(c *gin.Context, session sessions.Session) {
+	if c.Request.Method == http.MethodGet && strings.Contains(c.GetHeader("Accept"), "text/html") {
+		session.Set(afterLoginKey, c.Request.URL.RequestURI())
+		_ = session.Save()
+	}
+}
+
+// pageAfterLogin is the remembered page, or / when there's none. Only a path
+// on this site counts ("//host" and "/\host" would leave it).
+func pageAfterLogin(v any) string {
+	p, _ := v.(string)
+	if !strings.HasPrefix(p, "/") || strings.HasPrefix(p, "//") || strings.HasPrefix(p, "/\\") {
+		return "/"
+	}
+	return p
 }
 
 // HandleLogout clears the session and redirects to the login page.
@@ -172,6 +196,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 		if loggedIn == nil || !loggedIn.(bool) {
+			rememberPage(c, session)
 			c.Redirect(http.StatusFound, "/login")
 			c.Abort()
 			return

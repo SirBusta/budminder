@@ -111,6 +111,25 @@ func main() {
 			openWhenReady = true
 		case launcher.RestartedFlag:
 			// back after an update: the browser page is already open and waiting
+		case launcher.AllowFirewallFlag:
+			// The phone window's "Allow through firewall", run as administrator.
+			if err := launcher.AllowFirewall(exePath()); err != nil {
+				logger.Log.WithError(err).Error("Couldn't let BudMinder through the firewall")
+				os.Exit(1)
+			}
+			logger.Log.Info("BudMinder is allowed through the firewall on private networks")
+			return
+		case launcher.AtLoginFlag:
+			// "Start with Windows": the Startup shortcut runs this in a minimized
+			// window, which hands over to a windowless copy. No browser.
+			if launcher.Running(port) {
+				return
+			}
+			if runtime.GOOS == "windows" && launcher.IsTerminal(os.Stdout) {
+				if err := launcher.StartHidden(exePath(), launcher.AtLoginFlag); err == nil {
+					return
+				}
+			}
 		}
 	}
 
@@ -318,6 +337,8 @@ func main() {
 	// browser when the icon started BudMinder. Not in Docker or the demo.
 	restarting := false
 	var stopRequested <-chan struct{} // "Stop BudMinder" (--stop); nil blocks forever
+	trayStop := make(chan struct{})   // Stop BudMinder in the tray icon's menu
+	removeTray := func() {}
 	if !demoMode && !launcher.InDocker() {
 		if ctl, err := launcher.StartControl("data"); err != nil {
 			logger.Log.WithError(err).Warn("Stop BudMinder won't work this time")
@@ -338,8 +359,41 @@ func main() {
 				writeNote()
 			}
 		}
+		// The icon by the clock (Windows): only for a real install, or a test
+		// run that asks with BUDMINDER_TRAY=1. Start with Windows only for the
+		// noted install, never a second copy.
+		showTray := false
+		if install || env.Get("TRAY") == "1" {
+			var atLogin *launcher.AtLogin
+			if install && !other {
+				atLogin = launcher.StartWithWindows(exePath())
+			}
+			icon, _ := embeddedFiles.ReadFile("web/static/img/brand/budminder-256.png")
+			glyphs, _ := embeddedFiles.ReadFile("web/static/vendor/fontawesome/webfonts/fa-solid-900.ttf")
+			here, _ := os.Getwd()
+			var once sync.Once
+			removeTray, showTray = launcher.RunTray(launcher.Tray{
+				Version: getVersion(),
+				Port:    port,
+				Folder:  here,
+				Icon:    icon,
+				Glyphs:  glyphs,
+				Exe:     exePath(),
+				Update: func() string {
+					if r := releases.Checker.Available(); r != nil {
+						return r.Version
+					}
+					return ""
+				},
+				AtLogin: atLogin,
+				Stop:    func() { once.Do(func() { close(trayStop) }) },
+				Failed: func(what string, err error) {
+					logger.Log.WithError(err).Warn("Tray icon: couldn't " + what)
+				},
+			})
+		}
 		time.Sleep(1500 * time.Millisecond) // let the startup jobs log first, so the box ends up last
-		welcome(db, port, elsewhere, install)
+		welcome(db, port, elsewhere, install, showTray)
 		if openWhenReady {
 			if err := launcher.OpenBrowser("http://localhost:" + port); err != nil {
 				logger.Log.WithError(err).Error("Couldn't open the browser")
@@ -352,6 +406,7 @@ func main() {
 	select {
 	case <-quit:
 	case <-stopRequested:
+	case <-trayStop:
 	case <-restartCh:
 		restarting = true
 	}
@@ -369,6 +424,7 @@ func main() {
 	}
 
 	logger.Log.Info("Server exited cleanly")
+	removeTray()
 	if restarting {
 		relaunch()
 	}
@@ -514,8 +570,8 @@ func exePath() string {
 // welcome makes the desktop and menu icons on first run (Linux, Windows) and
 // prints the welcome box: where to open BudMinder, that the first page creates
 // the account, and a warning when the program sits in Downloads or OneDrive.
-func welcome(db *sql.DB, port, elsewhere string, install bool) {
-	w := launcher.Welcome{Port: port, Elsewhere: elsewhere, LANAddress: launcher.LANAddress(), FromConsole: launcher.IsTerminal(os.Stdout), OS: runtime.GOOS, Installed: argValue(launcher.InstalledFromFlag), Updated: argValue(launcher.UpdatedFromFlag)}
+func welcome(db *sql.DB, port, elsewhere string, install, tray bool) {
+	w := launcher.Welcome{Port: port, Elsewhere: elsewhere, LANAddress: launcher.LANAddress(), FromConsole: launcher.IsTerminal(os.Stdout), OS: runtime.GOOS, Installed: argValue(launcher.InstalledFromFlag), Updated: argValue(launcher.UpdatedFromFlag), Tray: tray}
 	w.Setup = handlers.NeedsSetup(db)
 	if exe := exePath(); exe != "" {
 		// No icons for a program in Downloads or OneDrive: they'd point at a

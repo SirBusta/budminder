@@ -85,4 +85,11 @@
     }
 
     btn.addEventListener("click", open);
+    // The tray icon's "Update to …" opens /?update=1: show the window straight away.
+    const params = new URLSearchParams(location.search);
+    if (params.has("update")) {
+        params.delete("update");
+        history.replaceState(null, "", location.pathname + (params.size ? "?" + params : "") + location.hash);
+        open();
+    }
 })();

@@ -38,6 +38,7 @@ type Welcome struct {
 	Installed   string // the download this copy was set up from (ChooseHome); may be deleted
 	Updated     string // the download this install was just updated from (UpdateInstall); may be deleted
 	Elsewhere   string // the install the icons open, when this is a second copy (OtherInstall)
+	Tray        bool   // the icon by the clock is showing (RunTray)
 }
 
 // Box draws the welcome box. color adds green to the border on terminals.
@@ -116,6 +117,14 @@ func Box(w Welcome, color bool) string {
 			menu+" instead of "+strings.TrimPrefix(file, "it from ")+".")
 	default:
 		lines = append(lines, "Tip: bookmark the page to open BudMinder quickly.")
+	}
+	if w.Tray {
+		// Windows tucks new icons away behind the ^ by the clock; only the user can bring it out.
+		lines = append(lines, "",
+			"BudMinder's icon is by the clock: click it to open BudMinder,",
+			"right-click it for more, including Stop BudMinder.",
+			"Don't see it? Click the ^ arrow by the clock and drag the",
+			"BudMinder icon onto the taskbar, so it stays in view.")
 	}
 	if w.FromConsole {
 		lines = append(lines, stop)

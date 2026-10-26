@@ -216,3 +216,15 @@ func TestCheckAPIKey_PlaintextMatch(t *testing.T) {
 	assert.False(t, miss)
 	assert.False(t, legacy2)
 }
+
+func TestPageAfterLogin(t *testing.T) {
+	t.Parallel()
+	for in, want := range map[any]string{
+		nil: "/", "": "/", "/settings": "/settings", "/plant/3?tab=notes": "/plant/3?tab=notes",
+		"//evil.example": "/", `/\evil.example`: "/", "https://evil.example": "/", 42: "/",
+	} {
+		if got := pageAfterLogin(in); got != want {
+			t.Errorf("pageAfterLogin(%v) = %q, want %q", in, got, want)
+		}
+	}
+}

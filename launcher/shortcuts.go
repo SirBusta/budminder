@@ -1,8 +1,6 @@
 package launcher
 
 import (
-	"bytes"
-	"encoding/binary"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -24,6 +22,9 @@ const (
 	// RestartedFlag marks the restart after an update: no browser to open,
 	// the page is already waiting. Not for people to type.
 	RestartedFlag = "--restarted"
+	// AtLoginFlag is the Startup-folder shortcut's ("Start with Windows" in
+	// the tray): start in the background when not running yet, no browser.
+	AtLoginFlag = "--at-login"
 )
 
 const (
@@ -242,12 +243,5 @@ if ($desk -and (Test-Path $desk)) { Make 'desktop' (Join-Path $desk 'BudMinder.l
 // PNGToICO wraps a PNG (256x256) in an .ico file, which Windows shortcuts
 // need; Windows Vista and later read PNG-compressed icons.
 func PNGToICO(png []byte) []byte {
-	var b bytes.Buffer
-	le := binary.LittleEndian
-	_ = binary.Write(&b, le, [3]uint16{0, 1, 1})                  // reserved, type 1 = icon, one image
-	b.Write([]byte{0, 0, 0, 0})                                   // 256x256 (0 means 256), no palette, reserved
-	_ = binary.Write(&b, le, [2]uint16{1, 32})                    // planes, bits per pixel
-	_ = binary.Write(&b, le, [2]uint32{uint32(len(png)), 6 + 16}) // size, offset of the image
-	b.Write(png)
-	return b.Bytes()
+	return icoOf([][]byte{png}, []int{256})
 }
