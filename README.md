@@ -178,7 +178,7 @@ docker compose up -d
 **3. Open `http://localhost:8080`** (or your server's address).
 
 > [!TIP]
-> The first time you open BudMinder, it asks you to create your account: choose your username and password. Do this right away, before anyone else on your network opens it.
+> The first time you open BudMinder, it asks you to create a local account: choose your username and password. Do this right away, before anyone else on your network opens it.
 
 To update later, run `docker compose pull` and then `docker compose up -d`. Your data stays in the two volumes.
 
@@ -186,6 +186,14 @@ To update later, run `docker compose pull` and then `docker compose up -d`. Your
 <summary><b>Unraid</b></summary>
 
 <br>
+
+BudMinder is in **Community Applications**:
+
+1. Open the **Apps** tab, search for **BudMinder**, and click **Install**.
+2. Check the **WebUI** port (8091 is suggested; any free port works). The Data and Uploads folders are already filled in (`/mnt/user/appdata/budminder/…`).
+3. Click **Apply**. When it's running, click the BudMinder icon on the **Docker** tab and choose **WebUI**, then create your local account.
+
+**Without the Apps tab** (the Community Applications plugin not installed), set it up by hand:
 
 1. In the **Docker** tab, click **Add Container**. Leave **Template** empty.
 2. Fill in:
@@ -228,7 +236,7 @@ BudMinder has no window of its own: it runs in the background and you use it in 
 1. **Download BudMinder.** Open the [latest release](https://github.com/SirBusta/budminder/releases/latest) page, scroll down to **Assets** and click **budminder-windows-amd64.exe**.
 2. **Give it a home.** Make a folder called `BudMinder` in your user folder (`C:\Users\<you>\BudMinder`) and move the downloaded file into it. BudMinder keeps all your data (database and photos) in this folder, so don't run it from **Downloads**, and don't put it in **OneDrive** (on many PCs that includes Documents and Desktop) or Program Files. If you start it from Downloads anyway, BudMinder explains this and lets you pick a folder, then sets itself up there.
 3. **Start it** by double-clicking the file. The program isn't signed, so Windows may say "Windows protected your PC": click **More info → Run anyway**. If Windows Firewall asks, allow it on **private networks** so your phone can connect.
-4. **Create your account.** A window opens with BudMinder running in it, and your browser opens BudMinder. BudMinder asks you to create your account: choose your username and password.
+4. **Create your account.** A window opens with BudMinder running in it, and your browser opens BudMinder. BudMinder asks you to create a local account: choose your username and password.
 5. **From now on, use the icon.** BudMinder adds a **BudMinder** icon to your desktop and Start menu. Double-click it to start BudMinder in the background (no window) and open it in your browser. You don't need to run the downloaded file again, but keep it and its folder: the icon uses the file, and your data is in the folder.
 6. **To stop it,** open the Start menu and click **Stop BudMinder**. (If you started it from the file, closing its window stops it too.) Closing the browser doesn't stop BudMinder: it keeps running in the background for your phone and sensors.
 7. **Updating.** When a new version is out, **Update available** appears next to the BudMinder logo: click it to see what's new, then **Update now**. BudMinder backs up your database, installs the new version and restarts by itself. To update by hand instead: click **Stop BudMinder**, download the new **budminder-windows-amd64.exe**, and put it in your BudMinder folder in place of the old one (same name). Then start it with the icon as usual. Your data stays in the folder. You can also just download the new version and double-click it (from Downloads is fine): it finds your BudMinder, asks before updating it, and afterwards you can delete the download.
@@ -251,7 +259,7 @@ BudMinder has no window of its own: it runs in the background and you use it in 
    ```
 
    When it's ready, a box at the end shows the address to open. BudMinder also adds a **BudMinder** icon to your desktop and app menu.
-5. **Open it** at [http://localhost:8080](http://localhost:8080). BudMinder asks you to create your account: choose your username and password.
+5. **Open it** at [http://localhost:8080](http://localhost:8080). BudMinder asks you to create a local account: choose your username and password.
 6. **To stop it,** press **Ctrl+C** in that terminal, or close the terminal. Closing the browser doesn't stop BudMinder: it keeps running for your phone and sensors.
 7. **From now on, use the icon.** Double-click **BudMinder** on your desktop or in the app menu: it starts BudMinder in the background if needed and opens it in your browser. No terminal needed, but keep the program and its folder: the icon uses the program, and your data is in the folder. To stop it, right-click the icon → **Stop BudMinder**. The first time, your desktop may ask whether to trust the new icon: allow it. If you move the `budminder` folder, start the program once from the terminal to update the icon.
 8. **Start it with the computer (optional).** Instead of steps 4 and 6, let your system run it in the background:
@@ -293,7 +301,7 @@ BudMinder has no window of its own: it runs in the background and you use it in 
 
    (Use `amd64` instead of `arm64` here and below if that's the file you downloaded.) The second line tells macOS it may run a program that isn't signed by Apple. If it says "No such xattr", that's fine.
 4. **Start it** by double-clicking the program in Finder. A Terminal window opens with BudMinder running in it; leave that window open. From now on, start BudMinder the same way: double-click the program in your `BudMinder` folder (or use step 8 to start it when you sign in). The first time, macOS may ask whether BudMinder may accept incoming network connections: click **Allow** if you want to use it from your phone.
-5. **Open it** at [http://localhost:8080](http://localhost:8080). BudMinder asks you to create your account: choose your username and password.
+5. **Open it** at [http://localhost:8080](http://localhost:8080). BudMinder asks you to create a local account: choose your username and password.
 6. **To stop it,** close that Terminal window, or press **Ctrl+C** in it. Closing the browser doesn't stop BudMinder: it keeps running in that window for your phone and sensors.
 7. **A shortcut (optional).** With BudMinder running, open it in Safari and choose **File → Add to Dock**, or in Chrome or Edge install it from the browser's menu (in Chrome: **Cast, save and share → Install page as app**). You get an icon that opens BudMinder in its own window. BudMinder itself still has to be running.
 8. **Start it when you sign in (optional).** Open System Settings → **General → Login Items**, click **+** under "Open at Login", and choose the program in your `BudMinder` folder. It then opens in a Terminal window each time you sign in.
