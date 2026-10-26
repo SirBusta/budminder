@@ -24,7 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Windows: a BudMinder icon by the clock while BudMinder runs. Click it to open BudMinder; right-click it for **Open on your phone…**, **Copy phone address**, **Open BudMinder folder**, **Start with Windows** and **Stop BudMinder**. When a new version is out, the icon gets an amber frame and the menu shows **Update to …**. New icons can hide behind the **^** arrow next to the clock: drag BudMinder onto the taskbar to keep it in view.
+- **Open on your phone…** shows a code to scan with your phone's camera, plus help when the phone can't connect, including an **Allow through firewall** button (BudMinder is allowed on private networks only).
+- **Start with Windows** starts BudMinder in the background when you sign in to Windows, so your sensors keep recording.
+- Help: **Starting and stopping BudMinder** (every system, Docker and Unraid included), and a Troubleshooting entry for when your phone can't open BudMinder.
+
 ### Changed
+
+- Signing in takes you back to the page you were trying to open, instead of always to Today.
 
 ### Fixed
 
