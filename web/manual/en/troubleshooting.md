@@ -4,6 +4,15 @@ Common issues and step-by-step solutions. If an issue is not listed here, consul
 
 BudMinder does not have an external password recovery or email reset system. If you maintain an active session on another browser or device (such as via **Remember Me**), open **Settings → General → Password** there and enter a new password.
 
+## My phone can't open BudMinder (Windows)
+
+Your phone must be on the same Wi-Fi as the computer running BudMinder. If it is and the page still won't load:
+
+1. Right-click the BudMinder icon in the taskbar tray, choose **Open on your phone…** and click **Allow through firewall**. Windows asks you to confirm.
+2. If the phone still can't connect, Windows probably has your home Wi-Fi marked as **Public**. Windows' firewall is stricter on Public networks, and BudMinder is only allowed through on **Private** ones so strangers on a café or airport Wi-Fi can't reach it. Open **Settings → Network & Internet → Wi-Fi**, click your network and set **Network profile type** to **Private**. Then try the phone again.
+
+Only switch networks you trust, such as your own home Wi-Fi, to Private.
+
 ## AC Infinity readings stopped
 
 If the Today dashboard warns that **AC Infinity refused BudMinder's sign-in**, navigate to **Settings → Integrations → AC Infinity**, click **Retrieve Token** and re-enter your account credentials. Check **Stay signed in** so BudMinder can renew authentication tokens automatically in the future. See [AC Infinity](/manual/ac-infinity#stay-signed-in).
