@@ -28,6 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Linux: **Update now** restarts the new version instead of the old one (`budminder.old`).
+- Hourly sensor averages older than about a day were rebuilt from only the last few minutes of each hour, so long charts showed wrong lows, highs and averages. New hours are now kept whole, and on the first start after updating, every hour that still has its raw readings is rebuilt from them.
+- Clearing a plant's start date on Edit plant could break the Plants page, Home, the notebook and exports for every plant (SQLite). A start date is now required and checked.
+- PostgreSQL: the plant page, the Plants list and Home were empty, and Manage sensors showed no sensors and couldn't save them. Switching from SQLite to PostgreSQL also works again for installs with sensors.
+- Changing the password now also signs other browsers out of BudMinder's background requests (deletes, settings, backups, updates), not only its pages.
+- **Upload SQLite database** no longer breaks every page until BudMinder is restarted; an upload from an older version is updated as it's restored.
+
 ## [1.5.9] - 2026-10-26
 
 ### Changed
