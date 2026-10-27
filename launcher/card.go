@@ -136,6 +136,7 @@ const (
 	CardClose
 	CardFolder
 	CardChooseFolder
+	CardHelp
 )
 
 // Font Awesome 6 solid glyphs used on cards.
@@ -152,7 +153,6 @@ const (
 	faRotate    = ''
 	faDownload  = ''
 	faPower     = ''
-	faXmark     = ''
 	faShuffle   = ''
 	faClockBack = '' // clock-rotate-left
 	faComments  = ''
@@ -255,7 +255,7 @@ func UpdateFailedCard(dir, details string) Card {
 // OtherRunningCard: a BudMinder from this folder is still running (usually
 // the old version, after the program file was replaced), so this one can't
 // start. running is its version, "" when it's too old to say.
-func OtherRunningCard(folder, running, port string, older bool) Card {
+func OtherRunningCard(running, port string, older bool) Card {
 	title, who := "Another BudMinder is still running", "A BudMinder"
 	if older {
 		title = "An older BudMinder is still running"
@@ -264,7 +264,7 @@ func OtherRunningCard(folder, running, port string, older bool) Card {
 		who = "BudMinder **" + running + "**"
 	}
 	return Card{Caption: "BudMinder", Title: title, Bad: true, Blocks: []Block{
-		{Kind: BlockSub, Text: Words(who + " (from `" + folder + "`) is still running and using port " + port + ", so this one can't start.")},
+		{Kind: BlockSub, Text: Words(who + " is still running from this folder and using port " + port + ", so this one can't start.")},
 		{Kind: BlockButtons, Buttons: []Button{{ID: CardStopOther, Label: "Stop it and start this one", Icon: faPower, Main: true}, {ID: CardCancel, Label: "Cancel"}}},
 	}}
 }
@@ -272,7 +272,7 @@ func OtherRunningCard(folder, running, port string, older bool) Card {
 // PortTakenCard: another program uses BudMinder's port. alt is a free port
 // BudMinder could use instead ("" when none was found).
 func PortTakenCard(port, alt, details string) Card {
-	rows := []Row{{Icon: faXmark, Text: Words("Close the program that's using it, then start BudMinder again.")}}
+	rows := []Row{{Icon: faPower, Text: Words("Close the program that's using it, then start BudMinder again.")}}
 	buttons := []Button{}
 	if alt != "" {
 		rows = append(rows, Row{Icon: faShuffle, Text: Words("Or let BudMinder use port **" + alt + "** instead. Your bookmarks and phone will need the new address.")})
@@ -289,30 +289,38 @@ func PortTakenCard(port, alt, details string) Card {
 
 // StartFailedCard: BudMinder stopped while starting (the log's last fatal
 // message is details). A message about the database gets the database help.
-func StartFailedCard(folder, details string) Card {
+func StartFailedCard(details string) Card {
+	stuck := Row{Icon: faComments, Text: Words("Still stuck? Click **Get help** below, then paste the details into a new issue.")}
+	buttons := Block{Kind: BlockButtons, Buttons: []Button{{ID: CardFolder, Label: "Open BudMinder folder", Icon: faFolder}, {ID: CardCopy, Label: "Copy details", Icon: faCopy}, {ID: CardClose, Label: "Close"}}}
+	help := Block{Kind: BlockLink, ID: CardHelp, Text: Words("Get help")}
 	l := strings.ToLower(details)
 	if strings.Contains(l, "database") || strings.Contains(l, "sqlite") || strings.Contains(l, "migrat") {
 		return Card{Caption: "BudMinder", Title: "BudMinder couldn't open your grow journal", Bad: true, Blocks: []Block{
-			{Kind: BlockSub, Text: Words("The database `data\\isley.db` in `" + folder + "` couldn't be opened.")},
+			{Kind: BlockSub, Text: Words("Your database, `data\\isley.db` in the BudMinder folder, couldn't be opened.")},
 			{Kind: BlockRows, Rows: []Row{
 				{Icon: faLock, Text: Words("Is another copy of BudMinder using it? Stop that one first.")},
 				{Icon: faClockBack, Text: Words("Copies from before each update are in `data\\backups`.")},
-				{Icon: faComments, Text: Words("Still stuck? Ask in the support thread and paste the details.")},
+				stuck,
 			}},
-			{Kind: BlockButtons, Buttons: []Button{{ID: CardFolder, Label: "Open BudMinder folder", Icon: faFolder}, {ID: CardCopy, Label: "Copy details", Icon: faCopy}, {ID: CardClose, Label: "Close"}}},
+			buttons,
 			{Kind: BlockDetails, Text: []Span{{details, Code}}},
+			help,
 		}}
 	}
 	return Card{Caption: "BudMinder", Title: "BudMinder couldn't start", Bad: true, Blocks: []Block{
 		{Kind: BlockSub, Text: Words("Something went wrong while BudMinder was starting.")},
 		{Kind: BlockRows, Rows: []Row{
 			{Icon: faRotate, Text: Words("Try starting it again. If it happens again, the log in `logs\\app.log` has more.")},
-			{Icon: faComments, Text: Words("Still stuck? Ask in the support thread and paste the details.")},
+			stuck,
 		}},
-		{Kind: BlockButtons, Buttons: []Button{{ID: CardFolder, Label: "Open BudMinder folder", Icon: faFolder}, {ID: CardCopy, Label: "Copy details", Icon: faCopy}, {ID: CardClose, Label: "Close"}}},
+		buttons,
 		{Kind: BlockDetails, Text: []Span{{details, Code}}},
+		help,
 	}}
 }
+
+// HelpURL is where Get help on a problem window goes.
+const HelpURL = "https://github.com/SirBusta/budminder/issues"
 
 // SetupFailedCard: BudMinder couldn't copy itself into the chosen folder.
 func SetupFailedCard(dir, details string) Card {

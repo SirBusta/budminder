@@ -72,7 +72,7 @@ func main() {
 		var last string
 		logger.Log.AddHook(fatalHook{&last})
 		logger.Log.ExitFunc = func(code int) {
-			launcher.RunCard(launcher.StartFailedCard(here, last), problemEvents(last, here))
+			launcher.RunCard(launcher.StartFailedCard(last), problemEvents(last, here))
 			os.Exit(code)
 		}
 	}
@@ -706,7 +706,7 @@ func portForThisStart(port, folder string, open bool) (string, bool) {
 				return port, false
 			}
 			older := v == "" || updates.Newer(getVersion(), v)
-			if launcher.RunCard(launcher.OtherRunningCard(folder, v, port, older), launcher.CardEvents{}) != launcher.CardStopOther {
+			if launcher.RunCard(launcher.OtherRunningCard(v, port, older), launcher.CardEvents{}) != launcher.CardStopOther {
 				return port, false
 			}
 			if launcher.Stop("data") == nil {
@@ -736,6 +736,9 @@ func problemEvents(details, folder string) launcher.CardEvents {
 			return false
 		case launcher.CardFolder:
 			_ = launcher.OpenFolder(folder)
+			return false
+		case launcher.CardHelp:
+			_ = launcher.OpenBrowser(launcher.HelpURL)
 			return false
 		}
 		return true

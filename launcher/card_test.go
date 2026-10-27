@@ -138,11 +138,11 @@ func TestTrayHint(t *testing.T) {
 
 func TestProblemCards(t *testing.T) {
 	t.Parallel()
-	older := OtherRunningCard(`C:\BM`, "", "8080", true)
+	older := OtherRunningCard("", "8080", true)
 	if older.Title != "An older BudMinder is still running" || !older.Bad || !strings.Contains(cardText(older), "[Stop it and start this one]") {
 		t.Errorf("older card:\n%s", cardText(older))
 	}
-	if c := OtherRunningCard(`C:\BM`, "1.6.0", "8080", false); c.Title != "Another BudMinder is still running" || !strings.Contains(cardText(c), "BudMinder 1.6.0 (from") {
+	if c := OtherRunningCard("1.6.0", "8080", false); c.Title != "Another BudMinder is still running" || !strings.Contains(cardText(c), "BudMinder 1.6.0 is still running from this folder") {
 		t.Errorf("newer card:\n%s", cardText(c))
 	}
 	port := PortTakenCard("8080", "8081", "bind: in use")
@@ -152,11 +152,13 @@ func TestProblemCards(t *testing.T) {
 	if c := PortTakenCard("8080", "", "x"); strings.Contains(cardText(c), "Use port") {
 		t.Error("no free port, no offer")
 	}
-	if c := StartFailedCard(`C:\BM`, "Failed to open database: unable to open database file (14)"); !strings.Contains(c.Title, "grow journal") {
+	if c := StartFailedCard("Failed to open database: unable to open database file (14)"); !strings.Contains(c.Title, "grow journal") {
 		t.Errorf("database problem title = %q", c.Title)
 	}
-	if c := StartFailedCard(`C:\BM`, "Failed to construct HTTP engine: x"); c.Title != "BudMinder couldn't start" {
+	if c := StartFailedCard("Failed to construct HTTP engine: x"); c.Title != "BudMinder couldn't start" {
 		t.Errorf("other problem title = %q", c.Title)
+	} else if b := findBlock(c, BlockLink); b == nil || b.ID != CardHelp {
+		t.Errorf("problem card has no Get help link: %+v", b)
 	}
 	if c := UpdateCard(`C:\BM`, "1.5.7", "1.5.8"); !strings.Contains(cardText(c), "BudMinder 1.5.7 is installed in C:\\BM. This download is 1.5.8.") {
 		t.Errorf("update card:\n%s", cardText(c))

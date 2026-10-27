@@ -31,9 +31,9 @@ func TestCards_Draw(t *testing.T) {
 		"welcome-again":   WelcomeCard(Welcome{Port: "8080", Folder: home, HasIcon: true, Tray: true}, "1.5.8"),
 		"welcome-updated": WelcomeCard(Welcome{Port: "8080", Folder: home, Updated: "x", HasIcon: true, Tray: true}, "1.5.8"),
 		"update":          UpdateCard(home, "1.5.7", "1.5.8"),
-		"older":           OtherRunningCard(home, "", "8080", true),
+		"older":           OtherRunningCard("", "8080", true),
 		"port":            PortTakenCard("8080", "8081", "listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted."),
-		"database":        StartFailedCard(home, "Failed to create SQLite driver: unable to open database file (14)"),
+		"database":        StartFailedCard("Failed to create SQLite driver: unable to open database file (14)"),
 		"setup":           SetupFailedCard(`D:\Grow\BudMinder`, `open D:\Grow\BudMinder\budminder-windows-amd64.exe: Access is denied.`),
 	}
 	cardOffscreen = true

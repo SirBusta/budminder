@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Windows: the program file has BudMinder's leaf icon, and its name and version show in Explorer and in the file's Properties.
+- Windows: the problem windows (BudMinder couldn't start, port in use, an older BudMinder still running) have a **Get help** link and no longer print long folder paths.
 
 ### Fixed
 
