@@ -533,8 +533,6 @@ backup_max_upload_hint: "El archivo de copia de seguridad más grande que BudMin
 backup_restore_warning: "<strong>Advertencia:</strong> Restaurar una copia de seguridad reemplaza <em>todos</em> los datos en esta instancia. El sondeo de sensores se pausa durante la restauración."
 backup_drop_text: "Arrastre y suelte una copia de seguridad BudMinder (.zip) aquí, o haga clic para examinar"
 backup_clear: "Borrar"
-backup_skip_sensor: "Omitir datos de sensores"
-backup_skip_sensor_hint: "recomendado para SQLite — importación drásticamente más rápida"
 backup_restore_btn: "Restaurar copia de seguridad"
 backup_restoring: "Restaurando..."
 backup_sqlite_title: "Transferencia de archivo SQLite"

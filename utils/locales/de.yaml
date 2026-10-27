@@ -535,8 +535,6 @@ backup_max_upload_hint: "Die größte Sicherungsdatei, die BudMinder beim Wieder
 backup_restore_warning: "<strong>Warnung:</strong> Die Wiederherstellung ersetzt <em>alle</em> Daten in dieser Instanz. Sensorabfragen werden während der Wiederherstellung pausiert."
 backup_drop_text: "BudMinder-Sicherung (.zip) hierher ziehen oder klicken zum Durchsuchen"
 backup_clear: "Löschen"
-backup_skip_sensor: "Sensordaten überspringen"
-backup_skip_sensor_hint: "Empfohlen für SQLite — deutlich schnellerer Import"
 backup_restore_btn: "Sicherung wiederherstellen"
 backup_restoring: "Wiederherstellung..."
 backup_sqlite_title: "SQLite-Dateiübertragung"

@@ -551,8 +551,6 @@ backup_max_upload_hint: "The largest backup file BudMinder accepts when restorin
 backup_restore_warning: "<strong>Warning:</strong> Restoring a backup replaces <em>all</em> data in this instance. Sensor polling is paused during restore."
 backup_drop_text: "Drag & drop a BudMinder backup .zip here, or click to browse"
 backup_clear: "Clear"
-backup_skip_sensor: "Skip sensor data"
-backup_skip_sensor_hint: "recommended for SQLite — dramatically faster import"
 backup_restore_btn: "Restore Backup"
 backup_restoring: "Restoring..."
 backup_sqlite_title: "SQLite File Transfer"

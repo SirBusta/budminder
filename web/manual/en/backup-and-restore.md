@@ -22,8 +22,6 @@ BudMinder generates the archive locally and lists it under **Available Backups**
 
 To migrate BudMinder to a new computer or server, generate a backup on the original machine, install BudMinder on the new hardware and restore the archive there.
 
-If you don't need the sensor history, check **Skip sensor data** to restore everything else.
-
 ## Photo backups before compression
 
 **Compress existing photos** (Settings → Photos) can copy the original photos to a separate folder, `data/backups/photos-before-compression-<date>`, before it compresses them. That folder is not a BudMinder backup: it is not listed under **Available Backups**, cannot be restored from this page, and is deleted automatically 7 days after the run finished. See [Photos](/manual/photos#photo-size-and-compression).

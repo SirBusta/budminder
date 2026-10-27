@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - A zone can only be deleted once it's empty. If it still has plants, sensors or cameras, Settings says how many and keeps the zone; deleting it used to delete all of them with their history.
+- Restoring a backup always restores the sensor history it contains. The "Skip sensor data" switch (SQLite) is gone: it was a workaround for slow imports, which were fixed in 1.0.1.
 
 ### Fixed
 

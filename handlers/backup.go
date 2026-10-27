@@ -651,14 +651,6 @@ func ImportBackup(c *gin.Context) {
 		payload.Manifest.CreatedAt, payload.Manifest.Tables, payload.Manifest.Files,
 		payload.Manifest.IncludeImages, payload.Manifest.SensorDays)
 
-	// Check if the user wants to skip sensor data (useful for SQLite where
-	// large sensor_data imports are extremely slow).
-	skipSensor := c.DefaultPostForm("skip_sensor_data", "false") == "true"
-	if skipSensor {
-		fieldLogger.Info("User opted to skip sensor_data import")
-		payload.SensorData = nil
-	}
-
 	// Launch the restore in a background goroutine and return 202.
 	// Capture maxBackupSize at the request site so the goroutine does not
 	// reach into the per-engine Store after the request returns. The Store

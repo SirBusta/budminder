@@ -533,8 +533,6 @@ backup_max_upload_hint: "Le plus gros fichier de sauvegarde accepté par BudMind
 backup_restore_warning: "<strong>Attention :</strong> La restauration remplace <em>toutes</em> les données de cette instance. Le sondage des capteurs est suspendu pendant la restauration."
 backup_drop_text: "Glissez-déposez une sauvegarde BudMinder (.zip) ici, ou cliquez pour parcourir"
 backup_clear: "Effacer"
-backup_skip_sensor: "Ignorer les données de capteurs"
-backup_skip_sensor_hint: "recommandé pour SQLite — importation considérablement plus rapide"
 backup_restore_btn: "Restaurer la sauvegarde"
 backup_restoring: "Restauration..."
 backup_sqlite_title: "Transfert de fichier SQLite"

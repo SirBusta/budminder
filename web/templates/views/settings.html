@@ -597,12 +597,6 @@
                         <span class="badge bg-secondary" id="backupFileName"></span>
                         <button type="button" class="btn btn-sm btn-link text-danger" id="backupClearBtn">{{ .lcl.backup_clear }}</button>
                     </div>
-                    {{ if eq .dbDriver "sqlite" }}
-                    <label class="st-row st-switch">
-                        <div class="st-row-l"><span class="st-label">{{ .lcl.backup_skip_sensor }}</span><small>{{ .lcl.backup_skip_sensor_hint }}</small></div>
-                        <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="skipSensorData"></div>
-                    </label>
-                    {{ end }}
                     <div class="st-row">
                         <div class="st-row-l"></div>
                         <div class="st-row-r"><button type="button" class="btn btn-warning btn-sm" id="importBackupBtn" disabled><i class="fa fa-upload me-1"></i>{{ .lcl.backup_restore_btn }}</button></div>
@@ -2239,10 +2233,6 @@
 
             const formData = new FormData();
             formData.append("backup", selectedFile);
-            const skipSensorEl = document.getElementById("skipSensorData");
-            if (skipSensorEl && skipSensorEl.checked) {
-                formData.append("skip_sensor_data", "true");
-            }
 
             importBtn.disabled = true;
             progress.style.display = "block";

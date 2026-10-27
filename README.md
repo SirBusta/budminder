@@ -465,7 +465,7 @@ Create an API key in **Settings → Integrations** and send it as an `X-API-KEY`
 
 **From the app:** **Settings → Backup & data**. Choose how much sensor history to include and whether to include photos, then create the backup. It runs in the background and appears in the list to download. Download it to keep it somewhere safe: backups stored only on the same computer are lost if that computer fails. A backup includes your saved connection details, such as the AC Infinity and Home Assistant tokens, so keep backup files private.
 
-**Restoring** replaces everything in the current BudMinder with the backup. On SQLite you can also skip sensor history to restore faster, or download and upload the database file itself under **SQLite file transfer**, which is the quickest way to copy a SQLite setup.
+**Restoring** replaces everything in the current BudMinder with the backup. On SQLite you can also download and upload the database file itself under **SQLite file transfer**, which is the quickest way to copy a SQLite setup.
 
 Uploads are limited to 5 GB by default; change it in the restore section (minimum 100 MB). Backups are always full backups, and a large backup with photos needs about as much free memory as its size while restoring. For automatic backups, call `POST /settings/backup/create` on a schedule, or back up the Docker volumes.
 
