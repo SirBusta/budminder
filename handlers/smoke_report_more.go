@@ -772,7 +772,7 @@ func BuildSmokeReportView(db *sql.DB, lcl map[string]string, id int) (SmokeRepor
 	if r.StrainID != nil {
 		var indica, sativa int
 		var auto bool
-		if db.QueryRow(`SELECT indica, sativa, COALESCE(autoflower, false) FROM strain WHERE id = $1`, *r.StrainID).Scan(&indica, &sativa, &auto) == nil {
+		if db.QueryRow(`SELECT indica, sativa, COALESCE(autoflower, 0) FROM strain WHERE id = $1`, *r.StrainID).Scan(&indica, &sativa, &auto) == nil {
 			v.Strain = gin.H{"indica": indica, "sativa": sativa, "autoflower": auto}
 		}
 	}

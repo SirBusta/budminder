@@ -65,7 +65,7 @@ func LoadPlantsList(db *sql.DB) ([]PlantListRow, error) {
 	}
 	extras := map[int]extra{}
 	rows, err := db.Query(`
-		SELECT p.id, COALESCE(b.name, ''), COALESCE(s.autoflower, false), COALESCE(p.clone, false),
+		SELECT p.id, COALESCE(b.name, ''), COALESCE(s.autoflower, 0), COALESCE(p.clone, 0),
 		       COALESCE(s.cycle_time, 0), COALESCE(s.cycle_time_min, 0), COALESCE(p.harvest_weight, 0)
 		FROM plant p
 		LEFT OUTER JOIN strain s ON s.id = p.strain_id

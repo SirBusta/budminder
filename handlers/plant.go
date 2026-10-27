@@ -424,7 +424,7 @@ func GetPlant(db *sql.DB, id string) types.Plant {
 			   COALESCE(s.cycle_time, 0),
 			   COALESCE(s.cycle_time_min, 0),
 			   COALESCE(s.url, ''),
-			   COALESCE(s.autoflower, false),
+			   COALESCE(s.autoflower, 0),
 			   COALESCE(p.parent_plant_id, 0),
 			   COALESCE(p2.name, '') AS parent_name
 		FROM plant p
