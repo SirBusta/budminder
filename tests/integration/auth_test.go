@@ -367,3 +367,30 @@ func seedHashedAPIKey(t *testing.T, db *sql.DB, hashed string) {
 	t.Helper()
 	testutil.UpsertSetting(t, db, "api_key", hashed)
 }
+
+// TestAuth_SetupWriteFailureLeavesSetupOpen: if saving the password fails,
+// no username is left behind without one, so setup can simply be retried
+// (M01-05).
+func TestAuth_SetupWriteFailureLeavesSetupOpen(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	_, err := db.Exec(`CREATE TRIGGER refuse_pw BEFORE INSERT ON settings WHEN NEW.name = 'auth_password'
+		BEGIN SELECT RAISE(ABORT, 'refused'); END`)
+	require.NoError(t, err)
+	server := testutil.NewTestServer(t, db)
+	c := server.NewClient(t)
+
+	form := url.Values{}
+	form.Set("username", "grower")
+	form.Set("password", "first-pw-123")
+	form.Set("confirm_password", "first-pw-123")
+	form.Set("csrf_token", c.FetchCSRFToken("/setup"))
+	resp := c.PostForm("/setup", form)
+	resp.Body.Close()
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+
+	user, _ := handlers.GetSetting(db, "auth_username")
+	assert.Empty(t, user, "no username without a password")
+	assert.True(t, handlers.NeedsSetup(db), "setup stays open for a retry")
+}

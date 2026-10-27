@@ -125,7 +125,11 @@ func HandleSetup(c *gin.Context) {
 	}
 	store := ConfigStoreFromContext(c)
 	version := fmt.Sprintf("%d", time.Now().UnixNano())
-	for _, kv := range [][2]string{{"auth_username", username}, {"auth_password", hashed}, {"force_password_change", "false"}, {"session_version", version}} {
+	// Order matters: setup stays open until auth_username is written (and,
+	// for a pre-1.5.6 install, until force_password_change is), so a write
+	// that fails part way leaves setup to retry, never a username with no
+	// password.
+	for _, kv := range [][2]string{{"auth_password", hashed}, {"session_version", version}, {"auth_username", username}, {"force_password_change", "false"}} {
 		if err := UpdateSetting(db, store, kv[0], kv[1]); err != nil {
 			renderSetup(c, http.StatusInternalServerError, "setup_err_failed", username)
 			return
