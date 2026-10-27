@@ -878,6 +878,7 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 		{"idx_sensor_data_sensor_id", "CREATE INDEX IF NOT EXISTS idx_sensor_data_sensor_id ON sensor_data(sensor_id)"},
 		{"idx_sensor_data_create_dt", "CREATE INDEX IF NOT EXISTS idx_sensor_data_create_dt ON sensor_data(create_dt)"},
 	}
+	recreateIndexes := func() {}
 
 	if model.IsSQLite() {
 		// The rolling-average trigger runs on every inserted reading and
@@ -908,6 +909,18 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 				fieldLogger.Infof("Dropped index %s for bulk import", idx.name)
 			}
 		}
+		// Recreated after the bulk load, also when it fails part way
+		// (Postgres TRUNCATE doesn't drop indexes, so nothing to do there).
+		recreateIndexes = func() {
+			fieldLogger.Info("Recreating sensor_data indexes after bulk import")
+			for _, idx := range sensorDataIndexes {
+				if _, err := exec.ExecContext(ctx, idx.createStmt); err != nil {
+					fieldLogger.WithError(err).Warnf("Could not recreate index %s", idx.name)
+				} else {
+					fieldLogger.Infof("Recreated index %s", idx.name)
+				}
+			}
+		}
 	}
 
 	for _, tbl := range insertOrder {
@@ -923,23 +936,12 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 		if err := insertRowsBatchedWithProgress(ctx, svc, exec, tbl.name, tbl.rows, insertBatchSize, remaining, totalTablesWithData); err != nil {
 			fieldLogger.WithError(err).Errorf("Failed to bulk insert into %s", tbl.name)
 			runErr = fmt.Errorf("Failed to bulk insert into %s", tbl.name)
+			recreateIndexes()
 			return
 		}
 		fieldLogger.Infof("Restored %d rows into %s (batched)", len(tbl.rows), tbl.name)
 	}
-
-	// Recreate indexes after bulk load (SQLite only — Postgres TRUNCATE
-	// doesn't drop indexes so they're still there).
-	if model.IsSQLite() {
-		fieldLogger.Info("Recreating sensor_data indexes after bulk import")
-		for _, idx := range sensorDataIndexes {
-			if _, err := exec.ExecContext(ctx, idx.createStmt); err != nil {
-				fieldLogger.WithError(err).Warnf("Could not recreate index %s", idx.name)
-			} else {
-				fieldLogger.Infof("Recreated index %s", idx.name)
-			}
-		}
-	}
+	recreateIndexes()
 
 	// Phase 3: reset Postgres sequences.
 	if model.IsPostgres() {
