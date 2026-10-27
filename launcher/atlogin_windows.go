@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/sys/windows"
 )
@@ -30,25 +31,26 @@ func startupShortcut(exe, dir string) *AtLogin {
 		}
 		return filepath.Join(d, "BudMinder.lnk")
 	}
-	return &AtLogin{
+	a := &AtLogin{
 		On: func() bool {
 			p := path()
 			_, err := os.Stat(p)
 			return p != "" && err == nil
 		},
-		Set: func(on bool) error {
-			p := path()
-			if p == "" {
-				return os.ErrNotExist
+	}
+	a.Set = func(on bool) error {
+		p := path()
+		if p == "" {
+			return os.ErrNotExist
+		}
+		if !on {
+			if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
+				return err
 			}
-			if !on {
-				if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
-					return err
-				}
-				return nil
-			}
-			ico, _ := filepath.Abs(filepath.Join(filepath.Dir(exe), "data", icoIcon)) // made with the desktop icon
-			script := `$ErrorActionPreference = 'Stop'
+			return nil
+		}
+		ico, _ := filepath.Abs(filepath.Join(filepath.Dir(exe), "data", icoIcon)) // made with the desktop icon
+		script := `$ErrorActionPreference = 'Stop'
 $s = (New-Object -ComObject WScript.Shell).CreateShortcut($env:BM_LNK)
 $s.TargetPath = $env:BM_EXE
 $s.Arguments = '` + AtLoginFlag + `'
@@ -58,10 +60,36 @@ $s.WindowStyle = 7
 $s.Description = 'Starts BudMinder, a cannabis grow journal, in the background'
 $s.Save()
 `
-			cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script)
-			cmd.Env = append(os.Environ(), "BM_EXE="+exe, "BM_LNK="+p, "BM_ICO="+ico)
-			hideWindow(cmd)
-			return cmd.Run()
-		},
+		cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script)
+		cmd.Env = append(os.Environ(), "BM_EXE="+exe, "BM_LNK="+p, "BM_ICO="+ico)
+		hideWindow(cmd)
+		return cmd.Run()
 	}
+	// The shortcut names the program by its full path, so after the folder
+	// is moved it starts nothing (or an old copy) while the tray still shows
+	// Start with Windows ticked: point it at this program again.
+	a.Fix = func() error {
+		if !a.On() {
+			return nil
+		}
+		target, err := shortcutTarget(path())
+		if err != nil {
+			return err
+		}
+		if strings.EqualFold(filepath.Clean(target), filepath.Clean(exe)) {
+			return nil
+		}
+		return a.Set(true)
+	}
+	return a
+}
+
+// shortcutTarget is the program a .lnk file starts.
+func shortcutTarget(lnk string) (string, error) {
+	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command",
+		`(New-Object -ComObject WScript.Shell).CreateShortcut($env:BM_LNK).TargetPath`)
+	cmd.Env = append(os.Environ(), "BM_LNK="+lnk)
+	hideWindow(cmd)
+	out, err := cmd.Output()
+	return strings.TrimSpace(string(out)), err
 }

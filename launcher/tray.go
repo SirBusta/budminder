@@ -31,6 +31,9 @@ func (t Tray) failed(what string, err error) {
 type AtLogin struct {
 	On  func() bool
 	Set func(on bool) error
+	// Fix points an existing shortcut at this program again (after the
+	// folder was moved, it pointed at the old one). Nil where not needed.
+	Fix func() error
 }
 
 // URL is where this computer opens BudMinder.

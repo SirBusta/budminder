@@ -395,6 +395,13 @@ func main() {
 			var atLogin *launcher.AtLogin
 			if install && !other {
 				atLogin = launcher.StartWithWindows(exePath())
+				if atLogin != nil && atLogin.Fix != nil { // nil off Windows
+					go func() {
+						if err := atLogin.Fix(); err != nil {
+							logger.Log.WithError(err).Warn("Couldn't check the Start with Windows shortcut")
+						}
+					}()
+				}
 			}
 			icon, _ := embeddedFiles.ReadFile("web/static/img/brand/budminder-256.png")
 			glyphs, _ := embeddedFiles.ReadFile("web/static/vendor/fontawesome/webfonts/fa-solid-900.ttf")

@@ -45,6 +45,36 @@ func TestStartupShortcut_OnOff(t *testing.T) {
 	}
 }
 
+// After the folder is moved, the shortcut still starts the old path; Fix
+// points it at the program that's running now.
+func TestStartupShortcut_FixAfterMove(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	oldExe := filepath.Join(t.TempDir(), "budminder.exe")
+	newExe := filepath.Join(t.TempDir(), "budminder.exe")
+	if err := startupShortcut(oldExe, dir).Set(true); err != nil {
+		t.Fatal(err)
+	}
+	a := startupShortcut(newExe, dir)
+	if err := a.Fix(); err != nil {
+		t.Fatal(err)
+	}
+	got, err := shortcutTarget(filepath.Join(dir, "BudMinder.lnk"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.EqualFold(got, newExe) {
+		t.Errorf("shortcut starts %q, want %q", got, newExe)
+	}
+	// Off stays off.
+	if err := a.Set(false); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.Fix(); err != nil || a.On() {
+		t.Errorf("Fix turned it on (err %v)", err)
+	}
+}
+
 // shellExecuteInfo must match Windows' SHELLEXECUTEINFOW, or the elevated
 // start reads garbage.
 func TestShellExecuteInfoSize(t *testing.T) {
