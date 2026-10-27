@@ -32,3 +32,19 @@ func TestHideURLSecrets_OtherErrorsUnchanged(t *testing.T) {
 	assert.Same(t, plain, HideURLSecrets(plain))
 	assert.Nil(t, HideURLSecrets(nil))
 }
+
+func TestHideURL(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, "http://cam.local:8080/snap.jpg", HideURL("http://admin:pw@cam.local:8080/snap.jpg?user=admin&pwd=pw#x"))
+	assert.Equal(t, "(address hidden)", HideURL("http://bad host/%zz"))
+}
+
+// A failed camera capture's error and log line carry no camera password
+// (M05-09).
+func TestGrabWebcamImage_ErrorHidesPassword(t *testing.T) {
+	t.Parallel()
+	err := GrabWebcamImage("http://admin:camerapass@127.0.0.1:1/snap.jpg?pwd=SECRET", t.TempDir()+"/x.jpg")
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), "camerapass")
+	assert.NotContains(t, err.Error(), "SECRET")
+}

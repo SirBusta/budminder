@@ -25,3 +25,16 @@ func HideURLSecrets(err error) error {
 	u.Fragment = ""
 	return &url.Error{Op: ue.Op, URL: u.String(), Err: ue.Err}
 }
+
+// HideURL returns raw without any user:password, query string or fragment,
+// for logging an address that may carry a secret (a camera's password).
+func HideURL(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return "(address hidden)"
+	}
+	u.User = nil
+	u.RawQuery = ""
+	u.Fragment = ""
+	return u.String()
+}

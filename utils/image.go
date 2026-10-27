@@ -486,7 +486,7 @@ const maxFrameSize = 50 * 1024 * 1024 // 50 MB
 
 func GrabWebcamImage(rawURL string, outputPath string) error {
 	logger.Log.WithFields(logrus.Fields{
-		"url":        rawURL,
+		"url":        HideURL(rawURL),
 		"outputPath": outputPath,
 	}).Info("Capturing image from webcam")
 
@@ -530,7 +530,7 @@ func grabHTTPFrame(rawURL string, outputPath string) error {
 
 	resp, err := imageClient.Get(rawURL)
 	if err != nil {
-		return fmt.Errorf("failed to fetch stream: %w", err)
+		return fmt.Errorf("failed to fetch stream: %w", HideURLSecrets(err))
 	}
 	defer resp.Body.Close()
 
