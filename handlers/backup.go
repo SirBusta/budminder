@@ -690,6 +690,7 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 		"strain_effect",
 		"strain_lineage",
 		"plant",
+		"sensor_data_hourly", // rebuilt from the restored sensor_data by the next rollup
 		"sensor_data",
 		"rolling_averages",
 		"sensors",

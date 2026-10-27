@@ -102,6 +102,10 @@ func TestBackup_RoundTrip(t *testing.T) {
 	testutil.MustExec(t, db, `DELETE FROM strain`)
 	testutil.MustExec(t, db, `DELETE FROM breeder`)
 	testutil.MustExec(t, db, `DELETE FROM zones`)
+	// An hourly rollup made after the backup: the restore must clear it
+	// (backups don't carry sensor_data_hourly; it's rebuilt from sensor_data).
+	testutil.MustExec(t, db, `INSERT INTO sensor_data_hourly (sensor_id, bucket, min_val, max_val, avg_val, sample_count)
+		VALUES ($1, '2020-01-01 00:00:00', 1, 1, 1, 1)`, sensorID)
 
 	// Sanity: the wipe actually wiped.
 	var n int
@@ -147,6 +151,8 @@ func TestBackup_RoundTrip(t *testing.T) {
 
 	require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM sensor_data WHERE sensor_id = $1`, sensorID).Scan(&n))
 	assert.Equal(t, 20, n, "sensor history should round-trip")
+	require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM sensor_data_hourly WHERE bucket = '2020-01-01 00:00:00'`).Scan(&n))
+	assert.Zero(t, n, "old hourly chart data is cleared by the restore")
 	if model.IsSQLite() {
 		require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'update_rolling_avg'`).Scan(&n))
 		assert.Equal(t, 1, n, "the rolling-average trigger is back after the restore")
