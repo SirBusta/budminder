@@ -358,21 +358,18 @@ func TestHasSerialID_TableMembership(t *testing.T) {
 		"settings", "zones", "sensors", "sensor_data", "strain",
 		"plant_status", "plant", "plant_status_log", "metric",
 		"plant_measurements", "activity", "plant_activity",
-		"plant_images", "breeder", "streams",
+		"plant_images", "breeder", "streams", "strain_lineage",
 	}
 	for _, name := range serial {
 		assert.Truef(t, hasSerialID(name), "%s should be in the SERIAL-id set", name)
 	}
 
 	// Tables with composite PKs, golang-migrate's bookkeeping table, and
-	// arbitrary unknown names must all report false. strain_lineage is
-	// notable: it has a SERIAL id but is not migrated by the tool today,
-	// and is intentionally absent from hasSerialID.
+	// arbitrary unknown names must all report false.
 	nonSerial := []string{
 		"rolling_averages",   // composite PK on sensor_id
 		"sensor_data_hourly", // composite PK on (sensor_id, bucket)
 		"schema_migrations",  // golang-migrate bookkeeping
-		"strain_lineage",     // present but excluded by orderedTables
 		"nonexistent_table",
 		"",
 	}
