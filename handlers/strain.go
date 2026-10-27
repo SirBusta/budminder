@@ -797,13 +797,54 @@ func DeleteStrainHandler(c *gin.Context) {
 	// Open the database
 	db := DBFromContext(c)
 
+	// A strain plants use can't be deleted. Real SQLite installs run without
+	// foreign-key checks, so the delete used to go through and those plants
+	// vanished from every list (each joins plant to strain).
+	var plants int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM plant WHERE strain_id = $1`, id).Scan(&plants); err != nil {
+		fieldLogger.WithError(err).Error("Failed to count the strain's plants")
+		apiInternalError(c, "api_failed_to_delete_strain")
+		return
+	}
+	if plants > 0 {
+		c.JSON(http.StatusConflict, gin.H{
+			"error":       strings.ReplaceAll(T(c, "api_strain_in_use"), "{count}", strconv.Itoa(plants)),
+			"plant_count": plants,
+		})
+		return
+	}
+
 	var packaging sql.NullString
 	_ = db.QueryRow("SELECT packaging_image FROM strain WHERE id = $1", id).Scan(&packaging)
 
-	// Smoke reports keep their own strain name and breeder; only the link goes.
-	_, _ = db.Exec(`UPDATE smoke_report SET strain_id = NULL WHERE strain_id = $1`, id)
+	// The strain's own rows go with it, and other strains' lineage keeps the
+	// parent by name only (what ON DELETE CASCADE / SET NULL would do with
+	// foreign-key checks on). Smoke reports keep their own strain name and
+	// breeder; only the link goes.
+	tx, err := db.Begin()
+	if err != nil {
+		fieldLogger.WithError(err).Error("Failed to delete strain")
+		apiInternalError(c, "api_failed_to_delete_strain")
+		return
+	}
+	defer tx.Rollback()
+	for _, q := range []string{
+		`UPDATE smoke_report SET strain_id = NULL WHERE strain_id = $1`,
+		`UPDATE strain_lineage SET parent_strain_id = NULL WHERE parent_strain_id = $1`,
+		`DELETE FROM strain_lineage WHERE strain_id = $1`,
+		`DELETE FROM strain_effect WHERE strain_id = $1`,
+		`DELETE FROM strain_flavor WHERE strain_id = $1`,
+		`DELETE FROM strain_terpene WHERE strain_id = $1`,
+		`DELETE FROM strain_medical_use WHERE strain_id = $1`,
+	} {
+		if _, err := tx.Exec(q, id); err != nil {
+			fieldLogger.WithError(err).Error("Failed to delete strain")
+			apiInternalError(c, "api_failed_to_delete_strain")
+			return
+		}
+	}
 
-	result, err := db.Exec(`DELETE FROM strain WHERE id = $1`, id)
+	result, err := tx.Exec(`DELETE FROM strain WHERE id = $1`, id)
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to delete strain")
 		apiInternalError(c, "api_failed_to_delete_strain")
@@ -814,6 +855,11 @@ func DeleteStrainHandler(c *gin.Context) {
 	if rowsAffected == 0 {
 		fieldLogger.Error("Strain not found")
 		apiNotFound(c, "api_strain_not_found")
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		fieldLogger.WithError(err).Error("Failed to delete strain")
+		apiInternalError(c, "api_failed_to_delete_strain")
 		return
 	}
 

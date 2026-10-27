@@ -355,6 +355,67 @@ func TestStrain_DeleteHappyPath(t *testing.T) {
 	assert.Zero(t, n)
 }
 
+// Real installs run SQLite without foreign-key checks, so deleting a strain
+// plants use used to go through and hide those plants from every list.
+func TestStrain_DeleteRefusedWhilePlantsUseIt(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDBWithoutForeignKeys(t)
+	server := testutil.NewTestServer(t, db)
+	apiKey := seedBreederWithKey(t, db)
+	testutil.MustExec(t, db, `INSERT INTO strain (id, name, breeder_id, sativa, indica, autoflower, description, seed_count)
+	                    VALUES (7, 'Used', 1, 50, 50, 0, '', 0)`)
+	testutil.MustExec(t, db, `INSERT INTO zones (id, name) VALUES (1, 'Z')`)
+	testutil.MustExec(t, db, `INSERT INTO plant (name, zone_id, strain_id, description, clone, start_dt, sensors)
+	                    VALUES ('Growing', 1, 7, '', 0, '2026-01-01', '[]')`)
+
+	resp := server.NewClient(t).APIDelete(t, "/strains/7", apiKey)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusConflict, resp.StatusCode)
+	var body struct {
+		Error      string `json:"error"`
+		PlantCount int    `json:"plant_count"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+	assert.Equal(t, 1, body.PlantCount)
+	assert.Contains(t, body.Error, "1")
+
+	var n int
+	require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM strain WHERE id = 7`).Scan(&n))
+	assert.Equal(t, 1, n, "strain kept")
+}
+
+// Its lineage and attribute rows go with a deleted strain, and another
+// strain's lineage keeps the parent by name only.
+func TestStrain_DeleteRemovesItsRows(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDBWithoutForeignKeys(t)
+	server := testutil.NewTestServer(t, db)
+	apiKey := seedBreederWithKey(t, db)
+	testutil.MustExec(t, db, `INSERT INTO strain (id, name, breeder_id, sativa, indica, autoflower, description, seed_count)
+	                    VALUES (7, 'Doomed', 1, 50, 50, 0, '', 0), (8, 'Child', 1, 50, 50, 0, '', 0)`)
+	testutil.MustExec(t, db, `INSERT INTO strain_lineage (strain_id, parent_name, parent_strain_id) VALUES (7, 'Old Parent', NULL), (8, 'Doomed', 7)`)
+	for _, table := range []string{"strain_effect", "strain_flavor", "strain_terpene", "strain_medical_use"} {
+		testutil.MustExec(t, db, `INSERT INTO `+table+` (strain_id, name) VALUES (7, 'x')`)
+	}
+
+	resp := server.NewClient(t).APIDelete(t, "/strains/7", apiKey)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	for _, table := range []string{"strain_lineage", "strain_effect", "strain_flavor", "strain_terpene", "strain_medical_use"} {
+		var n int
+		require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM `+table+` WHERE strain_id = 7`).Scan(&n))
+		assert.Zerof(t, n, "%s rows of the deleted strain", table)
+	}
+	var parentID sql.NullInt64
+	var parentName string
+	require.NoError(t, db.QueryRow(`SELECT parent_name, parent_strain_id FROM strain_lineage WHERE strain_id = 8`).Scan(&parentName, &parentID))
+	assert.Equal(t, "Doomed", parentName)
+	assert.False(t, parentID.Valid, "the link to the deleted strain is cleared")
+}
+
 func TestStrain_DeleteMissing(t *testing.T) {
 	t.Parallel()
 

@@ -37,12 +37,25 @@ var dbSeq atomic.Uint64
 // Safe to call from inside t.Parallel().
 func NewTestDB(t *testing.T) *sql.DB {
 	t.Helper()
+	return newTestDB(t, "&_pragma=foreign_keys(1)")
+}
+
+// NewTestDBWithoutForeignKeys is NewTestDB with SQLite's foreign-key checks
+// off, as in real installs (model.DbPath doesn't turn them on). Use it for
+// code that must not lean on FK cascades or refusals.
+func NewTestDBWithoutForeignKeys(t *testing.T) *sql.DB {
+	t.Helper()
+	return newTestDB(t, "")
+}
+
+func newTestDB(t *testing.T, pragmas string) *sql.DB {
+	t.Helper()
 	ensureProcessInitialized()
 
 	// Unique per call so concurrent tests do not see each other's tables
 	// even though they use the shared-cache backend.
 	name := fmt.Sprintf("isley-test-%d-%d", testPID(), dbSeq.Add(1))
-	dsn := fmt.Sprintf("file:%s?mode=memory&cache=shared&_pragma=foreign_keys(1)", name)
+	dsn := fmt.Sprintf("file:%s?mode=memory&cache=shared%s", name, pragmas)
 
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
