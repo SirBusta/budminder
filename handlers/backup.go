@@ -22,6 +22,7 @@ import (
 	"isley/utils"
 
 	"github.com/gin-gonic/gin"
+	"modernc.org/sqlite"
 )
 
 // ---------------------------------------------------------------------------
@@ -407,13 +408,16 @@ func UploadSQLiteDB(c *gin.Context) {
 		return
 	}
 
-	go runSQLiteFileRestore(svc, body, ConfigStoreFromContext(c))
+	go runSQLiteFileRestore(svc, DBFromContext(c), body, ConfigStoreFromContext(c))
 
 	c.JSON(http.StatusAccepted, gin.H{"message": T(c, "api_restore_started")})
 }
 
-// runSQLiteFileRestore replaces the current SQLite file with the uploaded one.
-func runSQLiteFileRestore(svc *BackupService, data []byte, store *config.Store) {
+// runSQLiteFileRestore copies the uploaded SQLite file into the open database
+// with SQLite's online restore. The handle stays open: the engine, the
+// watchers and every request share it, so closing it (as this once did)
+// broke every page until a restart.
+func runSQLiteFileRestore(svc *BackupService, db *sql.DB, data []byte, store *config.Store) {
 	fieldLogger := logger.Log.WithField("handler", "runSQLiteFileRestore")
 
 	var runErr error
@@ -427,44 +431,90 @@ func runSQLiteFileRestore(svc *BackupService, data []byte, store *config.Store) 
 
 	svc.UpdateRestoreProgress("restoring", "database file", 0, 0, 0, 0)
 
-	dbFile := env.Get("DB_FILE")
-	if dbFile == "" {
-		dbFile = "data/isley.db"
+	// The upload waits next to the database file (same disk), or in the
+	// system temp folder when SQLite doesn't name one.
+	dir := ""
+	var seq int
+	var name, dbFile string
+	if db.QueryRow("PRAGMA database_list").Scan(&seq, &name, &dbFile) == nil && dbFile != "" {
+		dir = filepath.Dir(dbFile)
 	}
-
-	// Close the current database connection so we can replace the file
-	if err := model.CloseDB(); err != nil {
-		fieldLogger.WithError(err).Error("Failed to close current database")
-		runErr = fmt.Errorf("Failed to close current database")
-		return
-	}
-
-	// Remove WAL and SHM files if they exist (stale after file swap)
-	os.Remove(dbFile + "-wal")
-	os.Remove(dbFile + "-shm")
-
-	// Write the new database file
-	if err := os.WriteFile(dbFile, data, 0644); err != nil {
-		fieldLogger.WithError(err).Error("Failed to write new database file")
+	tmp, err := os.CreateTemp(dir, "restore-*.db")
+	if err != nil {
+		fieldLogger.WithError(err).Error("Failed to create temporary database file")
 		runErr = fmt.Errorf("Failed to write database file")
-		// Try to reopen the old DB (may fail if we partially wrote)
-		model.InitDB()
+		return
+	}
+	tmpPath := tmp.Name()
+	defer os.Remove(tmpPath)
+	_, err = tmp.Write(data)
+	if cerr := tmp.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		fieldLogger.WithError(err).Error("Failed to write temporary database file")
+		runErr = fmt.Errorf("Failed to write database file")
 		return
 	}
 
-	// Reopen the database
-	model.InitDB()
-	fieldLogger.Info("SQLite file replaced and database reopened")
+	if err := restoreSQLiteFrom(db, tmpPath); err != nil {
+		fieldLogger.WithError(err).Error("Failed to restore the database file")
+		runErr = fmt.Errorf("Failed to restore database file: %v", err)
+		return
+	}
+	fieldLogger.Info("SQLite file copied into the database")
 
-	// Reload in-memory config from the newly reopened DB.
-	if reopenedDB, dbErr := model.GetDB(); dbErr == nil {
-		LoadSettings(reopenedDB, store)
-		repairRestoredLineage(reopenedDB)
-	} else {
-		fieldLogger.WithError(dbErr).Error("Failed to obtain DB after reopen for LoadSettings")
+	// The uploaded file may come from an older version.
+	if err := model.MigrateSQLiteHandle(db); err != nil {
+		fieldLogger.WithError(err).Error("Failed to migrate the restored database")
+		runErr = fmt.Errorf("Failed to update the restored database: %v", err)
+		return
 	}
 
+	LoadSettings(db, store)
+	repairRestoredLineage(db)
 	fieldLogger.Info("SQLite file restore complete")
+}
+
+// restoreSQLiteFrom replaces db's contents with the SQLite file at src in one
+// step (sqlite3_backup with all pages), retrying while another connection
+// holds a lock.
+func restoreSQLiteFrom(db *sql.DB, src string) error {
+	ctx := context.Background()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	return conn.Raw(func(dc any) error {
+		r, ok := dc.(interface {
+			NewRestore(string) (*sqlite.Backup, error)
+		})
+		if !ok {
+			return fmt.Errorf("database driver can't restore a file")
+		}
+		deadline := time.Now().Add(30 * time.Second)
+		for {
+			b, err := r.NewRestore(src)
+			if err != nil {
+				return err
+			}
+			_, err = b.Step(-1)
+			if ferr := b.Finish(); err == nil {
+				err = ferr
+			}
+			if err == nil {
+				return nil
+			}
+			msg := strings.ToLower(err.Error())
+			busy := strings.Contains(msg, "busy") || strings.Contains(msg, "locked")
+			if !busy || time.Now().After(deadline) {
+				return err
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+	})
 }
 
 // ---------------------------------------------------------------------------

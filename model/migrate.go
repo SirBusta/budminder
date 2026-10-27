@@ -231,6 +231,29 @@ func MigrateDB() {
 	}
 }
 
+// MigrateSQLiteHandle applies the SQLite migrations through an open handle,
+// for a database file restored while the program runs (it may be older than
+// this program). Unlike MigrateDB it returns errors instead of exiting, and
+// it leaves db open.
+func MigrateSQLiteHandle(db *sql.DB) error {
+	src, err := iofs.New(migrationsFS, "migrations/sqlite")
+	if err != nil {
+		return err
+	}
+	drv, err := sqlite.WithInstance(db, &sqlite.Config{})
+	if err != nil {
+		return err
+	}
+	m, err := migrate.NewWithInstance("iofs", src, "sqlite", drv)
+	if err != nil {
+		return err
+	}
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return err
+	}
+	return nil
+}
+
 func enforceWalMode() {
 	// Ensure the data directory exists
 	dataDir := "data"
