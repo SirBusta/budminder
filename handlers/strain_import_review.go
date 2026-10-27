@@ -58,6 +58,11 @@ type importReviewDraft struct {
 	Parents        []importParent   `json:"parents"`
 	Provenance     importProvenance `json:"provenance"`
 	PackagingToken string           `json:"packaging_token,omitempty"`
+	// ExistingID is the strain the review page found and took the seed
+	// stock from (0: none). Save keeps that strain's stock when it finds a
+	// different one (the page looks it up by breeder name, Save by the
+	// breeder picked in the form).
+	ExistingID int `json:"existing_id"`
 }
 
 // ImportReview is everything the "Review Strain Info" page renders.
@@ -217,6 +222,7 @@ func buildImportReview(ctx context.Context, db *sql.DB, cannadbOn bool, s import
 		applyImportDestination(&r.Strain, q)
 	}
 	r.Draft.Parents = linkParents(db, parentNames, r.ExistingID)
+	r.Draft.ExistingID = r.ExistingID
 
 	if r.Strain.PackagingImage == "" {
 		if body, ext, ok := downloadCannadbPackagingImage(ctx, imgRec, imgVal); ok {
@@ -387,6 +393,7 @@ func SaveImportedStrainHandler(c *gin.Context) {
 		Parents           []importParent   `json:"parents"`
 		Provenance        importProvenance `json:"provenance"`
 		KeepLineageSource bool             `json:"keep_lineage_source"`
+		ExistingID        int              `json:"existing_id"`
 		Packaging         struct {
 			Choice string `json:"choice"` // keep | none | upload
 			Token  string `json:"token"`
@@ -547,6 +554,20 @@ func SaveImportedStrainHandler(c *gin.Context) {
 			apiInternalError(c, "api_failed_to_add_strain")
 			return
 		}
+		if strainID != req.ExistingID {
+			// The review page didn't show this strain (it was saved under
+			// another breeder name), so its seed fields are a new import's
+			// defaults: keep the strain's own.
+			if err := keepExistingSeedFields(tx, strainID, &req.SeedCount, &req.SeedLocation, &req.SeedType); err != nil {
+				fieldLogger.WithError(err).Error("Failed to read existing seed fields")
+				apiInternalError(c, "api_failed_to_add_strain")
+				return
+			}
+			req.Wanted, req.SeedsAddedOn = prevStock.Wanted, prevStock.AddedOn
+			setCol(cols, vals, "seed_count", req.SeedCount)
+			setCol(cols, vals, "seed_location", nullableStr(req.SeedLocation))
+			setCol(cols, vals, "seed_type", nullableStr(req.SeedType))
+		}
 	}
 	stock, err := resolveStrainStock(req.SeedCount, &req.Wanted, &req.SeedsAddedOn, prevStock, stockToday(c))
 	if err != nil {
@@ -669,5 +690,26 @@ func applyImportDestination(s *types.Strain, q url.Values) {
 		s.Wanted = false
 	case "wanted":
 		s.Wanted = true
+	}
+}
+
+// keepExistingSeedFields reads strain id's seed count, location and type
+// into the given fields.
+func keepExistingSeedFields(tx *sql.Tx, id int, count *int, location, seedType *string) error {
+	var loc, typ sql.NullString
+	if err := tx.QueryRow(`SELECT seed_count, seed_location, seed_type FROM strain WHERE id = $1`, id).Scan(count, &loc, &typ); err != nil {
+		return err
+	}
+	*location, *seedType = loc.String, typ.String
+	return nil
+}
+
+// setCol sets the value for column name in a cols/vals pair.
+func setCol(cols []string, vals []any, name string, v any) {
+	for i, c := range cols {
+		if c == name {
+			vals[i] = v
+			return
+		}
 	}
 }

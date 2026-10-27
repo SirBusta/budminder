@@ -232,6 +232,42 @@ func TestImportSave_AddsThenUpdates(t *testing.T) {
 	assert.NotEqual(t, first.ID, third.ID)
 }
 
+// The review page looks the strain up by the listing's breeder name, Save by
+// the breeder picked in the form. A strain saved under another breeder name
+// wasn't shown, so the page sent a new import's seed fields, and Save used
+// to overwrite the strain's seed count, location and type with them.
+func TestImportSave_KeepsStockOfAStrainThePageDidNotShow(t *testing.T) {
+	t.Parallel()
+	s := newImportServer(t)
+
+	breederID := testutil.SeedBreeder(t, s.db, "My Own Name For Them")
+	testutil.MustExec(t, s.db, `INSERT INTO strain (name, breeder_id, sativa, indica, autoflower, description, seed_count, seed_location, seed_type, straincompass_slug)
+		VALUES ('Blue Dream', $1, 50, 50, 0, '', 12, 'Freezer', 'feminized', 'blue-dream')`, breederID)
+
+	_, page := s.reviewPage(t, scReviewQuery())
+	assert.NotContains(t, page, `existing_id&#34;:1`, "the page didn't find it")
+
+	status, got := s.save(t, reviewSavePayload(map[string]any{"breeder_id": breederID, "new_breeder": "",
+		"seed_count": 0, "seed_location": "", "seed_type": "", "existing_id": 0}))
+	require.Equal(t, http.StatusOK, status)
+	require.True(t, got.Updated)
+	var count int
+	var loc, typ sql.NullString
+	require.NoError(t, s.db.QueryRow(`SELECT seed_count, seed_location, seed_type FROM strain WHERE id = $1`, got.ID).Scan(&count, &loc, &typ))
+	assert.Equal(t, 12, count)
+	assert.Equal(t, "Freezer", loc.String)
+	assert.Equal(t, "feminized", typ.String)
+
+	// When the page did show it, the form's seed fields are the user's.
+	status, got = s.save(t, reviewSavePayload(map[string]any{"breeder_id": breederID, "new_breeder": "",
+		"seed_count": 3, "seed_location": "Drawer", "seed_type": "regular", "existing_id": got.ID}))
+	require.Equal(t, http.StatusOK, status)
+	require.NoError(t, s.db.QueryRow(`SELECT seed_count, seed_location, seed_type FROM strain WHERE id = $1`, got.ID).Scan(&count, &loc, &typ))
+	assert.Equal(t, 3, count)
+	assert.Equal(t, "Drawer", loc.String)
+	assert.Equal(t, "regular", typ.String)
+}
+
 func TestImportSave_KeepsHeldSeedPackImage(t *testing.T) {
 	t.Parallel()
 	s := newImportServer(t)

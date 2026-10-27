@@ -326,6 +326,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const draft = JSON.parse(reviewEl.dataset.draft || "{}");
         payload.parents = typeof window.collectLineageParents === "function" ? window.collectLineageParents() : [];
         payload.provenance = draft.provenance;
+        payload.existing_id = draft.existing_id || 0;
         payload.keep_lineage_source = sameParents(payload.parents, draft.parents);
 
         const checked = document.querySelector('input[name="reviewPackaging"]:checked');
