@@ -555,10 +555,28 @@ var demoRules = map[string]demoRule{
 		fix: demoRecordedName,
 	},
 
+	// Settings > Photos: Keep originals / Compression Options and the
+	// quality (also "Use quality NN" on the compare page). Only the
+	// visitor's copy changes; uploads stay blocked, and Compress existing
+	// photos (/settings/photos/existing/...) has no rule, so it's refused.
+	"POST /settings/photos": {fields: map[string]demoCheck{"compress": dBool, "quality": dPhotoQuality}},
+
 	// Smoke reports: scores, tags and choices; photos can't be added.
 	"POST /smoke":                 {fields: demoSmokeFields},
 	"PUT /smoke/:id":              {fields: demoSmokeFields},
 	"PUT /smoke/:id/photos/order": {fields: map[string]demoCheck{"ids": dIntList(maxSmokePhotos)}},
+}
+
+// dPhotoQuality accepts a quality Settings > Photos offers (50-90, steps of 5).
+func dPhotoQuality(c *gin.Context, v any) (any, error) {
+	if _, err := dInt(50, 90)(c, v); err != nil {
+		return nil, err
+	}
+	n, _ := v.(json.Number).Int64()
+	if !ValidPhotoQuality(int(n)) {
+		return nil, errDemo
+	}
+	return v, nil
 }
 
 func merge(a, b map[string]demoCheck) map[string]demoCheck {

@@ -223,6 +223,40 @@ func TestDemo_NumbersHaveLimits(t *testing.T) {
 	assert.Equal(t, http.StatusOK, code)
 }
 
+func TestDemo_PhotoSettingsButNotCompressingExisting(t *testing.T) {
+	t.Parallel()
+	e := newDemo(t)
+	for _, q := range []any{47, 95, 72, "75", 75.5} {
+		code, out := e.json(t, "POST", "/settings/photos", map[string]any{"quality": q})
+		assertRefused(t, code, out, "photo quality")
+	}
+	code, out := e.json(t, "POST", "/settings/photos", map[string]any{"compress": "yes"})
+	assertRefused(t, code, out, "compress must be true or false")
+	code, out = e.json(t, "POST", "/settings/photos", map[string]any{"compress": true, "quality": 75, "extra": 1})
+	assertRefused(t, code, out, "unknown field")
+	code, _ = e.json(t, "POST", "/settings/photos", map[string]any{"compress": true, "quality": 70})
+	assert.Equal(t, http.StatusOK, code)
+
+	for _, r := range []struct{ method, path string }{
+		{"POST", "/settings/photos/existing/start"}, {"POST", "/settings/photos/existing/stop"},
+		{"POST", "/settings/photos/existing/resume"}, {"POST", "/settings/photos/existing/finish"},
+		{"DELETE", "/settings/photos/existing/backup"}, {"POST", "/settings/photos/existing/backup/open"},
+	} {
+		code, out := e.json(t, r.method, r.path, map[string]any{"backup": true})
+		assertRefused(t, code, out, r.method+" "+r.path)
+	}
+
+	// The compare page and the estimate still work.
+	var est map[string]any
+	e.getJSON(t, "/settings/photos/existing?quality=70", &est)
+	var sizes map[string]any
+	e.getJSON(t, "/settings/photos/compare/sizes?src=sample:1", &sizes)
+	assert.Len(t, sizes["sizes"], 9)
+	resp := e.client.Get("/settings/photos/compare")
+	testutil.DrainAndClose(resp)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
 func TestDemo_AddPlantIsNamedByTheServer(t *testing.T) {
 	t.Parallel()
 	e := newDemo(t)
