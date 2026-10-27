@@ -58,7 +58,7 @@ func TestStream_AddHappyPath(t *testing.T) {
 	resp := c.APIPostJSON(t, "/streams", fix.APIKey, map[string]interface{}{
 		"stream_name": "Tent Cam",
 		"url":         fix.URL,
-		"zone_id":     "1",
+		"zone_id":     1,
 		"visible":     true,
 	})
 	defer resp.Body.Close()
@@ -98,7 +98,7 @@ func TestStream_AddRejectsBadURL(t *testing.T) {
 			resp := c.APIPostJSON(t, "/streams", fix.APIKey, map[string]interface{}{
 				"stream_name": "Bad URL Stream",
 				"url":         tc.url,
-				"zone_id":     "1",
+				"zone_id":     1,
 				"visible":     true,
 			})
 			resp.Body.Close()
@@ -118,7 +118,7 @@ func TestStream_AddRejectsEmptyName(t *testing.T) {
 	resp := c.APIPostJSON(t, "/streams", fix.APIKey, map[string]interface{}{
 		"stream_name": "",
 		"url":         fix.URL,
-		"zone_id":     "1",
+		"zone_id":     1,
 		"visible":     true,
 	})
 	defer resp.Body.Close()
@@ -219,4 +219,45 @@ func TestStream_GetByZoneGroupsByZone(t *testing.T) {
 	require.Len(t, got["Zone B"], 1)
 	assert.Equal(t, "Cam A", got["Z"][0]["name"])
 	assert.Equal(t, "Cam B", got["Zone B"][0]["name"])
+}
+
+// TestStream_SessionAddAndEditLikeSettingsPage sends what the Settings
+// page sends (a numeric zone_id and a true/false visible) through the
+// real session + CSRF path, for both add and edit.
+func TestStream_SessionAddAndEditLikeSettingsPage(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db, testutil.WithStreamDir(t.TempDir()))
+	fix := seedStreamHTTP(t, db)
+	testutil.SeedAdmin(t, db, "stream-session-pw")
+	c, token := server.LoginAndFetchCSRF(t, "stream-session-pw", "/settings")
+
+	resp := c.SessionPostJSON(t, "/streams", token, map[string]interface{}{
+		"stream_name": "Tent Cam",
+		"zone_id":     1,
+		"url":         fix.URL,
+		"visible":     true,
+	})
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+	var got struct {
+		ID int `json:"id"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&got))
+
+	resp2 := c.SessionPutJSON(t, "/streams/"+strconv.Itoa(got.ID), token, map[string]interface{}{
+		"stream_name": "Tent Cam 2",
+		"zone_id":     1,
+		"url":         fix.URL,
+		"visible":     false,
+	})
+	resp2.Body.Close()
+	require.Equal(t, http.StatusOK, resp2.StatusCode)
+
+	var name string
+	var visible bool
+	require.NoError(t, db.QueryRow(`SELECT name, visible FROM streams WHERE id = $1`, got.ID).Scan(&name, &visible))
+	assert.Equal(t, "Tent Cam 2", name)
+	assert.False(t, visible)
 }

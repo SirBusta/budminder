@@ -44,7 +44,7 @@ func AddStreamHandler(c *gin.Context) {
 	var stream struct {
 		Name    string `json:"stream_name"`
 		URL     string `json:"url"`
-		ZoneID  string `json:"zone_id"`
+		ZoneID  int    `json:"zone_id"`
 		Visible bool   `json:"visible"`
 	}
 	if err := c.ShouldBindJSON(&stream); err != nil {
@@ -109,16 +109,8 @@ func UpdateStreamHandler(c *gin.Context) {
 	// Update stream in database
 	db := DBFromContext(c)
 
-	//convert visible to int
-	var visibleInt int
-	if stream.Visible {
-		visibleInt = 1
-	} else {
-		visibleInt = 0
-	}
-
-	// Update stream in database
-	_, err := db.Exec("UPDATE streams SET name = $1, url = $2, zone_id = $3, visible = $4 WHERE id = $5", stream.Name, stream.URL, stream.ZoneID, visibleInt, id)
+	// visible is a BOOLEAN column: pass the bool itself (an int is refused by Postgres)
+	_, err := db.Exec("UPDATE streams SET name = $1, url = $2, zone_id = $3, visible = $4 WHERE id = $5", stream.Name, stream.URL, stream.ZoneID, stream.Visible, id)
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to update stream")
 		apiInternalError(c, "api_failed_to_update_stream")
