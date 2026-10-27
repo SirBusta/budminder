@@ -39,6 +39,7 @@ type Welcome struct {
 	Updated     string // the download this install was just updated from (UpdateInstall); may be deleted
 	Elsewhere   string // the install the icons open, when this is a second copy (OtherInstall)
 	Tray        bool   // the icon by the clock is showing (RunTray)
+	Folder      string // the program's folder, where its data is (the welcome window)
 }
 
 // Box draws the welcome box. color adds green to the border on terminals.

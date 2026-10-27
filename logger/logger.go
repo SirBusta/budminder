@@ -30,11 +30,13 @@ func InitLogger() {
 		Compress:   true,
 	}
 
-	// Multi-writer for logging to both file and console
-	multiWriter := io.MultiWriter(logFile, os.Stdout)
-
-	// Set log output to multi-writer
-	Log.SetOutput(multiWriter)
+	// Log to both the file and the console. The Windows download has no
+	// console when double-clicked (os.Stdout isn't there): the file only.
+	if _, err := os.Stdout.Stat(); err == nil {
+		Log.SetOutput(io.MultiWriter(logFile, os.Stdout))
+	} else {
+		Log.SetOutput(logFile)
+	}
 
 	// Set log format
 	Log.SetFormatter(&logrus.TextFormatter{

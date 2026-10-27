@@ -155,10 +155,8 @@ const (
 	faSeedling = ''
 	faCamera   = ''
 	faWifi     = ''
-	faLock     = ''
 	faShield   = ''
 	faHand     = ''
-	faCopy     = ''
 )
 
 // PhoneCode is what the phone window shows.
@@ -213,6 +211,20 @@ func ShowPhoneCode(p PhoneCode) {
 	go w.run()
 }
 
+// loadGlyphs makes the Font Awesome font available to this program's windows
+// (once; the phone window and the cards share it).
+func loadGlyphs(b []byte) {
+	glyphOnce.Do(func() {
+		if len(b) == 0 {
+			return
+		}
+		glyphData = b
+		var n uint32
+		h, _, _ := pAddFontMemResourceEx.Call(uintptr(unsafe.Pointer(&glyphData[0])), uintptr(len(glyphData)), 0, uintptr(unsafe.Pointer(&n)))
+		haveGlyph = h != 0
+	})
+}
+
 // scale turns a size at 100% into this screen's pixels.
 func (w *phoneWindow) scale(v int32) int32 { return v * w.dpi / 96 }
 
@@ -237,15 +249,7 @@ func (w *phoneWindow) run() {
 			w.dpi = int32(d)
 		}
 	}
-	glyphOnce.Do(func() {
-		if len(w.Glyphs) == 0 {
-			return
-		}
-		glyphData = w.Glyphs
-		var n uint32
-		h, _, _ := pAddFontMemResourceEx.Call(uintptr(unsafe.Pointer(&glyphData[0])), uintptr(len(glyphData)), 0, uintptr(unsafe.Pointer(&n)))
-		haveGlyph = h != 0
-	})
+	loadGlyphs(w.Glyphs)
 	instance, _, _ := pGetModuleHandleW.Call(0)
 	classOnce.Do(func() {
 		cursor, _, _ := pLoadCursorW.Call(0, 32512) // IDC_ARROW

@@ -24,7 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Windows: a BudMinder welcome window replaces the black console window. It opens BudMinder in your browser, lets you choose whether to put a BudMinder icon on the desktop, shows where your data is kept and explains the icon by the clock. Closing it doesn't stop BudMinder: the window shrinks into the icon by the clock, and the first time a Windows notification says where BudMinder went.
+- Windows: problems while starting are explained in a window with what to do next, instead of the program quietly closing. If an older BudMinder is still running, you can stop it and start the new one; if another program uses BudMinder's port, BudMinder can use another one and remembers it.
+
 ### Changed
+
+- Windows: the BudMinder icon goes in the Start menu always and on the desktop only if you keep that box ticked. Updating from a double-clicked download asks in a BudMinder window.
+- Windows: double-clicking the program while the same BudMinder is already running just opens it.
 
 ### Fixed
 

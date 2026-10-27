@@ -350,8 +350,12 @@ jobs:
       - name: Build programs
         run: |
           mkdir dist
+          # Windows: no console window (-H windowsgui); BudMinder shows its
+          # own windows instead, and borrows the terminal when started from one.
           build() {
-            CGO_ENABLED=0 GOOS=$1 GOARCH=$2 go build -trimpath -ldflags="-w -s" -o "dist/$3" .
+            gui=""
+            if [ "$1" = windows ]; then gui="-H windowsgui"; fi
+            CGO_ENABLED=0 GOOS=$1 GOARCH=$2 go build -trimpath -ldflags="-w -s $gui" -o "dist/$3" .
           }
           build linux   amd64 budminder-linux-amd64
           build linux   arm64 budminder-linux-arm64

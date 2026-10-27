@@ -16,7 +16,7 @@ BudMinder has no window of its own. It runs in the background and you use it in 
 
 > **Tip:** Don't see the icon? Windows tucks new icons away. Click the **^** arrow next to the clock and drag the BudMinder icon onto the taskbar, so it stays in view.
 
-**Stopping.** Right-click the icon by the clock and choose **Stop BudMinder**, or open the Start menu and click **Stop BudMinder**. If you started BudMinder by double-clicking the program file, closing its window stops it too.
+**Stopping.** Right-click the icon by the clock and choose **Stop BudMinder**, or open the Start menu and click **Stop BudMinder**. Closing BudMinder's small welcome window doesn't stop it: the window goes into the icon by the clock.
 
 ## Linux
 

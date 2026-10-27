@@ -78,7 +78,7 @@ func TestMakeIcons_Windows(t *testing.T) {
 	}
 	desk, prog, data := t.TempDir(), t.TempDir(), t.TempDir()
 	exe := `C:\BudMinder Test\budminder-windows-amd64.exe`
-	paths, onDesktop, err := makeWindowsIcons(exe, data, []byte("png"), desk, prog)
+	paths, onDesktop, err := makeWindowsIcons(exe, data, []byte("png"), desk, prog, "")
 	if err != nil {
 		t.Fatal(err)
 	}

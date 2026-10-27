@@ -66,7 +66,7 @@ func TestUpdateInstall(t *testing.T) {
 	write(download, "new program")
 
 	// The install is running: it's asked to stop and shuts down.
-	ctl, err := StartControl(data)
+	ctl, err := StartControl(data, "1.5.8")
 	if err != nil {
 		t.Fatal(err)
 	}

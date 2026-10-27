@@ -1,10 +1,12 @@
 package launcher
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 )
 
@@ -48,14 +50,23 @@ func MakeIcons(exe, dataDir string, png []byte) (Icons, error) {
 	if InDocker() || (runtime.GOOS != "linux" && runtime.GOOS != "windows") {
 		return Icons{}, nil
 	}
-	if made, _ := readMarker(dataDir); len(made) > 0 && made[0] == exe {
+	made, _ := readMarker(dataDir)
+	if len(made) > 0 && made[0] == exe {
 		return Icons{}, nil
 	}
 	var paths []string
 	var err error
 	var onDesktop bool
 	if runtime.GOOS == "windows" {
-		paths, onDesktop, err = makeWindowsIcons(exe, dataDir, png, "", "")
+		// Someone who turned the desktop icon off keeps it off after a move.
+		only := ""
+		if slices.Contains(made, noDesktop) {
+			only = "menu"
+		}
+		paths, onDesktop, err = makeWindowsIcons(exe, dataDir, png, "", "", only)
+		if only != "" {
+			paths = append(paths, noDesktop)
+		}
 	} else {
 		paths, onDesktop, err = makeLinuxIcons(exe, dataDir, png)
 	}
@@ -78,6 +89,50 @@ func HaveIcons(exe, dataDir string) bool {
 		}
 	}
 	return false
+}
+
+// noDesktop in the marker: the desktop icon was turned off in the welcome
+// window, so it isn't made again.
+const noDesktop = "#no-desktop"
+
+// SetDesktopIcon adds or removes the desktop icon (the welcome window's check
+// box, Windows only) and records the choice in the marker.
+func SetDesktopIcon(exe, dataDir string, png []byte, on bool) error {
+	if runtime.GOOS != "windows" {
+		return nil
+	}
+	made, err := readMarker(dataDir)
+	if err != nil || len(made) == 0 || made[0] != exe {
+		return errors.New("BudMinder's icons weren't made from this program")
+	}
+	var keep, desk []string
+	for _, p := range made[1:] {
+		switch {
+		case p == noDesktop:
+		case isDesktopShortcut(p):
+			desk = append(desk, p)
+		default:
+			keep = append(keep, p)
+		}
+	}
+	if !on {
+		for _, p := range desk {
+			if err := os.Remove(p); err != nil && !errors.Is(err, os.ErrNotExist) {
+				return err
+			}
+		}
+		return writeMarker(dataDir, exe, append(keep, noDesktop))
+	}
+	paths, _, err := makeWindowsIcons(exe, dataDir, png, "", "", "desktop")
+	if err != nil {
+		return err
+	}
+	return writeMarker(dataDir, exe, append(keep, paths...))
+}
+
+// isDesktopShortcut: the BudMinder.lnk that isn't in the Start menu.
+func isDesktopShortcut(p string) bool {
+	return strings.EqualFold(filepath.Base(p), "BudMinder.lnk") && !strings.Contains(strings.ToLower(p), `\start menu\`)
 }
 
 func readMarker(dataDir string) ([]string, error) {
@@ -188,8 +243,9 @@ func desktopDir(home string) string {
 // right-click actions of their own). Windows shortcuts are made through
 // PowerShell's WScript.Shell, which every Windows has. desktop and programs
 // override the folders (tests); "" asks Windows, which also follows a
-// desktop moved into OneDrive.
-func makeWindowsIcons(exe, dataDir string, png []byte, desktop, programs string) (paths []string, onDesktop bool, err error) {
+// desktop moved into OneDrive. only is "menu" or "desktop" for just those,
+// "" for both.
+func makeWindowsIcons(exe, dataDir string, png []byte, desktop, programs, only string) (paths []string, onDesktop bool, err error) {
 	ico, err := filepath.Abs(filepath.Join(dataDir, icoIcon))
 	if err != nil {
 		return nil, false, err
@@ -213,14 +269,14 @@ function Make($where, $path, $arguments) {
   $s.Save()
   Write-Output ($where + '|' + $path)
 }
-if ($prog -and (Test-Path $prog)) {
+if ($env:BM_ONLY -ne 'desktop' -and $prog -and (Test-Path $prog)) {
   Make 'menu' (Join-Path $prog 'BudMinder.lnk') '` + OpenFlag + `'
   Make 'menu' (Join-Path $prog 'Stop BudMinder.lnk') '` + StopFlag + `'
 }
-if ($desk -and (Test-Path $desk)) { Make 'desktop' (Join-Path $desk 'BudMinder.lnk') '` + OpenFlag + `' }
+if ($env:BM_ONLY -ne 'menu' -and $desk -and (Test-Path $desk)) { Make 'desktop' (Join-Path $desk 'BudMinder.lnk') '` + OpenFlag + `' }
 `
 	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script)
-	cmd.Env = append(os.Environ(), "BM_EXE="+exe, "BM_ICO="+ico, "BM_DESKTOP="+desktop, "BM_PROGRAMS="+programs)
+	cmd.Env = append(os.Environ(), "BM_EXE="+exe, "BM_ICO="+ico, "BM_DESKTOP="+desktop, "BM_PROGRAMS="+programs, "BM_ONLY="+only)
 	hideWindow(cmd)
 	out, err := cmd.Output()
 	if err != nil {

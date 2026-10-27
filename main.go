@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 
 	"isley/app"
 	"isley/config"
@@ -53,11 +54,28 @@ var trustedProxies = []string{
 }
 
 func main() {
+	// The Windows download has no console of its own: from a terminal it
+	// borrows that one; double-clicked, it talks through cards (launcher/card.go).
+	launcher.AttachParentConsole()
+	cardIcon, _ := embeddedFiles.ReadFile("web/static/img/brand/budminder-256.png")
+	cardGlyphs, _ := embeddedFiles.ReadFile("web/static/vendor/fontawesome/webfonts/fa-solid-900.ttf")
+	launcher.SetLook(cardIcon, cardGlyphs)
+
 	// Run in the program's own folder, so data, uploads and logs sit next to
 	// it however it was started (workdir explains when it stays put).
 	where, whereErr := workdir.Apply()
 	firstRunHome()
 	logger.InitLogger()
+	here, _ := os.Getwd()
+	if launcher.Windowless() {
+		// A start that fails says why in a card, not only in the log.
+		var last string
+		logger.Log.AddHook(fatalHook{&last})
+		logger.Log.ExitFunc = func(code int) {
+			launcher.RunCard(launcher.StartFailedCard(here, last), problemEvents(last, here))
+			os.Exit(code)
+		}
+	}
 	if whereErr != nil {
 		logger.Log.WithError(whereErr).Warn("Couldn't move to the program's folder; data stays in the current folder")
 	} else if where.Moved {
@@ -76,6 +94,9 @@ func main() {
 
 	port := env.Get("PORT")
 	if port == "" {
+		port = launcher.SavedPort("data") // chosen in the "port taken" card
+	}
+	if port == "" {
 		port = "8080"
 	}
 
@@ -84,7 +105,7 @@ func main() {
 	// first when it isn't running yet. On Windows that start happens in a
 	// second, windowless copy (--background), so no console stays open.
 	// Double-clicking the .exe itself also opens the browser once ready.
-	openWhenReady := runtime.GOOS == "windows" && len(os.Args) == 1 && launcher.IsTerminal(os.Stdout)
+	openWhenReady := runtime.GOOS == "windows" && len(os.Args) == 1 && (launcher.IsTerminal(os.Stdout) || launcher.Windowless())
 	for _, a := range os.Args[1:] {
 		switch a {
 		case launcher.StopFlag:
@@ -130,6 +151,13 @@ func main() {
 					return
 				}
 			}
+		}
+	}
+
+	if launcher.Windowless() && env.Get("DEMO") == "" {
+		var ok bool
+		if port, ok = portForThisStart(port, here, openWhenReady); !ok {
+			return
 		}
 	}
 
@@ -340,7 +368,7 @@ func main() {
 	trayStop := make(chan struct{})   // Stop BudMinder in the tray icon's menu
 	removeTray := func() {}
 	if !demoMode && !launcher.InDocker() {
-		if ctl, err := launcher.StartControl("data"); err != nil {
+		if ctl, err := launcher.StartControl("data", getVersion()); err != nil {
 			logger.Log.WithError(err).Warn("Stop BudMinder won't work this time")
 		} else {
 			defer ctl.Close()
@@ -370,7 +398,6 @@ func main() {
 			}
 			icon, _ := embeddedFiles.ReadFile("web/static/img/brand/budminder-256.png")
 			glyphs, _ := embeddedFiles.ReadFile("web/static/vendor/fontawesome/webfonts/fa-solid-900.ttf")
-			here, _ := os.Getwd()
 			var once sync.Once
 			removeTray, showTray = launcher.RunTray(launcher.Tray{
 				Version: getVersion(),
@@ -393,11 +420,16 @@ func main() {
 			})
 		}
 		time.Sleep(1500 * time.Millisecond) // let the startup jobs log first, so the box ends up last
-		welcome(db, port, elsewhere, install, showTray)
+		w := welcome(db, port, elsewhere, install, showTray)
 		if openWhenReady {
 			if err := launcher.OpenBrowser("http://localhost:" + port); err != nil {
 				logger.Log.WithError(err).Error("Couldn't open the browser")
 			}
+		}
+		// The welcome card: double-clicked, set up from Downloads, or updated
+		// from a download. Never from the icon or Start with Windows.
+		if launcher.Windowless() && (len(os.Args) == 1 || w.Installed != "" || w.Updated != "") {
+			go showWelcome(w, showTray)
 		}
 	}
 
@@ -468,12 +500,23 @@ func firstRunHome() {
 	}
 	here, _ := os.Getwd()
 	note, ok := launcher.ReadNote()
+	windowless := launcher.Windowless()
 	switch launcher.Decide(exe, here, getVersion(), note, ok, updates.Newer, fileExists) {
 	case launcher.PlanUpdate:
-		if launcher.ConfirmUpdate(filepath.Dir(note.Exe), note.Version, getVersion()) {
-			fmt.Println("Updating BudMinder in", filepath.Dir(note.Exe), "...")
+		dir := filepath.Dir(note.Exe)
+		var yes bool
+		if windowless {
+			yes = launcher.RunCard(launcher.UpdateCard(dir, note.Version, getVersion()), launcher.CardEvents{}) == launcher.CardUpdate
+		} else {
+			yes = launcher.ConfirmUpdate(dir, note.Version, getVersion())
+		}
+		if yes {
+			fmt.Println("Updating BudMinder in", dir, "...")
 			if err := launcher.UpdateInstall(exe, note, getVersion(), backupDB); err != nil {
 				fmt.Println("The update didn't work, and your BudMinder is unchanged:", err)
+				if windowless {
+					launcher.RunCard(launcher.UpdateFailedCard(dir, err.Error()), problemEvents(err.Error(), dir))
+				}
 				waitForEnter()
 				os.Exit(1)
 			}
@@ -495,16 +538,20 @@ func firstRunHome() {
 	if _, err := os.Stat(filepath.Join(dir, "data", "isley.db")); err == nil {
 		return // already running from there: the welcome box warns instead
 	}
-	chosen := launcher.ChooseHome(risky)
-	if chosen == "" {
-		return
-	}
-	installed, err := launcher.Install(exe, chosen)
-	if err != nil {
+	for {
+		chosen := launcher.ChooseHome(risky)
+		if chosen == "" {
+			return
+		}
+		installed, err := launcher.Install(exe, chosen)
+		if err == nil {
+			os.Exit(launcher.RunInstalled(installed, exe))
+		}
 		fmt.Println("Couldn't set BudMinder up there:", err)
-		return
+		if !windowless || launcher.RunCard(launcher.SetupFailedCard(chosen, err.Error()), problemEvents(err.Error(), "")) != launcher.CardChooseFolder {
+			return // carries on where it is, with the warning
+		}
 	}
-	os.Exit(launcher.RunInstalled(installed, exe))
 }
 
 // backupDB copies the SQLite database at src into one complete file at dst
@@ -570,8 +617,9 @@ func exePath() string {
 // welcome makes the desktop and menu icons on first run (Linux, Windows) and
 // prints the welcome box: where to open BudMinder, that the first page creates
 // the account, and a warning when the program sits in Downloads or OneDrive.
-func welcome(db *sql.DB, port, elsewhere string, install, tray bool) {
-	w := launcher.Welcome{Port: port, Elsewhere: elsewhere, LANAddress: launcher.LANAddress(), FromConsole: launcher.IsTerminal(os.Stdout), OS: runtime.GOOS, Installed: argValue(launcher.InstalledFromFlag), Updated: argValue(launcher.UpdatedFromFlag), Tray: tray}
+func welcome(db *sql.DB, port, elsewhere string, install, tray bool) launcher.Welcome {
+	here, _ := os.Getwd()
+	w := launcher.Welcome{Folder: here, Port: port, Elsewhere: elsewhere, LANAddress: launcher.LANAddress(), FromConsole: launcher.IsTerminal(os.Stdout), OS: runtime.GOOS, Installed: argValue(launcher.InstalledFromFlag), Updated: argValue(launcher.UpdatedFromFlag), Tray: tray}
 	w.Setup = handlers.NeedsSetup(db)
 	if exe := exePath(); exe != "" {
 		// No icons for a program in Downloads or OneDrive: they'd point at a
@@ -589,7 +637,123 @@ func welcome(db *sql.DB, port, elsewhere string, install, tray bool) {
 			w.HasIcon = !made.Made && launcher.HaveIcons(exe, "data")
 		}
 	}
-	fmt.Print(launcher.Box(w, w.FromConsole && launcher.EnableColor()))
+	if !launcher.Windowless() {
+		fmt.Print(launcher.Box(w, w.FromConsole && launcher.EnableColor()))
+	}
+	return w
+}
+
+// showWelcome shows the welcome card (Windows download). Closing it, or Got
+// it, sends it into the tray icon; the first time, a notification says where
+// BudMinder went.
+func showWelcome(w launcher.Welcome, tray bool) {
+	icon, _ := embeddedFiles.ReadFile("web/static/img/brand/budminder-256.png")
+	glyphs, _ := embeddedFiles.ReadFile("web/static/vendor/fontawesome/webfonts/fa-solid-900.ttf")
+	small, _ := launcher.IconPNG(icon, 32)
+	toTray := func(cw *launcher.CardWindow) {
+		if !tray {
+			cw.Close(launcher.CardGotIt)
+			return
+		}
+		// The notification once per install: the marker file remembers it.
+		hint := filepath.Join("data", ".tray-hint-shown")
+		first := !fileExists(hint)
+		if first {
+			_ = os.WriteFile(hint, nil, 0o644)
+		}
+		launcher.SendToTray(cw, first)
+	}
+	launcher.RunWelcome(launcher.WelcomeCard(w, getVersion()), launcher.CardEvents{
+		Button: func(cw *launcher.CardWindow, id int) bool {
+			switch id {
+			case launcher.CardPhone:
+				launcher.ShowPhoneCode(launcher.PhoneCode{Address: launcher.Tray{Port: w.Port}.HomeNetworkURL(), Icon: small, Glyphs: glyphs, Exe: exePath()})
+			case launcher.CardGotIt:
+				toTray(cw)
+			}
+			return false
+		},
+		Check: func(_ *launcher.CardWindow, id int, on bool) {
+			if id != launcher.CardDesktop {
+				return
+			}
+			go func() {
+				if err := launcher.SetDesktopIcon(exePath(), "data", icon, on); err != nil {
+					logger.Log.WithError(err).Warn("Couldn't change the desktop icon")
+				}
+			}()
+		},
+		Close: toTray,
+	})
+}
+
+// portForThisStart checks, before anything else starts, that BudMinder can
+// have its port (Windows download, which has no console to explain in).
+// The same version already running from this folder is simply opened; an
+// older one can be stopped; another program can be dodged with a free port,
+// remembered for next time. ok false: don't start.
+func portForThisStart(port, folder string, open bool) (string, bool) {
+	for {
+		err := launcher.PortFree(port)
+		if err == nil {
+			return port, true
+		}
+		if v, running := launcher.RunningHere("data"); running {
+			if v == getVersion() {
+				if open {
+					_ = launcher.OpenBrowser("http://localhost:" + port)
+				}
+				return port, false
+			}
+			older := v == "" || updates.Newer(getVersion(), v)
+			if launcher.RunCard(launcher.OtherRunningCard(folder, v, port, older), launcher.CardEvents{}) != launcher.CardStopOther {
+				return port, false
+			}
+			if launcher.Stop("data") == nil {
+				launcher.WaitStopped("data")
+			}
+			continue
+		}
+		alt := launcher.FreePortAfter(port)
+		if launcher.RunCard(launcher.PortTakenCard(port, alt, err.Error()), problemEvents(err.Error(), folder)) != launcher.CardOtherPort || alt == "" {
+			return port, false
+		}
+		if err := launcher.SavePort("data", alt); err != nil {
+			fmt.Println("Couldn't save the port:", err)
+		}
+		port = alt
+	}
+}
+
+// problemEvents: Copy details and Open BudMinder folder keep the card open.
+func problemEvents(details, folder string) launcher.CardEvents {
+	return launcher.CardEvents{Button: func(cw *launcher.CardWindow, id int) bool {
+		switch id {
+		case launcher.CardCopy:
+			if launcher.CopyText(details) == nil {
+				cw.SetLabel(id, "Copied")
+			}
+			return false
+		case launcher.CardFolder:
+			_ = launcher.OpenFolder(folder)
+			return false
+		}
+		return true
+	}}
+}
+
+// fatalHook keeps the last fatal message for the "couldn't start" card.
+type fatalHook struct{ last *string }
+
+func (fatalHook) Levels() []logrus.Level { return []logrus.Level{logrus.FatalLevel} }
+
+func (h fatalHook) Fire(e *logrus.Entry) error {
+	s := e.Message
+	if err, ok := e.Data[logrus.ErrorKey]; ok {
+		s += ": " + fmt.Sprint(err)
+	}
+	*h.last = s
+	return nil
 }
 
 func getVersion() string {
