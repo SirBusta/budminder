@@ -4,7 +4,7 @@
 
 Zones represent your physical growing spaces, such as tents, rooms or outdoor gardens. Each plant, climate sensor and camera feed maps directly to a zone. The management list displays the number of active plants and sensors assigned to each space. Click **Add Zone** to create a new location, or click an existing zone to rename or delete it.
 
-> **Warning:** Deleting a zone permanently removes every plant, sensor and camera assigned to it, along with their associated activity logs, photo galleries and telemetry history. To retire a growing space while preserving plant records, reassign the plants and sensors to another zone before deleting.
+> **Note:** A zone can only be deleted once it's empty. If it still has plants, sensors or cameras, BudMinder says how many and keeps the zone. Move them to another zone (or delete them) first.
 >
 > **Tip:** You can also create a new zone on the fly while setting up a plant (**Add New Zone**) or adding a sensor (**New tent…**).
 

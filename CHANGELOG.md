@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- A zone can only be deleted once it's empty. If it still has plants, sensors or cameras, Settings says how many and keeps the zone; deleting it used to delete all of them with their history.
+
 ### Fixed
 
 - Linux: **Update now** restarts the new version instead of the old one (`budminder.old`).

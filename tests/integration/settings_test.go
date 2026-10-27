@@ -66,30 +66,56 @@ func TestZoneCRUD_HappyPath(t *testing.T) {
 	assert.Zero(t, n)
 }
 
-func TestZone_DeleteCascadesPlantsSensorsStreams(t *testing.T) {
+// A zone that still has plants, sensors or cameras is refused, with the
+// counts in the message: it used to delete them all with their history.
+func TestZone_DeleteRefusedWhileItHasPlantsSensorsStreams(t *testing.T) {
 	t.Parallel()
 
-	db := testutil.NewTestDB(t)
+	db := testutil.NewTestDBWithoutForeignKeys(t)
 	server := testutil.NewTestServer(t, db)
 	apiKey := settingsCRUDFixture(t, db)
 
 	testutil.MustExec(t, db, `INSERT INTO breeder (id, name) VALUES (1, 'B')`)
 	testutil.MustExec(t, db, `INSERT INTO strain (id, name, breeder_id, sativa, indica, autoflower, description, seed_count)
 	                    VALUES (1, 'S', 1, 50, 50, 0, '', 0)`)
-	testutil.MustExec(t, db, `INSERT INTO zones (id, name) VALUES (1, 'Doomed Zone')`)
+	testutil.MustExec(t, db, `INSERT INTO zones (id, name) VALUES (1, 'Plants'), (2, 'Sensors'), (3, 'Cameras'), (4, 'Everything')`)
 	testutil.MustExec(t, db, `INSERT INTO plant (name, zone_id, strain_id, description, clone, start_dt, sensors)
-	                    VALUES ('Plant in zone', 1, 1, '', 0, '2026-01-01', '[]')`)
-	testutil.MustExec(t, db, `INSERT INTO sensors (name, zone_id, source, device, type) VALUES ('Sensor in zone', 1, 'src', 'D', 'temp')`)
-	testutil.MustExec(t, db, `INSERT INTO streams (name, url, zone_id, visible) VALUES ('Stream in zone', 'http://example/stream', 1, 1)`)
+	                    VALUES ('P1', 1, 1, '', 0, '2026-01-01', '[]'), ('P4a', 4, 1, '', 0, '2026-01-01', '[]'), ('P4b', 4, 1, '', 0, '2026-01-01', '[]')`)
+	testutil.MustExec(t, db, `INSERT INTO sensors (name, zone_id, source, device, type)
+	                    VALUES ('S2', 2, 'src', 'D', 'temp'), ('S4', 4, 'src', 'D', 'temp')`)
+	testutil.MustExec(t, db, `INSERT INTO streams (name, url, zone_id, visible)
+	                    VALUES ('C3', 'http://example/3', 3, 1), ('C4', 'http://example/4', 4, 1)`)
 
 	c := server.NewClient(t)
-	resp := c.APIDelete(t, "/zones/1", apiKey)
-	resp.Body.Close()
+	for _, tc := range []struct {
+		zone                    int
+		plants, sensors, stream int
+	}{
+		{1, 1, 0, 0},
+		{2, 0, 1, 0},
+		{3, 0, 0, 1},
+		{4, 2, 1, 1},
+	} {
+		resp := c.APIDelete(t, "/zones/"+strconv.Itoa(tc.zone), apiKey)
+		require.Equalf(t, http.StatusConflict, resp.StatusCode, "zone %d", tc.zone)
+		var body struct {
+			Error       string `json:"error"`
+			PlantCount  int    `json:"plant_count"`
+			SensorCount int    `json:"sensor_count"`
+			StreamCount int    `json:"stream_count"`
+		}
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		resp.Body.Close()
+		assert.Equalf(t, tc.plants, body.PlantCount, "zone %d plants", tc.zone)
+		assert.Equalf(t, tc.sensors, body.SensorCount, "zone %d sensors", tc.zone)
+		assert.Equalf(t, tc.stream, body.StreamCount, "zone %d cameras", tc.zone)
+		assert.NotContainsf(t, body.Error, "{", "zone %d: every count filled in: %s", tc.zone, body.Error)
+	}
 
-	for _, table := range []string{"zones", "plant", "sensors", "streams"} {
+	for table, want := range map[string]int{"zones": 4, "plant": 3, "sensors": 2, "streams": 2} {
 		var n int
 		require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM `+table).Scan(&n))
-		assert.Zerof(t, n, "%s should be empty after zone delete cascade", table)
+		assert.Equalf(t, want, n, "%s kept", table)
 	}
 }
 

@@ -942,79 +942,36 @@ func DeleteZoneHandler(c *gin.Context) {
 	fieldLogger := logger.Log.WithField("func", "DeleteZoneHandler")
 	id := c.Param("id")
 
-	// Delete zone from database
 	db := DBFromContext(c)
 
-	//Build a list of plants associated with this zoen to delete first
-	var err error
-	rows, err := db.Query("SELECT id FROM plant WHERE zone_id = $1", id)
+	// A zone that still holds plants, sensors or cameras can't be deleted:
+	// it used to delete them all, with their whole history, behind a single
+	// confirm. They can be moved to another zone first.
+	var plants, sensors, streams int
+	err := db.QueryRow(`SELECT
+		(SELECT COUNT(*) FROM plant WHERE zone_id = $1),
+		(SELECT COUNT(*) FROM sensors WHERE zone_id = $1),
+		(SELECT COUNT(*) FROM streams WHERE zone_id = $1)`, id).Scan(&plants, &sensors, &streams)
 	if err != nil {
-		fieldLogger.WithError(err).Error("Failed to delete plants")
+		fieldLogger.WithError(err).Error("Failed to count the zone's plants, sensors and streams")
+		apiInternalError(c, "api_failed_to_delete_zone")
 		return
 	}
-	defer rows.Close()
-
-	plantList := []int{}
-	for rows.Next() {
-		var plantId int
-		err = rows.Scan(&plantId)
-		if err != nil {
-			fieldLogger.WithError(err).Error("Failed to delete plant")
-			continue
-		}
-		plantList = append(plantList, plantId)
-	}
-
-	for _, plantId := range plantList {
-		DeletePlantById(db, fmt.Sprintf("%d", plantId))
-	}
-
-	//Build a list of sensors associated with this zoen to delete first
-	rows, err = db.Query("SELECT id FROM sensors WHERE zone_id = $1", id)
-	if err != nil {
-		fieldLogger.WithError(err).Error("Failed to delete sensors")
+	if plants+sensors+streams > 0 {
+		msg := strings.NewReplacer(
+			"{plants}", strconv.Itoa(plants),
+			"{sensors}", strconv.Itoa(sensors),
+			"{cameras}", strconv.Itoa(streams),
+		).Replace(T(c, "api_zone_in_use"))
+		c.JSON(http.StatusConflict, gin.H{
+			"error":        msg,
+			"plant_count":  plants,
+			"sensor_count": sensors,
+			"stream_count": streams,
+		})
 		return
 	}
-	defer rows.Close()
 
-	sensorList := []int{}
-	for rows.Next() {
-		var sensorId int
-		err = rows.Scan(&sensorId)
-		if err != nil {
-			fieldLogger.WithError(err).Error("Failed to delete sensor")
-			continue
-		}
-		sensorList = append(sensorList, sensorId)
-	}
-
-	for _, sensorId := range sensorList {
-		DeleteSensorByID(db, fmt.Sprintf("%d", sensorId))
-	}
-
-	// Build a list of streams associated with this zone to delete first
-	rows, err = db.Query("SELECT id FROM streams WHERE zone_id = $1", id)
-	if err != nil {
-		fieldLogger.WithError(err).Error("Failed to delete streams")
-		return
-	}
-	defer rows.Close()
-
-	streamList := []int{}
-	for rows.Next() {
-		var streamId int
-		err = rows.Scan(&streamId)
-		if err != nil {
-			fieldLogger.WithError(err).Error("Failed to delete stream")
-			continue
-		}
-		streamList = append(streamList, streamId)
-	}
-	for _, streamId := range streamList {
-		DeleteStreamByID(db, fmt.Sprintf("%d", streamId))
-	}
-
-	// Delete zone from database
 	_, err = db.Exec("DELETE FROM zones WHERE id = $1", id)
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to delete zone")
