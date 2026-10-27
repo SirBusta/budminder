@@ -690,3 +690,49 @@ func TestSettingsHTTP_DownloadLogs_FileMissingReturns404(t *testing.T) {
 	defer testutil.DrainAndClose(resp)
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
+
+// A polling interval of 0 would make the sensor loop run nonstop.
+func TestSettingsHTTP_SaveSettings_RejectsBadPollingInterval(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db)
+	const apiKey = "save-bad-poll-key"
+	testutil.SeedAPIKey(t, db, apiKey)
+	c := server.NewClient(t)
+
+	for _, v := range []string{"0", "-5", "abc", "100000"} {
+		body := testutil.JSONBody(t, map[string]interface{}{"polling_interval": v})
+		resp, err := c.Do(testutil.APIReq(t, http.MethodPost, c.BaseURL+"/settings", apiKey, body, "application/json"))
+		require.NoError(t, err)
+		testutil.DrainAndClose(resp)
+		assert.Equalf(t, http.StatusBadRequest, resp.StatusCode, "polling_interval %q", v)
+	}
+	var saved string
+	if err := db.QueryRow(`SELECT value FROM settings WHERE name = 'polling_interval'`).Scan(&saved); err == nil {
+		assert.NotContains(t, []string{"0", "-5", "abc", "100000"}, saved)
+	}
+}
+
+// A setting the database refuses to write must not answer "saved".
+func TestSettingsHTTP_SaveSettings_ReportsWriteFailure(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db)
+	const apiKey = "save-fail-key"
+	testutil.SeedAPIKey(t, db, apiKey)
+	_, err := db.Exec(`CREATE TRIGGER refuse_units_insert BEFORE INSERT ON settings WHEN NEW.name = 'units'
+		BEGIN SELECT RAISE(ABORT, 'refused'); END`)
+	require.NoError(t, err)
+	_, err = db.Exec(`CREATE TRIGGER refuse_units_update BEFORE UPDATE ON settings WHEN NEW.name = 'units'
+		BEGIN SELECT RAISE(ABORT, 'refused'); END`)
+	require.NoError(t, err)
+
+	c := server.NewClient(t)
+	body := testutil.JSONBody(t, map[string]interface{}{"polling_interval": "60", "units": "metric"})
+	resp, err := c.Do(testutil.APIReq(t, http.MethodPost, c.BaseURL+"/settings", apiKey, body, "application/json"))
+	require.NoError(t, err)
+	defer testutil.DrainAndClose(resp)
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+}

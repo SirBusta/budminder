@@ -72,6 +72,12 @@ func CheckAPIKey(plaintext, stored string) (match bool, legacy bool) {
 	return false, false
 }
 
+// Range accepted for polling_interval, in seconds (the Settings slider's).
+const (
+	minPollingInterval = 15
+	maxPollingInterval = 300
+)
+
 func SaveSettings(c *gin.Context) {
 	fieldLogger := logger.Log.WithField("func", "SaveSettings")
 	var settings types.Settings
@@ -79,6 +85,14 @@ func SaveSettings(c *gin.Context) {
 		fieldLogger.WithError(err).Error("Failed to save settings")
 		apiBadRequest(c, "api_invalid_settings_payload")
 		return
+	}
+	// The polling interval paces the sensor loop: 0 would make it run
+	// nonstop. Left out, it stays as it is.
+	if settings.PollingInterval != "" {
+		if v, err := strconv.Atoi(settings.PollingInterval); err != nil || v < minPollingInterval || v > maxPollingInterval {
+			apiBadRequest(c, "api_invalid_settings_payload")
+			return
+		}
 	}
 
 	db := DBFromContext(c)
@@ -146,17 +160,18 @@ func SaveSettings(c *gin.Context) {
 		}
 	}
 
-	err := UpdateSetting(db, store, "polling_interval", settings.PollingInterval)
-	if err != nil {
-		fieldLogger.WithError(err).Error("Failed to save settings")
-		apiInternalError(c, "api_failed_to_save_settings")
-		return
-	}
-	if v, convErr := strconv.Atoi(settings.PollingInterval); convErr == nil {
-		store.SetPollingInterval(v)
+	if settings.PollingInterval != "" {
+		if err := UpdateSetting(db, store, "polling_interval", settings.PollingInterval); err != nil {
+			fieldLogger.WithError(err).Error("Failed to save settings")
+			apiInternalError(c, "api_failed_to_save_settings")
+			return
+		}
+		if v, convErr := strconv.Atoi(settings.PollingInterval); convErr == nil {
+			store.SetPollingInterval(v)
+		}
 	}
 
-	err = UpdateSetting(db, store, "stream_grab_interval", settings.StreamGrabInterval)
+	err := UpdateSetting(db, store, "stream_grab_interval", settings.StreamGrabInterval)
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to save settings")
 		apiInternalError(c, "api_failed_to_save_settings")
@@ -347,12 +362,14 @@ func UpdateSetting(db *sql.DB, store *config.Store, name string, value string) e
 		_, err = db.Exec("INSERT INTO settings (name, value) VALUES ($1, $2)", name, value)
 		if err != nil {
 			fieldLogger.WithError(err).Error("Failed to insert setting")
+			return err
 		}
 	} else {
 		//Update existing setting
 		_, err = db.Exec("UPDATE settings SET value = $1 WHERE id = $2", value, existId)
 		if err != nil {
 			fieldLogger.WithError(err).Error("Failed to update setting")
+			return err
 		}
 	}
 
