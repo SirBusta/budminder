@@ -49,6 +49,8 @@ type Store struct {
 	haEnabled            int
 	haURL                string
 	haToken              string
+	photoCompress        bool
+	photoQuality         int
 	health               map[string]IntegrationHealth
 }
 
@@ -76,6 +78,7 @@ const (
 	defaultAPIIngestEnabled = 1
 	defaultLogLevel         = "info"
 	defaultMaxBackupSize    = int64(5 * 1024 * 1024 * 1024) // 5 GB
+	DefaultPhotoQuality     = 75
 )
 
 // NewStore returns a Store seeded with the package-level defaults.
@@ -85,6 +88,7 @@ func NewStore() *Store {
 		apiIngestEnabled: defaultAPIIngestEnabled,
 		logLevel:         defaultLogLevel,
 		maxBackupSize:    defaultMaxBackupSize,
+		photoQuality:     DefaultPhotoQuality,
 	}
 }
 
@@ -308,6 +312,33 @@ func (s *Store) SetHAToken(v string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.haToken = v
+}
+
+// Photo compression (Settings > Photos): whether new plant photos are
+// compressed when they're added, and the JPEG quality used.
+
+func (s *Store) PhotoCompress() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.photoCompress
+}
+
+func (s *Store) SetPhotoCompress(v bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.photoCompress = v
+}
+
+func (s *Store) PhotoQuality() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.photoQuality
+}
+
+func (s *Store) SetPhotoQuality(v int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.photoQuality = v
 }
 
 func (s *Store) LogLevel() string {

@@ -1456,6 +1456,8 @@ func LoadSettings(db *sql.DB, store *config.Store) {
 		store.SetUnits(utils.NormalizeUnits(strUnits))
 	}
 
+	loadPhotoSettings(db, store)
+
 	strCannadbEnabled, err := GetSetting(db, "cannadb.enabled")
 	if err == nil {
 		if iCannadbEnabled, err := strconv.Atoi(strCannadbEnabled); err == nil {
