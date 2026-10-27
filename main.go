@@ -288,7 +288,7 @@ func main() {
 			v, _ := handlers.GetSetting(db, handlers.UpdateCheckDisabledSetting)
 			return v == "1"
 		})
-		releases = &handlers.Updates{Checker: checker, DataDir: "data"}
+		releases = &handlers.Updates{Checker: checker, DataDir: "data", Exe: startExe}
 		if !launcher.InDocker() {
 			releases.Restart = func() {
 				select {
@@ -471,7 +471,7 @@ func relaunch() {
 		logger.Log.Info("Exiting so systemd starts the new version")
 		os.Exit(75)
 	}
-	exe := exePath()
+	exe := startExe
 	var err error
 	if runtime.GOOS == "windows" && !launcher.IsTerminal(os.Stdout) {
 		err = launcher.StartHidden(exe, launcher.RestartedFlag)
@@ -601,6 +601,11 @@ func writeNote() {
 }
 
 func fileExists(p string) bool { _, err := os.Stat(p); return err == nil }
+
+// startExe is the program's file as it was when it started. An update renames
+// the running file to .old, and on Linux os.Executable follows the rename, so
+// the restart and any later update must use this, not a fresh exePath().
+var startExe = exePath()
 
 // exePath is this program's file, links followed.
 func exePath() string {
