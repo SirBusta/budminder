@@ -132,7 +132,8 @@ func SetDesktopIcon(exe, dataDir string, png []byte, on bool) error {
 
 // isDesktopShortcut: the BudMinder.lnk that isn't in the Start menu.
 func isDesktopShortcut(p string) bool {
-	return strings.EqualFold(filepath.Base(p), "BudMinder.lnk") && !strings.Contains(strings.ToLower(p), `\start menu\`)
+	base := p[strings.LastIndexAny(p, `\/`)+1:] // a Windows path, on any system
+	return strings.EqualFold(base, "BudMinder.lnk") && !strings.Contains(strings.ToLower(p), `\start menu\`)
 }
 
 func readMarker(dataDir string) ([]string, error) {
