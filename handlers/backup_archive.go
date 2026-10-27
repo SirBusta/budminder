@@ -106,6 +106,9 @@ func BuildBackupArchive(db *sql.DB, opts BuildArchiveOptions) ([]byte, BackupMan
 		if err != nil {
 			return nil, BackupManifest{}, fmt.Errorf("dump %s: %w", tq.name, err)
 		}
+		if tq.name == "settings" {
+			rows = withoutSecretSettings(rows)
+		}
 		*tq.dest = rows
 		if len(rows) > 0 {
 			tableCount++
@@ -385,4 +388,24 @@ func ApplyBackupToDB(ctx context.Context, db *sql.DB, payload BackupPayload) err
 		}
 	}
 	return nil
+}
+
+// secretSettings are settings rows a backup leaves out. session_secret signs
+// login cookies: anyone holding a backup could otherwise make a valid
+// sign-in cookie for the live install. A restore without it keeps the
+// current key until the next start, which then makes a new one.
+var secretSettings = map[string]bool{"session_secret": true}
+
+func withoutSecretSettings(rows []map[string]interface{}) []map[string]interface{} {
+	kept := rows[:0]
+	for _, r := range rows {
+		name, _ := r["name"].(string)
+		if b, ok := r["name"].([]byte); ok {
+			name = string(b)
+		}
+		if !secretSettings[name] {
+			kept = append(kept, r)
+		}
+	}
+	return kept
 }

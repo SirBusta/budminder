@@ -139,6 +139,25 @@ func TestBuildBackupArchive_SkipSensorData(t *testing.T) {
 	assert.Empty(t, parsed.SensorData, "SensorDays=-1 must omit sensor_data")
 }
 
+// The key that signs login cookies stays out of backups: with it, anyone
+// holding a backup could sign in to the live install.
+func TestBuildBackupArchive_LeavesOutSessionKey(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	_, err := handlers.LoadOrCreateSessionSecret(db)
+	require.NoError(t, err)
+
+	archive, _, err := handlers.BuildBackupArchive(db, handlers.BuildArchiveOptions{SensorDays: -1})
+	require.NoError(t, err)
+	parsed, err := handlers.ParseBackupArchive(archive)
+	require.NoError(t, err)
+	require.NotEmpty(t, parsed.Settings, "other settings are kept")
+	for _, row := range parsed.Settings {
+		assert.NotEqual(t, "session_secret", row["name"])
+	}
+}
+
 func TestBuildBackupArchive_FilteredSensorDays(t *testing.T) {
 	t.Parallel()
 

@@ -591,6 +591,8 @@ func TestBackupHTTP_DownloadSQLiteDB_HappyPath(t *testing.T) {
 	const apiKey = "sqlite-dl-happy-key"
 	testutil.SeedAPIKey(t, db, apiKey)
 	testutil.SeedZone(t, db, "Download Marker")
+	_, err := handlers.LoadOrCreateSessionSecret(db)
+	require.NoError(t, err)
 
 	c := server.NewClient(t)
 	resp, err := c.Do(testutil.APIReq(t, http.MethodGet, c.BaseURL+"/settings/backup/sqlite/download", apiKey, nil, ""))
@@ -612,6 +614,10 @@ func TestBackupHTTP_DownloadSQLiteDB_HappyPath(t *testing.T) {
 	var n int
 	require.NoError(t, copyDB.QueryRow(`SELECT COUNT(*) FROM zones WHERE name = 'Download Marker'`).Scan(&n))
 	assert.Equal(t, 1, n, "the latest change is in the download")
+	require.NoError(t, copyDB.QueryRow(`SELECT COUNT(*) FROM settings WHERE name = 'session_secret'`).Scan(&n))
+	assert.Zero(t, n, "the session key isn't in the download")
+	require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM settings WHERE name = 'session_secret'`).Scan(&n))
+	assert.Equal(t, 1, n, "the live database keeps it")
 }
 
 // ---------------------------------------------------------------------------

@@ -369,9 +369,30 @@ func DownloadSQLiteDB(c *gin.Context) {
 		apiInternalError(c, "api_database_error")
 		return
 	}
+	if err := dropSecretSettings(snapshot); err != nil {
+		logger.Log.WithError(err).Error("SQLite download: couldn't remove the session key from the copy")
+		apiInternalError(c, "api_database_error")
+		return
+	}
 
 	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="budminder-%s.db"`, time.Now().Format("20060102-150405")))
 	c.File(snapshot)
+}
+
+// dropSecretSettings removes secretSettings from the SQLite file at path
+// (the download copy), so it can't be used to sign in to this install.
+func dropSecretSettings(path string) error {
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	for name := range secretSettings {
+		if _, err := db.Exec("DELETE FROM settings WHERE name = $1", name); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // UploadSQLiteDB accepts a raw .db file upload, pauses watchers, replaces

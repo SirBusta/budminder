@@ -1283,6 +1283,7 @@ func LoadEcDevices(db *sql.DB) ([]string, error) {
 // kept in the settings table, so people stay logged in across restarts.
 // The database is the one place every setup keeps (SQLite file or
 // PostgreSQL), and anyone who can read it can already read everything else.
+// Backups and the database download leave it out (secretSettings).
 func LoadOrCreateSessionSecret(db *sql.DB) ([]byte, error) {
 	saved, err := GetSetting(db, "session_secret")
 	if err != nil {
