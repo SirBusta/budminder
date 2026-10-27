@@ -52,7 +52,7 @@ func ChartHandler(c *gin.Context) {
 	db := DBFromContext(c)
 
 	if startDate != "" && endDate != "" {
-		sensorData, err = querySensorHistoryByDateRange(db, sensor, startDate, endDate)
+		sensorData, err = querySensorHistoryByDateRange(db, sensor, startDate, endDate, requestLocation(c))
 	} else if timeMinutes != "" {
 		sensorData, err = querySensorHistoryByTime(db, sensor, timeMinutes)
 	} else {
@@ -147,7 +147,7 @@ func querySensorHistoryByTime(db *sql.DB, sensor string, timeMinutes string) ([]
 }
 
 // Query sensor data by custom date range
-func querySensorHistoryByDateRange(db *sql.DB, sensor string, startDate string, endDate string) ([]types.SensorData, error) {
+func querySensorHistoryByDateRange(db *sql.DB, sensor string, startDate string, endDate string, loc *time.Location) ([]types.SensorData, error) {
 	sensorLogger := logger.Log.WithFields(logrus.Fields{
 		"function":  "querySensorHistoryByDateRange",
 		"sensor":    sensor,
@@ -164,13 +164,13 @@ func querySensorHistoryByDateRange(db *sql.DB, sensor string, startDate string, 
 		return sensorData, err
 	}
 
-	//Convert startDate and endDate strings from Local to UTC and back to strings
-	startDateUTC, err := timeConversion(startDate)
+	// The picked dates are in the user's timezone; readings are stored in UTC.
+	startDateUTC, err := timeConversion(startDate, loc, false)
 	if err != nil {
 		sensorLogger.WithError(err).Error(err)
 		return sensorData, err
 	}
-	endDateUTC, err := timeConversion(endDate)
+	endDateUTC, err := timeConversion(endDate, loc, true)
 	if err != nil {
 		sensorLogger.WithError(err).Error(err)
 		return sensorData, err
@@ -231,15 +231,33 @@ func querySensorHistoryByDateRange(db *sql.DB, sensor string, startDate string, 
 	return sensorData, nil
 }
 
-func timeConversion(date string) (string, error) {
-	if len(date) == 10 {
+// timeConversion turns a date ("2006-01-02") or date and time picked in loc
+// into the UTC LayoutDB string the readings are stored in. A date-only end
+// of a range means the end of that day, so a one-day range isn't empty.
+func timeConversion(date string, loc *time.Location, rangeEnd bool) (string, error) {
+	dateOnly := len(date) == 10
+	if dateOnly {
 		date += " 00:00:00"
 	}
-	t, err := time.Parse(utils.LayoutDB, date)
+	t, err := time.ParseInLocation(utils.LayoutDB, date, loc)
 	if err != nil {
 		return date, err
 	}
+	if dateOnly && rangeEnd {
+		t = t.AddDate(0, 0, 1).Add(-time.Second)
+	}
 	return t.UTC().Format(utils.LayoutDB), nil
+}
+
+// requestLocation is the Settings timezone, or the server's own when none
+// is set or it doesn't load.
+func requestLocation(c *gin.Context) *time.Location {
+	if tz := ConfigStoreFromContext(c).Timezone(); tz != "" {
+		if loc, err := time.LoadLocation(tz); err == nil {
+			return loc
+		}
+	}
+	return time.Local
 }
 
 func generateCacheKey(sensor, timeMinutes, startDate, endDate string) string {

@@ -410,3 +410,37 @@ func insertReadingAt(t *testing.T, db *sql.DB, sensorID int, value float64, ts t
 	)
 	require.NoError(t, err)
 }
+
+// A custom range of one day (start = end) used to be empty, and the day's
+// edges were off by the timezone. The day is the Settings timezone's.
+func TestChartHandler_OneDayRangeInSettingsTimezone(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	store := storeWithPollingInterval(60)
+	store.SetTimezone("America/New_York")
+	server := testutil.NewTestServer(t, db, testutil.WithConfigStore(store))
+
+	testutil.MustExec(t, db, `INSERT INTO zones (id, name) VALUES (1, 'Z')`)
+	testutil.MustExec(t, db, `INSERT INTO sensors (id, name, zone_id, source, device, type) VALUES (1, 'Tent Temp', 1, 'src', 'D', 'temp')`)
+
+	// 2026-04-25 in New York runs 04:00 UTC that day to 03:59:59 UTC the next.
+	insertReadingAt(t, db, 1, 1.0, time.Date(2026, 4, 25, 3, 0, 0, 0, time.UTC))  // Apr 24 evening in NY
+	insertReadingAt(t, db, 1, 2.0, time.Date(2026, 4, 25, 12, 0, 0, 0, time.UTC)) // Apr 25 morning
+	insertReadingAt(t, db, 1, 3.0, time.Date(2026, 4, 26, 2, 0, 0, 0, time.UTC))  // Apr 25 late evening
+
+	testutil.SeedAdmin(t, db, "chart-pw-day")
+	c := server.LoginAsAdmin(t, "chart-pw-day")
+
+	resp := c.Get("/sensorData?sensor=1&start=2026-04-25&end=2026-04-25")
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var got []types.SensorData
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&got))
+	var values []float64
+	for _, r := range got {
+		values = append(values, r.Value)
+	}
+	assert.Equal(t, []float64{2.0, 3.0}, values)
+}

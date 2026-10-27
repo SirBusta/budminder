@@ -98,13 +98,7 @@ func StockToday(c *gin.Context) string { return stockToday(c) }
 // stockToday is today's date for an automatic seeds_added_on, in the
 // configured timezone when one is set.
 func stockToday(c *gin.Context) string {
-	now := time.Now()
-	if tz := ConfigStoreFromContext(c).Timezone(); tz != "" {
-		if loc, err := time.LoadLocation(tz); err == nil {
-			now = now.In(loc)
-		}
-	}
-	return now.Format(utils.LayoutDate)
+	return time.Now().In(requestLocation(c)).Format(utils.LayoutDate)
 }
 
 // SetStrainWantedHandler adds a strain to, or removes it from, the wish

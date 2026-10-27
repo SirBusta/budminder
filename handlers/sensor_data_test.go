@@ -43,36 +43,49 @@ func TestGenerateCacheKey(t *testing.T) {
 func TestTimeConversion(t *testing.T) {
 	t.Parallel()
 
-	t.Run("date-only is padded to midnight then converted to UTC", func(t *testing.T) {
+	ny, err := time.LoadLocation("America/New_York")
+	require.NoError(t, err)
+
+	t.Run("date-only start is midnight in the user's timezone", func(t *testing.T) {
 		t.Parallel()
-		got, err := timeConversion("2026-04-25")
+		got, err := timeConversion("2026-04-25", ny, false)
 		require.NoError(t, err)
-		// Input is parsed as UTC by time.Parse(LayoutDB, ...), so the
-		// UTC-formatted output is identical to the parsed input.
-		assert.Equal(t, "2026-04-25 00:00:00", got)
+		assert.Equal(t, "2026-04-25 04:00:00", got, "midnight EDT is 04:00 UTC")
 	})
 
-	t.Run("datetime input is converted to UTC", func(t *testing.T) {
+	t.Run("date-only end takes in the whole day", func(t *testing.T) {
 		t.Parallel()
-		got, err := timeConversion("2026-04-25 10:30:00")
+		got, err := timeConversion("2026-04-25", ny, true)
 		require.NoError(t, err)
-		assert.Equal(t, "2026-04-25 10:30:00", got, "input is already in LayoutDB form, UTC normalization is a no-op")
+		assert.Equal(t, "2026-04-26 03:59:59", got)
+	})
+
+	t.Run("a one-day range is not empty", func(t *testing.T) {
+		t.Parallel()
+		start, err := timeConversion("2026-04-25", time.UTC, false)
+		require.NoError(t, err)
+		end, err := timeConversion("2026-04-25", time.UTC, true)
+		require.NoError(t, err)
+		assert.Equal(t, "2026-04-25 00:00:00", start)
+		assert.Equal(t, "2026-04-25 23:59:59", end)
+	})
+
+	t.Run("datetime input is converted to UTC as-is", func(t *testing.T) {
+		t.Parallel()
+		got, err := timeConversion("2026-04-25 10:30:00", ny, true)
+		require.NoError(t, err)
+		assert.Equal(t, "2026-04-25 14:30:00", got)
 	})
 
 	t.Run("invalid input returns error", func(t *testing.T) {
 		t.Parallel()
-		// Inputs of length 10 get padded with " 00:00:00" before
-		// parsing, so the returned string on error reflects the
-		// post-padding form. We only assert the error is returned —
-		// the exact value of the returned string is an implementation
-		// detail callers shouldn't rely on.
-		_, err := timeConversion("not-a-date")
+		_, err := timeConversion("not-a-date", time.UTC, false)
 		assert.Error(t, err)
 	})
 
 	t.Run("non-10-char invalid input returns error", func(t *testing.T) {
 		t.Parallel()
-		_, err := timeConversion("totally bogus value")
+		_, err := timeConversion("totally bogus value", time.UTC, true)
 		assert.Error(t, err)
 	})
 }
