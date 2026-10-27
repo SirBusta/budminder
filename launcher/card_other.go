@@ -2,7 +2,10 @@
 
 package launcher
 
-import "errors"
+import (
+	"errors"
+	"runtime"
+)
 
 // Cards are drawn on Windows only; other systems keep the terminal.
 
@@ -34,5 +37,18 @@ func SendToTray(*CardWindow, bool) {}
 // CopyText: cards only exist on Windows.
 func CopyText(string) error { return errors.New("no clipboard here") }
 
-// OpenFolder: cards only exist on Windows.
-func OpenFolder(string) error { return nil }
+// OpenFolder opens dir in the file manager: xdg-open on Linux (KDE, GNOME
+// and most desktops have it), open on macOS. Settings > Photos uses it for
+// the photo backup folder; it fails where there's no desktop.
+func OpenFolder(dir string) error {
+	name := "xdg-open"
+	if runtime.GOOS == "darwin" {
+		name = "open"
+	}
+	cmd := Outside(name, dir)
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	go func() { _ = cmd.Wait() }() // xdg-open returns once the file manager has it
+	return nil
+}
