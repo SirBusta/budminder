@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"isley/logger"
+	"isley/model"
 	"isley/utils"
 )
 
@@ -48,8 +49,14 @@ func loadStrainStock(q interface {
 }, id int) (strainStockPrev, error) {
 	var p strainStockPrev
 	var wanted int
-	err := q.QueryRow("SELECT seed_count, wanted, coalesce(seeds_added_on, '') FROM strain WHERE id = $1", id).
-		Scan(&p.Count, &wanted, &p.AddedOn)
+	query := "SELECT seed_count, wanted, coalesce(seeds_added_on, '') FROM strain WHERE id = $1"
+	if model.IsPostgres() {
+		// Callers read, add or subtract, then write back in one
+		// transaction: lock the row so two changes can't both start from
+		// the same count. (SQLite transactions hold the write lock.)
+		query += " FOR UPDATE"
+	}
+	err := q.QueryRow(query, id).Scan(&p.Count, &wanted, &p.AddedOn)
 	p.Wanted = wanted == 1
 	return p, err
 }

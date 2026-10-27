@@ -136,8 +136,16 @@ func DbPath() string {
 	// FUSE-backed appdata) were observed lasting 30s+; this is only a
 	// safety net — the hourly rollup itself no longer holds the lock
 	// anywhere near that long (see watcher/rollup.go).
-	return dbPath + "?_journal_mode=WAL&_pragma=busy_timeout(30000)"
+	return dbPath + "?" + SQLiteOptions
 }
+
+// SQLiteOptions are the connection settings of the app's SQLite file.
+// _txlock=immediate: a transaction takes the write lock when it begins,
+// so it waits (busy_timeout) for a background write to finish. Begun the
+// default (deferred) way, a read-then-write save that met a background
+// write failed at once with "database is locked": the busy timeout can't
+// help a transaction whose snapshot is already out of date.
+const SQLiteOptions = "_journal_mode=WAL&_pragma=busy_timeout(30000)&_txlock=immediate"
 
 func MigrateDB() {
 	driver := env.Get("DB_DRIVER")

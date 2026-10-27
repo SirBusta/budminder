@@ -360,7 +360,7 @@ func (m *Copies) make() (*visitorCopy, string, error) {
 	if _, err := m.base.Exec(fmt.Sprintf(`VACUUM INTO '%s'`, filepath.ToSlash(path))); err != nil {
 		return nil, "", fmt.Errorf("demo: copy the base: %w", err)
 	}
-	db, err := sql.Open("sqlite", path+"?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)")
+	db, err := sql.Open("sqlite", path+"?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_txlock=immediate")
 	if err != nil {
 		_ = os.Remove(path)
 		return nil, "", err
