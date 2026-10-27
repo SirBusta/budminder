@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Settings → Photos: keep photos as uploaded (the default) or compress new plant photos at a chosen JPEG quality (75 recommended). Pixel size, orientation and color profile are kept, and a photo is only replaced when that saves at least 10%.
+- Compare photo quality: a full-window page that switches between the original and the compressed copy of one of your photos (or a sample photo) at each quality, with real file sizes, zoom and "Use quality NN".
+- Compress existing photos: compresses plant photos already in BudMinder in the background, one at a time, with an optional backup of the originals that is deleted after 7 days. A line under the top menu shows the progress; a run stopped or interrupted by closing BudMinder waits as Paused until you resume it.
+
 ### Changed
 
 - A zone can only be deleted once it's empty. If it still has plants, sensors or cameras, Settings says how many and keeps the zone; deleting it used to delete all of them with their history.
