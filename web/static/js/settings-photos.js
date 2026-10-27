@@ -152,8 +152,8 @@
                 $("pcPath").textContent = s.backup_path;
                 show("pcOpen", !!s.can_open);
                 const at = new Date(s.deletes_at), left = at - Date.now();
-                const days = Math.floor(left / 86400e3);
-                const when = days >= 2 ? fill(T.days, { n: days }) : days === 1 ? T.dayOne : fill(T.hours, { n: Math.max(1, Math.ceil(left / 3600e3)) });
+                const days = Math.round(left / 86400e3);
+                const when = left < 86400e3 ? fill(T.hours, { n: Math.max(1, Math.ceil(left / 3600e3)) }) : days === 1 ? T.dayOne : fill(T.days, { n: days });
                 $("pcTimer").textContent = fill(T.timer, { days: when, date: at.toLocaleDateString(lang, { month: "short", day: "numeric" }) });
             }
         }

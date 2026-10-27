@@ -407,6 +407,24 @@
                         </a>
 
                         <!-- Existing photos -->
+                        <div class="ex-done d-none" id="pcDone">
+                            <h4><i class="fa-solid fa-circle-check me-1"></i><span id="pcDoneTitle"></span></h4>
+                            <div id="pcDoneSaved"></div>
+                            <div id="pcDoneBackup">
+                                <div class="mt-2">{{ .lcl.pc_done_backup_intro }}</div>
+                                <div class="ex-path">
+                                    <code id="pcPath"></code>
+                                    <button type="button" class="st-btn light sm" id="pcCopy"><i class="fa-regular fa-copy me-1"></i>{{ .lcl.pc_copy }}</button>
+                                    <button type="button" class="st-btn light sm d-none" id="pcOpen"><i class="fa-regular fa-folder-open me-1"></i>{{ .lcl.pc_open_folder }}</button>
+                                </div>
+                                <div>{{ .lcl.pc_done_look }}</div>
+                                <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
+                                    <span class="ex-timer"><i class="fa-regular fa-clock"></i><span id="pcTimer"></span></span>
+                                    <button type="button" class="st-btn danger sm ms-auto" id="pcDel"><i class="fa-solid fa-trash-can me-1"></i>{{ .lcl.pc_delete_backup }}</button>
+                                </div>
+                            </div>
+                            <div class="d-none mt-1" id="pcDoneGone"></div>
+                        </div>
                         <div class="st-row" id="pcExRow">
                             <div class="st-row-l">
                                 <span class="st-label">{{ .lcl.pc_existing }}</span>
@@ -439,24 +457,6 @@
                             </div>
                         </div>
 
-                        <div class="ex-done d-none" id="pcDone">
-                            <h4><i class="fa-solid fa-circle-check me-1"></i><span id="pcDoneTitle"></span></h4>
-                            <div id="pcDoneSaved"></div>
-                            <div id="pcDoneBackup">
-                                <div class="mt-2">{{ .lcl.pc_done_backup_intro }}</div>
-                                <div class="ex-path">
-                                    <code id="pcPath"></code>
-                                    <button type="button" class="st-btn light sm" id="pcCopy"><i class="fa-regular fa-copy me-1"></i>{{ .lcl.pc_copy }}</button>
-                                    <button type="button" class="st-btn light sm d-none" id="pcOpen"><i class="fa-regular fa-folder-open me-1"></i>{{ .lcl.pc_open_folder }}</button>
-                                </div>
-                                <div>{{ .lcl.pc_done_look }}</div>
-                                <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
-                                    <span class="ex-timer"><i class="fa-regular fa-clock"></i><span id="pcTimer"></span></span>
-                                    <button type="button" class="st-btn danger sm ms-auto" id="pcDel"><i class="fa-solid fa-trash-can me-1"></i>{{ .lcl.pc_delete_backup }}</button>
-                                </div>
-                            </div>
-                            <div class="d-none mt-1" id="pcDoneGone"></div>
-                        </div>
                     </div>
                 </div>
 

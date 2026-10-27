@@ -32,6 +32,6 @@ select, .z { font: inherit; padding: 8px 10px; border-radius: 6px; border: 1px s
 .ph.on { border-color: var(--accent); }
 .ph .tag { position: absolute; top: 6px; left: 6px; padding: 2px 6px; border-radius: 4px; font-size: 11px; background: rgba(0,0,0,.75); }
 .more { margin-top: 10px; }
-.toast { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; z-index: 6; display: none; max-width: calc(100vw - 32px); }
+.toast { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; z-index: 6; display: none; max-width: calc(100vw - 32px); }
 .toast.err { background: #b91c1c; }
 @media (max-width: 600px) { .hint { display: none; } .stage { inset: 0 0 150px 0; } }
