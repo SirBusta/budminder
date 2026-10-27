@@ -680,6 +680,16 @@ func ecToMilliSiemens(v string) string {
 	return strconv.FormatFloat(f/1000.0, 'f', -1, 64)
 }
 
+// vpdInputMaxAge is how old a temperature or humidity reading may be and
+// still go into VPD: the same "not reporting" line the sensor pages use
+// (three polls, at least five minutes).
+func vpdInputMaxAge(poll time.Duration) time.Duration {
+	if d := 3 * poll; d > 5*time.Minute {
+		return d
+	}
+	return 5 * time.Minute
+}
+
 // computeZoneVPD calculates and stores derived VPD sensor readings for every
 // zone that has VPD enabled (leaf_temp_offset IS NOT NULL) and both source
 // sensor IDs configured. It is called once per poll cycle, after device polling.
@@ -721,12 +731,13 @@ func (w *Watcher) computeZoneVPD(_ context.Context) {
 		// Read the latest value and unit for the temperature sensor
 		var tempValue float64
 		var tempUnit string
+		var tempAt time.Time
 		err := w.DB.QueryRow(`
-			SELECT sd.value, s.unit
+			SELECT sd.value, s.unit, sd.create_dt
 			FROM sensor_data sd
 			JOIN sensors s ON s.id = sd.sensor_id
 			WHERE sd.sensor_id = $1
-			ORDER BY sd.id DESC LIMIT 1`, z.VPDTempSensorID).Scan(&tempValue, &tempUnit)
+			ORDER BY sd.id DESC LIMIT 1`, z.VPDTempSensorID).Scan(&tempValue, &tempUnit, &tempAt)
 		if err != nil {
 			fieldLogger.WithFields(logrus.Fields{"zone_id": z.ID, "sensor_id": z.VPDTempSensorID}).
 				Debug("No temperature reading for VPD zone, skipping")
@@ -735,13 +746,21 @@ func (w *Watcher) computeZoneVPD(_ context.Context) {
 
 		// Read the latest humidity value
 		var humValue float64
+		var humAt time.Time
 		err = w.DB.QueryRow(`
-			SELECT value FROM sensor_data
+			SELECT value, create_dt FROM sensor_data
 			WHERE sensor_id = $1
-			ORDER BY id DESC LIMIT 1`, z.VPDHumiditySensorID).Scan(&humValue)
+			ORDER BY id DESC LIMIT 1`, z.VPDHumiditySensorID).Scan(&humValue, &humAt)
 		if err != nil {
 			fieldLogger.WithFields(logrus.Fields{"zone_id": z.ID, "sensor_id": z.VPDHumiditySensorID}).
 				Debug("No humidity reading for VPD zone, skipping")
+			continue
+		}
+
+		// No VPD from old readings: once either sensor stops reporting, VPD
+		// stops too, so it shows as not reporting like its sensors do.
+		if limit := vpdInputMaxAge(w.PollingInterval()); w.Now().Sub(tempAt) > limit || w.Now().Sub(humAt) > limit {
+			fieldLogger.WithField("zone_id", z.ID).Debug("VPD sensor readings are old, skipping")
 			continue
 		}
 
