@@ -369,6 +369,7 @@ func (w *Watcher) PollACI(ctx context.Context, token string) error {
 
 	resp, err := w.HTTP.Do(req)
 	if err != nil {
+		err = utils.HideURLSecrets(err) // the token is in the URL: keep it out of the log
 		w.Logger.WithError(err).Error("Error sending ACI request")
 		return &PollError{Kind: "unreachable", Err: err}
 	}

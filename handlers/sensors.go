@@ -115,7 +115,8 @@ func ScanACInfinitySensors(c *gin.Context) {
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		fieldLogger.WithError(err).Error("Error sending request")
+		// The token is in the URL: keep it out of the log.
+		fieldLogger.WithError(utils.HideURLSecrets(err)).Error("Error sending request")
 		apiError(c, http.StatusBadGateway, "api_error_sending_request_aci")
 		return
 	}
@@ -291,7 +292,8 @@ func DumpACInfinityJSON(c *gin.Context) {
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		fieldLogger.WithError(err).Error("Error sending request")
+		// The token is in the URL: keep it out of the log.
+		fieldLogger.WithError(utils.HideURLSecrets(err)).Error("Error sending request")
 		apiError(c, http.StatusBadGateway, "api_error_sending_request_aci")
 		return
 	}

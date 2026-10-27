@@ -45,8 +45,10 @@ func TestPollACI_Unreachable(t *testing.T) {
 	w := newTestWatcher(t, testutil.NewTestDB(t))
 	w.ACIBaseURL = srv.URL
 	var pe *PollError
-	require.True(t, errors.As(w.PollACI(context.Background(), "tok"), &pe))
+	err := w.PollACI(context.Background(), "SECRET-ACI-TOKEN")
+	require.True(t, errors.As(err, &pe))
 	assert.Equal(t, "unreachable", pe.Kind)
+	assert.NotContains(t, err.Error(), "SECRET-ACI-TOKEN", "the token stays out of the error (and the log)")
 }
 
 // Run passes each integration's outcome to ReportHealth.
