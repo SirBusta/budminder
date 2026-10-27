@@ -39,6 +39,7 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 		})
 	})
 	r.GET("/home/data", handlers.HomeDataHandler)
+	r.GET("/streams/:id/snapshot", handlers.StreamSnapshotHandler)
 
 	// Translations API - returns JSON map of translations for the requested language
 	r.GET("/api/translations", func(c *gin.Context) {

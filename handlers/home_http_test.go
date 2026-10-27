@@ -148,7 +148,7 @@ func TestHomeData(t *testing.T) {
 	require.Len(t, cam.Ports, 1)
 	assert.Equal(t, port, cam.Ports[0].ID)
 	require.Len(t, cam.Cameras, 1)
-	assert.Equal(t, "/uploads/streams/stream_"+strconv.Itoa(camID)+"_latest.jpg", cam.Cameras[0].Snapshot)
+	assert.Equal(t, "/streams/"+strconv.Itoa(camID)+"/snapshot", cam.Cameras[0].Snapshot)
 	assert.NotZero(t, cam.Cameras[0].SnapAt)
 	assert.Equal(t, "Plain Tent", plain.Name)
 	assert.Empty(t, plain.Cameras, "a hidden camera gives no tile")

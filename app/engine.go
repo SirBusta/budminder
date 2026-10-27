@@ -11,6 +11,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -606,7 +607,20 @@ func buildFuncMap(store *config.Store) template.FuncMap {
 // Uploads remain on the live filesystem (./uploads); everything else comes
 // from cfg.Assets.
 func registerStaticRoutes(r *gin.Engine, assets fs.FS) {
-	r.Static("/uploads", "./uploads")
+	// Camera snapshots under uploads/streams/ are not served here: /uploads
+	// is public and their names are easy to guess. /streams/:id/snapshot
+	// serves them after a sign-in (or guest-visibility) check.
+	uploads := http.StripPrefix("/uploads", http.FileServer(gin.Dir("./uploads", false)))
+	serveUploads := func(c *gin.Context) {
+		p := path.Clean("/" + c.Param("filepath"))
+		if p == "/streams" || strings.HasPrefix(p, "/streams/") {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		uploads.ServeHTTP(c.Writer, c.Request)
+	}
+	r.GET("/uploads/*filepath", serveUploads)
+	r.HEAD("/uploads/*filepath", serveUploads)
 
 	r.GET("/static/*filepath", func(c *gin.Context) {
 		filePath := fmt.Sprintf("web/static%s", c.Param("filepath"))

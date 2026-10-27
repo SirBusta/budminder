@@ -255,7 +255,7 @@ func homeTents(c *gin.Context, db *sql.DB, pollSeconds int, plants []HomePlant) 
 		cam := HomeCamera{ID: int(s.ID), Name: s.Name, URL: s.URL}
 		file := fmt.Sprintf("stream_%d_latest.jpg", s.ID)
 		if fi, err := os.Stat(filepath.Join(streamDir, file)); err == nil {
-			cam.Snapshot = "/uploads/streams/" + file
+			cam.Snapshot = StreamSnapshotURL(int(s.ID))
 			cam.SnapAt = fi.ModTime().UnixMilli()
 		}
 		t.Cameras = append(t.Cameras, cam)

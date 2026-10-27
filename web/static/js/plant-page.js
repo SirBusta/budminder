@@ -264,7 +264,7 @@
         let img = $("ppHImg");
         if (!img) { box.insertAdjacentHTML("afterbegin", `<img id="ppHImg" alt="">`); img = $("ppHImg"); }
         img.style.display = "";
-        img.src = live ? `/uploads/streams/stream_${D.stream.id}_latest.jpg?t=${Date.now()}` : (P.photo || "");
+        img.src = live ? `/streams/${D.stream.id}/snapshot?t=${Date.now()}` : (P.photo || "");
         if (!live && !P.photo) img.remove();
         const play = $("ppLivePlay");
         if (play) play.style.display = live && /\.m3u8($|\?)/i.test(D.stream.url || "") && window.videojs ? "" : "none";

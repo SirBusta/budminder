@@ -7,8 +7,11 @@ import (
 	"isley/model/types"
 	"isley/utils"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strconv"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -182,4 +185,36 @@ func DeleteStreamByID(db *sql.DB, id string) error {
 		return err
 	}
 	return nil
+}
+
+// StreamSnapshotURL is where the page loads a camera's latest snapshot.
+func StreamSnapshotURL(id int) string { return fmt.Sprintf("/streams/%d/snapshot", id) }
+
+// StreamSnapshotHandler serves a camera's latest snapshot. /uploads is
+// public and the file name is easy to guess, so snapshots are served here
+// instead: signed in, any camera; a guest (guest mode), only cameras
+// marked visible.
+// GET /streams/:id/snapshot
+func StreamSnapshotHandler(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		c.Status(http.StatusNotFound)
+		return
+	}
+	var visible bool
+	if err := DBFromContext(c).QueryRow("SELECT visible FROM streams WHERE id = $1", id).Scan(&visible); err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+	if !visible && sessions.Default(c).Get("logged_in") != true {
+		c.Status(http.StatusNotFound)
+		return
+	}
+	path := filepath.Join(StreamDirFromContext(c), fmt.Sprintf("stream_%d_latest.jpg", id))
+	if _, err := os.Stat(path); err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+	c.Header("Cache-Control", "no-store")
+	c.File(path)
 }
