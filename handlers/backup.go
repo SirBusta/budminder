@@ -353,8 +353,25 @@ func DownloadSQLiteDB(c *gin.Context) {
 		return
 	}
 
+	// Recent changes can still sit in the -wal file, so the database file
+	// alone may be behind. VACUUM INTO writes one complete copy (WAL
+	// included) from the open database, and that copy is what's sent.
+	tmpDir, err := os.MkdirTemp("", "budminder-download-")
+	if err != nil {
+		logger.Log.WithError(err).Error("SQLite download: no temp folder")
+		apiInternalError(c, "api_database_error")
+		return
+	}
+	defer os.RemoveAll(tmpDir)
+	snapshot := filepath.Join(tmpDir, "budminder.db")
+	if _, err := DBFromContext(c).Exec("VACUUM INTO $1", snapshot); err != nil {
+		logger.Log.WithError(err).Error("SQLite download: copy failed")
+		apiInternalError(c, "api_database_error")
+		return
+	}
+
 	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="budminder-%s.db"`, time.Now().Format("20060102-150405")))
-	c.File(dbFile)
+	c.File(snapshot)
 }
 
 // UploadSQLiteDB accepts a raw .db file upload, pauses watchers, replaces

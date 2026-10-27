@@ -32,6 +32,7 @@ package handlers_test
 import (
 	"archive/zip"
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -576,10 +577,12 @@ func TestBackupHTTP_DownloadSQLiteDB_NotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
 
+// The download is a complete copy of the open database (VACUUM INTO), so
+// a change made just before it is in the file even while it still sits in
+// the -wal journal.
 func TestBackupHTTP_DownloadSQLiteDB_HappyPath(t *testing.T) {
 	dbFile := filepath.Join(t.TempDir(), "isley.db")
-	const payload = "SQLite format 3\x00rest-of-the-file"
-	require.NoError(t, os.WriteFile(dbFile, []byte(payload), 0o644))
+	require.NoError(t, os.WriteFile(dbFile, []byte("stale file on disk"), 0o644))
 	t.Setenv("ISLEY_DB_FILE", dbFile)
 
 	db := testutil.NewTestDB(t)
@@ -587,6 +590,7 @@ func TestBackupHTTP_DownloadSQLiteDB_HappyPath(t *testing.T) {
 
 	const apiKey = "sqlite-dl-happy-key"
 	testutil.SeedAPIKey(t, db, apiKey)
+	testutil.SeedZone(t, db, "Download Marker")
 
 	c := server.NewClient(t)
 	resp, err := c.Do(testutil.APIReq(t, http.MethodGet, c.BaseURL+"/settings/backup/sqlite/download", apiKey, nil, ""))
@@ -598,7 +602,16 @@ func TestBackupHTTP_DownloadSQLiteDB_HappyPath(t *testing.T) {
 		"Content-Disposition should advertise a budminder-* attachment filename")
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
-	assert.Equal(t, payload, string(body), "downloaded bytes should match the file on disk")
+	require.True(t, bytes.HasPrefix(body, []byte("SQLite format 3")), "a SQLite file")
+
+	got := filepath.Join(t.TempDir(), "got.db")
+	require.NoError(t, os.WriteFile(got, body, 0o644))
+	copyDB, err := sql.Open("sqlite", got)
+	require.NoError(t, err)
+	defer copyDB.Close()
+	var n int
+	require.NoError(t, copyDB.QueryRow(`SELECT COUNT(*) FROM zones WHERE name = 'Download Marker'`).Scan(&n))
+	assert.Equal(t, 1, n, "the latest change is in the download")
 }
 
 // ---------------------------------------------------------------------------
