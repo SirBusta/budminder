@@ -1105,6 +1105,14 @@ func IngestSensorData(c *gin.Context) {
 		return
 	}
 
+	// A reading saved mid-restore can take an ID the backup still has to
+	// insert (fresh Postgres), failing the restore. Senders retry later.
+	if svc, ok := c.Get(contextKeyBackupService); ok && svc.(*BackupService).RestoreSnapshot().InProgress {
+		c.Header("Retry-After", "60")
+		apiError(c, http.StatusServiceUnavailable, "api_restore_in_progress")
+		return
+	}
+
 	var payload SensorDataPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		fieldLogger.WithError(err).Error("Invalid payload")

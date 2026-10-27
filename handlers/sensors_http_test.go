@@ -389,3 +389,28 @@ func TestSensorsHTTP_Ingest_RejectsLongUnit(t *testing.T) {
 	defer testutil.DrainAndClose(resp)
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
+
+// Readings sent during a restore are turned away, so none takes an ID the
+// backup still has to insert (M06-09).
+func TestSensorsHTTP_Ingest_RefusedDuringRestore(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db, testutil.WithConfigStore(newStoreWithAPIIngest(1)))
+	const apiKey = "ingest-restore-key"
+	testutil.SeedAPIKey(t, db, apiKey)
+	server.BackupService.SetRestoreInProgress(true)
+
+	c := server.NewClient(t)
+	resp, err := c.Do(testutil.APIReq(t, http.MethodPost, c.BaseURL+"/api/sensors/ingest", apiKey,
+		testutil.JSONBody(t, map[string]interface{}{"source": "ecowitt", "device": "d", "type": "temp", "value": 21.5}),
+		"application/json"))
+	require.NoError(t, err)
+	defer testutil.DrainAndClose(resp)
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	assert.Equal(t, "60", resp.Header.Get("Retry-After"))
+
+	var n int
+	require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM sensor_data`).Scan(&n))
+	assert.Zero(t, n)
+}
