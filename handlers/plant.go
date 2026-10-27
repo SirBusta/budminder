@@ -1056,6 +1056,17 @@ func UpdatePlant(c *gin.Context) {
 		input.StrainID = &strainID // Set the created strain ID
 	}
 
+	// A blank "New zone" (or no zone at all) would save zone_id NULL, and
+	// a missing strain strain_id NULL; refuse both like AddPlant does.
+	if input.ZoneID == nil {
+		apiBadRequest(c, "api_zone_required")
+		return
+	}
+	if input.StrainID == nil {
+		apiBadRequest(c, "api_strain_required")
+		return
+	}
+
 	isClone := 0
 	if input.IsClone {
 		isClone = 1
@@ -1068,6 +1079,7 @@ func UpdatePlant(c *gin.Context) {
 	_, err := db.Exec("UPDATE plant SET name = $1, description = $2, zone_id = $3, strain_id = $4, clone = $5, start_dt = $6, harvest_weight = $7 WHERE id = $8", input.PlantName, input.PlantDescription, input.ZoneID, input.StrainID, isClone, input.StartDT, input.HarvestWeight, input.PlantID)
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to update plant")
+		apiInternalError(c, "api_failed_to_update_plant")
 		return
 	}
 
@@ -1076,6 +1088,7 @@ func UpdatePlant(c *gin.Context) {
 		updated, _, err := updatePlantStatusLog(db, input.PlantID, input.StatusID, input.Date)
 		if err != nil {
 			fieldLogger.WithError(err).Error("Failed to update plant status")
+			apiInternalError(c, "api_failed_to_update_plant_status")
 			return
 		}
 		if !updated {
@@ -1102,7 +1115,7 @@ func getPlantsByStatus(db *sql.DB, statuses []int) ([]types.PlantListResponse, e
 		query = `
 SELECT 
     p.id, p.name, p.description, p.clone, 
-    s.name AS strain_name, b.name AS breeder_name, z.name AS zone_name,
+    s.name AS strain_name, b.name AS breeder_name, COALESCE(z.name, '') AS zone_name,
     p.start_dt,
     (((CURRENT_DATE - p.start_dt::date)) / 7 + 1) AS current_week,
 	((CURRENT_DATE - p.start_dt::date) + 1) AS current_day,
@@ -1161,7 +1174,7 @@ ORDER BY p.start_dt, p.name;
 		query = `
 SELECT 
     p.id, p.name, p.description, p.clone, 
-    s.name AS strain_name, b.name AS breeder_name, z.name AS zone_name,
+    s.name AS strain_name, b.name AS breeder_name, COALESCE(z.name, '') AS zone_name,
     p.start_dt,
     CAST((julianday('now', 'localtime') - julianday(p.start_dt)) / 7 + 1 AS INT) AS current_week,
     CAST((julianday('now', 'localtime') - julianday(p.start_dt)) + 1 AS INT) AS current_day,

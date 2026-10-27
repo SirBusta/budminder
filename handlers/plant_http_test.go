@@ -190,6 +190,66 @@ func TestPlantHTTP_Update_RejectsBlankOrBadStartDate(t *testing.T) {
 	assert.Equal(t, before, after, "start date unchanged")
 }
 
+// Edit -> "New zone" with a blank name used to save zone_id NULL, and the
+// living-plants query then failed for every plant.
+func TestPlantHTTP_Update_RejectsMissingZone(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db)
+	apiKey := plantTestSeed(t, db)
+
+	plantID := testutil.SeedPlant(t, db, "Zoned", 1, 1)
+
+	c := server.NewClient(t)
+	resp, err := c.Do(testutil.APIReq(t, http.MethodPost, c.BaseURL+"/plant", apiKey,
+		testutil.JSONBody(t, map[string]interface{}{
+			"plant_id":   plantID,
+			"plant_name": "Zoned",
+			"zone_id":    nil,
+			"new_zone":   "",
+			"strain_id":  1,
+			"start_date": "2026-01-01",
+		}), "application/json"))
+	require.NoError(t, err)
+	testutil.DrainAndClose(resp)
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	var zoneID sql.NullInt64
+	require.NoError(t, db.QueryRow(`SELECT zone_id FROM plant WHERE id = $1`, plantID).Scan(&zoneID))
+	assert.True(t, zoneID.Valid, "zone kept")
+}
+
+// A plant already saved without a zone must not hide the other plants.
+func TestPlantHTTP_LivingPlants_PlantWithoutZone(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db)
+	plantTestSeed(t, db)
+	testutil.SeedAdmin(t, db, "nozone-pw")
+
+	veg := plantStatusID(t, db, "Veg")
+	for _, name := range []string{"Has Zone", "No Zone"} {
+		id := testutil.SeedPlant(t, db, name, 1, 1)
+		_, err := db.Exec(`INSERT INTO plant_status_log (plant_id, status_id, date) VALUES ($1, $2, '2026-01-15')`, id, veg)
+		require.NoError(t, err)
+		if name == "No Zone" {
+			_, err = db.Exec(`UPDATE plant SET zone_id = NULL WHERE id = $1`, id)
+			require.NoError(t, err)
+		}
+	}
+
+	c := server.LoginAsAdmin(t, "nozone-pw")
+	resp := c.Get("/plants/living")
+	defer testutil.DrainAndClose(resp)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), "Has Zone")
+	assert.Contains(t, string(body), "No Zone")
+}
+
 func TestPlantHTTP_Update_RejectsBadJSON(t *testing.T) {
 	t.Parallel()
 
