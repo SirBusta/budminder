@@ -251,14 +251,22 @@ func addSmokeStrain(c *gin.Context, in smokeInput) (int, error) {
 		}
 	}
 	if id == 0 {
-		if err := db.QueryRow(`INSERT INTO strain (name, breeder_id, indica, sativa, autoflower, seed_count, description, short_desc, cycle_time)
-			VALUES ($1, $2, 50, 50, false, 0, '', '', 0) RETURNING id`, in.StrainName, breederID).Scan(&id); err != nil {
+		if id, err = insertBareStrain(db, in.StrainName, breederID); err != nil {
 			return 0, err
 		}
 	}
 	store.SetBreeders(GetBreeders(db))
 	store.SetStrains(GetStrains(db))
 	return id, nil
+}
+
+// insertBareStrain adds a strain with only a name and breeder.
+// autoflower is an INTEGER column: 0, not false (Postgres refuses a boolean).
+func insertBareStrain(db *sql.DB, name string, breederID int) (int, error) {
+	var id int
+	err := db.QueryRow(`INSERT INTO strain (name, breeder_id, indica, sativa, autoflower, seed_count, description, short_desc, cycle_time)
+		VALUES ($1, $2, 50, 50, 0, 0, '', '', 0) RETURNING id`, name, breederID).Scan(&id)
+	return id, err
 }
 
 // ---------------------------------------------------------------------------

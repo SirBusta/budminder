@@ -28,3 +28,9 @@ func PreviewACIScan(db *sql.DB, resp types.ACIResponse) []string {
 func PreviewEcowittScan(db *sql.DB, address string, resp types.ECWAPIResponse) []string {
 	return previewKeys(db, ecowittFoundSensors(address, resp))
 }
+
+// InsertBareStrain is the strain "Add to my Strains" on a smoke report
+// creates when there's no StrainCompass match.
+func InsertBareStrain(db *sql.DB, name string, breederID int) (int, error) {
+	return insertBareStrain(db, name, breederID)
+}

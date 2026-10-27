@@ -2,7 +2,8 @@
 
 // Postgres-only breakage the SQLite suite can't see: integer columns
 // COALESCEd with a boolean (plant page, Plants list) and the sensors.show
-// column migration 013 dropped on Postgres only (Manage sensors).
+// column migration 013 dropped on Postgres only (Manage sensors), and a
+// boolean inserted into strain.autoflower (smoke report "Add to my Strains").
 //
 // Local invocation:
 //
@@ -55,4 +56,14 @@ func TestManagedSensors_Postgres(t *testing.T) {
 	list := handlers.ListManagedSensors(db, 60)
 	require.Len(t, list, 1, "Manage sensors lists the sensor")
 	assert.False(t, list[0].ShowEnv)
+}
+
+func TestSmokeReportBareStrain_Postgres(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestPostgresDB(t)
+	breederID := testutil.SeedBreeder(t, db, "PG Smoke Breeder")
+	id, err := handlers.InsertBareStrain(db, "PG Smoke Strain", breederID)
+	require.NoError(t, err)
+	assert.NotZero(t, id)
 }
