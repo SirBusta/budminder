@@ -159,6 +159,9 @@ func GetStreamsByZoneHandler(c *gin.Context) {
 	}
 	defer rows.Close()
 
+	// Guests (guest mode) see only visible streams, and no addresses:
+	// a camera address can carry its password.
+	guest := sessions.Default(c).Get("logged_in") != true
 	streamsByZone := make(map[string][]types.Stream)
 	for rows.Next() {
 		var id int
@@ -169,6 +172,12 @@ func GetStreamsByZoneHandler(c *gin.Context) {
 			fieldLogger.WithError(err).Error("Failed to read streams")
 			apiInternalError(c, "api_failed_to_read_streams")
 			return
+		}
+		if guest {
+			if !visible {
+				continue
+			}
+			url = ""
 		}
 		streamsByZone[zoneName] = append(streamsByZone[zoneName], types.Stream{ID: uint(id), Name: name, URL: url, ZoneName: zoneName, Visible: visible})
 	}

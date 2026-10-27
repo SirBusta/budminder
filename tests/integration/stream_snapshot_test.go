@@ -100,3 +100,34 @@ func TestUploads_StreamsFolderIsClosed(t *testing.T) {
 	defer testutil.DrainAndClose(resp)
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "other uploads still load")
 }
+
+// The stream list a guest can read leaves out hidden streams and every
+// stream's address (it can carry the camera's password) (M08-04).
+func TestStreamList_GuestSeesVisibleWithoutAddresses(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db, testutil.WithGuestMode())
+	testutil.SeedZone(t, db, "Z")
+	testutil.SeedAdmin(t, db, "stream-list-pw")
+	_, err := db.Exec(`INSERT INTO streams (name, url, zone_id, visible) VALUES
+		('Shown', 'rtsp://user:secret@cam1.invalid/', 1, $1), ('Hidden', 'rtsp://user:secret@cam2.invalid/', 1, $2)`, true, false)
+	require.NoError(t, err)
+
+	list := func(c *testutil.Client) string {
+		resp := c.Get("/streams")
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return string(body)
+	}
+
+	guest := list(server.NewClient(t))
+	assert.Contains(t, guest, "Shown")
+	assert.NotContains(t, guest, "Hidden")
+	assert.NotContains(t, guest, "secret")
+
+	admin := list(server.LoginAsAdmin(t, "stream-list-pw"))
+	assert.Contains(t, admin, "Hidden")
+	assert.Contains(t, admin, "cam2.invalid")
+}
