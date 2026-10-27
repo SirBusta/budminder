@@ -4306,6 +4306,10 @@ body.bm-tour-open { overflow: hidden; }
 .pc-more.off * { pointer-events: none; }
 .pc-foot { font-size: .78rem; color: var(--sx-muted); padding: .5rem 0 .2rem; border-top: 1px solid var(--sx-line); }
 .pc-foot i { color: var(--sx-acc); }
+.pc-tip { display: block; margin-top: .35rem; }
+.pc-tip > i { color: var(--sx-acc); }
+.pc-tip a { color: var(--sx-acc); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.pc-tip a:hover { text-decoration: underline; }
 .pc-locked { color: #a16207; }
 .pc-cta { text-align: center; padding: 1rem 0 .8rem; border-top: 1px solid var(--sx-line); margin-top: .3rem; }
 .pc-cta .st-btn { font-size: .9rem; padding: .5rem 1rem; }

@@ -63,6 +63,8 @@ Click **Compare Compression Levels** to open the compare page in a new tab. It s
 
 Photos already in BudMinder only change when you use **Compress existing photos**. The **Existing photos** row shows how many plant photos have not been compressed yet, their current size and the estimated savings at the selected quality.
 
+Before compressing, we recommend a full backup with **Include images** turned on under **Settings → Backup & data**, downloaded to keep it somewhere safe (see [Backup and restore](backup-and-restore.md)). The link **Open Backup & data** in the Existing photos row goes there.
+
 1. Select the quality, then click **Compress existing photos**.
 1. Review the summary. **Back up original photos before compressing (Recommended)** is selected by default and needs about as much free disk space as the photos use now.
 1. Click **Compress … photos**. Photos are processed one at a time in the background, so you can keep using BudMinder. A line under the top menu shows the progress on every page.
