@@ -7,6 +7,7 @@ package handlers
 import (
 	"database/sql"
 	"isley/model/types"
+	"time"
 )
 
 func previewKeys(db *sql.DB, found []foundSensor) []string {
@@ -34,3 +35,9 @@ func PreviewEcowittScan(db *sql.DB, address string, resp types.ECWAPIResponse) [
 func InsertBareStrain(db *sql.DB, name string, breederID int) (int, error) {
 	return insertBareStrain(db, name, breederID)
 }
+
+// SetPhotoCompressClock replaces the photo compression service's clock.
+func SetPhotoCompressClock(s *PhotoCompressService, now func() time.Time) { s.now = now }
+
+// SetPhotoCompressBeforePhoto runs f before each photo the service compresses.
+func SetPhotoCompressBeforePhoto(s *PhotoCompressService, f func()) { s.beforePhoto = f }

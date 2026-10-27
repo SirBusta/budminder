@@ -9,6 +9,8 @@ package testutil
 
 import (
 	"database/sql"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -174,4 +176,14 @@ func SeedActivityAt(t *testing.T, db *sql.DB, plantID, activityID int, when stri
 		`INSERT INTO plant_activity (plant_id, activity_id, note, date) VALUES ($1, $2, '', $3)`,
 		plantID, activityID, when,
 	)
+}
+
+// SeedPlantImage writes body to path and records it as a photo of plantID.
+func SeedPlantImage(t *testing.T, db *sql.DB, plantID int, path string, body []byte) int {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, body, 0o644))
+	return insertReturnID(t, db,
+		`INSERT INTO plant_images (plant_id, image_path, image_description, image_order, image_date)
+		 VALUES ($1, $2, '', 100, $3)`, plantID, path, time.Now())
 }
