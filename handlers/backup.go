@@ -717,6 +717,8 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 		"settings",
 	}
 
+	payload = sqliteSensorTimes(payload)
+
 	// Tables in insertion order (parents first).
 	insertOrder := []struct {
 		name string
@@ -1352,6 +1354,32 @@ func coerceJSONValue(v interface{}) interface{} {
 		return n.String()
 	}
 	return v
+}
+
+// sqliteSensorTimes rewrites the reading times of a restore in the format
+// SQLite stores them in ("2006-01-02 15:04:05"). A backup carries them as
+// RFC 3339 ("...T...Z"), and as text that sorts after every newer reading
+// of the same day, so charts misordered readings around the restore and
+// the hourly rollup counted some twice. The clock time is kept as written.
+// Postgres stores real timestamps, so its payload is left alone.
+func sqliteSensorTimes(payload BackupPayload) BackupPayload {
+	if !model.IsSQLite() {
+		return payload
+	}
+	fix := func(rows []map[string]interface{}) {
+		for _, row := range rows {
+			s, ok := row["create_dt"].(string)
+			if !ok {
+				continue
+			}
+			if t, err := time.Parse(time.RFC3339Nano, s); err == nil {
+				row["create_dt"] = t.Format("2006-01-02 15:04:05")
+			}
+		}
+	}
+	fix(payload.SensorData)
+	fix(payload.RollingAvgs)
+	return payload
 }
 
 // stripRestoredImage removes hidden metadata (location, camera, ...) from a

@@ -301,3 +301,35 @@ func TestApplyBackupToDB_NilDB(t *testing.T) {
 	err := handlers.ApplyBackupToDB(context.Background(), nil, handlers.BackupPayload{})
 	assert.Error(t, err)
 }
+
+// Restored reading times keep SQLite's own format, so they sort with the
+// readings that arrive after the restore (M06-04).
+func TestApplyBackupToDB_KeepsSQLiteReadingTimeFormat(t *testing.T) {
+	t.Parallel()
+
+	src := testutil.NewTestDB(t)
+	seedSampleData(t, src)
+	_, err := src.Exec(`UPDATE sensor_data SET create_dt = '2026-10-20 14:05:00'`)
+	require.NoError(t, err)
+
+	archive, _, err := handlers.BuildBackupArchive(src, handlers.BuildArchiveOptions{})
+	require.NoError(t, err)
+	payload, err := handlers.ParseBackupArchive(archive)
+	require.NoError(t, err)
+
+	dst := testutil.NewTestDB(t)
+	require.NoError(t, handlers.ApplyBackupToDB(context.Background(), dst, payload))
+
+	rows, err := dst.Query(`SELECT CAST(create_dt AS TEXT) FROM sensor_data`)
+	require.NoError(t, err)
+	defer rows.Close()
+	n := 0
+	for rows.Next() {
+		var s string
+		require.NoError(t, rows.Scan(&s))
+		assert.Equal(t, "2026-10-20 14:05:00", s)
+		n++
+	}
+	require.NoError(t, rows.Err())
+	assert.Positive(t, n)
+}

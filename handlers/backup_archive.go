@@ -277,6 +277,8 @@ func ApplyBackupToDB(ctx context.Context, db *sql.DB, payload BackupPayload) err
 		"settings",
 	}
 
+	payload = sqliteSensorTimes(payload)
+
 	// Tables in insertion order (parents first).
 	insertOrder := []struct {
 		name string
