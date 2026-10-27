@@ -212,7 +212,7 @@ func dumpTableFiltered(db *sql.DB, table string, days int) ([]map[string]interfa
 	if model.IsPostgres() {
 		query = fmt.Sprintf("SELECT * FROM %s WHERE create_dt >= NOW() - INTERVAL '%d days'", table, days)
 	} else {
-		query = fmt.Sprintf("SELECT * FROM %s WHERE create_dt >= datetime('now', 'localtime', '-%d days')", table, days)
+		query = fmt.Sprintf("SELECT * FROM %s WHERE create_dt >= datetime('now', '-%d days')", table, days)
 	}
 
 	rows, err := db.Query(query) //nolint:gosec

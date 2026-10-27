@@ -565,7 +565,7 @@ func (w *Watcher) PruneSensorData() error {
 	if model.IsPostgres() {
 		pruneQuery = fmt.Sprintf("DELETE FROM sensor_data WHERE create_dt < NOW() - INTERVAL '%d days'", days)
 	} else {
-		pruneQuery = fmt.Sprintf("DELETE FROM sensor_data WHERE create_dt < datetime('now', 'localtime', '-%d days')", days)
+		pruneQuery = fmt.Sprintf("DELETE FROM sensor_data WHERE create_dt < datetime('now', '-%d days')", days)
 	}
 	if _, err := w.DB.Exec(pruneQuery); err != nil {
 		w.Logger.WithError(err).Error("Error pruning sensor data")

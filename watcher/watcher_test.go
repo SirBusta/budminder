@@ -579,3 +579,23 @@ func TestRun_PollsACIWhenEnabled(t *testing.T) {
 		<-done
 	})
 }
+
+// Readings are stored in UTC (CURRENT_TIMESTAMP), so the retention cutoff
+// is UTC too; it was shifted by the local timezone offset (M05-07).
+func TestPruneSensorData_CutoffIsUTC(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	id := seedSensor(t, db, "x", "y", "z")
+	now := time.Now().UTC()
+	insertReadingAt(t, db, id, 1.0, now.AddDate(0, 0, -30).Add(-90*time.Minute)) // just outside
+	insertReadingAt(t, db, id, 2.0, now.AddDate(0, 0, -30).Add(90*time.Minute))  // just inside
+
+	w := newTestWatcher(t, db)
+	w.SensorRetention = func() int { return 30 }
+	require.NoError(t, w.PruneSensorData())
+
+	var v float64
+	require.NoError(t, db.QueryRow(`SELECT value FROM sensor_data WHERE sensor_id = $1`, id).Scan(&v))
+	assert.Equal(t, 2.0, v, "only the reading inside the window should remain")
+}
