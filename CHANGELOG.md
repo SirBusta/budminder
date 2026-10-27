@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Windows: the program file has BudMinder's leaf icon, and its name and version show in Explorer and in the file's Properties.
+
 ### Fixed
 
 - A browser that BudMinder opened passed BudMinder's own `BUDMINDER_*` settings on to anything started from it later. A BudMinder download opened from that browser's download list could then skip the update question and start empty. The browser, File Explorer and the firewall settings now start without them.

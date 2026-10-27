@@ -15,3 +15,6 @@
 /scripts/cowork-bootstrap.sh
 /planning/
 /SESSION_HANDOFF.md
+
+# Windows resources (icon, name), made by the release build
+*.syso

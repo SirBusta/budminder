@@ -350,6 +350,14 @@ jobs:
       - name: Build programs
         run: |
           mkdir dist
+          # Windows: the leaf icon, name and version in the .exe (Explorer,
+          # Properties, the notification's sender). go build links the
+          # rsrc_windows_amd64.syso into the Windows build only.
+          V=$(cat VERSION)
+          go run github.com/tc-hib/go-winres@v0.3.3 simply --arch amd64 --out rsrc --manifest none \
+            --icon web/static/img/brand/budminder-256.png --product-name BudMinder --file-description BudMinder \
+            --product-version "$V" --file-version "$V" --original-filename budminder-windows-amd64.exe \
+            --copyright "Copyright (c) 2024 dwot, 2026 SirBusta"
           # Windows: no console window (-H windowsgui); BudMinder shows its
           # own windows instead, and borrows the terminal when started from one.
           build() {
