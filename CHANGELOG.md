@@ -34,6 +34,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PostgreSQL: the plant page, the Plants list and Home were empty, and Manage sensors showed no sensors and couldn't save them. Switching from SQLite to PostgreSQL also works again for installs with sensors.
 - Changing the password now also signs other browsers out of BudMinder's background requests (deletes, settings, backups, updates), not only its pages.
 - **Upload SQLite database** no longer breaks every page until BudMinder is restarted; an upload from an older version is updated as it's restored.
+- Adding or editing a camera stream in Settings works again (it always failed), and a failed edit now says so.
+- Edit plant refuses a blank "New zone" name, and a plant that already has no zone no longer hides every growing plant.
+- PostgreSQL: **Add to my Strains** on a smoke report works again.
+- The SQLite database download includes the latest changes (some could still be waiting in the `-wal` file).
+- Restoring a backup clears the hourly chart data, which is then rebuilt from the restored readings, so long charts no longer show the old data.
+- The AC Infinity token is no longer written to the log when its server can't be reached.
+- The graph's custom date range takes in the whole end day (a one-day range was empty), using the Settings timezone.
+- VPD stops when its temperature or humidity sensor stops reporting, so it shows as not reporting too.
+- Backups and the database download leave out the key that signs sign-in cookies, so a backup can't be used to sign in to the live install. After restoring a new backup you may need to sign in again once.
+- Camera snapshots need a sign-in; in guest mode, guests see only cameras marked visible. They were public under `/uploads`.
+- A plant's start date no longer moves by a day on each save when the Settings timezone differs from the server's.
+- A strain your plants use can't be deleted (it used to hide those plants on SQLite); a deleted strain's lineage, effects, flavors, terpenes and medical uses go with it.
+- Re-importing a strain saved under another breeder name keeps its seed count, location and type.
+- Switching from SQLite to PostgreSQL now copies day notes, smoke reports (with tags and photos) and hourly sensor history, and keeps your settings and activities instead of the defaults.
+- Windows: **Start with Windows** keeps working after the BudMinder folder is moved.
 
 ## [1.5.9] - 2026-10-26
 
