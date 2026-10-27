@@ -77,3 +77,12 @@ func TestDesktopEntry(t *testing.T) {
 		t.Errorf("second copy box:\n%s", second)
 	}
 }
+
+func TestOutsideEnv(t *testing.T) {
+	t.Parallel()
+	got := outsideEnv([]string{"PATH=/usr/bin", "BUDMINDER_DB_FILE=x.db", "budminder_port=8097", "BUDMINDERISH=keep", "HOME=/home/you"})
+	want := []string{"PATH=/usr/bin", "BUDMINDERISH=keep", "HOME=/home/you"}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Errorf("outsideEnv = %q, want %q", got, want)
+	}
+}

@@ -107,7 +107,7 @@ func trayMenu(t Tray, plain, framed, small []byte) {
 			case <-update.ClickedCh:
 				t.failed("open the update window", OpenBrowser(t.UpdateURL()))
 			case <-folder.ClickedCh:
-				t.failed("open the folder", exec.Command("explorer", t.Folder).Start())
+				t.failed("open the folder", OpenFolder(t.Folder))
 			case <-atLoginClicked:
 				on := !atLogin.Checked()
 				if err := t.AtLogin.Set(on); err != nil {

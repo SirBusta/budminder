@@ -223,16 +223,37 @@ func Running(port string) bool {
 	return resp.StatusCode == http.StatusOK
 }
 
+// Outside starts a program that isn't BudMinder (the browser, File Explorer)
+// without BudMinder's own BUDMINDER_* settings. A browser keeps running
+// long after it's opened, and anything started from it later (a downloaded
+// BudMinder, say) would inherit them: a test copy's BUDMINDER_DB_FILE made
+// a fresh download think it was a test run too.
+func Outside(name string, args ...string) *exec.Cmd {
+	cmd := exec.Command(name, args...)
+	cmd.Env = outsideEnv(os.Environ())
+	return cmd
+}
+
+func outsideEnv(env []string) []string {
+	out := make([]string, 0, len(env))
+	for _, kv := range env {
+		if !strings.HasPrefix(strings.ToUpper(kv), "BUDMINDER_") {
+			out = append(out, kv)
+		}
+	}
+	return out
+}
+
 // OpenBrowser opens url in the default browser.
 func OpenBrowser(url string) error {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "linux":
-		cmd = exec.Command("xdg-open", url)
+		cmd = Outside("xdg-open", url)
 	case "darwin":
-		cmd = exec.Command("open", url)
+		cmd = Outside("open", url)
 	case "windows":
-		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+		cmd = Outside("rundll32", "url.dll,FileProtocolHandler", url)
 	default:
 		return fmt.Errorf("don't know how to open a browser on %s", runtime.GOOS)
 	}

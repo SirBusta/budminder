@@ -3,7 +3,6 @@
 package launcher
 
 import (
-	"os/exec"
 	"regexp"
 	"runtime"
 	"sync"
@@ -806,4 +805,4 @@ func cardWndProc(hwnd, message, wParam, lParam uintptr) uintptr {
 func CopyText(s string) error { return copyText(s) }
 
 // OpenFolder shows dir in File Explorer.
-func OpenFolder(dir string) error { return exec.Command("explorer", dir).Start() }
+func OpenFolder(dir string) error { return Outside("explorer", dir).Start() }

@@ -84,5 +84,5 @@ func AllowFirewallElevated(exe string, owner windows.Handle) error {
 
 // OpenFirewallSettings opens the firewall's "Allowed apps" page.
 func OpenFirewallSettings() error {
-	return exec.Command("control.exe", "/name", "Microsoft.WindowsFirewall", "/page", "pageConfigureApps").Start()
+	return Outside("control.exe", "/name", "Microsoft.WindowsFirewall", "/page", "pageConfigureApps").Start()
 }
