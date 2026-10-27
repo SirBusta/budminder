@@ -43,19 +43,7 @@ func InitDB() {
 	switch driver {
 	case "postgres":
 		logger.Log.Info("Using Postgres driver")
-		pgSSLMode := env.Get("DB_SSLMODE")
-		if pgSSLMode == "" {
-			pgSSLMode = "disable"
-		}
-		dsn = fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-			env.Get("DB_HOST"),
-			env.Get("DB_PORT"),
-			env.Get("DB_USER"),
-			env.Get("DB_PASSWORD"),
-			env.Get("DB_NAME"),
-			pgSSLMode,
-		)
+		dsn = postgresDSN(env.Get)
 	case "sqlite", "":
 		logger.Log.Info("Using Sqlite driver")
 		dsn = DbPath()
@@ -166,19 +154,7 @@ func MigrateDB() {
 	dsn := ""
 	switch driver {
 	case "postgres":
-		pgSSLMode2 := env.Get("DB_SSLMODE")
-		if pgSSLMode2 == "" {
-			pgSSLMode2 = "disable"
-		}
-		dsn = fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-			env.Get("DB_HOST"),
-			env.Get("DB_PORT"),
-			env.Get("DB_USER"),
-			env.Get("DB_PASSWORD"),
-			env.Get("DB_NAME"),
-			pgSSLMode2,
-		)
+		dsn = postgresDSN(env.Get)
 	case "sqlite":
 		dsn = DbPath()
 	default:
@@ -325,8 +301,8 @@ func RunStartupMaintenance() {
 	}
 
 	// REFRESH COLLATION VERSION is fast and idempotent — safe to run every startup.
-	// dbName comes from current_database() — not user input, safe to interpolate.
-	if _, err := db.Exec("ALTER DATABASE " + dbName + " REFRESH COLLATION VERSION"); err != nil {
+	// dbName comes from current_database(); quoted for capitals and hyphens.
+	if _, err := db.Exec("ALTER DATABASE " + quoteIdent(dbName) + " REFRESH COLLATION VERSION"); err != nil {
 		fieldLogger.WithError(err).Warn("Could not refresh collation version")
 		return
 	}
@@ -343,7 +319,7 @@ func RunStartupMaintenance() {
 	}
 
 	fieldLogger.Warn("PostgreSQL collation version was stale (likely after a Postgres or OS upgrade) — running REINDEX to rebuild indexes")
-	if _, err := db.Exec("REINDEX DATABASE " + dbName); err != nil {
+	if _, err := db.Exec("REINDEX DATABASE " + quoteIdent(dbName)); err != nil {
 		fieldLogger.WithError(err).Error("REINDEX failed")
 		return
 	}
