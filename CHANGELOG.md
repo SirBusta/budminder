@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - A browser that BudMinder opened passed BudMinder's own `BUDMINDER_*` settings on to anything started from it later. A BudMinder download opened from that browser's download list could then skip the update question and start empty. The browser, File Explorer and the firewall settings now start without them.
+- Windows: after updating from a double-clicked download, the download kept running in the background as long as BudMinder did, so it couldn't be deleted as the welcome window suggests. It now starts the updated BudMinder and closes.
 
 ## [1.5.8] - 2026-10-26
 

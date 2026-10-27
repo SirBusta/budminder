@@ -206,9 +206,19 @@ func UpdateInstall(download string, note Note, to string, backup func(db, dst st
 }
 
 // RunUpdated starts the updated install in this window and waits for it.
+// Without a window (the double-clicked Windows download) there's nothing to
+// keep: it starts the install and returns, so the download isn't held open
+// and can be deleted, as the welcome window says.
 func RunUpdated(exe, download string) int {
 	cmd := exec.Command(exe, UpdatedFromFlag, download)
 	cmd.Dir = filepath.Dir(exe)
+	if Windowless() {
+		if err := cmd.Start(); err != nil {
+			fmt.Println("Couldn't start the updated BudMinder:", err)
+			return 1
+		}
+		return 0
+	}
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	signal.Ignore(os.Interrupt) // Ctrl+C reaches it too; this one waits for it
 	if err := cmd.Run(); err != nil {
