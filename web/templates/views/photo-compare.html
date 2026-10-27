@@ -1,0 +1,72 @@
+{{ define "views/photo-compare.html" }}
+<!doctype html>
+<!-- photo-compare.html: compare photo qualities (opened from Settings >
+     Photos in a new tab; mockup data/mockups/settings/photos/compare.html).
+     The photo fills a black page; hold and drag to move, scroll to zoom,
+     Space switches between the original and the compressed copy
+     (js/photo-compare.js, handlers/photo_settings_http.go). -->
+<html lang="{{ .currentLanguage | default "en" }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {{ if .csrfToken }}<meta name="csrf-token" content="{{ .csrfToken }}">{{ end }}
+    <title>BudMinder {{ .lcl.pcc_title }}</title>
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+    <link rel="icon" href="/static/img/brand/budminder-icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/static/vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/photo-compare.css">
+    <script src="/static/js/csrf.js"></script>
+    {{ if demoMode }}
+    <meta name="robots" content="noindex, nofollow">
+    <script type="application/json" id="bmDemoText">{"notAvailable": {{ .lcl.demo_not_available }}, "noTyping": {{ .lcl.demo_no_typing }}}</script>
+    <script src="/static/js/demo.js"></script>
+    {{ end }}
+</head>
+<body class="pcc">
+<div class="label" id="label" aria-live="polite"></div>
+<div class="toast" id="toast" role="status"><i class="fa-solid fa-check"></i> <span id="toastTxt"></span></div>
+<div class="stage" id="stage">
+    <img id="imgA" alt="{{ .lcl.pcc_alt_original }}">
+    <img id="imgB" alt="{{ .lcl.pcc_alt_compressed }}">
+    <div class="busy" id="busy"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{ .lcl.pcc_loading }}</span></div>
+</div>
+<div class="bar">
+    <div class="row">
+        <button class="toggle" id="toggle" type="button"></button>
+        <select id="q" aria-label="{{ .lcl.pc_quality }}"></select>
+        <button class="z" id="choose" type="button"><i class="fa-regular fa-images"></i> {{ .lcl.pcc_choose }}</button>
+        <button class="z" id="fit" type="button">{{ .lcl.pcc_fit }}</button>
+        <button class="z" id="one" type="button">100%</button>
+        <button class="z" id="three" type="button">300%</button>
+        <span class="hint">{{ .lcl.pcc_hint }}</span>
+    </div>
+    <button class="use" id="use" type="button"></button>
+</div>
+
+<div class="pick" id="pick" role="dialog" aria-modal="true" aria-labelledby="pickT">
+    <div class="sheet">
+        <h2 id="pickT">{{ .lcl.pcc_pick_title }} <button id="close" type="button" aria-label="{{ .lcl.title_close }}"><i class="fa-solid fa-xmark"></i></button></h2>
+        <p>{{ .lcl.pcc_pick_hint }}</p>
+        <div id="mineBox" hidden>
+            <h3>{{ .lcl.pcc_yours }}</h3>
+            <div class="grid" id="mine"></div>
+            <button class="z more" id="more" type="button" hidden>{{ .lcl.pcc_more }}</button>
+        </div>
+        <h3>{{ .lcl.pcc_samples }}</h3>
+        <p class="mb">{{ .lcl.pcc_samples_desc }}</p>
+        <div class="grid" id="samples"></div>
+    </div>
+</div>
+
+<script type="application/json" id="pccData">{
+    "quality": {{ .photos.Quality }}, "qualities": {{ .photos.Qualities }}, "locked": {{ .photos.Locked }},
+    "samples": [{{ range $i, $s := .samples }}{{ if $i }}, {{ end }}{"name": {{ $s.Name }}, "date": {{ $s.Date }}}{{ end }}],
+    "t": {"showCompressed": {{ .lcl.pcc_show_compressed }}, "showOriginal": {{ .lcl.pcc_show_original }}, "option": {{ .lcl.pcc_quality_option }},
+          "use": {{ .lcl.pcc_use }}, "saved": {{ .lcl.pcc_saved }}, "original": {{ .lcl.pcc_label_original }}, "compressed": {{ .lcl.pcc_label_compressed }},
+          "sample": {{ .lcl.pcc_sample_photo }}, "sampleTag": {{ .lcl.pcc_sample_tag }}, "bigger": {{ .lcl.pcc_bigger }}, "under10": {{ .lcl.pcc_under10 }},
+          "share": {{ .lcl.pcc_share }}, "failed": {{ .lcl.failed_to_save_settings }}, "locked": {{ .lcl.photo_settings_locked }}}
+}</script>
+<script src="/static/js/photo-compare.js" defer></script>
+</body>
+</html>
+{{ end }}

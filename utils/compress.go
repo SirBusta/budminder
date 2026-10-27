@@ -12,6 +12,8 @@ import (
 	"errors"
 	"image"
 	"image/jpeg"
+
+	"golang.org/x/image/draw"
 )
 
 // ErrNotCompressible means the photo isn't a JPEG BudMinder can re-encode
@@ -104,4 +106,33 @@ func jpegLook(b []byte) (icc []byte, orientation int) {
 		i = end
 	}
 	return icc, orientation
+}
+
+// ThumbnailJPEG scales a JPEG down to width pixels wide (the picker on the
+// compare page), keeping its orientation tag and color profile.
+func ThumbnailJPEG(b []byte, width int) ([]byte, error) {
+	img, err := jpeg.Decode(bytes.NewReader(b))
+	if err != nil {
+		return nil, ErrNotCompressible
+	}
+	r := img.Bounds()
+	if r.Dx() > width {
+		h := max(1, r.Dy()*width/max(1, r.Dx()))
+		dst := image.NewRGBA(image.Rect(0, 0, width, h))
+		draw.ApproxBiLinear.Scale(dst, dst.Bounds(), img, r, draw.Src, nil)
+		img = dst
+	}
+	var out bytes.Buffer
+	if err := jpeg.Encode(&out, img, &jpeg.Options{Quality: 80}); err != nil {
+		return nil, err
+	}
+	icc, orientation := jpegLook(b)
+	enc := out.Bytes()
+	if len(icc) > 0 {
+		enc = append(append(append([]byte{}, enc[:2]...), icc...), enc[2:]...)
+	}
+	if orientation > 1 {
+		enc = withOrientation(enc, orientation)
+	}
+	return enc, nil
 }

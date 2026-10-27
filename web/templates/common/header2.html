@@ -105,6 +105,17 @@
     </ul>
 </header>
 
+{{ if .loggedIn }}{{ with photoJob }}
+<!-- Compress existing photos (Settings > Photos): a line under the top menu
+     on every page while photos are being compressed, amber when paused
+     (photo-job.js keeps it current). -->
+<div class="bm-job{{ if eq .State "paused" }} paused{{ end }}{{ if not (or (eq .State "running") (eq .State "paused")) }} gone{{ end }}" id="bmPhotoJob" role="status" aria-live="polite" data-state="{{ .State }}">
+    <div class="bm-job-fill" id="bmPhotoJobFill" style="width: {{ printf "%.1f" .Percent }}%"></div>
+    <span class="bm-job-tag"><i class="fa-solid fa-file-zipper me-1" aria-hidden="true"></i><span id="bmPhotoJobTxt">{{ if eq .State "paused" }}{{ $.lcl.pc_job_paused }} · <a href="/settings#photos">{{ $.lcl.pc_resume }}</a>{{ else if eq .Phase "backup" }}{{ $.lcl.pc_job_backing }}{{ else }}{{ fill $.lcl.pc_job_running "n" .Left }}{{ end }}</span></span>
+</div>
+<script type="application/json" id="bmPhotoJobText">{"running": {{ $.lcl.pc_job_running }}, "backing": {{ $.lcl.pc_job_backing }}, "paused": {{ $.lcl.pc_job_paused }}, "resume": {{ $.lcl.pc_resume }}}</script>
+<script src="/static/js/photo-job.js" defer></script>
+{{ end }}{{ end }}
 <script src="/static/js/header.js"></script>
 {{ if .loggedIn }}{{ with updateAvailable }}
 <script type="application/json" id="bmUpdateText">{"heading": {{ $.lcl.upd_heading }}, "current": {{ $.lcl.upd_current }}, "latest": {{ $.lcl.upd_latest }}, "whatsNew": {{ $.lcl.upd_whats_new }}, "onGitHub": {{ $.lcl.upd_on_github }}, "later": {{ $.lcl.upd_later }}, "now": {{ $.lcl.upd_now }}, "safety": {{ $.lcl.upd_safety }}, "downloading": {{ $.lcl.upd_downloading }}, "restarting": {{ $.lcl.upd_restarting }}, "done": {{ $.lcl.upd_done }}, "slow": {{ $.lcl.upd_slow }}, "failed": {{ $.lcl.upd_failed }}, "docker": {{ $.lcl.upd_docker }}, "manual": {{ $.lcl.upd_manual }}, "close": {{ $.lcl.title_close }}}</script>

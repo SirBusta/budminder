@@ -324,6 +324,18 @@ func main() {
 	if demoCopies != nil { // never a typed nil in the interface
 		engineCfg.DemoCopies = demoCopies
 	}
+	// Compress existing photos (Settings > Photos): a run BudMinder was
+	// closed during is paused; its backup folder goes 7 days after it ends.
+	photoSvc := handlers.NewPhotoCompressService(db, engineCfg.DataDir, engineCfg.UploadDir)
+	photoSvc.Desktop = !launcher.InDocker()
+	engineCfg.PhotoCompressService = photoSvc
+	if !demoMode {
+		bgWG.Add(1)
+		go func() {
+			defer bgWG.Done()
+			photoSvc.RunCleanup(ctx.Done())
+		}()
+	}
 	engine, err := app.NewEngine(engineCfg)
 	if err != nil {
 		logger.Log.WithError(err).Fatal("Failed to construct HTTP engine")

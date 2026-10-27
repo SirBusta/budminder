@@ -359,6 +359,141 @@
                 </div>
             </section>
 
+            <!-- ============================= Photos ============================= -->
+            {{/* Photo size (mockup data/mockups/settings/photos/v5.html):
+                 Keep originals or Compression Options, the quality, the
+                 compare page, and Compress existing photos
+                 (js/settings-photos.js, handlers/photo_settings_http.go). */}}
+            <section class="st-sec" data-sec="photos" data-title="{{ .lcl.st_sec_photos }}" data-desc="{{ .lcl.st_sec_photos_desc }}">
+                <h2 class="st-sec-h"><i class="fa-solid fa-images"></i>{{ .lcl.st_sec_photos }}<a href="#photos" data-goto="photos">{{ .lcl.st_go_to_section }} <i class="fa-solid fa-arrow-right"></i></a></h2>
+
+                <div class="st-card" id="pcCard" data-quality="{{ .photos.Quality }}" data-compress="{{ .photos.Compress }}" data-state="{{ .photos.Status.State }}">
+                    <div class="st-card-h"><i class="fa-solid fa-file-zipper"></i><div>
+                        <h3>{{ .lcl.pc_card_title }}</h3>
+                        <p>{{ .lcl.pc_card_desc }}</p>
+                    </div></div>
+
+                    <div class="st-row">
+                        <div class="st-row-l"><span class="st-label">{{ .lcl.pc_when_added }}</span><small class="pc-locked d-none" id="pcLocked">{{ .lcl.pc_locked_note }}</small></div>
+                        <div class="st-row-r"><div class="sx-seg" id="pcMode" role="group" aria-label="{{ .lcl.pc_when_added }}">
+                            <button type="button" data-v="keep"{{ if not .photos.Compress }} class="on"{{ end }}>{{ .lcl.pc_keep }}</button>
+                            <button type="button" data-v="compress"{{ if .photos.Compress }} class="on"{{ end }}>{{ .lcl.pc_compress }}</button>
+                        </div></div>
+                    </div>
+
+                    <div class="pc-more{{ if not .photos.Compress }} off{{ end }}" id="pcMore"{{ if not .photos.Compress }} inert{{ end }}>
+                        <div class="st-row">
+                            <div class="st-row-l"><label for="pcQ">{{ .lcl.pc_quality }}</label><small id="pcEst"></small></div>
+                            <div class="st-row-r pc-q">
+                                <select class="form-select form-select-sm" id="pcQ">
+                                    {{ range .photos.Qualities }}<option value="{{ . }}"{{ if eq . $.photos.Quality }} selected{{ end }}>{{ if eq . 90 }}{{ fill $.lcl.pc_q_best "q" . }}{{ else if eq . 75 }}{{ fill $.lcl.pc_q_recommended "q" . }}{{ else if eq . 50 }}{{ fill $.lcl.pc_q_smallest "q" . }}{{ else }}{{ . }}{{ end }}</option>{{ end }}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="pc-foot"><i class="fa-solid fa-circle-info me-1"></i>{{ .lcl.pc_foot }}</div>
+
+                        <div class="pc-cta">
+                            <a class="st-btn" href="/settings/photos/compare" target="_blank" rel="noopener">{{ .lcl.pc_compare_btn }} <i class="fa-solid fa-arrow-up-right-from-square ms-2"></i></a>
+                            <small>{{ .lcl.pc_compare_hint }}</small>
+                        </div>
+
+                        <a class="pc-ab" href="/settings/photos/compare" target="_blank" rel="noopener" aria-label="{{ .lcl.pc_ab_label }}">
+                            <img src="/static/img/compare-samples/ab-wide.jpg" alt="">
+                            <span class="ring r1"><img src="/static/img/compare-samples/ab-original.png" alt=""></span>
+                            <span class="eq">=</span>
+                            <span class="ring r2"><img src="/static/img/compare-samples/ab-compressed.png" alt=""></span>
+                            <span class="chip c1" id="pcAbOrig"></span>
+                            <span class="chip g c2" id="pcAbComp"></span>
+                        </a>
+
+                        <!-- Existing photos -->
+                        <div class="st-row" id="pcExRow">
+                            <div class="st-row-l">
+                                <span class="st-label">{{ .lcl.pc_existing }}</span>
+                                <small>{{ .lcl.pc_existing_desc }}</small>
+
+                                <div class="ex-stats" id="pcStats">
+                                    <span class="ex-stat"><b id="pcCount">…</b>{{ .lcl.pc_stat_count }}</span>
+                                    <span class="ex-stat"><b id="pcBytes">…</b>{{ .lcl.pc_stat_now }}</span>
+                                    <span class="ex-stat g"><b id="pcSave">…</b>{{ .lcl.pc_stat_saving }}</span>
+                                </div>
+                                <small class="d-none" id="pcNone"><i class="fa-solid fa-circle-check text-success me-1"></i>{{ .lcl.pc_none_left }}</small>
+
+                                <div class="ex-pause d-none" id="pcPause">
+                                    <i class="fa-solid fa-circle-pause me-1"></i><b>{{ .lcl.pc_paused_title }}</b> <span id="pcPauseWhy"></span> <span id="pcPauseTxt"></span>
+                                    <div class="progress"><div class="progress-bar bg-warning" id="pcPauseBar"></div></div>
+                                </div>
+
+                                <div class="ex-prog d-none" id="pcProg">
+                                    <div class="progress"><div class="progress-bar bg-success" id="pcBar"></div></div>
+                                    <small id="pcProgTxt"></small>
+                                </div>
+                            </div>
+                            <div class="st-row-r">
+                                <button type="button" class="st-btn" id="pcGo" disabled><i class="fa-solid fa-file-zipper me-1"></i>{{ .lcl.pc_go }}</button>
+                                <button type="button" class="st-btn light d-none" id="pcStop"><i class="fa-solid fa-stop me-1"></i>{{ .lcl.pc_stop }}</button>
+                                <div class="d-none" id="pcPauseBtns"><div class="d-flex flex-column gap-2 align-items-stretch">
+                                    <button type="button" class="st-btn justify-content-center" id="pcResume"><i class="fa-solid fa-play me-1"></i>{{ .lcl.pc_resume }}</button>
+                                    <button type="button" class="st-btn light justify-content-center" id="pcFinish">{{ .lcl.pc_finish }}</button>
+                                </div></div>
+                            </div>
+                        </div>
+
+                        <div class="ex-done d-none" id="pcDone">
+                            <h4><i class="fa-solid fa-circle-check me-1"></i><span id="pcDoneTitle"></span></h4>
+                            <div id="pcDoneSaved"></div>
+                            <div id="pcDoneBackup">
+                                <div class="mt-2">{{ .lcl.pc_done_backup_intro }}</div>
+                                <div class="ex-path">
+                                    <code id="pcPath"></code>
+                                    <button type="button" class="st-btn light sm" id="pcCopy"><i class="fa-regular fa-copy me-1"></i>{{ .lcl.pc_copy }}</button>
+                                    <button type="button" class="st-btn light sm d-none" id="pcOpen"><i class="fa-regular fa-folder-open me-1"></i>{{ .lcl.pc_open_folder }}</button>
+                                </div>
+                                <div>{{ .lcl.pc_done_look }}</div>
+                                <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
+                                    <span class="ex-timer"><i class="fa-regular fa-clock"></i><span id="pcTimer"></span></span>
+                                    <button type="button" class="st-btn danger sm ms-auto" id="pcDel"><i class="fa-solid fa-trash-can me-1"></i>{{ .lcl.pc_delete_backup }}</button>
+                                </div>
+                            </div>
+                            <div class="d-none mt-1" id="pcDoneGone"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Confirm: Compress existing photos -->
+                <div class="modal fade sx" id="pcDlg" tabindex="-1" aria-labelledby="pcDlgT" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered"><div class="modal-content pc-dlg">
+                        <div class="modal-body">
+                            <h3 id="pcDlgT"></h3>
+                            <ul>
+                                <li id="pcDlgQ"></li>
+                                <li>{{ .lcl.pc_skip }}</li>
+                                <li>{{ .lcl.pc_dlg_background }}</li>
+                            </ul>
+                            <div class="dlg-warn"><i class="fa-solid fa-triangle-exclamation me-1"></i>{{ .lcl.pc_dlg_warn }}</div>
+                            <label class="dlg-bk">
+                                <input type="checkbox" class="form-check-input" id="pcDlgBk" checked>
+                                <span><b>{{ .lcl.pc_dlg_backup }}</b>
+                                <small id="pcDlgBkTxt"></small></span>
+                            </label>
+                            <div class="dlg-act">
+                                <button type="button" class="st-btn light" data-bs-dismiss="modal">{{ .lcl.cancel }}</button>
+                                <button type="button" class="st-btn" id="pcDlgYes"><i class="fa-solid fa-file-zipper me-1"></i><span></span></button>
+                            </div>
+                        </div>
+                    </div></div>
+                </div>
+                <script type="application/json" id="pcText">{"est": {{ .lcl.pc_estimate }}, "abOrig": {{ .lcl.pc_ab_original }}, "abComp": {{ .lcl.pc_ab_compressed }},
+                    "dlgTitle": {{ .lcl.pc_dlg_title }}, "dlgTitleOne": {{ .lcl.pc_dlg_title_one }}, "dlgQ": {{ .lcl.pc_dlg_quality }}, "dlgBk": {{ .lcl.pc_dlg_backup_desc }},
+                    "dlgYes": {{ .lcl.pc_dlg_yes }}, "dlgYesOne": {{ .lcl.pc_dlg_yes_one }}, "dlgNoBk": {{ .lcl.pc_dlg_yes_nobackup }},
+                    "progBackup": {{ .lcl.pc_prog_backup }}, "progCompress": {{ .lcl.pc_prog_compress }}, "progLeft": {{ .lcl.pc_prog_left }},
+                    "whyClosed": {{ .lcl.pc_paused_why_closed }}, "whyStopped": {{ .lcl.pc_paused_why_stopped }}, "whyError": {{ .lcl.pc_paused_why_error }},
+                    "pauseTxt": {{ .lcl.pc_paused_progress }}, "doneTitle": {{ .lcl.pc_done_title }}, "doneSaved": {{ .lcl.pc_done_saved }},
+                    "timer": {{ .lcl.pc_done_timer }}, "days": {{ .lcl.pc_days }}, "dayOne": {{ .lcl.pc_day_one }}, "hours": {{ .lcl.pc_hours }},
+                    "gone": {{ .lcl.pc_backup_deleted }}, "noBackup": {{ .lcl.pc_no_backup }}, "copied": {{ .lcl.pc_copied }},
+                    "confirmDel": {{ .lcl.pc_confirm_delete }}, "failed": {{ .lcl.failed_to_save_settings }}}</script>
+            </section>
+
             <!-- ========================== Appearance ========================== -->
             <section class="st-sec" data-sec="appearance" data-title="{{ .lcl.st_sec_appearance }}" data-desc="{{ .lcl.st_sec_appearance_desc }}">
                 <h2 class="st-sec-h"><i class="fa-solid fa-palette"></i>{{ .lcl.st_sec_appearance }}<a href="#appearance" data-goto="appearance">{{ .lcl.st_go_to_section }} <i class="fa-solid fa-arrow-right"></i></a></h2>
@@ -2366,6 +2501,7 @@
 </script>
 
 <script src="/static/js/settings-page.js" defer></script>
+<script src="/static/js/settings-photos.js" defer></script>
 
 <!--Embed the footer.html template at this location-->
 <script src="/static/js/smoke-settings.js" defer></script>

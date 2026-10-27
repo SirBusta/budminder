@@ -149,4 +149,10 @@ type Config struct {
 	// service whose grouped TTL closure reads from the engine's
 	// *config.Store.
 	SensorCacheService *handlers.SensorCacheService
+
+	// PhotoCompressService, if non-nil, runs Compress existing photos
+	// (Settings > Photos). Production builds it in main (to start the
+	// backup cleanup); otherwise NewEngine makes one from DataDir and
+	// UploadDir.
+	PhotoCompressService *handlers.PhotoCompressService
 }

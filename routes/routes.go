@@ -392,6 +392,20 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.POST("/settings/backup/sqlite/upload", handlers.UploadSQLiteDB)
 	r.POST("/record-multi-activity", handlers.RecordMultiPlantActivity)
 	r.POST("/settings", handlers.SaveSettings)
+	// Settings > Photos and the compare page.
+	r.POST("/settings/photos", handlers.SavePhotoSettingsHandler)
+	r.GET("/settings/photos/existing", handlers.ExistingPhotosHandler)
+	r.GET("/settings/photos/existing/status", handlers.PhotoJobStatusHandler)
+	r.POST("/settings/photos/existing/start", handlers.StartPhotoJobHandler)
+	r.POST("/settings/photos/existing/stop", handlers.StopPhotoJobHandler)
+	r.POST("/settings/photos/existing/resume", handlers.ResumePhotoJobHandler)
+	r.POST("/settings/photos/existing/finish", handlers.FinishPhotoJobHandler)
+	r.DELETE("/settings/photos/existing/backup", handlers.DeletePhotoBackupHandler)
+	r.POST("/settings/photos/existing/backup/open", handlers.OpenPhotoBackupHandler)
+	r.GET("/settings/photos/compare/photos", handlers.ComparePhotosHandler)
+	r.GET("/settings/photos/compare/sizes", handlers.ComparePhotoSizesHandler)
+	r.GET("/settings/photos/compare/image", handlers.ComparePhotoImageHandler)
+	r.GET("/settings/photos/compare/thumb", handlers.ComparePhotoThumbHandler)
 	r.POST("/settings/homeassistant/test", handlers.TestHomeAssistantHandler)
 	r.POST("/tour/answered", handlers.TourAnsweredHandler)
 	r.GET("/updates/status", handlers.UpdateStatusHandler)
@@ -510,12 +524,29 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 			"breederStrainCounts": handlers.BreederStrainCounts(db),
 			// Grow setup → Smoke reports: weights and which fields the form shows.
 			"smokeSettings":   handlers.LoadSmokeSettings(db),
+			"photos":          handlers.PhotoSettingsPageData(c),
 			"streams":         handlers.GetStreams(db),
 			"loggedIn":        sessions.Default(c).Get("logged_in"),
 			"lcl":             translations,
 			"languages":       utils.AvailableLanguages,
 			"currentLanguage": lang,
 			"dbDriver":        model.GetDriver(),
+			"csrfToken":       c.GetString("csrf_token"),
+			"cspNonce":        c.GetString("cspNonce"),
+		})
+	})
+
+	// Compare photo qualities (Settings > Photos opens it in a new tab).
+	r.GET("/settings/photos/compare", func(c *gin.Context) {
+		lang := utils.GetLanguage(c)
+		c.HTML(http.StatusOK, "views/photo-compare.html", gin.H{
+			"title":           "Compare photo quality",
+			"version":         version,
+			"photos":          handlers.PhotoSettingsPageData(c),
+			"samples":         handlers.PhotoSamples,
+			"loggedIn":        sessions.Default(c).Get("logged_in"),
+			"lcl":             utils.TranslationService.GetTranslations(lang),
+			"currentLanguage": lang,
 			"csrfToken":       c.GetString("csrf_token"),
 			"cspNonce":        c.GetString("cspNonce"),
 		})

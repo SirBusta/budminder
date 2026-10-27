@@ -102,7 +102,12 @@ func NewEngine(cfg Config) (*gin.Engine, error) {
 	r.Use(securityHeadersMiddleware(configStore, hstsHeaderValue(cfg)))
 	r.Use(currentPathMiddleware())
 
-	templ, err := parseTemplates(cfg.Assets, configStore, cfg.Demo, cfg.Updates)
+	photoSvc := cfg.PhotoCompressService
+	if photoSvc == nil {
+		photoSvc = handlers.NewPhotoCompressService(cfg.DB, cfg.DataDir, cfg.UploadDir)
+	}
+
+	templ, err := parseTemplates(cfg.Assets, configStore, cfg.Demo, cfg.Updates, photoSvc)
 	if err != nil {
 		return nil, fmt.Errorf("parse templates: %w", err)
 	}
@@ -136,6 +141,10 @@ func NewEngine(cfg Config) (*gin.Engine, error) {
 		backupSvc = handlers.NewBackupService(cfg.DB, cfg.DataDir)
 	}
 	r.Use(backupServiceMiddleware(backupSvc))
+	r.Use(func(c *gin.Context) {
+		handlers.SetPhotoCompressOnContext(c, photoSvc)
+		c.Next()
+	})
 
 	rateLimiterSvc := cfg.RateLimiterService
 	if rateLimiterSvc == nil {
@@ -386,8 +395,16 @@ func pathDirsMiddleware(uploadDir, streamDir, logsDir string) gin.HandlerFunc {
 // Templates and static assets
 // ---------------------------------------------------------------------------
 
-func parseTemplates(assets fs.FS, store *config.Store, demo bool, up *handlers.Updates) (*template.Template, error) {
+func parseTemplates(assets fs.FS, store *config.Store, demo bool, up *handlers.Updates, photos *handlers.PhotoCompressService) (*template.Template, error) {
 	funcMap := buildFuncMap(store)
+	// photoJob: the compress-existing-photos run, for the line under the top
+	// menu (header2.html).
+	funcMap["photoJob"] = func() handlers.PhotoJobStatus {
+		if photos == nil {
+			return handlers.PhotoJobStatus{}
+		}
+		return photos.Status()
+	}
 	// demoMode: the demo banner and script (header.html).
 	funcMap["demoMode"] = func() bool { return demo }
 	// updateAvailable: the newer release's version, or "" (the "New release"

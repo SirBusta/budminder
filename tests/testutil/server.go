@@ -67,6 +67,9 @@ type TestServer struct {
 	// process-global config.
 	ConfigStore *config.Store
 
+	// PhotoCompress is the engine's Compress existing photos service.
+	PhotoCompress *handlers.PhotoCompressService
+
 	// SensorCacheService is the per-engine *handlers.SensorCacheService
 	// that owns the chart and grouped-sensor caches. Tests reach for
 	// this handle when they need to assert against cache state directly
@@ -247,6 +250,18 @@ func NewTestServer(t *testing.T, db *sql.DB, opts ...ServerOption) *TestServer {
 		}, 0)
 	}
 
+	// Compress existing photos writes its state and backups under the data
+	// folder: a per-test one unless the test gave its own.
+	photoData := options.dataDir
+	if photoData == "" {
+		photoData = t.TempDir()
+	}
+	photoUploads := options.uploadDir
+	if photoUploads == "" {
+		photoUploads = handlers.DefaultUploadDir
+	}
+	photoSvc := handlers.NewPhotoCompressService(db, photoData, photoUploads)
+
 	engineCfg := app.Config{
 		DB:                 db,
 		Assets:             os.DirFS(root),
@@ -266,6 +281,8 @@ func NewTestServer(t *testing.T, db *sql.DB, opts ...ServerOption) *TestServer {
 		RateLimiterService: rateLimiterSvc,
 		SensorCacheService: sensorCacheSvc,
 		Updates:            options.updates,
+
+		PhotoCompressService: photoSvc,
 	}
 	var demoCopies *demo.Copies
 	if options.demo {
@@ -302,6 +319,7 @@ func NewTestServer(t *testing.T, db *sql.DB, opts ...ServerOption) *TestServer {
 		BackupService:      backupSvc,
 		ConfigStore:        configStore,
 		SensorCacheService: sensorCacheSvc,
+		PhotoCompress:      photoSvc,
 	}
 }
 

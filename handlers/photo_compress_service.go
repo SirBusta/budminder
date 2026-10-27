@@ -77,6 +77,7 @@ type PhotoJob struct {
 	StartedAt   time.Time     `json:"started_at"`
 	FinishedAt  time.Time     `json:"finished_at,omitempty"`
 	Error       string        `json:"error,omitempty"` // why the run paused itself (e.g. disk full)
+	Interrupted bool          `json:"interrupted,omitempty"` // paused because BudMinder was closed
 	Earlier     []PhotoBackup `json:"earlier,omitempty"`
 }
 
@@ -111,6 +112,8 @@ type PhotoCompressService struct {
 	backupN  int           // phase 1 progress (memory only)
 	backupOf int
 
+	compare *photoComparer // the compare page's cache
+
 	estMu    sync.Mutex
 	estKey   string
 	estCache map[int]PhotoEstimate
@@ -125,13 +128,13 @@ func NewPhotoCompressService(db *sql.DB, dataDir, uploadDir string) *PhotoCompre
 	if uploadDir == "" {
 		uploadDir = DefaultUploadDir
 	}
-	s := &PhotoCompressService{db: db, dataDir: dataDir, uploadDir: uploadDir, now: time.Now}
+	s := &PhotoCompressService{db: db, dataDir: dataDir, uploadDir: uploadDir, now: time.Now, compare: newPhotoComparer()}
 	if b, err := os.ReadFile(s.jobPath()); err == nil {
 		var j PhotoJob
 		if json.Unmarshal(b, &j) == nil && j.State != "" {
 			s.job = &j
 			if j.State == PhotoJobRunning {
-				j.State = PhotoJobPaused
+				j.State, j.Interrupted = PhotoJobPaused, true
 				s.saveLocked()
 			}
 		}
@@ -343,7 +346,7 @@ func (s *PhotoCompressService) Resume() error {
 	if s.job == nil || s.job.State != PhotoJobPaused || s.active {
 		return ErrPhotoJobNotPaused
 	}
-	s.job.State, s.job.Error = PhotoJobRunning, ""
+	s.job.State, s.job.Error, s.job.Interrupted = PhotoJobRunning, "", false
 	s.saveLocked()
 	s.launchLocked()
 	return nil
@@ -377,7 +380,7 @@ func (s *PhotoCompressService) Finish() error {
 }
 
 func (s *PhotoCompressService) finishLocked() {
-	s.job.State, s.job.FinishedAt, s.job.Error = PhotoJobFinished, s.now(), ""
+	s.job.State, s.job.FinishedAt, s.job.Error, s.job.Interrupted = PhotoJobFinished, s.now(), "", false
 	if s.job.BackupDir != "" && !s.job.BackupDone {
 		// Stopped while copying: no photo was compressed, so the partial
 		// copy isn't needed.
@@ -699,6 +702,8 @@ type PhotoJobStatus struct {
 	DeletesAt   time.Time `json:"deletes_at,omitempty"`
 	CanOpen     bool      `json:"can_open"`
 	Error       string    `json:"error,omitempty"`
+	Interrupted bool      `json:"interrupted"`
+	FinishedAt  time.Time `json:"finished_at,omitempty"`
 }
 
 // Status describes the run for the pages.
@@ -712,7 +717,7 @@ func (s *PhotoCompressService) Status() PhotoJobStatus {
 	st := PhotoJobStatus{
 		State: j.State, Quality: j.Quality, Total: j.Total, Done: j.Done, Left: max(0, j.Total-j.Done),
 		Compressed: j.Compressed, Kept: j.Kept, BytesBefore: j.BytesBefore, SavedBytes: j.SavedBytes,
-		BackupGone: j.BackupGone, Error: j.Error,
+		BackupGone: j.BackupGone, Error: j.Error, Interrupted: j.Interrupted, FinishedAt: j.FinishedAt,
 	}
 	if j.State == PhotoJobRunning {
 		st.Phase = "compress"
