@@ -35,7 +35,9 @@ func (w *Watcher) RefreshHourlyRollups() error {
 
 // runRollup executes the actual aggregation query. When fullBackfill
 // is false it only processes the last 25 hours (overlap by 1 hour to
-// catch late-arriving data).
+// catch late-arriving data). The cutoff is rounded down to the start of
+// its hour: each run replaces whole buckets, so a cutoff mid-hour would
+// rewrite the oldest bucket from only its last few minutes.
 //
 // The whole aggregation is one statement, so on SQLite it holds the
 // database-wide write lock for as long as it runs; any other write
@@ -94,7 +96,7 @@ func sqliteRollupQuery(fullBackfill, pinIndex bool) string {
 
 	whereClause := ""
 	if !fullBackfill {
-		whereClause = "WHERE sd.create_dt > datetime('now', '-25 hours')"
+		whereClause = "WHERE sd.create_dt >= strftime('%%Y-%%m-%%d %%H:00:00', 'now', '-25 hours')"
 	}
 
 	return fmt.Sprintf(`
@@ -115,7 +117,7 @@ func sqliteRollupQuery(fullBackfill, pinIndex bool) string {
 func buildPostgresRollupQuery(fullBackfill bool) string {
 	whereClause := ""
 	if !fullBackfill {
-		whereClause = "WHERE sd.create_dt > NOW() - INTERVAL '25 hours'"
+		whereClause = "WHERE sd.create_dt >= date_trunc('hour', NOW() - INTERVAL '25 hours')"
 	}
 
 	return fmt.Sprintf(`

@@ -192,6 +192,31 @@ func TestRefreshHourlyRollups_IncrementalSkipsOldData(t *testing.T) {
 	assert.Equal(t, 3, n)
 }
 
+// TestRefreshHourlyRollups_IncrementalKeepsWholeOldestHour: the incremental
+// run replaces whole buckets, so the hour the 25-hour cutoff falls in must
+// be rebuilt from all its readings, not just those after the cutoff.
+func TestRefreshHourlyRollups_IncrementalKeepsWholeOldestHour(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	id := seedSensor(t, db, "test", "dev", "temp")
+
+	cutoff := time.Now().UTC().Add(-25 * time.Hour)
+	hourStart := cutoff.Truncate(time.Hour)
+	readingsAt(t, db, id, hourStart, 10)                                    // before the cutoff
+	readingsAt(t, db, id, hourStart.Add(59*time.Minute+59*time.Second), 30) // after it, same hour
+
+	w := newTestWatcher(t, db)
+	require.NoError(t, w.RefreshHourlyRollups()) // full backfill
+	require.NoError(t, w.RefreshHourlyRollups()) // incremental
+
+	minV, maxV, avgV, n := hourlyBucket(t, db, id, hourStart.Format("2006-01-02 15:00:00"))
+	assert.Equal(t, 2, n, "the oldest hour keeps both readings")
+	assert.InDelta(t, 10.0, minV, 0.0001)
+	assert.InDelta(t, 30.0, maxV, 0.0001)
+	assert.InDelta(t, 20.0, avgV, 0.0001)
+}
+
 // TestRefreshHourlyRollups_IncrementalUpdatesInWindowBucket asserts the
 // UPSERT semantics: when a rollup bucket already exists and new raw
 // data arrives within the 25-hour window, the existing row is updated

@@ -264,7 +264,7 @@ func (m *Copies) roll(now time.Time) {
 // the watcher here would loop through the test helpers.)
 const rollupSQL = `INSERT OR REPLACE INTO sensor_data_hourly (sensor_id, bucket, min_val, max_val, avg_val, sample_count)
 	SELECT sensor_id, strftime('%Y-%m-%d %H:00:00', create_dt), MIN(value), MAX(value), AVG(value), COUNT(*)
-	FROM sensor_data WHERE create_dt > datetime('now', '-25 hours')
+	FROM sensor_data WHERE create_dt >= strftime('%Y-%m-%d %H:00:00', 'now', '-25 hours')
 	GROUP BY sensor_id, strftime('%Y-%m-%d %H:00:00', create_dt)`
 
 // keepLive repeats each sensor's readings from a day earlier up to now, and
