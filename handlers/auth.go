@@ -130,6 +130,14 @@ func AuthMiddlewareApi() gin.HandlerFunc {
 		loggedIn := session.Get("logged_in")
 
 		if apiKey != "" {
+			badKeys := RateLimiterServiceFromContext(c).BadAPIKey()
+			if badKeys.Blocked(c.ClientIP()) {
+				c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
+					"error": T(c, "api_rate_limit_exceeded"),
+				})
+				return
+			}
+
 			// Get stored (hashed) API key from settings
 			db := DBFromContext(c)
 
@@ -148,6 +156,7 @@ func AuthMiddlewareApi() gin.HandlerFunc {
 			// plaintext matches for backward compatibility.
 			match, legacy := CheckAPIKey(apiKey, storedAPIKey)
 			if !match {
+				badKeys.Record(c.ClientIP())
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 					"error": "Invalid API key",
 				})

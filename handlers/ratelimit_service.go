@@ -58,6 +58,27 @@ func (rl *LoginRateLimiter) Allow(key string) bool {
 	return len(recent) <= rl.limit
 }
 
+// Blocked reports whether key already has `limit` attempts in the
+// trailing window, without recording one. With Record, it counts only
+// failures (wrong API keys) rather than every attempt.
+func (rl *LoginRateLimiter) Blocked(key string) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	cutoff := time.Now().Add(-rl.window)
+	n := 0
+	for _, t := range rl.attempts[key] {
+		if t.After(cutoff) {
+			n++
+		}
+	}
+	return n >= rl.limit
+}
+
+// Record counts one attempt for key (see Blocked).
+func (rl *LoginRateLimiter) Record(key string) {
+	rl.Allow(key)
+}
+
 // Reset clears all per-key state. Production code does not call
 // this; tests do, between cases.
 func (rl *LoginRateLimiter) Reset() {
@@ -93,6 +114,7 @@ type RateLimiterService struct {
 	mu     sync.RWMutex
 	ingest *RateLimiter
 	login  *LoginRateLimiter
+	badKey *LoginRateLimiter // wrong X-API-KEYs per client address
 }
 
 const contextKeyRateLimiterService = "rateLimiterService"
@@ -102,6 +124,11 @@ const contextKeyRateLimiterService = "rateLimiterService"
 // Mirrors the value the package-global IngestRateLimiter used before
 // Phase 4.1.
 const defaultIngestPerMinute = 60
+
+// MaxBadAPIKeysPerMinute is how many wrong X-API-KEYs one address may send
+// per minute. Past it, keys from that address are refused before the
+// (deliberately slow) bcrypt check, so guessing can't tie up the CPU.
+const MaxBadAPIKeysPerMinute = 10
 
 // NewRateLimiterService returns a service holding the supplied
 // limiters. A nil ingest or login argument is replaced with a
@@ -115,7 +142,15 @@ func NewRateLimiterService(ingest *RateLimiter, login *LoginRateLimiter) *RateLi
 	if login == nil {
 		login = NewLoginRateLimiter(MaxLoginAttempts, time.Minute)
 	}
-	return &RateLimiterService{ingest: ingest, login: login}
+	return &RateLimiterService{ingest: ingest, login: login,
+		badKey: NewLoginRateLimiter(MaxBadAPIKeysPerMinute, time.Minute)}
+}
+
+// BadAPIKey returns the wrong-API-key limiter (see MaxBadAPIKeysPerMinute).
+func (s *RateLimiterService) BadAPIKey() *LoginRateLimiter {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.badKey
 }
 
 // Ingest returns the current ingest limiter. Callers should treat
