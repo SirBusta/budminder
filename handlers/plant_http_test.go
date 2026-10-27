@@ -157,6 +157,39 @@ func TestPlantHTTP_Update_RejectsLongDescription(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
+// A blank or made-up start date used to be stored as-is; on SQLite that
+// broke the plant's pages and every plant list until the DB was hand-edited.
+func TestPlantHTTP_Update_RejectsBlankOrBadStartDate(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db)
+	apiKey := plantTestSeed(t, db)
+
+	plantID := testutil.SeedPlant(t, db, "Dated", 1, 1)
+	var before string
+	require.NoError(t, db.QueryRow(`SELECT start_dt FROM plant WHERE id = $1`, plantID).Scan(&before))
+
+	c := server.NewClient(t)
+	for _, date := range []string{"", "  ", "abc"} {
+		resp, err := c.Do(testutil.APIReq(t, http.MethodPost, c.BaseURL+"/plant", apiKey,
+			testutil.JSONBody(t, map[string]interface{}{
+				"plant_id":   plantID,
+				"plant_name": "Dated",
+				"zone_id":    1,
+				"strain_id":  1,
+				"start_date": date,
+			}), "application/json"))
+		require.NoError(t, err)
+		testutil.DrainAndClose(resp)
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "start_date %q", date)
+	}
+
+	var after string
+	require.NoError(t, db.QueryRow(`SELECT start_dt FROM plant WHERE id = $1`, plantID).Scan(&after))
+	assert.Equal(t, before, after, "start date unchanged")
+}
+
 func TestPlantHTTP_Update_RejectsBadJSON(t *testing.T) {
 	t.Parallel()
 

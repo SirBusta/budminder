@@ -45,6 +45,15 @@ func ValidateRequiredString(field, value string, maxLen int) error {
 	return ValidateStringLength(field, value, maxLen)
 }
 
+// ValidateRequiredDate is ValidateDate with empty input refused. A blank
+// date stored on SQLite makes every later scan of that column fail.
+func ValidateRequiredDate(field, value string) error {
+	if strings.TrimSpace(value) == "" {
+		return fmt.Errorf("%s is required", field)
+	}
+	return ValidateDate(field, value)
+}
+
 // ValidateDate parses a date string emitted by the UI's <input type=date> or
 // <input type=datetime-local> controls. Empty input is allowed; pair with
 // ValidateRequiredString when the field is required.

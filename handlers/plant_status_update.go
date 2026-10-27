@@ -79,6 +79,11 @@ func UpdatePlantStatus(c *gin.Context) {
 		return
 	}
 
+	if err := utils.ValidateDate("date", input.Date); err != nil {
+		apiBadRequest(c, err.Error())
+		return
+	}
+
 	db := DBFromContext(c)
 
 	updated, newID, err := updatePlantStatusLog(db, input.PlantID, input.StatusID, input.Date)

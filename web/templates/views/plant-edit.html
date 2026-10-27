@@ -84,8 +84,8 @@
 
                             <!-- Start Date -->
                             <div class="col-md-6">
-                                <label for="startDate" class="form-label">{{ .lcl.start_date }}</label>
-                                <input type="date" class="form-control" id="startDate" data-stored="{{ .plant.StartDT | formatDateTimeLocal }}">
+                                <label for="startDate" class="form-label required">{{ .lcl.start_date }}</label>
+                                <input type="date" class="form-control" id="startDate" required data-stored="{{ .plant.StartDT | formatDateTimeLocal }}">
                             </div>
                         </div>
                     </div>

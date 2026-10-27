@@ -47,6 +47,10 @@ func AddPlant(c *gin.Context) {
 		apiBadRequest(c, err.Error())
 		return
 	}
+	if err := utils.ValidateRequiredDate("date", input.Date); err != nil {
+		apiBadRequest(c, err.Error())
+		return
+	}
 	if err := utils.ValidateStringLength("new_zone", input.NewZone, utils.MaxNameLength); err != nil {
 		apiBadRequest(c, err.Error())
 		return
@@ -998,6 +1002,14 @@ func UpdatePlant(c *gin.Context) {
 	}
 	// Validate string lengths
 	if err := utils.ValidateStringLength("plant_name", input.PlantName, utils.MaxNameLength); err != nil {
+		apiBadRequest(c, err.Error())
+		return
+	}
+	if err := utils.ValidateRequiredDate("start_date", input.StartDT); err != nil {
+		apiBadRequest(c, err.Error())
+		return
+	}
+	if err := utils.ValidateDate("date", input.Date); err != nil {
 		apiBadRequest(c, err.Error())
 		return
 	}
