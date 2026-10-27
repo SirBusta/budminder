@@ -34,7 +34,7 @@ func TestPlantPagesAndLists_Postgres(t *testing.T) {
 	require.NoError(t, err)
 
 	p := handlers.GetPlant(db, strconv.Itoa(plantID))
-	assert.Equal(t, plantID, p.ID, "plant page loads")
+	assert.EqualValues(t, plantID, p.ID, "plant page loads")
 
 	rows, err := handlers.LoadPlantsList(db)
 	require.NoError(t, err)
