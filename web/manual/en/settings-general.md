@@ -1,4 +1,4 @@
-Click **Settings** in the top navigation menu to open system configuration. Settings are organized into dedicated sections in the left sidebar: General, Integrations, Grow setup, Appearance, Cameras, Backup & data and Logs. Use the top search bar to find any setting quickly by keyword. Every preference saves automatically in the background as you adjust it, so there is no need for a manual save button.
+Click **Settings** in the top navigation menu to open system configuration. Settings are organized into dedicated sections in the left sidebar: General, Integrations, Grow setup, Photos, Appearance, Cameras, Backup & data and Logs. Use the top search bar to find any setting quickly by keyword. Every preference saves automatically in the background as you adjust it, so there is no need for a manual save button.
 
 ## Region & display
 
@@ -19,6 +19,7 @@ Click **Change username or password** to change what you sign in with. See [Firs
 
 - **Integrations**: configure AC Infinity, Ecowitt, Home Assistant, StrainCompass, CannaDB and custom REST API keys. See [Integrations and API key](/manual/integrations).
 - **Grow setup**: manage tent zones, logged activities, custom metrics, target VPD curves, breeders and smoke report fields. See [Grow setup](/manual/grow-setup).
+- **Photos**: keep photos as uploaded or compress new plant photos, compare qualities and compress photos already in BudMinder. See [Photos](/manual/photos#photo-size-and-compression).
 - **Appearance**: upload a brand watermark or logo used by the **Decorate** tool on photos. See [Photos](/manual/photos#decorate).
 - **Cameras**: configure camera endpoints and stream grabs. See [Tent cameras](/manual/tent-cameras).
 - **Backup & data**: manage database backups and retention policies. See [Backup and restore](/manual/backup-and-restore).

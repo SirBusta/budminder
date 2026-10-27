@@ -24,6 +24,10 @@ To migrate BudMinder to a new computer or server, generate a backup on the origi
 
 If you don't need the sensor history, check **Skip sensor data** to restore everything else.
 
+## Photo backups before compression
+
+**Compress existing photos** (Settings → Photos) can copy the original photos to a separate folder, `data/backups/photos-before-compression-<date>`, before it compresses them. That folder is not a BudMinder backup: it is not listed under **Available Backups**, cannot be restored from this page, and is deleted automatically 7 days after the run finished. See [Photos](/manual/photos#photo-size-and-compression).
+
 ## SQLite file transfer
 
 Under **Advanced: SQLite File Transfer**, you can download the raw database file directly (**Download .db File**) or swap out the active database by uploading an existing file (**Replace Database**). This provides a fast method for duplicating an entire SQLite installation. Note that raw database transfers do not include media files, which reside separately in the server's uploads folder.
