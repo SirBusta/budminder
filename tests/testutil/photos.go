@@ -62,3 +62,26 @@ func PhonePhotoJPEG(t *testing.T, secret string) []byte {
 	out = append(out, plain[2:]...)
 	return append(out, secret...)
 }
+
+// DetailedPhotoJPEG is a 320x240 photo-like JPEG saved at quality 100, so
+// compressing it (Settings > Photos) saves well over 10%. It carries
+// orientation 6 like a phone photo after metadata stripping.
+func DetailedPhotoJPEG(t *testing.T) []byte {
+	t.Helper()
+	img := image.NewRGBA(image.Rect(0, 0, 320, 240))
+	for x := range 320 {
+		for y := range 240 {
+			n := uint8((x*7 + y*13 + (x*y)%31) % 256)
+			img.Set(x, y, color.RGBA{n, uint8(x), uint8(y), 255})
+		}
+	}
+	var enc bytes.Buffer
+	require.NoError(t, jpeg.Encode(&enc, img, &jpeg.Options{Quality: 100}))
+	plain := enc.Bytes()
+	exif := []byte("Exif\x00\x00MM\x00\x2a\x00\x00\x00\x08\x00\x01\x01\x12\x00\x03\x00\x00\x00\x01\x00\x06\x00\x00\x00\x00\x00\x00")
+	seg := []byte{0xFF, 0xE1, 0, 0}
+	binary.BigEndian.PutUint16(seg[2:], uint16(len(exif)+2))
+	out := append([]byte{}, plain[:2]...)
+	out = append(out, append(seg, exif...)...)
+	return append(out, plain[2:]...)
+}

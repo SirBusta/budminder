@@ -35,3 +35,9 @@ func loadPhotoSettings(db *sql.DB, store *config.Store) {
 	}
 	store.SetPhotoQuality(q)
 }
+
+// plant_images.compress_result values. NULL means never checked.
+const (
+	PhotoCompressed = "compressed" // replaced by a compressed copy; never compressed again
+	PhotoKept       = "kept"       // still the original (saved too little, or not re-encodable)
+)

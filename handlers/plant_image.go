@@ -115,6 +115,11 @@ func UploadPlantImages(c *gin.Context) {
 			apiBadRequest(c, "api_invalid_file_type")
 			return
 		}
+		var compressQuality sql.NullInt64
+		var compressResult sql.NullString
+		if store := ConfigStoreFromContext(c); store != nil && store.PhotoCompress() && utils.IsJPEG(body) {
+			body, compressQuality, compressResult = compressUpload(body, store.PhotoQuality())
+		}
 		if err = os.WriteFile(savePath, body, 0o644); err != nil {
 			fileLogger.WithError(err).Error("Failed to save file to disk")
 			apiInternalError(c, "api_failed_to_save_file")
@@ -140,9 +145,9 @@ func UploadPlantImages(c *gin.Context) {
 
 		var imageID int
 		err = db.QueryRow(`
-            INSERT INTO plant_images (plant_id, image_path, image_description, image_order, image_date)
-            VALUES ($1, $2, $3, 100, $4) returning id`,
-			plantID, savePath, description, imageDate).Scan(&imageID)
+            INSERT INTO plant_images (plant_id, image_path, image_description, image_order, image_date, compress_quality, compress_result)
+            VALUES ($1, $2, $3, 100, $4, $5, $6) returning id`,
+			plantID, savePath, description, imageDate, compressQuality, compressResult).Scan(&imageID)
 		if err != nil {
 			fileLogger.WithError(err).Error("Failed to save image metadata to database")
 			continue
@@ -153,6 +158,21 @@ func UploadPlantImages(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"ids": imageIDs, "message": T(c, "api_images_uploaded")})
+}
+
+// compressUpload compresses a new JPEG plant photo (Settings > Photos) and
+// returns what to save and record: the compressed photo when it saves at
+// least utils.MinPhotoSaving, otherwise the original, marked "kept".
+func compressUpload(body []byte, quality int) ([]byte, sql.NullInt64, sql.NullString) {
+	q := sql.NullInt64{Int64: int64(quality), Valid: true}
+	comp, err := utils.CompressJPEG(body, quality)
+	if err == nil && utils.ShouldReplace(len(body), len(comp)) {
+		return comp, q, sql.NullString{String: PhotoCompressed, Valid: true}
+	}
+	if err != nil && !errors.Is(err, utils.ErrNotCompressible) {
+		logger.Log.WithError(err).Warn("Photo compression failed; keeping the original")
+	}
+	return body, q, sql.NullString{String: PhotoKept, Valid: true}
 }
 
 func DeletePlantImage(c *gin.Context) {
