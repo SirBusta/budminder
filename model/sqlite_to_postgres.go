@@ -107,7 +107,17 @@ func MigrateSqliteToPostgres(sqlitePath string, pg *sql.DB) error {
 	}
 	defer tx.Rollback() // no-op after Commit
 
+	// Only a fresh Postgres gets its starter rows replaced. Once plants are
+	// there (a second run), their activities, measurements and status log
+	// point at those rows, and ON CONFLICT keeps what the first run copied.
+	var plants int
+	if err := tx.QueryRow("SELECT COUNT(*) FROM plant").Scan(&plants); err != nil {
+		return fmt.Errorf("count plant: %w", err)
+	}
 	for _, table := range seededTables {
+		if plants > 0 {
+			break
+		}
 		var n int
 		if err := sqliteDB.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s", table)).Scan(&n); err != nil {
 			return fmt.Errorf("count %s: %w", table, err)
