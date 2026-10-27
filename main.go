@@ -488,7 +488,7 @@ func relaunch() {
 // firstRunHome: a download double-clicked where it has no data of its own.
 // When the note (launcher.NotePath) names an install elsewhere, a newer
 // download offers to update it and an older or the same one opens it.
-// Otherwise a program started from Downloads or OneDrive asks for a proper
+// Otherwise a program started from Downloads or a synced folder asks for a proper
 // folder, copies itself into it and runs from there (launcher.ChooseHome).
 // Cancel carries on here, with a warning.
 func firstRunHome() {
@@ -586,7 +586,7 @@ func waitForEnter() {
 
 // writeNote records this program in the note, so a later download finds it:
 // only a real install, with its database next to it and not in Downloads
-// or OneDrive.
+// or a synced folder.
 func writeNote() {
 	exe := exePath()
 	if exe == "" || launcher.RiskyFolder(filepath.Dir(exe)) != "" {
@@ -616,13 +616,13 @@ func exePath() string {
 
 // welcome makes the desktop and menu icons on first run (Linux, Windows) and
 // prints the welcome box: where to open BudMinder, that the first page creates
-// the account, and a warning when the program sits in Downloads or OneDrive.
+// the account, and a warning when the program sits in Downloads or a synced folder.
 func welcome(db *sql.DB, port, elsewhere string, install, tray bool) launcher.Welcome {
 	here, _ := os.Getwd()
 	w := launcher.Welcome{Folder: here, Port: port, Elsewhere: elsewhere, LANAddress: launcher.LANAddress(), FromConsole: launcher.IsTerminal(os.Stdout), OS: runtime.GOOS, Installed: argValue(launcher.InstalledFromFlag), Updated: argValue(launcher.UpdatedFromFlag), Tray: tray}
 	w.Setup = handlers.NeedsSetup(db)
 	if exe := exePath(); exe != "" {
-		// No icons for a program in Downloads or OneDrive: they'd point at a
+		// No icons for a program in Downloads or a synced folder: they'd point at a
 		// file that's about to be moved.
 		if w.Risky = launcher.RiskyFolder(filepath.Dir(exe)); w.Risky != "" {
 			w.Suggest = launcher.SuggestedHome()

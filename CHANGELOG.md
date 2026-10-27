@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Windows: the program file has BudMinder's leaf icon, and its name and version show in Explorer and in the file's Properties.
 - Windows: the problem windows (BudMinder couldn't start, port in use, an older BudMinder still running) have a **Get help** link and no longer print long folder paths.
+- BudMinder now warns when it runs from **Dropbox**, **Google Drive**, **iCloud Drive** or **Box**, not only OneDrive, and says why: syncing apps copy the database while BudMinder is writing to it, which can damage it. On first start it offers to move itself to a safe folder, as it already did for Downloads and OneDrive.
 
 ### Fixed
 

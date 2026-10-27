@@ -47,11 +47,19 @@ func TestInstall(t *testing.T) {
 func TestRiskyFolder(t *testing.T) {
 	t.Parallel()
 	for dir, want := range map[string]string{
-		filepath.Join("home", "dave", "Downloads"):                      "Downloads",
-		filepath.Join("C:", "Users", "dave", "downloads", "x"):          "Downloads",
-		filepath.Join("C:", "Users", "dave", "OneDrive", "Documents"):   "OneDrive",
-		filepath.Join("C:", "Users", "dave", "OneDrive - Acme", "Apps"): "OneDrive",
-		filepath.Join("C:", "Users", "dave", "BudMinder"):               "",
+		filepath.Join("home", "dave", "Downloads"):                                                        "Downloads",
+		filepath.Join("C:", "Users", "dave", "downloads", "x"):                                            "Downloads",
+		filepath.Join("C:", "Users", "dave", "OneDrive", "Documents"):                                     "OneDrive",
+		filepath.Join("C:", "Users", "dave", "OneDrive - Acme", "Apps"):                                   "OneDrive",
+		filepath.Join("C:", "Users", "dave", "BudMinder"):                                                 "",
+		filepath.Join("C:", "Users", "dave", "Dropbox", "BudMinder"):                                      "Dropbox",
+		filepath.Join("C:", "Users", "dave", "Dropbox (Acme)", "x"):                                       "Dropbox",
+		filepath.Join("G:"+string(filepath.Separator), "My Drive", "BudMinder"):                           "Google Drive",
+		filepath.Join("C:", "Users", "dave", "iCloudDrive", "x"):                                          "iCloud Drive",
+		filepath.Join("Users", "dave", "Library", "Mobile Documents", "com~apple~CloudDocs", "BudMinder"): "iCloud Drive",
+		filepath.Join("Users", "dave", "Library", "CloudStorage", "GoogleDrive-you@example.com", "x"):     "Google Drive",
+		filepath.Join("Users", "dave", "Library", "CloudStorage", "Box-Box", "x"):                         "Box",
+		filepath.Join("C:", "grow", "box", "BudMinder"):                                                   "", // a grow box, not Box Drive
 	} {
 		if got := RiskyFolder(dir); got != want {
 			t.Errorf("RiskyFolder(%s) = %q, want %q", dir, got, want)

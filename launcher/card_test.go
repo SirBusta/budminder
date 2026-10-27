@@ -99,6 +99,13 @@ func TestWelcomeCard_Variants(t *testing.T) {
 	if findBlock(stayed, BlockCheck) != nil {
 		t.Error("no icons are made in Downloads, so no desktop box")
 	}
+	synced := WelcomeCard(Welcome{Folder: `C:\Users\you\Dropbox\BudMinder`, Risky: "Dropbox", Suggest: `C:\Users\you\BudMinder`}, "1.5.8")
+	if b := findBlock(synced, BlockBanner); b == nil || !b.Warn || !strings.Contains(spansText(b.Text), "Dropbox copies files to the cloud while BudMinder is still writing to them") {
+		t.Errorf("Dropbox banner = %+v", b)
+	}
+	if !strings.Contains(Box(Welcome{Risky: "Google Drive", Suggest: "x"}, false), "Google Drive copies files to the cloud") {
+		t.Error("the welcome box doesn't explain the Google Drive warning")
+	}
 	updated := WelcomeCard(Welcome{Updated: "x.exe", HasIcon: true}, "1.5.8")
 	if updated.Title != "BudMinder is up to date" || !strings.Contains(cardText(updated), "Updated to 1.5.8") {
 		t.Errorf("updated card:\n%s", cardText(updated))

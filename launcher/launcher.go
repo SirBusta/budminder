@@ -33,7 +33,7 @@ type Welcome struct {
 	HasIcon     bool   // icons from an earlier run are in place
 	FromConsole bool   // started in a terminal (the stop hint only makes sense there)
 	OS          string // runtime.GOOS: the words differ ("Start menu", "this program file")
-	Risky       string // "Downloads" or "OneDrive" when the program sits there (RiskyFolder)
+	Risky       string // "Downloads" or the syncing app when the program sits there (RiskyFolder)
 	Suggest     string // where to move it instead (SuggestedHome)
 	Installed   string // the download this copy was set up from (ChooseHome); may be deleted
 	Updated     string // the download this install was just updated from (UpdateInstall); may be deleted
@@ -49,7 +49,7 @@ func Box(w Welcome, color bool) string {
 		menu, file = "Start menu", "this program file"
 	}
 	var lines []string
-	// A program in Downloads or OneDrive keeps the grow journal there: say so first.
+	// A program in Downloads or a synced folder keeps the grow journal there: say so first.
 	switch w.Risky {
 	case "Downloads":
 		lines = append(lines,
@@ -58,13 +58,16 @@ func Box(w Welcome, color bool) string {
 			"Stop it, move the program into its own folder, for example",
 			"  "+w.Suggest,
 			"and start it again from there.", "")
-	case "OneDrive":
+	case "":
+	default: // a syncing app (Synced)
 		lines = append(lines,
-			"Heads up: BudMinder is running from a OneDrive folder, and",
-			"OneDrive's syncing can damage its database. Stop it, move",
-			"the program into its own folder, for example",
+			"Heads up: BudMinder is running from a "+w.Risky+" folder.",
+			w.Risky+" copies files to the cloud while BudMinder is still",
+			"writing to them, which can damage your grow journal. Stop it,",
+			"move the program into its own folder, for example",
 			"  "+w.Suggest,
-			"and start it again from there.", "")
+			"and start it again from there. To keep a copy in the cloud,",
+			"put BudMinder's backups there instead.", "")
 	}
 	if w.Installed != "" {
 		here, _ := os.Getwd()

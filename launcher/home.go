@@ -13,7 +13,8 @@ import (
 	"strings"
 )
 
-// The first run from Downloads (or OneDrive), before any data exists there:
+// The first run from Downloads or a synced folder (OneDrive, Dropbox, ...),
+// before any data exists there:
 // BudMinder explains that it keeps the grow journal next to the program, lets
 // the user pick a folder, copies itself into a BudMinder folder there and
 // starts from that copy. Cancel keeps it where it is, with the warning in the
@@ -33,8 +34,8 @@ const homeExplain = "BudMinder needs a home folder.\n\n" +
 // or "" when the user cancelled or there's no way to ask.
 func ChooseHome(risky string) string {
 	why := "clean-ups can delete it"
-	if risky == "OneDrive" {
-		why = "OneDrive's syncing can damage the database"
+	if Synced(risky) {
+		why = risky + " copies files to the cloud while BudMinder is still writing to them, which can damage the database"
 	}
 	text := fmt.Sprintf(homeExplain, risky, why)
 	home, _ := os.UserHomeDir()

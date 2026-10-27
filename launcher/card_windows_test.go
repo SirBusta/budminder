@@ -28,6 +28,7 @@ func TestCards_Draw(t *testing.T) {
 		"welcome-first":   WelcomeCard(Welcome{Port: "8080", Folder: home, Setup: true, IconsMade: true, IconDesktop: true, Tray: true, LANAddress: "192.168.1.5"}, "1.5.8"),
 		"welcome-moved":   WelcomeCard(Welcome{Port: "8080", Folder: home, Setup: true, IconsMade: true, IconDesktop: true, Tray: true, Installed: "x"}, "1.5.8"),
 		"welcome-stayed":  WelcomeCard(Welcome{Port: "8080", Folder: `C:\Users\you\Downloads`, Setup: true, Risky: "Downloads", Suggest: home, Tray: true}, "1.5.8"),
+		"welcome-synced":  WelcomeCard(Welcome{Port: "8080", Folder: `C:\Users\you\Dropbox\BudMinder`, Risky: "Dropbox", Suggest: home, Tray: true}, "1.5.8"),
 		"welcome-again":   WelcomeCard(Welcome{Port: "8080", Folder: home, HasIcon: true, Tray: true}, "1.5.8"),
 		"welcome-updated": WelcomeCard(Welcome{Port: "8080", Folder: home, Updated: "x", HasIcon: true, Tray: true}, "1.5.8"),
 		"update":          UpdateCard(home, "1.5.7", "1.5.8"),

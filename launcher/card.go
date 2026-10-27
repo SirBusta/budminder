@@ -173,9 +173,11 @@ func WelcomeCard(w Welcome, version string) Card {
 	case "Downloads":
 		banner(true, faWarn, "BudMinder is running from your **Downloads** folder and keeps your data there, where clean-ups can delete it. "+
 			"Stop it, move the program into its own folder (for example `"+w.Suggest+"`) and start it from there.")
-	case "OneDrive":
-		banner(true, faWarn, "BudMinder is running from a **OneDrive** folder, and OneDrive's syncing can damage its database. "+
-			"Stop it, move the program into its own folder (for example `"+w.Suggest+"`) and start it from there.")
+	case "":
+	default: // a syncing app (Synced)
+		banner(true, faWarn, "BudMinder is running from a **"+w.Risky+"** folder. "+w.Risky+" copies files to the cloud while BudMinder is still writing to them, which can damage your grow journal. "+
+			"Stop BudMinder, move the program into its own folder (for example `"+w.Suggest+"`) and start it from there. "+
+			"To keep a copy in the cloud, put BudMinder's backups there instead.")
 	}
 	if w.Installed != "" {
 		banner(false, faCircleOK, "BudMinder set itself up in `"+w.Folder+"`. You can delete the file you downloaded.")
@@ -298,7 +300,7 @@ func StartFailedCard(details string) Card {
 		return Card{Caption: "BudMinder", Title: "BudMinder couldn't open your grow journal", Bad: true, Blocks: []Block{
 			{Kind: BlockSub, Text: Words("Your database, `data\\isley.db` in the BudMinder folder, couldn't be opened.")},
 			{Kind: BlockRows, Rows: []Row{
-				{Icon: faLock, Text: Words("Is another copy of BudMinder using it? Stop that one first.")},
+				{Icon: faCloud, Text: Words("Is the BudMinder folder in OneDrive, Dropbox, Google Drive or another syncing folder? Syncing can damage the database: move BudMinder into a folder of its own.")},
 				{Icon: faClockBack, Text: Words("Copies from before each update are in `data\\backups`.")},
 				stuck,
 			}},
@@ -318,6 +320,8 @@ func StartFailedCard(details string) Card {
 		help,
 	}}
 }
+
+const faCloud = '' // Font Awesome cloud
 
 // HelpURL is where Get help on a problem window goes.
 const HelpURL = "https://github.com/SirBusta/budminder/issues"
