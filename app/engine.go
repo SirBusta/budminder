@@ -509,22 +509,18 @@ func buildFuncMap(store *config.Store) template.FuncMap {
 			}
 			return string(a)
 		},
+		// formatDateTimeLocal, formatDate and formatDateTime show plant dates
+		// (start date, photo date) as entered: they are wall-clock values
+		// with no timezone, read back as UTC. Converting them to the Settings
+		// timezone moved the day, and the edit page saved the moved value
+		// back, so the start date drifted on every save.
 		"formatDateTimeLocal": func(t time.Time) string {
-			if loc := configuredLocation(); loc != nil {
-				return t.In(loc).Format(utils.LayoutDateTimeLocal)
-			}
-			return t.Local().Format(utils.LayoutDateTimeLocal)
+			return t.Format(utils.LayoutDateTimeLocal)
 		},
 		"formatDate": func(t time.Time) string {
-			if loc := configuredLocation(); loc != nil {
-				return t.In(loc).Format(utils.LayoutDate)
-			}
 			return t.Format(utils.LayoutDate)
 		},
 		"formatDateTime": func(t time.Time) string {
-			if loc := configuredLocation(); loc != nil {
-				return t.In(loc).Format(utils.LayoutDateTime)
-			}
 			return t.Format(utils.LayoutDateTime)
 		},
 		"isZeroDate": func(t time.Time) bool {

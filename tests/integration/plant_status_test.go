@@ -3,6 +3,7 @@ package integration
 import (
 	"database/sql"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 	"testing"
@@ -10,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"isley/config"
 	"isley/tests/testutil"
 )
 
@@ -222,4 +224,31 @@ func TestPlantStatus_DeleteMissing(t *testing.T) {
 	resp := c.APIDelete(t, "/plantStatus/delete/9999", fix.APIKey)
 	defer resp.Body.Close()
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}
+
+// The edit page used to show the start date converted to the Settings
+// timezone and save that back, so the date drifted on every save whenever
+// that timezone differed from the server's (Docker runs on UTC).
+func TestPlantEdit_StartDateShownAsStored(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	store := config.NewStore()
+	store.SetTimezone("Pacific/Kiritimati") // UTC+14: far from any test machine's own zone
+	server := testutil.NewTestServer(t, db, testutil.WithConfigStore(store))
+	testutil.SeedAdmin(t, db, "edit-date-pw")
+
+	breederID := testutil.SeedBreeder(t, db, "B")
+	strainID := testutil.SeedStrain(t, db, breederID, "S")
+	zoneID := testutil.SeedZone(t, db, "Z")
+	plantID := testutil.SeedPlant(t, db, "Dated", strainID, zoneID)
+	testutil.MustExec(t, db, `UPDATE plant SET start_dt = '2026-03-10T00:00:00' WHERE id = $1`, plantID)
+
+	c := server.LoginAsAdmin(t, "edit-date-pw")
+	resp := c.Get("/plant/" + strconv.Itoa(plantID) + "/edit")
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), `data-stored="2026-03-10T00:00:00"`)
 }
