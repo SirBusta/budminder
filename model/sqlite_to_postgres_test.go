@@ -745,3 +745,55 @@ func mustExecSQL(t *testing.T, db *sql.DB, query string, args ...interface{}) {
 	_, err := db.Exec(query, args...)
 	require.NoErrorf(t, err, "mustExecSQL: %s", query)
 }
+
+// TestSwitchToPostgres_CopiesEverythingAndKeepsSettings_Postgres runs the
+// whole switch over a SQLite database with a sensor (whose legacy "show"
+// column Postgres doesn't have), day notes, a smoke report with a tag and
+// a photo, hourly averages, a changed setting and a custom activity.
+func TestSwitchToPostgres_CopiesEverythingAndKeepsSettings_Postgres(t *testing.T) {
+	t.Parallel()
+
+	path := freshSQLiteFile(t)
+	src := openSQLiteFile(t, path)
+	mustExecSQL(t, src, `UPDATE settings SET value = '123' WHERE name = 'polling_interval'`)
+	mustExecSQL(t, src, `INSERT INTO activity (id, name, lock) VALUES (900, 'My Custom Activity', 0)`)
+	mustExecSQL(t, src, `INSERT INTO breeder (id, name) VALUES (1, 'B')`)
+	mustExecSQL(t, src, `INSERT INTO strain (id, name, sativa, indica, autoflower, description, seed_count, breeder_id) VALUES (1, 'S', 50, 50, 0, '', 0, 1)`)
+	mustExecSQL(t, src, `INSERT INTO zones (id, name) VALUES (1, 'Z')`)
+	mustExecSQL(t, src, `INSERT INTO plant (id, name, description, clone, strain_id, zone_id, start_dt, sensors) VALUES (1, 'P', '', 0, 1, 1, '2026-04-01 00:00:00', '[]')`)
+	mustExecSQL(t, src, `INSERT INTO plant_day_entry (plant_id, entry_date, note) VALUES (1, '2026-04-02', 'day note')`)
+	mustExecSQL(t, src, `INSERT INTO sensors (id, name, zone_id, source, device, type) VALUES (1, 'T', 1, 'src', 'D', 'temp')`)
+	mustExecSQL(t, src, `INSERT INTO sensor_data (sensor_id, value) VALUES (1, 21.5)`)
+	mustExecSQL(t, src, `INSERT INTO sensor_data_hourly (sensor_id, bucket, min_val, max_val, avg_val, sample_count) VALUES (1, '2025-01-01 10:00:00', 1, 2, 1.5, 4)`)
+	mustExecSQL(t, src, `INSERT INTO smoke_report (id, plant_id, strain_id, strain_name) VALUES (1, 1, 1, 'S')`)
+	mustExecSQL(t, src, `INSERT INTO smoke_report_tag (report_id, kind, name) VALUES (1, 'effect', 'happy')`)
+	mustExecSQL(t, src, `INSERT INTO smoke_report_photo (report_id, path) VALUES (1, 'uploads/smoke/a.jpg')`)
+
+	pg := freshPostgresDB(t, true)
+	require.NoError(t, MigrateSqliteToPostgres(path, pg))
+
+	for table, want := range map[string]int{
+		"plant_day_entry": 1, "smoke_report": 1, "smoke_report_tag": 1, "smoke_report_photo": 1,
+		"sensor_data_hourly": 1, "sensors": 1, "sensor_data": 1, "plant": 1,
+	} {
+		var n int
+		require.NoError(t, pg.QueryRow(`SELECT COUNT(*) FROM `+table).Scan(&n))
+		assert.Equalf(t, want, n, "%s rows", table)
+	}
+
+	var interval string
+	require.NoError(t, pg.QueryRow(`SELECT value FROM settings WHERE name = 'polling_interval'`).Scan(&interval))
+	assert.Equal(t, "123", interval, "your setting, not the default")
+	var settingsSrc, settingsPG int
+	require.NoError(t, src.QueryRow(`SELECT COUNT(*) FROM settings`).Scan(&settingsSrc))
+	require.NoError(t, pg.QueryRow(`SELECT COUNT(*) FROM settings`).Scan(&settingsPG))
+	assert.Equal(t, settingsSrc, settingsPG, "one row per setting, no defaults left over")
+
+	var name string
+	require.NoError(t, pg.QueryRow(`SELECT name FROM activity WHERE id = 900`).Scan(&name))
+	assert.Equal(t, "My Custom Activity", name)
+	var actSrc, actPG int
+	require.NoError(t, src.QueryRow(`SELECT COUNT(*) FROM activity`).Scan(&actSrc))
+	require.NoError(t, pg.QueryRow(`SELECT COUNT(*) FROM activity`).Scan(&actPG))
+	assert.Equal(t, actSrc, actPG, "activities are the SQLite ones")
+}

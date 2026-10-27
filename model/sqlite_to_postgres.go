@@ -40,6 +40,11 @@ var conflictKeys = map[string]string{
 	"strain_flavor":      "id",
 	"strain_terpene":     "id",
 	"strain_medical_use": "id",
+	"sensor_data_hourly": "sensor_id, bucket",
+	"plant_day_entry":    "id",
+	"smoke_report":       "id",
+	"smoke_report_tag":   "id",
+	"smoke_report_photo": "id",
 }
 
 var boolToIntFields = map[string][]string{
@@ -58,6 +63,7 @@ var orderedTables = []string{
 	"strain_medical_use",
 	"sensors",
 	"sensor_data",
+	"sensor_data_hourly", // hourly averages outlive the raw readings they came from
 	// rolling_averages is excluded — it's a trigger-maintained cache (one row per sensor)
 	// that rebuilds automatically on the first sensor_data insert after migration.
 	"plant_status",
@@ -68,9 +74,21 @@ var orderedTables = []string{
 	"activity",
 	"activity_metric",
 	"plant_activity",
+	"plant_day_entry",
 	"plant_images",
 	"streams",
+	"smoke_report", // after plant and strain, which it references
+	"smoke_report_tag",
+	"smoke_report_photo",
 }
+
+// seededTables are tables the Postgres migrations fill with starter rows
+// (default settings, activities, metrics, stages). The SQLite database had
+// the same starter rows, plus the user's changes and additions, so where it
+// has rows they replace Postgres's: with ON CONFLICT DO NOTHING the starter
+// rows used to win wherever the ids matched, resetting settings to defaults
+// and labeling a custom activity as a built-in one. Children first.
+var seededTables = []string{"activity_metric", "activity", "metric", "plant_status", "settings"}
 
 // MigrateSqliteToPostgres copies all data from the SQLite database at
 // sqlitePath into the PostgreSQL database pg.  The entire operation runs
@@ -88,6 +106,19 @@ func MigrateSqliteToPostgres(sqlitePath string, pg *sql.DB) error {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
 	defer tx.Rollback() // no-op after Commit
+
+	for _, table := range seededTables {
+		var n int
+		if err := sqliteDB.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s", table)).Scan(&n); err != nil {
+			return fmt.Errorf("count %s: %w", table, err)
+		}
+		if n == 0 {
+			continue
+		}
+		if _, err := tx.Exec(fmt.Sprintf("DELETE FROM %s", table)); err != nil {
+			return fmt.Errorf("clear starter rows in %s: %w", table, err)
+		}
+	}
 
 	for _, table := range orderedTables {
 		logger.Log.Infof("Migrating table: %s", table)
@@ -140,9 +171,18 @@ func copyTableData(src *sql.DB, dest dbExecutor, table string) error {
 		return fmt.Errorf("counting rows in %s: %w", table, err)
 	}
 
+	selectCols := "*"
+	if IsPostgres() {
+		shared, err := sharedColumns(src, dest, table)
+		if err != nil {
+			return err
+		}
+		selectCols = strings.Join(shared, ",")
+	}
+
 	offset := 0
 	for offset < totalRows {
-		query := fmt.Sprintf("SELECT * FROM %s LIMIT %d OFFSET %d", table, batchSize, offset)
+		query := fmt.Sprintf("SELECT %s FROM %s LIMIT %d OFFSET %d", selectCols, table, batchSize, offset)
 		rows, err := src.Query(query)
 		if err != nil {
 			return err
@@ -242,6 +282,49 @@ func copyTableData(src *sql.DB, dest dbExecutor, table string) error {
 	return nil
 }
 
+// sharedColumns lists the table's columns that both databases have. The
+// two schemas have drifted (Postgres migration 013 dropped sensors.show,
+// for one), and one column only SQLite has used to fail the whole switch.
+func sharedColumns(src *sql.DB, dest dbExecutor, table string) ([]string, error) {
+	rows, err := dest.Query(`SELECT column_name FROM information_schema.columns
+		WHERE table_schema = current_schema() AND table_name = $1`, table)
+	if err != nil {
+		return nil, fmt.Errorf("list postgres columns of %s: %w", table, err)
+	}
+	inDest := map[string]bool{}
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		inDest[strings.ToLower(name)] = true
+	}
+	rows.Close()
+
+	srcRows, err := src.Query(fmt.Sprintf("SELECT name FROM pragma_table_info('%s')", table))
+	if err != nil {
+		return nil, fmt.Errorf("list sqlite columns of %s: %w", table, err)
+	}
+	defer srcRows.Close()
+	var shared []string
+	for srcRows.Next() {
+		var name string
+		if err := srcRows.Scan(&name); err != nil {
+			return nil, err
+		}
+		if inDest[strings.ToLower(name)] {
+			shared = append(shared, name)
+		} else {
+			logger.Log.Warnf("Switch to PostgreSQL: %s.%s has no place in PostgreSQL, left out", table, name)
+		}
+	}
+	if len(shared) == 0 {
+		return nil, fmt.Errorf("%s: no columns in common", table)
+	}
+	return shared, nil
+}
+
 func hasSerialID(table string) bool {
 	// List of tables where 'id' is a SERIAL/identity column and needs sequence reset
 	serialTables := map[string]bool{
@@ -266,6 +349,10 @@ func hasSerialID(table string) bool {
 		"strain_flavor":      true,
 		"strain_terpene":     true,
 		"strain_medical_use": true,
+		"plant_day_entry":    true,
+		"smoke_report":       true,
+		"smoke_report_tag":   true,
+		"smoke_report_photo": true,
 	}
 
 	return serialTables[table]
