@@ -146,6 +146,29 @@ func TestAuth_SessionVersionInvalidation(t *testing.T) {
 	assert.Equal(t, "/login", resp.Header.Get("Location"))
 }
 
+// TestAuth_SessionVersionInvalidation_API: a password change signs old
+// sessions out of the API routes too (deletes, settings, backups, updates),
+// not only the pages.
+func TestAuth_SessionVersionInvalidation_API(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db)
+	testutil.SeedAdmin(t, db, "session-pw")
+
+	c := server.LoginAsAdmin(t, "session-pw")
+
+	ok := c.Get("/sensors/series")
+	ok.Body.Close()
+	require.NotEqual(t, http.StatusUnauthorized, ok.StatusCode, "signed in")
+
+	testutil.UpsertSetting(t, db, "session_version", "v2-after-rotation")
+
+	resp := c.Get("/sensors/series")
+	resp.Body.Close()
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+}
+
 // TestAuth_SetupFlow: a new install sends every page to /setup; the first
 // person to submit it chooses the username and password and is signed in;
 // after that /setup can't be used again.

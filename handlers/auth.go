@@ -168,10 +168,27 @@ func AuthMiddlewareApi() gin.HandlerFunc {
 				"error": "API key or session required",
 			})
 			return
+		} else if sessionVersionStale(c, session) {
+			// SECURITY: a password change signs other sessions out of the
+			// API too, not only the pages (same check as AuthMiddleware).
+			session.Clear()
+			_ = session.Save()
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "API key or session required",
+			})
+			return
 		}
 
 		c.Next()
 	}
+}
+
+// sessionVersionStale reports whether the session predates the last password
+// change (settings.session_version moved on since it signed in).
+func sessionVersionStale(c *gin.Context, session sessions.Session) bool {
+	dbVersion, _ := GetSetting(DBFromContext(c), "session_version")
+	sessVersion, _ := session.Get("session_version").(string)
+	return dbVersion != "" && sessVersion != dbVersion
 }
 
 // AuthMiddleware returns middleware that enforces session-based authentication
@@ -203,10 +220,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		// SECURITY: Validate session version to enforce invalidation on password change
-		db := DBFromContext(c)
-		dbVersion, _ := GetSetting(db, "session_version")
-		sessVersion, _ := session.Get("session_version").(string)
-		if dbVersion != "" && sessVersion != dbVersion {
+		if sessionVersionStale(c, session) {
 			session.Clear()
 			session.Save()
 			c.Redirect(http.StatusFound, "/login")
