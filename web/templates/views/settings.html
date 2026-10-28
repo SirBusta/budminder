@@ -374,7 +374,7 @@
                     <div class="st-row">
                         <div class="st-row-l"><label for="alHost">{{ .lcl.al_host }}</label><small>{{ .lcl.al_host_desc }}</small></div>
                         <div class="st-row-r d-flex gap-2">
-                            <input type="text" class="form-control form-control-sm" id="alHost" placeholder="smtp.gmail.com" value="{{ .alerts.Email.Host }}" maxlength="253" autocomplete="off" spellcheck="false" data-al>
+                            <input type="text" class="form-control form-control-sm" id="alHost" value="{{ .alerts.Email.Host }}" maxlength="253" autocomplete="off" spellcheck="false" data-al>
                             <input type="number" class="form-control form-control-sm al-port" id="alPort" min="1" max="65535" value="{{ .alerts.Email.Port }}" aria-label="{{ .lcl.al_port }}" title="{{ .lcl.al_port }}" data-al>
                         </div>
                     </div>
