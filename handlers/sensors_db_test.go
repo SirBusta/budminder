@@ -1,7 +1,6 @@
 package handlers_test
 
 import (
-	"database/sql"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -109,22 +108,6 @@ func TestDeleteSensorByID_CascadesSensorData(t *testing.T) {
 	assert.Zero(t, rollingCount, "DeleteSensorByID must purge rolling_averages rows for the sensor")
 }
 
-// ---------------------------------------------------------------------------
-// GetSensorName
-// ---------------------------------------------------------------------------
-
-func TestGetSensorName(t *testing.T) {
-	t.Parallel()
-
-	db := testutil.NewTestDB(t)
-	testutil.MustExec(t, db, `INSERT INTO zones (id, name) VALUES (1, 'Z')`)
-	testutil.MustExec(t, db, `INSERT INTO sensors (id, name, zone_id, source, device, type) VALUES (1, 'Tent Temp', 1, 'src', 'D', 'temp')`)
-
-	assert.Equal(t, "Tent Temp", handlers.GetSensorName(db, "1"))
-	assert.Equal(t, "", handlers.GetSensorName(db, "9999"), "missing id returns empty string")
-}
-
-// ---------------------------------------------------------------------------
 // ValidateServerAddress (pure)
 // ---------------------------------------------------------------------------
 
@@ -161,7 +144,3 @@ func TestValidateServerAddress_TableDriven(t *testing.T) {
 		})
 	}
 }
-
-// Compile-time assertion that GetSensorName takes a *sql.DB so the
-// unit test signature stays in lockstep with the production function.
-var _ func(*sql.DB, string) string = handlers.GetSensorName

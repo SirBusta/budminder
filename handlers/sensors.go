@@ -897,54 +897,6 @@ func buildActivePlantSensorMap(db *sql.DB, fieldLogger *logrus.Entry) map[int]st
 	return result
 }
 
-func GetGroupedSensors(db *sql.DB) map[string]map[string]map[string][]types.Sensor {
-	fieldLogger := logger.Log.WithField("func", "GetGroupedSensors")
-
-	rows, err := db.Query(`
-        SELECT 
-            s.name, 
-            z.name AS zone_name, 
-            s.device, 
-            s.type, 
-            s.source, 
-            s.unit
-        FROM sensors s
-        JOIN zones z ON s.zone_id = z.id
-        WHERE s.visibility IN ('zone_plant', 'zone')
-        ORDER BY z.name, s.device, s.type, s.name
-    `)
-	if err != nil {
-		fieldLogger.WithError(err).Error("Error querying sensors")
-		return nil
-	}
-	defer rows.Close()
-
-	grouped := make(map[string]map[string]map[string][]types.Sensor)
-
-	for rows.Next() {
-		var sensor types.Sensor
-		var zoneName, deviceType string
-
-		if err := rows.Scan(&sensor.Name, &zoneName, &sensor.Device, &deviceType, &sensor.Source, &sensor.Unit); err != nil {
-			fieldLogger.WithError(err).Error("Error scanning row")
-			continue
-		}
-
-		// Initialize grouping maps if necessary
-		if _, ok := grouped[zoneName]; !ok {
-			grouped[zoneName] = make(map[string]map[string][]types.Sensor)
-		}
-		if _, ok := grouped[zoneName][sensor.Device]; !ok {
-			grouped[zoneName][sensor.Device] = make(map[string][]types.Sensor)
-		}
-
-		// Add sensor to the appropriate group
-		grouped[zoneName][sensor.Device][deviceType] = append(grouped[zoneName][sensor.Device][deviceType], sensor)
-	}
-
-	return grouped
-}
-
 func EditSensor(c *gin.Context) {
 	fieldLogger := logger.Log.WithField("func", "EditSensor")
 	// Note: source, device, and type are the immutable identity key used for
@@ -1046,19 +998,6 @@ func DeleteSensorByID(db *sql.DB, id string) error {
 		return err
 	}
 	return nil
-}
-
-func GetSensorName(db *sql.DB, id string) string {
-	fieldLogger := logger.Log.WithField("func", "GetSensorName")
-
-	var name string
-	err := db.QueryRow("SELECT name FROM sensors WHERE id = $1", id).Scan(&name)
-	if err != nil {
-		fieldLogger.WithError(err).Error("Error querying sensor name")
-		return ""
-	}
-
-	return name
 }
 
 // ValidateServerAddress ensures the input is a valid private IP or hostname

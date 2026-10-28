@@ -3,7 +3,6 @@ package handlers_test
 import (
 	"archive/zip"
 	"bytes"
-	"context"
 	"database/sql"
 	"encoding/json"
 	"testing"
@@ -232,104 +231,4 @@ func TestParseBackupArchive_BadJSON(t *testing.T) {
 
 	_, err = handlers.ParseBackupArchive(buf.Bytes())
 	assert.Error(t, err)
-}
-
-// ---------------------------------------------------------------------------
-// ApplyBackupToDB — round-trip
-// ---------------------------------------------------------------------------
-
-func TestApplyBackupToDB_RoundTrip(t *testing.T) {
-	t.Parallel()
-
-	src := testutil.NewTestDB(t)
-	seedSampleData(t, src)
-
-	archive, _, err := handlers.BuildBackupArchive(src, handlers.BuildArchiveOptions{})
-	require.NoError(t, err)
-
-	payload, err := handlers.ParseBackupArchive(archive)
-	require.NoError(t, err)
-
-	// Fresh DB — no overlap with src.
-	dst := testutil.NewTestDB(t)
-	require.NoError(t, handlers.ApplyBackupToDB(context.Background(), dst, payload))
-
-	// Row counts must match for every seeded table.
-	for _, table := range []string{"settings", "zones", "sensors", "sensor_data", "breeder", "strain",
-		"strain_effect", "strain_flavor", "strain_terpene", "strain_medical_use"} {
-		assert.Equalf(t, rowCount(t, src, table), rowCount(t, dst, table),
-			"row count mismatch for %s after round-trip", table)
-	}
-
-	// Spot-check content: the canary setting survives.
-	var v string
-	require.NoError(t, dst.QueryRow(`SELECT value FROM settings WHERE name = 'canary'`).Scan(&v))
-	assert.Equal(t, "green", v)
-
-	// And the strain join: name + breeder_id correct.
-	var name string
-	var breederID int
-	require.NoError(t, dst.QueryRow(`SELECT name, breeder_id FROM strain WHERE id = 1`).Scan(&name, &breederID))
-	assert.Equal(t, "OG Test", name)
-	assert.Equal(t, 1, breederID)
-}
-
-func TestApplyBackupToDB_OverwritesExistingData(t *testing.T) {
-	t.Parallel()
-
-	dst := testutil.NewTestDB(t)
-	// Pre-populate with rows that should be wiped by the restore.
-	_, err := dst.Exec(`INSERT INTO settings (name, value) VALUES ('stale', 'should-be-gone')`)
-	require.NoError(t, err)
-
-	src := testutil.NewTestDB(t)
-	seedSampleData(t, src)
-	archive, _, err := handlers.BuildBackupArchive(src, handlers.BuildArchiveOptions{})
-	require.NoError(t, err)
-	payload, err := handlers.ParseBackupArchive(archive)
-	require.NoError(t, err)
-
-	require.NoError(t, handlers.ApplyBackupToDB(context.Background(), dst, payload))
-
-	var staleCount int
-	require.NoError(t, dst.QueryRow(`SELECT COUNT(*) FROM settings WHERE name = 'stale'`).Scan(&staleCount))
-	assert.Zero(t, staleCount, "pre-existing rows must be truncated before restore")
-}
-
-func TestApplyBackupToDB_NilDB(t *testing.T) {
-	t.Parallel()
-	err := handlers.ApplyBackupToDB(context.Background(), nil, handlers.BackupPayload{})
-	assert.Error(t, err)
-}
-
-// Restored reading times keep SQLite's own format, so they sort with the
-// readings that arrive after the restore (M06-04).
-func TestApplyBackupToDB_KeepsSQLiteReadingTimeFormat(t *testing.T) {
-	t.Parallel()
-
-	src := testutil.NewTestDB(t)
-	seedSampleData(t, src)
-	_, err := src.Exec(`UPDATE sensor_data SET create_dt = '2026-10-20 14:05:00'`)
-	require.NoError(t, err)
-
-	archive, _, err := handlers.BuildBackupArchive(src, handlers.BuildArchiveOptions{})
-	require.NoError(t, err)
-	payload, err := handlers.ParseBackupArchive(archive)
-	require.NoError(t, err)
-
-	dst := testutil.NewTestDB(t)
-	require.NoError(t, handlers.ApplyBackupToDB(context.Background(), dst, payload))
-
-	rows, err := dst.Query(`SELECT CAST(create_dt AS TEXT) FROM sensor_data`)
-	require.NoError(t, err)
-	defer rows.Close()
-	n := 0
-	for rows.Next() {
-		var s string
-		require.NoError(t, rows.Scan(&s))
-		assert.Equal(t, "2026-10-20 14:05:00", s)
-		n++
-	}
-	require.NoError(t, rows.Err())
-	assert.Positive(t, n)
 }

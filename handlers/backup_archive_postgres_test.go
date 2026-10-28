@@ -1,9 +1,10 @@
 //go:build integration_postgres
 
-// Postgres-flavored ApplyBackupToDB tests. The default-build counterparts
-// in backup_archive_test.go exercise the SQLite branch (DELETE FROM,
-// PRAGMA foreign_keys = OFF, no sequence reset). This file mirrors them
-// against a real PostgreSQL so the Postgres-specific branches —
+// Postgres restore tests, through the real restore path (POST
+// /settings/backup/restore). The SQLite branch (DELETE FROM, PRAGMA
+// foreign_keys = OFF, no sequence reset) is covered by the default-build
+// restore tests. These run against a real PostgreSQL so the
+// Postgres-specific branches —
 // TRUNCATE TABLE ... CASCADE, SET CONSTRAINTS ALL DEFERRED, and the
 // setval(pg_get_serial_sequence(...)) sequence-reset loop — actually
 // execute end-to-end against the dialect they target.
@@ -19,12 +20,14 @@
 // itself dialect-aware (dumpTableFiltered branches on IsPostgres()) and
 // pulling in a SQLite source under this build tag would mix dialects in
 // the same process. Constructing the payload by hand keeps the test
-// focused on the apply path.
+// focused on the restore path.
+
+// +parallel:serial — a real restore sets config.RestoreInProgress, which is
+// process-wide: parallel tests (photo compression, ingest) would see it.
 
 package handlers_test
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -88,20 +91,19 @@ func samplePayloadForPostgres() handlers.BackupPayload {
 	}
 }
 
-// TestApplyBackupToDB_RoundTrip_Postgres exercises the Postgres branch of
-// ApplyBackupToDB end-to-end. A regression in the truncate ordering, the
+// TestRestore_RoundTrip_Postgres exercises the Postgres branch of the
+// restore end-to-end. A regression in the truncate ordering, the
 // CASCADE clause, or the constraint deferral would surface here as an
 // FK error or a row-count mismatch.
-func TestApplyBackupToDB_RoundTrip_Postgres(t *testing.T) {
-	t.Parallel()
-
+func TestRestore_RoundTrip_Postgres(t *testing.T) {
 	dst := testutil.NewTestPostgresDB(t)
 	payload := samplePayloadForPostgres()
 
-	require.NoError(t, handlers.ApplyBackupToDB(context.Background(), dst, payload))
+	require.Empty(t, restoreViaHTTP(t, dst, payload).Error)
 
+	// settings isn't counted: the restore keeps the install's own
+	// (session secret, API key) next to the restored ones.
 	expectedCounts := map[string]int{
-		"settings":    2,
 		"zones":       1,
 		"sensors":     1,
 		"sensor_data": 2,
@@ -111,7 +113,7 @@ func TestApplyBackupToDB_RoundTrip_Postgres(t *testing.T) {
 	for table, want := range expectedCounts {
 		var got int
 		require.NoError(t, dst.QueryRow(`SELECT COUNT(*) FROM `+table).Scan(&got))
-		assert.Equalf(t, want, got, "row count for %s after Postgres apply", table)
+		assert.Equalf(t, want, got, "row count for %s after Postgres restore", table)
 	}
 
 	var v string
@@ -125,38 +127,34 @@ func TestApplyBackupToDB_RoundTrip_Postgres(t *testing.T) {
 	assert.Equal(t, 1, breederID)
 }
 
-// TestApplyBackupToDB_OverwritesExistingData_Postgres asserts that
+// TestRestore_OverwritesExistingData_Postgres asserts that
 // TRUNCATE ... CASCADE wipes pre-existing rows. SQLite uses DELETE FROM;
 // PG needs CASCADE because dependent FK rows would otherwise block the
 // truncate. A test that forgets CASCADE fails here with a foreign-key
 // violation.
-func TestApplyBackupToDB_OverwritesExistingData_Postgres(t *testing.T) {
-	t.Parallel()
-
+func TestRestore_OverwritesExistingData_Postgres(t *testing.T) {
 	dst := testutil.NewTestPostgresDB(t)
 
 	_, err := dst.Exec(`INSERT INTO settings (name, value) VALUES ('stale', 'should-be-gone')`)
 	require.NoError(t, err)
 
-	require.NoError(t, handlers.ApplyBackupToDB(context.Background(), dst, samplePayloadForPostgres()))
+	require.Empty(t, restoreViaHTTP(t, dst, samplePayloadForPostgres()).Error)
 
 	var staleCount int
 	require.NoError(t, dst.QueryRow(`SELECT COUNT(*) FROM settings WHERE name = 'stale'`).Scan(&staleCount))
 	assert.Zero(t, staleCount, "pre-existing rows must be truncated before restore")
 }
 
-// TestApplyBackupToDB_ResetsSequences_Postgres locks in the
+// TestRestore_ResetsSequences_Postgres locks in the
 // post-restore setval loop. After restoring rows with explicit ids, the
 // next INSERT without an id must NOT collide with an imported id —
 // which only holds if the sequence got bumped past MAX(id) by the
 // production setval(pg_get_serial_sequence(...)) loop. SQLite has no
 // equivalent because AUTOINCREMENT tracks the high-water mark via
 // sqlite_sequence automatically.
-func TestApplyBackupToDB_ResetsSequences_Postgres(t *testing.T) {
-	t.Parallel()
-
+func TestRestore_ResetsSequences_Postgres(t *testing.T) {
 	dst := testutil.NewTestPostgresDB(t)
-	require.NoError(t, handlers.ApplyBackupToDB(context.Background(), dst, samplePayloadForPostgres()))
+	require.Empty(t, restoreViaHTTP(t, dst, samplePayloadForPostgres()).Error)
 
 	// Insert without specifying id — should auto-assign past MAX(id)=1.
 	var newID int

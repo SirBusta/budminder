@@ -1143,46 +1143,6 @@ func insertRows(tx *sql.Tx, table string, rows []map[string]interface{}) error {
 	return nil
 }
 
-// insertRowsBatched inserts rows using multi-row INSERT statements in chunks,
-// each in its own transaction. The write lock is released between batches.
-func insertRowsBatched(db *sql.DB, table string, rows []map[string]interface{}, batchSize int) error {
-	if len(rows) == 0 {
-		return nil
-	}
-
-	cols := columnsFromRow(rows[0])
-	totalRows := len(rows)
-	totalBatches := (totalRows + batchSize - 1) / batchSize
-
-	for i := 0; i < totalRows; i += batchSize {
-		end := i + batchSize
-		if end > totalRows {
-			end = totalRows
-		}
-		batch := rows[i:end]
-		batchNum := i/batchSize + 1
-
-		stmt, allVals := buildMultiRowInsert(table, cols, batch)
-
-		tx, err := db.Begin()
-		if err != nil {
-			return fmt.Errorf("begin batch %d: %w", batchNum, err)
-		}
-
-		if _, err := tx.Exec(stmt, allVals...); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("insert into %s batch %d: %w", table, batchNum, err)
-		}
-
-		if err := tx.Commit(); err != nil {
-			return fmt.Errorf("commit batch %d: %w", batchNum, err)
-		}
-
-		logger.Log.Infof("  %s: batch %d/%d (%d rows)", table, batchNum, totalBatches, len(batch))
-	}
-	return nil
-}
-
 // bulkInserter is the minimal interface needed for batched inserts — satisfied
 // by both *sql.DB and *sql.Conn so we can pin a connection for SQLite.
 type bulkInserter interface {
