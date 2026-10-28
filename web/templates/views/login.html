@@ -11,6 +11,7 @@
         </div>
         <form class="fm-auth-card" action="/login" method="POST">
             <input type="hidden" name="csrf_token" value="{{ .csrfToken }}">
+            <div class="fm-auth-div" aria-hidden="true"><i class="fa-solid fa-seedling"></i></div>
             <h1>{{ .lcl.fm_sign_in }}</h1>
             <p class="lead">{{ .lcl.fm_sign_in_lead }}</p>
             {{ if .Error }}

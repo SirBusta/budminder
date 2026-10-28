@@ -4486,8 +4486,8 @@ body.bm-tour-open { overflow: hidden; }
 .fm-auth-brand img { height: 46px; }
 .fm-auth-card { background: var(--color-card); border-radius: 16px; box-shadow: 0 1px 2px rgba(15, 40, 35, .06), 0 10px 30px rgba(15, 40, 35, .08); padding: 1.5rem 1.5rem 1.3rem; color: var(--color-fg); }
 [data-bs-theme="dark"] .fm-auth-card { box-shadow: 0 1px 3px rgba(0, 0, 0, .5); }
-.fm-auth-card h1 { font-size: 1.45rem; font-weight: 800; margin: 0; letter-spacing: -.01em; }
-.fm-auth-card .lead { font-size: .9rem; color: var(--color-muted); margin: .2rem 0 1.1rem; }
+.fm-auth-card h1 { font-size: 1.45rem; font-weight: 800; margin: 0; letter-spacing: -.01em; text-align: center; }
+.fm-auth-card .lead { font-size: .9rem; color: var(--color-muted); margin: .2rem 0 1.1rem; text-align: center; }
 .fm-auth-card .fm-f { margin-bottom: .85rem; }
 .fm-pw { position: relative; }
 .fm-pw .form-control { padding-right: 2.6rem; }
@@ -4501,8 +4501,13 @@ body.bm-tour-open { overflow: hidden; }
 .fm-rules li.ok i { color: #16a34a; }
 .fm-auth-foot { text-align: center; font-size: .8rem; color: var(--color-muted); margin-top: 1rem; }
 .fm-auth-foot a { color: #16a34a; text-decoration: none; font-weight: 600; }
-.fm-auth-icon { width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; background: #dcfce7; color: #16a34a; font-size: 1.15rem; margin-bottom: .75rem; }
-[data-bs-theme="dark"] .fm-auth-icon { background: rgba(22, 163, 74, .18); }
+/* The sprout divider at the top of the sign-in and setup cards (same as the tray's phone window and budminder.app). */
+.fm-auth-div { display: flex; align-items: center; gap: .7rem; color: #16a34a; font-size: 1.05rem; margin: -.2rem 0 1rem; }
+.fm-auth-div::before, .fm-auth-div::after { content: ""; flex: 1; height: 1.5px; }
+.fm-auth-div::before { background: linear-gradient(to right, transparent, #cdbf97); }
+.fm-auth-div::after { background: linear-gradient(to left, transparent, #cdbf97); }
+[data-bs-theme="dark"] .fm-auth-div::before { background: linear-gradient(to right, transparent, rgba(205, 191, 151, .45)); }
+[data-bs-theme="dark"] .fm-auth-div::after { background: linear-gradient(to left, transparent, rgba(205, 191, 151, .45)); }
 
 @media (max-width: 991px) {
     .fm-cols, .fm-cols.jump { grid-template-columns: minmax(0, 1fr); }

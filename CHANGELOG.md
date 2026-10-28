@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Sign in and setup: a sprout divider at the top of the card replaces the green tile, matching the "Open on your phone" window; the title and welcome line are centered.
+
 - New look for the sign-in, setup, Account, Add/Edit plant and Add/Edit strain pages (including the import review page): grouped cards, an "On this page" menu on the strain pages, Seed/Clone and Photoperiod/Autoflower choices, a seed stepper, Write/Preview for the description, and Help, language and theme links under the sign-in card. Settings > Account now sits inside the Settings frame.
 - Plant page timeline: the stage a growing plant is in shows its day number, counting the day it entered the stage as Day 1 (e.g. "Flower Day 13"), matching the week shown above it. Finished stages still show how many days they lasted.
 - Add plant shows a live summary and how many seeds the strain has left after adding the plant.
