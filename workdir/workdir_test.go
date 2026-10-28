@@ -28,6 +28,12 @@ func TestChoose(t *testing.T) {
 		{"data folder chosen by the user", prog, home, true, none, home, false},
 		{"an install that always ran from elsewhere keeps its data", prog, home, false, dbIn(home), home, false},
 		{"data next to the program wins over data here", prog, home, false, func(p string) bool { return dbIn(home)(p) || dbIn(prog)(p) }, prog, true},
+		{"a PostgreSQL install that always ran from elsewhere keeps its photos", prog, home, false,
+			func(p string) bool { return p == filepath.Join(home, "uploads", "plants") }, home, false},
+		{"photos next to the program win over photos here", prog, home, false,
+			func(p string) bool {
+				return p == filepath.Join(home, "uploads", "plants") || p == filepath.Join(prog, "uploads", "plants")
+			}, prog, true},
 		{"go run build", filepath.Join("tmp", "go-build123", "b001", "exe"), home, false, none, home, false},
 	}
 	for _, c := range cases {

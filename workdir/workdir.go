@@ -28,7 +28,9 @@ type Choice struct {
 //   - the program is a `go run` / `go test` build in a temporary folder;
 //   - it was started in its own folder already (Docker, Windows double-click);
 //   - the folder it was started in holds a database and the program's folder
-//     doesn't: an install that has always run from there keeps its data.
+//     doesn't: an install that has always run from there keeps its data;
+//   - likewise for its photos (uploads/plants): a PostgreSQL install has no
+//     database file here but would still lose its uploads.
 func Choose(exeDir, cwd string, dbFileSet bool, exists func(string) bool) Choice {
 	stay := func(reason string) Choice { return Choice{Dir: cwd, Reason: reason} }
 	switch {
@@ -40,6 +42,9 @@ func Choose(exeDir, cwd string, dbFileSet bool, exists func(string) bool) Choice
 		return stay("")
 	case exists(filepath.Join(cwd, "data", "isley.db")) && !exists(filepath.Join(exeDir, "data", "isley.db")):
 		return stay("its database is already here")
+	case exists(filepath.Join(cwd, "uploads", "plants")) && !exists(filepath.Join(exeDir, "uploads", "plants")) &&
+		!exists(filepath.Join(exeDir, "data", "isley.db")):
+		return stay("its photos are already here")
 	}
 	return Choice{Dir: exeDir, Moved: true}
 }
