@@ -6,6 +6,7 @@ import (
 	"crypto/subtle"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"isley/config"
@@ -639,6 +640,18 @@ func validActivityLook(icon, color string) bool {
 	return known && hexColorRe.MatchString(color)
 }
 
+// reservedActivityName reports whether name is one of the built-in activity
+// types ("Water", "Feed", "Note", "Height"), which no other type may use.
+func reservedActivityName(name string) bool {
+	name = strings.TrimSpace(name)
+	for _, r := range []string{"Water", "Feed", "Note", "Height"} {
+		if strings.EqualFold(name, r) {
+			return true
+		}
+	}
+	return false
+}
+
 func AddActivityHandler(c *gin.Context) {
 	fieldLogger := logger.Log.WithField("func", "AddActivityHandler")
 	var activity struct {
@@ -659,8 +672,7 @@ func AddActivityHandler(c *gin.Context) {
 		return
 	}
 
-	//Reserved names can't be added "Water", "Feed", "Note", "Height"
-	if activity.Name == "Water" || activity.Name == "Feed" || activity.Name == "Note" || activity.Name == "Height" {
+	if reservedActivityName(activity.Name) {
 		fieldLogger.Error("Failed to add activity")
 		apiBadRequest(c, "api_activity_name_reserved")
 		return
@@ -846,18 +858,22 @@ func UpdateMetricHandler(c *gin.Context) {
 	// Update metric in database
 	db := DBFromContext(c)
 
-	// Check if metric exists and lock = TRUE
+	// A locked (built-in) metric keeps its name; its unit can change.
 	var lock bool
-	var err error
-	err = db.QueryRow("SELECT lock FROM metric WHERE id = $1", id).Scan(&lock)
+	var name string
+	err := db.QueryRow("SELECT name, COALESCE(lock, FALSE) FROM metric WHERE id = $1", id).Scan(&name, &lock)
+	if errors.Is(err, sql.ErrNoRows) {
+		apiNotFound(c, "api_metric_not_found")
+		return
+	}
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to update metric")
 		apiInternalError(c, "api_failed_to_update_metric")
 		return
 	}
-	if lock {
-		// Previously edits were blocked when lock==true; allow update but warn in logs.
-		fieldLogger.WithField("metricID", id).Warn("Metric is locked but update will be allowed")
+	if lock && metric.Name != name {
+		apiBadRequest(c, "api_metric_locked")
+		return
 	}
 
 	// Update metric in database
@@ -917,13 +933,33 @@ func UpdateActivityHandler(c *gin.Context) {
 	}
 	defer tx.Rollback()
 
-	// Check lock but do not block updates; log a warning if locked
-	var lock bool
-	err = tx.QueryRow("SELECT lock FROM activity WHERE id = $1", id).Scan(&lock)
+	// A locked (built-in) type keeps its name and watering/feeding flags;
+	// its look and measurements can change. Other types can't take a
+	// built-in name.
+	var cur struct {
+		name                  string
+		isWatering, isFeeding bool
+		lock                  bool
+	}
+	err = tx.QueryRow("SELECT name, is_watering, is_feeding, COALESCE(lock, FALSE) FROM activity WHERE id = $1", id).
+		Scan(&cur.name, &cur.isWatering, &cur.isFeeding, &cur.lock)
+	if errors.Is(err, sql.ErrNoRows) {
+		apiNotFound(c, "api_activity_not_found")
+		return
+	}
 	if err != nil {
-		fieldLogger.WithError(err).Warn("Failed to check activity lock; proceeding with update")
-	} else if lock {
-		fieldLogger.WithField("activityID", id).Warn("Activity is locked but update will be allowed")
+		fieldLogger.WithError(err).Error("Failed to read activity")
+		apiInternalError(c, "api_failed_to_update_activity")
+		return
+	}
+	if cur.lock {
+		if activity.Name != cur.name || activity.IsWatering != cur.isWatering || activity.IsFeeding != cur.isFeeding {
+			apiBadRequest(c, "api_activity_locked")
+			return
+		}
+	} else if reservedActivityName(activity.Name) {
+		apiBadRequest(c, "api_activity_name_reserved_rename")
+		return
 	}
 
 	// Perform the update
@@ -1080,13 +1116,21 @@ func DeleteActivityHandler(c *gin.Context) {
 	}
 	defer tx.Rollback()
 
-	// Check lock but do not block deletion; log a warning if locked
+	// Built-in types can't be deleted (like locked metrics).
 	var lock bool
-	err = tx.QueryRow("SELECT lock FROM activity WHERE id = $1", id).Scan(&lock)
+	err = tx.QueryRow("SELECT COALESCE(lock, FALSE) FROM activity WHERE id = $1", id).Scan(&lock)
+	if errors.Is(err, sql.ErrNoRows) {
+		apiNotFound(c, "api_activity_not_found")
+		return
+	}
 	if err != nil {
-		fieldLogger.WithError(err).Warn("Failed to check activity lock; proceeding with deletion")
-	} else if lock {
-		fieldLogger.WithField("activityID", id).Warn("Activity is locked but deletion will be allowed")
+		fieldLogger.WithError(err).Error("Failed to read activity")
+		apiInternalError(c, "api_failed_to_delete_activity")
+		return
+	}
+	if lock {
+		apiBadRequest(c, "api_activity_cannot_delete")
+		return
 	}
 
 	// Delete any plant_activities associated with this activity

@@ -173,6 +173,7 @@ func GetActivities(db *sql.DB) []types.Activity {
 			a.is_feeding,
 			a.icon,
 			a.color,
+			COALESCE(a.lock, FALSE),
 			am.metric_id,
 			am.required
 		FROM activity a
@@ -193,12 +194,13 @@ func GetActivities(db *sql.DB) []types.Activity {
 			isWatering   bool
 			isFeeding    bool
 			icon, color  string
+			lock         bool
 			// Use Null types for optional metric fields
 			metricID sql.NullInt64
 			required sql.NullBool
 		)
 
-		err = rows.Scan(&activityID, &activityName, &isWatering, &isFeeding, &icon, &color, &metricID, &required)
+		err = rows.Scan(&activityID, &activityName, &isWatering, &isFeeding, &icon, &color, &lock, &metricID, &required)
 		if err != nil {
 			fieldLogger.WithError(err).Error("Failed to scan activity")
 			return nil
@@ -214,6 +216,7 @@ func GetActivities(db *sql.DB) []types.Activity {
 				Icon:       icon,
 				Color:      color,
 				Metrics:    []types.ActivityMetricLink{},
+				Lock:       lock,
 			})
 			idx = len(activities) - 1
 			activityIdx[activityID] = idx
@@ -233,7 +236,7 @@ func GetActivities(db *sql.DB) []types.Activity {
 func GetMetrics(db *sql.DB) []types.Metric {
 	fieldLogger := logger.Log.WithField("func", "GetMetrics")
 
-	rows, err := db.Query("SELECT id, name, unit FROM metric")
+	rows, err := db.Query("SELECT id, name, unit, COALESCE(lock, FALSE) FROM metric")
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to query metrics")
 		return nil
@@ -242,7 +245,7 @@ func GetMetrics(db *sql.DB) []types.Metric {
 	var measurements []types.Metric
 	for rows.Next() {
 		var measurement types.Metric
-		err = rows.Scan(&measurement.ID, &measurement.Name, &measurement.Unit)
+		err = rows.Scan(&measurement.ID, &measurement.Name, &measurement.Unit, &measurement.Lock)
 		if err != nil {
 			fieldLogger.WithError(err).Error("Failed to scan metric")
 			return nil

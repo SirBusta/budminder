@@ -23,6 +23,9 @@ type Activity struct {
 	Icon       string               `json:"icon"`
 	Color      string               `json:"color"`
 	Metrics    []ActivityMetricLink `json:"metrics"`
+	// Lock marks a built-in type (Water, Feed, Note, Height): it keeps its
+	// name and watering/feeding flags and can't be deleted.
+	Lock bool `json:"lock,omitempty"`
 }
 
 type ActivityMetricLink struct {
@@ -49,6 +52,9 @@ type Metric struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
 	Unit string `json:"unit"`
+	// Lock marks a built-in metric (Height): it keeps its name and can't
+	// be deleted; the unit can change.
+	Lock bool `json:"lock,omitempty"`
 }
 
 type Plant struct {
