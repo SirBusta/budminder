@@ -3,35 +3,35 @@
 </head>
 
 <body>
-<main id="main-content">
-<div class="container">
-    <div class="text-center mb-3">
-        <img src="/static/img/brand/budminder-wordmark.svg" alt="BudMinder" class="brand-wm-lg brand-light">
-        <img src="/static/img/brand/budminder-wordmark-dark.svg" alt="BudMinder" class="brand-wm-lg brand-dark">
-    </div>
-    <h1 class="text-center text-primary">{{ .lcl.title_login }}</h1>
-    <div class="card shadow-sm">
-        <form action="/login" method="POST">
+<main id="main-content" class="fm-auth sx">
+    <div class="fm-auth-box">
+        <div class="fm-auth-brand">
+            <img src="/static/img/brand/budminder-wordmark.svg" alt="BudMinder" class="brand-light">
+            <img src="/static/img/brand/budminder-wordmark-dark.svg" alt="BudMinder" class="brand-dark">
+        </div>
+        <form class="fm-auth-card" action="/login" method="POST">
             <input type="hidden" name="csrf_token" value="{{ .csrfToken }}">
-            <div class="mb-3">
-                <label for="username" class="form-label required">{{ .lcl.username }}</label>
-                <input type="text" id="username" name="username" class="form-control" required>
-            </div>
-            <div class="mb-3">
-                <label for="password" class="form-label required">{{ .lcl.password }}</label>
-                <input type="password" id="password" name="password" class="form-control" required>
-            </div>
-            <div class="mb-3 form-check">
-                <input type="checkbox" class="form-check-input" id="remember" name="remember">
-                <label class="form-check-label" for="remember">{{ .lcl.remember_me }}</label>
-            </div>
+            <h1>{{ .lcl.fm_sign_in }}</h1>
+            <p class="lead">{{ .lcl.fm_sign_in_lead }}</p>
             {{ if .Error }}
-            <div class="alert alert-danger">{{ .Error }}</div>
+            <div class="fm-err mb-3" role="alert"><i class="fa-solid fa-circle-exclamation mt-1" aria-hidden="true"></i><div>{{ .Error }}</div></div>
             {{ end }}
-            <button type="submit" class="btn btn-primary w-100">{{ .lcl.title_login }}</button>
+            <div class="fm-f">
+                <label for="username">{{ .lcl.username }}</label>
+                <input type="text" id="username" name="username" class="form-control" autocomplete="username" required autofocus>
+            </div>
+            <div class="fm-f">
+                <label for="password">{{ .lcl.password }}</label>
+                <div class="fm-pw">
+                    <input type="password" id="password" name="password" class="form-control" autocomplete="current-password" required>
+                    <button type="button" aria-label="{{ .lcl.fm_show_password }}" data-show="{{ .lcl.fm_show_password }}" data-hide="{{ .lcl.fm_hide_password }}"><i class="fa-regular fa-eye"></i></button>
+                </div>
+            </div>
+            <label class="fm-check"><input type="checkbox" class="form-check-input" id="remember" name="remember"> {{ .lcl.remember_me }}</label>
+            <button type="submit" class="fm-btn block"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> {{ .lcl.fm_sign_in }}</button>
         </form>
+        {{ template "common/auth-foot.html" . }}
     </div>
-</div>
 
 <!--Embed the footer.html template at this location-->
 {{ template "common/footer.html" .}}

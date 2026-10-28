@@ -149,11 +149,11 @@ func TestImportReview_Errors(t *testing.T) {
 	s.server.ConfigStore.SetStraincompassEnabled(0)
 
 	_, page := s.reviewPage(t, scReviewQuery())
-	assert.Contains(t, page, "alert-danger")
+	assert.Contains(t, page, `class="fm-err`)
 	assert.NotContains(t, page, `id="editStrainForm"`)
 
 	_, page = s.reviewPage(t, url.Values{"source": {"somewhere"}})
-	assert.Contains(t, page, "alert-danger")
+	assert.Contains(t, page, `class="fm-err`)
 }
 
 func reviewSavePayload(overrides map[string]any) map[string]any {

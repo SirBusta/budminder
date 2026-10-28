@@ -547,7 +547,14 @@
             });
             document.querySelector(".sp-top").after(n);
         });
-        const name = (new URLSearchParams(location.search).get("add") || "").trim();
+        const params = new URLSearchParams(location.search);
+        // ?find=1 (Add strain's "Search StrainCompass"): open the search.
+        if (params.get("find") === "1" && LOGGED_IN && $("spFindBtn")) {
+            history.replaceState(null, "", location.pathname + location.hash);
+            openFind();
+            return;
+        }
+        const name = (params.get("add") || "").trim();
         if (!name || !LOGGED_IN) return;
         // Only once: a reload or Back doesn't search again.
         history.replaceState(null, "", location.pathname + location.hash);

@@ -1,6 +1,6 @@
 {{ define "common/settings-nav.html" }}
 {{/* Settings side menu (mockup ST1), shared by Settings and Manage sensors.
-     Called with (dict "lcl" .lcl "page" "settings"|"sensors"). On Settings
+     Called with (dict "lcl" .lcl "page" "settings"|"sensors"|"account"). On Settings
      the links switch sections in place (js/settings-page.js); elsewhere they
      go to /settings#section and the search box submits to /settings?q=. */}}
 <aside class="st-aside">
@@ -10,7 +10,7 @@
     </form>
     <nav class="st-side" id="stSide" aria-label="{{ .lcl.st_sections }}">
         <h6>{{ .lcl.title_settings }}</h6>
-        <a href="/settings#general" data-sec="general"><i class="fa-solid fa-sliders"></i><span>{{ .lcl.st_sec_general }}</span></a>
+        <a href="/settings#general" data-sec="general"{{ if eq .page "account" }} class="on"{{ end }}><i class="fa-solid fa-sliders"></i><span>{{ .lcl.st_sec_general }}</span></a>
         <a href="/settings#integrations" data-sec="integrations"><i class="fa-solid fa-plug"></i><span>{{ .lcl.st_sec_integrations }}</span></a>
         <a href="/settings#grow" data-sec="grow"><i class="fa-solid fa-seedling"></i><span>{{ .lcl.st_sec_grow }}</span></a>
         <a href="/sensors/manage" class="{{ if eq .page "sensors" }}on{{ end }}"><i class="fa-solid fa-temperature-half"></i><span>{{ .lcl.st_sec_sensors }}</span></a>

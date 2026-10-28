@@ -149,10 +149,14 @@ func renderAccount(c *gin.Context, status int, errKey string) {
 		"currentLanguage": lang,
 		"csrfToken":       csrfToken,
 		"cspNonce":        c.GetString("cspNonce"),
+		"currentPath":     c.Request.URL.Path,
+		"loggedIn":        true,
 		"Username":        username,
 	}
 	if errKey != "" {
 		h["Error"] = T(c, errKey)
+		// A wrong current password is shown under that box; the rest above the form.
+		h["ErrorCurrent"] = errKey == "account_err_current"
 	}
 	c.HTML(status, "views/change-password.html", h)
 }

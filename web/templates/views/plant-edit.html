@@ -2,193 +2,131 @@
 
 {{ template "common/header.html" .}}
 {{ template "common/header2.html" .}}
-<div class="container ns">
-    <!-- Breadcrumbs -->
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/plants">{{ .lcl.title_plants }}</a></li>
-            <li class="breadcrumb-item"><a href="/plant/{{ .plant.ID }}">{{ .plant.Name }}</a></li>
-            <li class="breadcrumb-item active" aria-current="page">{{ .lcl.edit_plant }}</li>
-        </ol>
-    </nav>
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 text-primary mb-0">
-            <i class="fa-solid fa-pen-to-square me-2"></i>{{ .lcl.edit_plant }}: {{ .plant.Name }}
-        </h1>
+{{ $plbl := index $.lcl (print (lower .plant.Status) "_label") }}
+<div class="container-xxl sx fm">
+    <div class="fm-crumbs"><a href="/plants">{{ .lcl.title_plants }}</a><i class="fa-solid fa-chevron-right" aria-hidden="true"></i><a href="/plant/{{ .plant.ID }}">{{ .plant.Name }}</a><i class="fa-solid fa-chevron-right" aria-hidden="true"></i>{{ .lcl.fm_edit }}</div>
+    <div class="fm-top">
         <div>
-            <a href="/plant/{{ .plant.ID }}" class="btn btn-secondary me-2">
-                <i class="fa-solid fa-xmark me-1"></i> Cancel
-            </a>
-            <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#linkSensorModal">
-                <i class="fa-solid fa-link me-1"></i> {{ .lcl.link_sensors }}
-            </button>
-            <button type="button" class="btn btn-danger" id="deletePlantButton">
-                <i class="fa-solid fa-trash me-1"></i> {{ .lcl.delete_plant }}
+            <h1>{{ .lcl.fm_edit_plant }}</h1>
+            <p>{{ .plant.Name }} · {{ if $plbl }}{{ $plbl }}{{ else }}{{ .plant.Status }}{{ end }}</p>
+        </div>
+        <div class="fm-top-r">
+            <button type="button" class="fm-btn light" data-bs-toggle="modal" data-bs-target="#linkSensorModal">
+                <i class="fa-solid fa-link" aria-hidden="true"></i> {{ .lcl.link_sensors }}
             </button>
         </div>
     </div>
 
-    <form id="editPlantForm">
+    <form id="editPlantForm" class="fm-cols">
         <input type="hidden" id="plantId" value="{{ .plant.ID }}">
+        <div>
+            <div class="fm-tip d-none" id="strainFirstBack" role="status">
+                <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                <div id="strainFirstBackText"></div>
+            </div>
 
-        <div class="row g-4">
-            <!-- Left column: Form fields -->
-            <div class="col-lg-7">
-                <div class="alert alert-success d-flex gap-2 align-items-center mb-4 d-none" id="strainFirstBack" role="status">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <div id="strainFirstBackText"></div>
-                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="{{ .lcl.title_close }}"></button>
-                </div>
-
-                <!-- Basic info card -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary mb-3">
-                            <i class="fa-solid fa-circle-info me-1"></i> Basic Info
-                        </h2>
-
-                        <div class="row g-3">
-                            <!-- Plant Name -->
-                            <div class="col-md-6">
-                                <label for="plantName" class="form-label required">{{ .lcl.plant_name }}</label>
-                                <input type="text" class="form-control" id="plantName" value="{{ .plant.Name }}" required>
-                            </div>
-
-                            <!-- Zone -->
-                            <div class="col-md-6">
-                                <label for="zoneSelect" class="form-label required">{{ .lcl.title_zone }}</label>
-                                <select class="form-select" id="zoneSelect" required>
-                                    {{ range .zones }}
-                                    <option value="{{ .ID }}" {{ if eq .ID $.plant.ZoneID }}selected{{ end }}>{{ .Name }}</option>
-                                    {{ end }}
-                                    <option value="new">{{ .lcl.add_new_zone }}</option>
-                                </select>
-                            </div>
-
-                            <!-- New Zone Input -->
-                            <div class="col-12 d-none" id="newZoneInput">
-                                <label for="newZoneName" class="form-label">{{ .lcl.new_zone_name }}</label>
-                                <input type="text" class="form-control" id="newZoneName" placeholder="{{ .lcl.enter_new_zone }}">
-                            </div>
-
-                            <!-- Strain -->
-                            <div class="col-md-6">
-                                <label for="strainSelect" class="form-label required">{{ .lcl.title_strain }}</label>
-                                <select class="form-select" id="strainSelect" required data-ac-did-you-mean="{{ .lcl.sf_did_you_mean }}" data-ac-placeholder="{{ .lcl.sf_search_placeholder }}">
-                                    {{ range .strains }}
-                                    <option {{ if eq .ID $.plant.StrainID }}selected{{ end }} value="{{ .ID }}" data-name="{{ .Name }}">{{ .Name }} ({{ .Breeder }})</option>
-                                    {{ end }}
-                                </select>
-                            </div>
-
-                            <!-- Start Date -->
-                            <div class="col-md-6">
-                                <label for="startDate" class="form-label required">{{ .lcl.start_date }}</label>
-                                <input type="date" class="form-control" id="startDate" required data-stored="{{ .plant.StartDT | formatDateTimeLocal }}">
-                            </div>
+            <div class="fm-card">
+                <div class="fm-card-h"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><div><h2>{{ .lcl.fm_basics }}</h2></div></div>
+                <div class="fm-grid">
+                    <div class="fm-f">
+                        <label for="plantName">{{ .lcl.fm_plant_name }} <span class="req">*</span></label>
+                        <input type="text" class="form-control" id="plantName" value="{{ .plant.Name }}" required>
+                    </div>
+                    <div class="fm-f">
+                        <label for="strainSelect">{{ .lcl.fm_strain }} <span class="req">*</span></label>
+                        <select class="form-select" id="strainSelect" required data-ac-did-you-mean="{{ .lcl.sf_did_you_mean }}" data-ac-placeholder="{{ .lcl.sf_search_placeholder }}">
+                            {{ range .strains }}
+                            <option {{ if eq .ID $.plant.StrainID }}selected{{ end }} value="{{ .ID }}" data-name="{{ .Name }}">{{ .Name }} ({{ .Breeder }})</option>
+                            {{ end }}
+                        </select>
+                    </div>
+                    <div class="fm-f">
+                        <label for="zoneSelect">{{ .lcl.fm_zone }} <span class="req">*</span></label>
+                        <select class="form-select" id="zoneSelect" required>
+                            {{ range .zones }}
+                            <option value="{{ .ID }}" {{ if eq .ID $.plant.ZoneID }}selected{{ end }}>{{ .Name }}</option>
+                            {{ end }}
+                            <option value="new">{{ .lcl.add_new_zone }}</option>
+                        </select>
+                    </div>
+                    <div class="fm-f">
+                        <label for="startDate">{{ .lcl.fm_start_date }} <span class="req">*</span></label>
+                        <input type="date" class="form-control" id="startDate" required data-stored="{{ .plant.StartDT | formatDateTimeLocal }}">
+                    </div>
+                    <div class="fm-f full d-none" id="newZoneInput">
+                        <label for="newZoneName">{{ .lcl.new_zone_name }}</label>
+                        <input type="text" class="form-control" id="newZoneName" placeholder="{{ .lcl.enter_new_zone }}">
+                    </div>
+                    <div class="fm-f">
+                        <span class="fm-lbl" id="fromLbl">{{ .lcl.fm_grown_from }}</span>
+                        <input type="checkbox" class="d-none" id="cloneCheckbox" tabindex="-1" aria-hidden="true" {{ if .plant.IsClone }}checked{{ end }}>
+                        <div class="fm-seg" data-for="cloneCheckbox" role="radiogroup" aria-labelledby="fromLbl">
+                            <label><input type="radio" name="grownFrom" value="0"><i class="fa-solid fa-seedling" aria-hidden="true"></i><div><b>{{ .lcl.fm_seed }}</b></div></label>
+                            <label><input type="radio" name="grownFrom" value="1"><i class="fa-solid fa-scissors" aria-hidden="true"></i><div><b>{{ .lcl.fm_clone }}</b></div></label>
                         </div>
                     </div>
-                </div>
-
-                <!-- Description & Options card -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary mb-3">
-                            <i class="fa-solid fa-sliders me-1"></i> Details
-                        </h2>
-
-                        <div class="row g-3">
-                            <!-- Plant Description -->
-                            <div class="col-12">
-                                <label for="plantDescription" class="form-label">{{ .lcl.plant_description }}</label>
-                                <textarea class="form-control" id="plantDescription" rows="4" style="resize: vertical;">{{ .plant.Description }}</textarea>
-                            </div>
-
-                            <!-- Clone Checkbox -->
-                            <div class="col-md-6">
-                                <div class="form-check mt-2">
-                                    <input type="checkbox" class="form-check-input" id="cloneCheckbox" {{ if .plant.IsClone }}checked{{ end }}>
-                                    <label class="form-check-label" for="cloneCheckbox">{{ .lcl.is_clone_info }}</label>
-                                </div>
-                            </div>
-
-                            <!-- Harvest Weight -->
-                            <div class="col-md-6">
-                                <label for="harvestWeight" class="form-label">{{ .lcl.harvest_weight_g }}</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" id="harvestWeight" value="{{ .plant.HarvestWeight }}" step="any">
-                                    <span class="input-group-text">{{ .lcl.title_grams }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Save button -->
-                <div class="d-flex justify-content-end mb-4">
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <span class="spinner-border spinner-border-sm btn-spinner" role="status" aria-hidden="true"></span>
-                        <i class="fa-solid fa-check me-1"></i> {{ .lcl.save_changes }}
-                    </button>
                 </div>
             </div>
 
-            <!-- Right column: Plant Info Preview -->
-            <div class="col-lg-5">
-                <div class="card plant-infobox sticky-top" style="top: 1rem;">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary text-center mb-3">
-                            <i class="fa-solid fa-leaf me-1"></i> {{ .lcl.plant_details }}
-                        </h2>
-
-                        <!-- Status badge -->
-                        <div class="text-center mb-3">
-                            {{ $plbl := index $.lcl (print (lower .plant.Status) "_label") }}
-                            <span class="pc-status-badge pc-status-lg">{{ if $plbl }}{{ $plbl }}{{ else }}{{ .plant.Status }}{{ end }}</span>
-                        </div>
-
-                        <div class="text-center mb-3">
-                            {{ if .plant.Autoflower }}
-                            <span class="badge strain-badge-auto"><i class="fa-solid fa-bolt me-1"></i> {{ .lcl.autoflower }}</span>
-                            {{ else }}
-                            <span class="badge strain-badge-photo"><i class="fa-solid fa-sun me-1"></i> Photoperiod</span>
-                            {{ end }}
-                        </div>
-
-                        <hr>
-
-                        <ul class="list-unstyled strain-info-list mb-0">
-                            <li>
-                                <span class="strain-info-label"><i class="fa-solid fa-cannabis me-2"></i>{{ .lcl.title_strain }}</span>
-                                <span class="strain-info-value">{{ .plant.StrainName }}</span>
-                            </li>
-                            <li>
-                                <span class="strain-info-label"><i class="fa-solid fa-building me-2"></i>{{ .lcl.breeder }}</span>
-                                <span class="strain-info-value">{{ .plant.BreederName }}</span>
-                            </li>
-                            <li>
-                                <span class="strain-info-label"><i class="fa-solid fa-location-dot me-2"></i>{{ .lcl.title_zone }}</span>
-                                <span class="strain-info-value">{{ .plant.ZoneName }}</span>
-                            </li>
-                            <li>
-                                <span class="strain-info-label"><i class="fa-solid fa-calendar me-2"></i>{{ .lcl.start_date }}</span>
-                                <span class="strain-info-value">{{ formatDateTime .plant.StartDT }}</span>
-                            </li>
-                            {{ if and (ne .plant.Status "Success") (ne .plant.Status "Dead") }}
-                            <li>
-                                <span class="strain-info-label"><i class="fa-solid fa-calendar-day me-2"></i>{{ .lcl.title_day }}</span>
-                                <span class="strain-info-value">{{ .plant.CurrentDay }}</span>
-                            </li>
-                            {{ end }}
-                        </ul>
+            <div class="fm-card">
+                <div class="fm-card-h"><i class="fa-solid fa-pen" aria-hidden="true"></i><div><h2>{{ .lcl.fm_notes_harvest }}</h2></div></div>
+                <div class="fm-grid">
+                    <div class="fm-f full">
+                        <label for="plantDescription">{{ .lcl.fm_description }}</label>
+                        <textarea class="form-control" id="plantDescription" rows="3" style="resize: vertical;">{{ .plant.Description }}</textarea>
+                    </div>
+                    <div class="fm-f">
+                        <label for="harvestWeight">{{ .lcl.fm_harvest_weight }}</label>
+                        <div class="fm-unit"><input type="number" class="form-control" id="harvestWeight" value="{{ .plant.HarvestWeight }}" min="0" step="any"><span>{{ .lcl.fm_grams_dry }}</span></div>
                     </div>
                 </div>
+            </div>
+
+            <div class="fm-card fm-danger">
+                <div class="fm-card-h"><i class="fa-solid fa-trash-can" aria-hidden="true"></i><div><h2>{{ .lcl.fm_delete_plant }}</h2><p>{{ .lcl.fm_delete_plant_desc }}</p></div>
+                    <button type="button" class="fm-btn danger sm" id="deletePlantButton">{{ .lcl.fm_delete_plant_btn }}</button></div>
+            </div>
+
+            <div class="fm-save">
+                <span class="msg" hidden><i class="fa-solid fa-circle" aria-hidden="true"></i>{{ .lcl.fm_unsaved }}</span>
+                <a href="/plant/{{ .plant.ID }}" class="fm-btn light">{{ .lcl.cancel }}</a>
+                <button type="submit" class="fm-btn">
+                    <span class="spinner-border spinner-border-sm btn-spinner" role="status" aria-hidden="true"></span>
+                    <i class="fa-solid fa-check" aria-hidden="true"></i> {{ .lcl.fm_save_changes }}
+                </button>
             </div>
         </div>
+
+        <!-- The plant as it is now. -->
+        <aside class="fm-side">
+            <div class="fm-sum">
+                <div class="ph"><i class="fa-solid fa-cannabis" aria-hidden="true"></i></div>
+                <div class="bd">
+                    <h3>{{ .plant.Name }}</h3>
+                    <div class="sub">{{ .plant.StrainName }}{{ if .plant.BreederName }} · {{ .plant.BreederName }}{{ end }}</div>
+                    <div class="d-flex flex-wrap gap-1 mb-2">
+                        {{ if .plant.Autoflower }}
+                        <span class="fm-pill photo"><i class="fa-solid fa-bolt" aria-hidden="true"></i>{{ .lcl.autoflower }}</span>
+                        {{ else }}
+                        <span class="fm-pill photo"><i class="fa-solid fa-sun" aria-hidden="true"></i>{{ .lcl.photoperiod }}</span>
+                        {{ end }}
+                        <span class="fm-pill {{ if eq .plant.Status "Flower" }}flower{{ else }}stage{{ end }}">{{ if $plbl }}{{ $plbl }}{{ else }}{{ .plant.Status }}{{ end }}</span>
+                    </div>
+                    <dl>
+                        <dt>{{ .lcl.fm_zone }}</dt><dd>{{ .plant.ZoneName }}</dd>
+                        <dt>{{ .lcl.fm_started }}</dt><dd>{{ formatDate .plant.StartDT }}</dd>
+                        {{ if and (ne .plant.Status "Success") (ne .plant.Status "Dead") }}
+                        <dt>{{ .lcl.title_day }}</dt><dd>{{ .plant.CurrentDay }}</dd>
+                        {{ end }}
+                    </dl>
+                </div>
+                <a href="/plant/{{ .plant.ID }}" class="lnk">{{ .lcl.fm_back_to_plant }} <i class="fa-solid fa-arrow-right ms-1" aria-hidden="true"></i></a>
+            </div>
+        </aside>
     </form>
 </div>
 
+<script src="/static/js/form-look.js"></script>
 <script src="/static/js/plant-edit.js"></script>
 {{ template "modals/link-sensor-modal.html" . }}
 {{ template "common/footer.html" .}}

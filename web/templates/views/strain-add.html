@@ -2,230 +2,183 @@
 
 {{ template "common/header.html" .}}
 {{ template "common/header2.html" .}}
-<div class="container ns">
-    <!-- Breadcrumbs -->
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/strains">{{ .lcl.title_strains }}</a></li>
-            <li class="breadcrumb-item active" aria-current="page">{{ .lcl.add_strain }}</li>
-        </ol>
-    </nav>
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 text-primary mb-0">
-            <i class="fa-solid fa-plus me-2"></i>{{ .lcl.add_strain }}
-        </h1>
-        <a href="/strains" class="btn btn-secondary">
-            <i class="fa-solid fa-xmark me-1"></i> Cancel
-        </a>
+<div class="container-xxl sx fm">
+    <div class="fm-crumbs"><a href="/strains">{{ .lcl.title_strains }}</a><i class="fa-solid fa-chevron-right" aria-hidden="true"></i>{{ .lcl.fm_add_strain }}</div>
+    <div class="fm-top">
+        <div>
+            <h1>{{ .lcl.fm_add_strain }}</h1>
+            <p>{{ .lcl.fm_strain_add_lead }}</p>
+        </div>
     </div>
 
-    <form id="addStrainForm">
-        <div class="row g-4">
-            <!-- Left column: Form fields + markdown editor -->
-            <div class="col-lg-7">
-                <!-- Basic info card -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary mb-3">
-                            <i class="fa-solid fa-circle-info me-1"></i> Basic Info
-                        </h2>
+    <div class="fm-cols jump">
+        <nav class="fm-jump" aria-label="{{ .lcl.fm_on_this_page }}">
+            <h6>{{ .lcl.fm_on_this_page }}</h6>
+            <a href="#s-basics"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>{{ .lcl.fm_basics }}</a>
+            <a href="#s-genetics"><i class="fa-solid fa-dna" aria-hidden="true"></i>{{ .lcl.fm_genetics }}</a>
+            <a href="#s-seeds"><i class="fa-solid fa-box-archive" aria-hidden="true"></i>{{ .lcl.fm_seeds }}</a>
+            <a href="#s-growth"><i class="fa-solid fa-ruler-vertical" aria-hidden="true"></i>{{ .lcl.fm_height_yield }}</a>
+            <a href="#s-desc"><i class="fa-solid fa-file-lines" aria-hidden="true"></i>{{ .lcl.fm_description }}</a>
+        </nav>
 
-                        <div class="row g-3">
-                            <!-- Strain Name -->
-                            <div class="col-md-6">
-                                <label for="editStrainName" class="form-label required">{{ .lcl.strain_name }}</label>
-                                <input type="text" class="form-control" id="editStrainName" value="{{ .prefillName }}" required>
-                            </div>
+        <form id="addStrainForm">
+            {{ if .scEnabled }}
+            <div class="fm-tip"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><div><b>{{ .lcl.fm_sc_faster }}</b> <a href="/strains?find=1">{{ .lcl.fm_sc_search }}</a> {{ .lcl.fm_sc_fills }}</div></div>
+            {{ end }}
 
-                            <!-- Breeder -->
-                            <div class="col-md-6">
-                                <label for="editBreederSelect" class="form-label required">{{ .lcl.breeder }}</label>
-                                <select class="form-select" id="editBreederSelect" required
-                                        data-ac-placeholder="{{ .lcl.breeder_search_placeholder }}"
-                                        data-ac-new-text="{{ .lcl.breeder_add_new_named }}"
-                                        data-ac-did-you-mean="{{ .lcl.autocomplete_did_you_mean }}"
-                                        data-ac-suggested="{{ .lcl.autocomplete_suggested }}"
-                                        data-ac-results="{{ .lcl.autocomplete_results }}">
-                                    <option value="" selected></option>
-                                    {{ range .breeders }}
-                                    <option value="{{ .ID }}">{{ .Name }}</option>
-                                    {{ end }}
-                                    <option value="new">{{ .lcl.add_new_breeder }}</option>
-                                </select>
-                                <input type="hidden" id="editNewBreederName">
-                            </div>
-
-                            <!-- URL -->
-                            <div class="col-12">
-                                <label for="editUrl" class="form-label">{{ .lcl.url }}</label>
-                                <input type="text" class="form-control" id="editUrl" placeholder="{{ .lcl.strain_url_placeholder }}">
-                            </div>
-
-                            <!-- Short Description -->
-                            <div class="col-12">
-                                <label for="editStrainShortDescription" class="form-label required">{{ .lcl.short_description_txt }}</label>
-                                <input type="text" class="form-control" id="editStrainShortDescription" placeholder="{{ .lcl.short_description_placeholder }}" required>
-                            </div>
-                        </div>
+            <div class="fm-card" id="s-basics">
+                <div class="fm-card-h"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><div><h2>{{ .lcl.fm_basics }}</h2></div></div>
+                <div class="fm-grid">
+                    <div class="fm-f">
+                        <label for="editStrainName">{{ .lcl.fm_strain_name }} <span class="req">*</span></label>
+                        <input type="text" class="form-control" id="editStrainName" value="{{ .prefillName }}" placeholder="{{ .lcl.fm_strain_name_placeholder }}" required>
                     </div>
-                </div>
-
-                <!-- Genetics card -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary mb-3">
-                            <i class="fa-solid fa-dna me-1"></i> Genetics
-                        </h2>
-
-                        <div class="row g-3">
-                            <!-- Indica/Sativa Slider -->
-                            <div class="col-12">
-                                <label for="editIndicaSativaSlider" class="form-label">{{ .lcl.i_s_ratio }}</label>
-                                <input type="range" class="form-range" id="editIndicaSativaSlider" min="0" max="100" value="50">
-                                <div class="d-flex justify-content-between">
-                                    <small class="fw-semibold strain-indica-text" id="editIndicaLabel">Indica: 50%</small>
-                                    <small class="fw-semibold strain-sativa-text" id="editSativaLabel">Sativa: 50%</small>
-                                </div>
-                                <!-- Live preview bar -->
-                                <div class="strain-ratio-bar mt-2" id="editRatioPreview">
-                                    <div class="strain-ratio-fill" id="editRatioFill" style="width: 50%"></div>
-                                </div>
-                            </div>
-
-                            <!-- Autoflower -->
-                            <div class="col-md-6">
-                                <label for="editAutoflower" class="form-label required">{{ .lcl.autoflower }}</label>
-                                <select class="form-select" id="editAutoflower" required>
-                                    <option value="true">{{ .lcl.yes }}</option>
-                                    <option value="false" selected>{{ .lcl.no }}</option>
-                                </select>
-                            </div>
-
-                            <!-- Cycle Time -->
-                            <div class="col-md-6">
-                                <label for="editCycleTime" class="form-label required" id="editCycleTimeLabel"
-                                       data-photo="{{ .lcl.flowering_time }}" data-auto="{{ .lcl.seed_to_harvest }}">{{ .lcl.flowering_time }}</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" id="editCycleTimeMin" min="0" step="any" value=""
-                                           placeholder="{{ .lcl.cycle_time_from }}" aria-label="{{ .lcl.cycle_time_from }}">
-                                    <span class="input-group-text">–</span>
-                                    <input type="number" class="form-control" id="editCycleTime" min="0" step="any" value="8" required
-                                           placeholder="{{ .lcl.cycle_time_to }}" aria-label="{{ .lcl.cycle_time_to }}">
-                                    <span class="input-group-text">{{ .lcl.unit_weeks }}</span>
-                                </div>
-                                <small class="text-muted" id="editCycleTimeDesc"
-                                       data-photo="{{ .lcl.flowering_time_desc }}" data-auto="{{ .lcl.seed_to_harvest_desc }}">{{ .lcl.flowering_time_desc }}</small>
-                            </div>
-
-                            <!-- Seed Type -->
-                            <div class="col-md-4">
-                                <label for="editSeedType" class="form-label">{{ .lcl.seed_type }}</label>
-                                <select class="form-select" id="editSeedType">
-                                    <option value="" selected>{{ .lcl.seed_type_not_set }}</option>
-                                    <option value="feminized">{{ .lcl.seed_type_feminized }}</option>
-                                    <option value="regular">{{ .lcl.seed_type_regular }}</option>
-                                    <option value="clone">{{ .lcl.seed_type_clone }}</option>
-                                </select>
-                            </div>
-
-                            <!-- Seed Count -->
-                            <div class="col-md-4">
-                                <label for="editSeedCount" class="form-label">{{ .lcl.seed_count }}</label>
-                                <input type="number" class="form-control" id="editSeedCount" min="0" value="0">
-                            </div>
-
-                            <!-- Seeds added on -->
-                            <div class="col-md-4">
-                                <label for="editSeedsAddedOn" class="form-label">{{ .lcl.seeds_added_on }}</label>
-                                <input type="date" class="form-control" id="editSeedsAddedOn" value="">
-                                <small class="text-muted">{{ .lcl.seeds_added_on_desc }}</small>
-                            </div>
-
-                            <!-- Seed Location -->
-                            <div class="col-md-8">
-                                <label for="editSeedLocation" class="form-label">{{ .lcl.seed_location }}</label>
-                                <input type="text" class="form-control" id="editSeedLocation" maxlength="255" placeholder="{{ .lcl.seed_location_placeholder }}">
-                            </div>
-
-                            <!-- Wanted -->
-                            <div class="col-md-4 d-flex align-items-end">
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="checkbox" id="editWanted">
-                                    <label class="form-check-label" for="editWanted">{{ .lcl.wanted_checkbox }}</label>
-                                    <div><small class="text-muted">{{ .lcl.wanted_desc }}</small></div>
-                                </div>
-                            </div>
-
-                            <!-- Growing information -->
-                            <div class="col-md-6">
-                                <label for="editHeightIndoor" class="form-label">{{ .lcl.height_indoor }}</label>
-                                <input type="text" class="form-control" id="editHeightIndoor" maxlength="255" placeholder="{{ .lcl.height_placeholder }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="editHeightOutdoor" class="form-label">{{ .lcl.height_outdoor }}</label>
-                                <input type="text" class="form-control" id="editHeightOutdoor" maxlength="255" placeholder="{{ .lcl.height_placeholder }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="editYieldIndoor" class="form-label">{{ .lcl.yield_indoor }}</label>
-                                <input type="text" class="form-control" id="editYieldIndoor" maxlength="255" placeholder="{{ .lcl.yield_placeholder }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="editYieldOutdoor" class="form-label">{{ .lcl.yield_outdoor }}</label>
-                                <input type="text" class="form-control" id="editYieldOutdoor" maxlength="255" placeholder="{{ .lcl.yield_placeholder }}">
-                            </div>
-                        </div>
+                    <div class="fm-f">
+                        <label for="editBreederSelect">{{ .lcl.fm_breeder }} <span class="req">*</span></label>
+                        <select class="form-select" id="editBreederSelect" required
+                                data-ac-placeholder="{{ .lcl.breeder_search_placeholder }}"
+                                data-ac-new-text="{{ .lcl.breeder_add_new_named }}"
+                                data-ac-did-you-mean="{{ .lcl.autocomplete_did_you_mean }}"
+                                data-ac-suggested="{{ .lcl.autocomplete_suggested }}"
+                                data-ac-results="{{ .lcl.autocomplete_results }}">
+                            <option value="" selected></option>
+                            {{ range .breeders }}
+                            <option value="{{ .ID }}">{{ .Name }}</option>
+                            {{ end }}
+                            <option value="new">{{ .lcl.add_new_breeder }}</option>
+                        </select>
+                        <input type="hidden" id="editNewBreederName">
                     </div>
-                </div>
-
-                <!-- Description / Markdown editor card -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h2 class="h5 card-title text-primary mb-0">
-                                <i class="fa-solid fa-file-lines me-1"></i> {{ .lcl.description_txt }}
-                            </h2>
-                            <!-- Markdown toolbar -->
-                            <div class="btn-group btn-group-sm" role="toolbar" aria-label="Markdown formatting">
-                                <button type="button" class="btn btn-outline-secondary md-btn" title="Bold" data-md-action="wrap" data-md-before="**" data-md-after="**"><i class="fa-solid fa-bold"></i></button>
-                                <button type="button" class="btn btn-outline-secondary md-btn" title="Italic" data-md-action="wrap" data-md-before="*" data-md-after="*"><i class="fa-solid fa-italic"></i></button>
-                                <button type="button" class="btn btn-outline-secondary md-btn" title="Heading" data-md-action="prefix" data-md-prefix="### "><i class="fa-solid fa-heading"></i></button>
-                                <button type="button" class="btn btn-outline-secondary md-btn" title="Link" data-md-action="link"><i class="fa-solid fa-link"></i></button>
-                                <button type="button" class="btn btn-outline-secondary md-btn" title="List" data-md-action="prefix" data-md-prefix="- "><i class="fa-solid fa-list"></i></button>
-                            </div>
-                        </div>
-                        <textarea class="form-control font-monospace" id="editStrainDescription" rows="16" style="resize: vertical;"></textarea>
-                        <small class="text-muted">{{ .lcl.description_txt_desc }}</small>
+                    <div class="fm-f full">
+                        <label for="editStrainShortDescription">{{ .lcl.fm_short_description }} <span class="req">*</span></label>
+                        <input type="text" class="form-control" id="editStrainShortDescription" placeholder="{{ .lcl.fm_short_description_placeholder }}" required>
                     </div>
-                </div>
-
-                <!-- Save button -->
-                <div class="d-flex justify-content-end mb-4">
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <span class="spinner-border spinner-border-sm btn-spinner" role="status" aria-hidden="true"></span>
-                        <i class="fa-solid fa-plus me-1"></i> {{ .lcl.add_strain }}
-                    </button>
-                </div>
-            </div>
-
-            <!-- Right column: Live preview -->
-            <div class="col-lg-5">
-                <div class="card strain-preview-card sticky-top" style="top: 1rem;">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary mb-3">
-                            <i class="fa-solid fa-eye me-1"></i> Preview
-                        </h2>
-                        <div class="markdown-body" id="markdownPreview">
-                        </div>
+                    <div class="fm-f full">
+                        <label for="editUrl">{{ .lcl.fm_web_page }}</label>
+                        <input type="text" class="form-control" id="editUrl" placeholder="{{ .lcl.fm_web_page_placeholder }}">
                     </div>
                 </div>
             </div>
-        </div>
-    </form>
+
+            <div class="fm-card" id="s-genetics">
+                <div class="fm-card-h"><i class="fa-solid fa-dna" aria-hidden="true"></i><div><h2>{{ .lcl.fm_genetics }}</h2></div></div>
+                <div class="fm-grid">
+                    <div class="fm-f full">
+                        <span class="fm-lbl" id="typeLbl">{{ .lcl.fm_type }} <span class="req">*</span></span>
+                        <select class="d-none" id="editAutoflower" tabindex="-1" aria-hidden="true">
+                            <option value="true">{{ .lcl.autoflower }}</option>
+                            <option value="false" selected>{{ .lcl.photoperiod }}</option>
+                        </select>
+                        <div class="fm-seg" data-for="editAutoflower" role="radiogroup" aria-labelledby="typeLbl" style="max-width:520px">
+                            <label><input type="radio" name="strainType" value="false"><i class="fa-solid fa-sun" aria-hidden="true"></i><div><b>{{ .lcl.photoperiod }}</b><small>{{ .lcl.fm_photo_desc }}</small></div></label>
+                            <label><input type="radio" name="strainType" value="true"><i class="fa-solid fa-bolt" aria-hidden="true"></i><div><b>{{ .lcl.autoflower }}</b><small>{{ .lcl.fm_auto_desc }}</small></div></label>
+                        </div>
+                    </div>
+                    <div class="fm-f">
+                        <label for="editCycleTimeMin" class="fm-req" id="editCycleTimeLabel"
+                               data-photo="{{ .lcl.fm_flowering_time }}" data-auto="{{ .lcl.fm_seed_to_harvest }}">{{ .lcl.fm_flowering_time }}</label>
+                        <div class="fm-pair">
+                            <div class="fm-unit"><input type="number" class="form-control" id="editCycleTimeMin" min="0" step="any" value="" aria-label="{{ .lcl.cycle_time_from }}"><span>{{ .lcl.unit_weeks }}</span></div>
+                            <span>{{ .lcl.cycle_time_to }}</span>
+                            <div class="fm-unit"><input type="number" class="form-control" id="editCycleTime" min="0" step="any" value="8" required aria-label="{{ .lcl.cycle_time_to }}"><span>{{ .lcl.unit_weeks }}</span></div>
+                        </div>
+                        <small id="editCycleTimeDesc" data-photo="{{ .lcl.flowering_time_desc }}" data-auto="{{ .lcl.seed_to_harvest_desc }}">{{ .lcl.flowering_time_desc }}</small>
+                    </div>
+                    <div class="fm-f">
+                        <label for="editIndicaSativaSlider">{{ .lcl.fm_indica_sativa }}</label>
+                        <input type="range" class="form-range" id="editIndicaSativaSlider" min="0" max="100" value="50">
+                        <div class="strain-ratio-bar" id="editRatioPreview">
+                            <div class="strain-ratio-fill" id="editRatioFill" style="width: 50%"></div>
+                        </div>
+                        <div class="fm-ratio"><span class="i" id="editIndicaLabel">Indica: 50%</span><span class="s" id="editSativaLabel">Sativa: 50%</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fm-card" id="s-seeds">
+                <div class="fm-card-h"><i class="fa-solid fa-box-archive" aria-hidden="true"></i><div><h2>{{ .lcl.fm_seeds }}</h2><p>{{ .lcl.fm_seeds_desc }}</p></div></div>
+                <div class="fm-grid">
+                    <div class="fm-f">
+                        <label for="editSeedCount">{{ .lcl.fm_seeds_on_hand }}</label>
+                        <div class="fm-step">
+                            <button type="button" data-d="-1" aria-label="{{ .lcl.fm_one_less }}"><i class="fa-solid fa-minus" aria-hidden="true"></i></button>
+                            <input type="number" id="editSeedCount" min="0" value="0" inputmode="numeric">
+                            <button type="button" data-d="1" aria-label="{{ .lcl.fm_one_more }}"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
+                        </div>
+                    </div>
+                    <div class="fm-f">
+                        <label for="editSeedType">{{ .lcl.fm_seed_type }}</label>
+                        <select class="form-select" id="editSeedType">
+                            <option value="" selected>{{ .lcl.seed_type_not_set }}</option>
+                            <option value="feminized">{{ .lcl.seed_type_feminized }}</option>
+                            <option value="regular">{{ .lcl.seed_type_regular }}</option>
+                            <option value="clone">{{ .lcl.seed_type_clone }}</option>
+                        </select>
+                    </div>
+                    <div class="fm-f">
+                        <label for="editSeedsAddedOn">{{ .lcl.fm_added_on }}</label>
+                        <input type="date" class="form-control" id="editSeedsAddedOn" value="">
+                        <small>{{ .lcl.seeds_added_on_desc }}</small>
+                    </div>
+                    <div class="fm-f">
+                        <label for="editSeedLocation">{{ .lcl.fm_seed_location }}</label>
+                        <input type="text" class="form-control" id="editSeedLocation" maxlength="255" placeholder="{{ .lcl.seed_location_placeholder }}">
+                    </div>
+                    <label class="fm-sw form-switch full" for="editWanted">
+                        <span><b>{{ .lcl.wanted_checkbox }}</b><small>{{ .lcl.wanted_desc }}</small></span>
+                        <input type="checkbox" class="form-check-input" role="switch" id="editWanted">
+                    </label>
+                </div>
+            </div>
+
+            <div class="fm-card" id="s-growth">
+                <div class="fm-card-h"><i class="fa-solid fa-ruler-vertical" aria-hidden="true"></i><div><h2>{{ .lcl.fm_height_yield }} <span class="opt">{{ .lcl.fm_optional }}</span></h2><p>{{ .lcl.fm_height_yield_desc }}</p></div></div>
+                <div class="fm-grid">
+                    <div class="fm-f"><label for="editHeightIndoor">{{ .lcl.fm_height_indoor }}</label><input type="text" class="form-control" id="editHeightIndoor" maxlength="255" placeholder="{{ .lcl.height_placeholder }}"></div>
+                    <div class="fm-f"><label for="editHeightOutdoor">{{ .lcl.fm_height_outdoor }}</label><input type="text" class="form-control" id="editHeightOutdoor" maxlength="255" placeholder="{{ .lcl.height_placeholder }}"></div>
+                    <div class="fm-f"><label for="editYieldIndoor">{{ .lcl.fm_yield_indoor }}</label><input type="text" class="form-control" id="editYieldIndoor" maxlength="255" placeholder="{{ .lcl.yield_placeholder }}"></div>
+                    <div class="fm-f"><label for="editYieldOutdoor">{{ .lcl.fm_yield_outdoor }}</label><input type="text" class="form-control" id="editYieldOutdoor" maxlength="255" placeholder="{{ .lcl.yield_placeholder }}"></div>
+                </div>
+            </div>
+
+            {{ template "strain-desc-card" (dict "lcl" .lcl "text" "" "html" "") }}
+
+            <div class="fm-save">
+                <span class="msg"></span>
+                <a href="/strains" class="fm-btn light">{{ .lcl.cancel }}</a>
+                <button type="submit" class="fm-btn">
+                    <span class="spinner-border spinner-border-sm btn-spinner" role="status" aria-hidden="true"></span>
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i> {{ .lcl.fm_add_strain }}
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
+<script src="/static/js/form-look.js"></script>
 <script src="/static/js/strain-stock-fields.js"></script>
 <script src="/static/js/strain-add.js"></script>
 {{ template "common/footer.html" .}}
 
+{{ end }}
+
+{{ define "strain-desc-card" }}
+<!-- Description in Markdown, with Write / Preview (Add and Edit strain). -->
+<div class="fm-card" id="s-desc">
+    <div class="fm-card-h"><i class="fa-solid fa-file-lines" aria-hidden="true"></i><div><h2>{{ .lcl.fm_description }}</h2><p>{{ .lcl.fm_markdown_hint }}</p></div>
+        <div class="fm-tabs" role="tablist"><button type="button" class="on" data-p="write" role="tab" aria-selected="true">{{ .lcl.fm_write }}</button><button type="button" data-p="preview" role="tab" aria-selected="false">{{ .lcl.fm_preview }}</button></div></div>
+    <div data-pane="write">
+        <div class="fm-md-tools" role="toolbar" aria-label="{{ .lcl.fm_formatting }}">
+            <button type="button" class="md-btn" title="{{ .lcl.fm_md_bold }}" aria-label="{{ .lcl.fm_md_bold }}" data-md-action="wrap" data-md-before="**" data-md-after="**"><i class="fa-solid fa-bold" aria-hidden="true"></i></button>
+            <button type="button" class="md-btn" title="{{ .lcl.fm_md_italic }}" aria-label="{{ .lcl.fm_md_italic }}" data-md-action="wrap" data-md-before="*" data-md-after="*"><i class="fa-solid fa-italic" aria-hidden="true"></i></button>
+            <button type="button" class="md-btn" title="{{ .lcl.fm_md_heading }}" aria-label="{{ .lcl.fm_md_heading }}" data-md-action="prefix" data-md-prefix="### "><i class="fa-solid fa-heading" aria-hidden="true"></i></button>
+            <button type="button" class="md-btn" title="{{ .lcl.fm_md_list }}" aria-label="{{ .lcl.fm_md_list }}" data-md-action="prefix" data-md-prefix="- "><i class="fa-solid fa-list-ul" aria-hidden="true"></i></button>
+            <button type="button" class="md-btn" title="{{ .lcl.fm_md_link }}" aria-label="{{ .lcl.fm_md_link }}" data-md-action="link"><i class="fa-solid fa-link" aria-hidden="true"></i></button>
+        </div>
+        <textarea class="form-control" id="editStrainDescription" rows="10" style="resize: vertical;" aria-label="{{ .lcl.fm_description }}">{{ .text }}</textarea>
+    </div>
+    <div data-pane="preview" hidden>
+        <div class="fm-preview markdown-body" id="markdownPreview">{{ .html }}</div>
+    </div>
+</div>
 {{ end }}

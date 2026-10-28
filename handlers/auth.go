@@ -69,11 +69,12 @@ func HandleLogin(c *gin.Context) {
 		translations := utils.TranslationService.GetTranslations(lang)
 		csrfToken, _ := c.Get("csrf_token")
 		c.HTML(http.StatusUnauthorized, "views/login.html", gin.H{
-			"Error":           "Invalid username or password",
+			"Error":           T(c, "fm_sign_in_wrong"),
 			"lcl":             translations,
 			"languages":       utils.AvailableLanguages,
 			"currentLanguage": lang,
 			"csrfToken":       csrfToken,
+			"cspNonce":        c.GetString("cspNonce"),
 		})
 		return
 	}

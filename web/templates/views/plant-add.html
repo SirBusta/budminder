@@ -2,161 +2,138 @@
 
 {{ template "common/header.html" .}}
 {{ template "common/header2.html" .}}
-<div class="container ns">
-    <!-- Breadcrumbs -->
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/plants">{{ .lcl.title_plants }}</a></li>
-            <li class="breadcrumb-item active" aria-current="page">{{ .lcl.add_new_plant }}</li>
-        </ol>
-    </nav>
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 text-primary mb-0">
-            <i class="fa-solid fa-plus me-2"></i>{{ .lcl.add_new_plant }}
-        </h1>
-        <a href="/plants" class="btn btn-secondary">
-            <i class="fa-solid fa-xmark me-1"></i> Cancel
-        </a>
+<div class="container-xxl sx fm">
+    <div class="fm-crumbs"><a href="/plants">{{ .lcl.title_plants }}</a><i class="fa-solid fa-chevron-right" aria-hidden="true"></i>{{ .lcl.fm_add_plant }}</div>
+    <div class="fm-top">
+        <div>
+            <h1>{{ .lcl.fm_add_plant }}</h1>
+            <p>{{ .lcl.fm_plant_add_lead }}</p>
+        </div>
     </div>
 
-    <form id="addPlantForm">
-        <div class="row g-4 justify-content-center">
-            <div class="col-lg-8">
-                <!-- Start with the strain: plants get their strain from the Strains
-                     page (lookups, seeds). Hidden by plant-add.js when the strain is
-                     already chosen (Start a grow, or back from the Strains page). -->
-                {{ if .strains }}
-                <div class="alert alert-info d-flex gap-2 align-items-start mb-4" id="strainFirstNote" role="note">
-                    <i class="fa-solid fa-seedling mt-1"></i>
-                    <div><b>{{ .lcl.sf_note_title }}</b> {{ .lcl.sf_note_before }} <a href="/strains" class="alert-link" data-strain-first>{{ .lcl.sf_strains_link }}</a>{{ .lcl.sf_note_after }}</div>
-                </div>
-                {{ else }}
-                <div class="alert alert-warning d-flex gap-2 align-items-start mb-4" id="strainFirstNote" role="alert">
-                    <i class="fa-solid fa-triangle-exclamation mt-1"></i>
-                    <div><b>{{ .lcl.sf_none_title }}</b> {{ .lcl.sf_none_before }} <a href="/strains" class="alert-link" data-strain-first>{{ .lcl.sf_strains_link }}</a>{{ .lcl.sf_note_after }}</div>
-                </div>
-                {{ end }}
-                <div class="alert alert-success d-flex gap-2 align-items-center mb-4 d-none" id="strainFirstBack" role="status">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <div id="strainFirstBackText"></div>
-                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="{{ .lcl.title_close }}"></button>
-                </div>
+    <form id="addPlantForm" class="fm-cols">
+        <div>
+            <!-- Plants get their strain from the Strains page (lookups, seeds).
+                 Hidden by plant-add.js when the strain is already chosen
+                 (Start a grow, or back from the Strains page). -->
+            {{ if .strains }}
+            <div class="fm-tip" id="strainFirstNote" role="note">
+                <i class="fa-solid fa-seedling" aria-hidden="true"></i>
+                <div>{{ .lcl.sf_note_before }} <a href="/strains" data-strain-first>{{ .lcl.sf_strains_link }}</a>{{ .lcl.sf_note_after }}</div>
+            </div>
+            {{ else }}
+            <div class="fm-tip warn" id="strainFirstNote" role="alert">
+                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                <div><b>{{ .lcl.sf_none_title }}</b> {{ .lcl.sf_none_before }} <a href="/strains" data-strain-first>{{ .lcl.sf_strains_link }}</a>{{ .lcl.sf_none_after }}</div>
+            </div>
+            {{ end }}
+            <div class="fm-tip d-none" id="strainFirstBack" role="status">
+                <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                <div id="strainFirstBackText"></div>
+            </div>
 
-                <!-- Basic info card -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary mb-3">
-                            <i class="fa-solid fa-circle-info me-1"></i> Basic Info
-                        </h2>
-
-                        <div class="row g-3">
-                            <!-- Plant Name -->
-                            <div class="col-md-6">
-                                <label for="plantName" class="form-label required">{{ .lcl.plant_name }}</label>
-                                <input type="text" class="form-control" id="plantName" placeholder="{{ .lcl.plant_name_placeholder }}" required>
-                            </div>
-
-                            <!-- Zone -->
-                            <div class="col-md-6">
-                                <label for="zoneSelect" class="form-label required">{{ .lcl.title_zone }}</label>
-                                <select class="form-select" id="zoneSelect" required>
-                                    <option value="" disabled selected>Select zone...</option>
-                                    {{ range .zones }}
-                                    <option value="{{ .ID }}">{{ .Name }}</option>
-                                    {{ end }}
-                                    <option value="new">{{ .lcl.add_new_zone }}</option>
-                                </select>
-                            </div>
-
-                            <!-- New Zone Input (hidden by default) -->
-                            <div class="col-12 d-none" id="newZoneInput">
-                                <label for="newZoneName" class="form-label">{{ .lcl.new_zone_name }}</label>
-                                <input type="text" class="form-control" id="newZoneName" placeholder="{{ .lcl.enter_zone_name }}">
-                            </div>
-
-                            <!-- Strain -->
-                            <div class="col-md-6">
-                                <label for="strainSelect" class="form-label required">{{ .lcl.title_strain }}</label>
-                                <select class="form-select" id="strainSelect" required data-ac-did-you-mean="{{ .lcl.sf_did_you_mean }}" data-ac-placeholder="{{ .lcl.sf_search_placeholder }}">
-                                    <option value="" disabled selected>Select strain...</option>
-                                    {{ range .strains }}
-                                    <option value="{{ .ID }}" data-name="{{ .Name }}" data-seeds="{{ .SeedCount }}">{{ .Name }} ({{ .Breeder }})</option>
-                                    {{ end }}
-                                </select>
-                            </div>
-
-                            <!-- Status -->
-                            <div class="col-md-6">
-                                <label for="statusSelect" class="form-label required">{{ .lcl.title_status }}</label>
-                                <select class="form-select" id="statusSelect" required>
-                                    {{ range .statuses }}
-                                    {{ $lbl := index $.lcl (print (lower .Status) "_label") }}
-                                    <option value="{{ .ID }}">{{ if $lbl }}{{ $lbl }}{{ else }}{{ .Status }}{{ end }}</option>
-                                    {{ end }}
-                                </select>
-                            </div>
-                        </div>
+            <div class="fm-card">
+                <div class="fm-card-h"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><div><h2>{{ .lcl.fm_basics }}</h2></div></div>
+                <div class="fm-grid">
+                    <div class="fm-f">
+                        <label for="plantName">{{ .lcl.fm_plant_name }} <span class="req">*</span></label>
+                        <input type="text" class="form-control" id="plantName" placeholder="{{ .lcl.fm_plant_name_placeholder }}" required>
                     </div>
-                </div>
-
-                <!-- Options card -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary mb-3">
-                            <i class="fa-solid fa-sliders me-1"></i> Options
-                        </h2>
-
-                        <div class="row g-3">
-                            <!-- Date Picker -->
-                            <div class="col-md-6">
-                                <label for="startDate" class="form-label required">{{ .lcl.start_date }}</label>
-                                <!-- Date only; the time of day is recorded automatically. -->
-                                <input type="date" class="form-control" id="startDate" required>
-                            </div>
-
-                            <div class="col-md-6"></div>
-
-                            <!-- Clone Checkbox -->
-                            <div class="col-md-6">
-                                <div class="form-check mt-2">
-                                    <input type="checkbox" class="form-check-input" id="isClone">
-                                    <label class="form-check-label" for="isClone">{{ .lcl.is_clone }}</label>
-                                </div>
-                            </div>
-
-                            <!-- Decrement Seed Count Checkbox: only for a strain with seeds in the vault (plant-add.js) -->
-                            <div class="col-md-6 d-none" id="seedBox">
-                                <div class="form-check mt-2">
-                                    <input type="checkbox" class="form-check-input" id="decrementSeedCount">
-                                    <label class="form-check-label" for="decrementSeedCount">{{ .lcl.decrement_seed_count }}</label>
-                                </div>
-                            </div>
-
-                            <!-- Parent Plant Dropdown (Hidden by default) -->
-                            <div class="col-md-6 d-none" id="parentPlantDropdown">
-                                <label for="parentPlantSelect" class="form-label">{{ .lcl.parent_plant }}</label>
-                                <select class="form-select" id="parentPlantSelect">
-                                    <option value="0">{{ .lcl.title_none }}</option>
-                                </select>
-                            </div>
-                        </div>
+                    <div class="fm-f">
+                        <label for="strainSelect">{{ .lcl.fm_strain }} <span class="req">*</span></label>
+                        <select class="form-select" id="strainSelect" required data-ac-did-you-mean="{{ .lcl.sf_did_you_mean }}" data-ac-placeholder="{{ .lcl.sf_search_placeholder }}">
+                            <option value="" disabled selected></option>
+                            {{ range .strains }}
+                            <option value="{{ .ID }}" data-name="{{ .Name }}" data-seeds="{{ .SeedCount }}">{{ .Name }} ({{ .Breeder }})</option>
+                            {{ end }}
+                        </select>
                     </div>
-                </div>
-
-                <!-- Save button -->
-                <div class="d-flex justify-content-end mb-4">
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <span class="spinner-border spinner-border-sm btn-spinner" role="status" aria-hidden="true"></span>
-                        <i class="fa-solid fa-plus me-1"></i> {{ .lcl.add_plant }}
-                    </button>
+                    <div class="fm-f">
+                        <label for="zoneSelect">{{ .lcl.fm_zone }} <span class="req">*</span></label>
+                        <select class="form-select" id="zoneSelect" required>
+                            <option value="" disabled selected></option>
+                            {{ range .zones }}
+                            <option value="{{ .ID }}">{{ .Name }}</option>
+                            {{ end }}
+                            <option value="new">{{ .lcl.add_new_zone }}</option>
+                        </select>
+                    </div>
+                    <div class="fm-f">
+                        <label for="statusSelect">{{ .lcl.fm_stage }} <span class="req">*</span></label>
+                        <select class="form-select" id="statusSelect" required>
+                            {{ range .statuses }}
+                            {{ $lbl := index $.lcl (print (lower .Status) "_label") }}
+                            <option value="{{ .ID }}">{{ if $lbl }}{{ $lbl }}{{ else }}{{ .Status }}{{ end }}</option>
+                            {{ end }}
+                        </select>
+                    </div>
+                    <div class="fm-f full d-none" id="newZoneInput">
+                        <label for="newZoneName">{{ .lcl.new_zone_name }}</label>
+                        <input type="text" class="form-control" id="newZoneName" placeholder="{{ .lcl.enter_zone_name }}">
+                    </div>
                 </div>
             </div>
 
+            <div class="fm-card">
+                <div class="fm-card-h"><i class="fa-solid fa-calendar-day" aria-hidden="true"></i><div><h2>{{ .lcl.fm_start }}</h2></div></div>
+                <div class="fm-grid">
+                    <div class="fm-f">
+                        <label for="startDate">{{ .lcl.fm_start_date }} <span class="req">*</span></label>
+                        <!-- Date only; the time of day is recorded automatically. -->
+                        <input type="date" class="form-control" id="startDate" required>
+                        <small>{{ .lcl.fm_start_date_help }}</small>
+                    </div>
+                    <div class="fm-f">
+                        <span class="fm-lbl" id="fromLbl">{{ .lcl.fm_grown_from }}</span>
+                        <input type="checkbox" class="d-none" id="isClone" tabindex="-1" aria-hidden="true">
+                        <div class="fm-seg" data-for="isClone" role="radiogroup" aria-labelledby="fromLbl">
+                            <label><input type="radio" name="grownFrom" value="0" checked><i class="fa-solid fa-seedling" aria-hidden="true"></i><div><b>{{ .lcl.fm_seed }}</b></div></label>
+                            <label><input type="radio" name="grownFrom" value="1"><i class="fa-solid fa-scissors" aria-hidden="true"></i><div><b>{{ .lcl.fm_clone }}</b></div></label>
+                        </div>
+                    </div>
+                    <div class="fm-f full d-none" id="parentPlantDropdown">
+                        <label for="parentPlantSelect">{{ .lcl.fm_mother_plant }}</label>
+                        <select class="form-select" id="parentPlantSelect" style="max-width:360px">
+                            <option value="0">{{ .lcl.title_none }}</option>
+                        </select>
+                    </div>
+                    <!-- Only for a strain with seeds in the vault (plant-add.js) -->
+                    <label class="fm-sw form-switch full d-none" id="seedBox" for="decrementSeedCount">
+                        <span><b>{{ .lcl.fm_use_seed }}</b><small id="seedLeft" data-text="{{ .lcl.fm_seeds_left }}"></small></span>
+                        <input type="checkbox" class="form-check-input" role="switch" id="decrementSeedCount">
+                    </label>
+                </div>
+            </div>
+
+            <div class="fm-save">
+                <span class="msg"></span>
+                <a href="/plants" class="fm-btn light">{{ .lcl.cancel }}</a>
+                <button type="submit" class="fm-btn">
+                    <span class="spinner-border spinner-border-sm btn-spinner" role="status" aria-hidden="true"></span>
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i> {{ .lcl.fm_add_plant }}
+                </button>
+            </div>
         </div>
+
+        <!-- What the new plant will look like; plant-add.js fills it in. -->
+        <aside class="fm-side">
+            <div class="fm-sum">
+                <div class="ph"><i class="fa-solid fa-cannabis" aria-hidden="true"></i></div>
+                <div class="bd">
+                    <h3 id="sumName" data-empty="{{ .lcl.fm_new_plant }}">{{ .lcl.fm_new_plant }}</h3>
+                    <div class="sub">{{ .lcl.fm_fills_in }}</div>
+                    <dl>
+                        <dt>{{ .lcl.fm_strain }}</dt><dd id="sumStrain">–</dd>
+                        <dt>{{ .lcl.fm_zone }}</dt><dd id="sumZone">–</dd>
+                        <dt>{{ .lcl.fm_stage }}</dt><dd id="sumStage">–</dd>
+                    </dl>
+                </div>
+            </div>
+        </aside>
     </form>
 </div>
 
+<script src="/static/js/form-look.js"></script>
 <script src="/static/js/plant-add.js"></script>
 {{ template "common/footer.html" .}}
 

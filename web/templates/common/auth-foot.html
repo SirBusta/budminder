@@ -1,0 +1,24 @@
+{{ define "common/auth-foot.html" }}
+{{/* Under the sign-in and setup cards (no top menu there): Help, language,
+     light/dark. Uses the menu's ids so header.js and theme.js drive it. */}}
+<div class="fm-auth-foot">
+    <a href="/manual"><i class="fa-solid fa-circle-question me-1" aria-hidden="true"></i>{{ .lcl.title_help }}</a>
+    <span aria-hidden="true">&nbsp;·&nbsp;</span>
+    <span class="dropdown dropup">
+        <button class="fm-auth-link dropdown-toggle" type="button" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fa fa-globe me-1" aria-hidden="true"></i><span id="currentLanguage">{{ .currentLanguage | default "en" | upper }}</span>
+        </button>
+        <ul class="dropdown-menu" id="languageMenu" aria-labelledby="languageDropdown">
+            {{ range .languages }}
+            <li><a class="dropdown-item lang-select" href="#" data-lang="{{ . }}">{{ . | upper }}</a></li>
+            {{ end }}
+        </ul>
+    </span>
+    <span aria-hidden="true">&nbsp;·&nbsp;</span>
+    <button id="themeToggle" class="fm-auth-link" type="button" title="{{ .lcl.fm_theme_toggle }}" aria-label="{{ .lcl.fm_theme_toggle }}">
+        <i id="themeToggleIcon" class="fa fa-moon" aria-hidden="true"></i>
+    </button>
+</div>
+<script src="/static/js/header.js"></script>
+<script src="/static/js/form-look.js"></script>
+{{ end }}

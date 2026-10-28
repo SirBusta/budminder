@@ -43,7 +43,7 @@ func TestBranding_Pages(t *testing.T) {
 	setup, err := io.ReadAll(resp.Body)
 	testutil.DrainAndClose(resp)
 	require.NoError(t, err)
-	assert.Contains(t, string(setup), "brand-wm-lg", "the setup page shows the wordmark")
+	assert.Contains(t, string(setup), "fm-auth-brand", "the setup page shows the wordmark")
 
 	db := testutil.NewTestDB(t)
 	testutil.SeedAdmin(t, db, "brand-pw-123")
@@ -51,7 +51,7 @@ func TestBranding_Pages(t *testing.T) {
 	login, err := io.ReadAll(resp.Body)
 	testutil.DrainAndClose(resp)
 	require.NoError(t, err)
-	assert.Contains(t, string(login), "brand-wm-lg", "login page shows the wordmark")
+	assert.Contains(t, string(login), "fm-auth-brand", "login page shows the wordmark")
 }
 
 func TestBranding_IconsAndManifest(t *testing.T) {

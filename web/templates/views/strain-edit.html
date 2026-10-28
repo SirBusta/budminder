@@ -2,418 +2,324 @@
 
 {{ template "common/header.html" .}}
 {{ template "common/header2.html" .}}
-<div class="container ns">
-    <!-- Breadcrumbs -->
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/strains">{{ .lcl.title_strains }}</a></li>
-            {{ if .reviewMode }}
-            <li class="breadcrumb-item active" aria-current="page">{{ .lcl.review_title }}</li>
-            {{ else }}
-            <li class="breadcrumb-item"><a href="/strain/{{ .strain.ID }}">{{ .strain.Name }}</a></li>
-            <li class="breadcrumb-item active" aria-current="page">{{ .lcl.edit_strain }}</li>
-            {{ end }}
-        </ol>
-    </nav>
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 text-primary mb-0">
-            {{ if .reviewMode }}
-            <i class="fa-solid fa-clipboard-check me-2"></i>{{ .lcl.review_title }}{{ if .strain.Name }}: {{ .strain.Name }}{{ end }}
-            {{ else }}
-            <i class="fa-solid fa-pen-to-square me-2"></i>{{ .lcl.edit_strain }}: {{ .strain.Name }}
-            {{ end }}
-        </h1>
+<div class="container-xxl sx fm">
+    <div class="fm-crumbs"><a href="/strains">{{ .lcl.title_strains }}</a><i class="fa-solid fa-chevron-right" aria-hidden="true"></i>{{ if .reviewMode }}{{ .lcl.review_title }}{{ else }}<a href="/strain/{{ .strain.ID }}">{{ .strain.Name }}</a><i class="fa-solid fa-chevron-right" aria-hidden="true"></i>{{ .lcl.fm_edit }}{{ end }}</div>
+    <div class="fm-top">
         <div>
-            <a href="{{ if .reviewMode }}/strains{{ else }}/strain/{{ .strain.ID }}{{ end }}" class="btn btn-secondary me-2">
-                <i class="fa-solid fa-xmark me-1"></i> {{ .lcl.cancel }}
-            </a>
-            {{ if not .reviewMode }}
-            <button type="button" class="btn btn-danger" id="deleteStrainButton">
-                <i class="fa-solid fa-trash me-1"></i> {{ .lcl.delete_strain }}
-            </button>
-            {{ end }}
+            <h1>{{ if .reviewMode }}{{ .lcl.review_title }}{{ else }}{{ .lcl.fm_edit_strain }}{{ end }}</h1>
+            <p>{{ .strain.Name }}{{ if .strain.Breeder }} · {{ .strain.Breeder }}{{ end }}</p>
         </div>
     </div>
 
     {{ if and .reviewMode .review.Error }}
-    <div class="alert alert-danger">
-        <i class="fa-solid fa-triangle-exclamation me-1"></i>{{ .review.Error }}
-    </div>
-    <a href="/strains" class="btn btn-outline-secondary"><i class="fa-solid fa-arrow-left me-1"></i> {{ .lcl.review_back_to_strains }}</a>
+    <div class="fm-err mb-3" role="alert"><i class="fa-solid fa-triangle-exclamation mt-1" aria-hidden="true"></i><div>{{ .review.Error }}</div></div>
+    <a href="/strains" class="fm-btn light"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> {{ .lcl.review_back_to_strains }}</a>
     {{ else }}
 
-    {{ if .reviewMode }}
-    <div class="alert alert-info" id="importReview"
-         data-draft="{{ json .review.Draft }}"
-         data-saved="{{ .lcl.api_import_saved }}">
-        <div class="fw-semibold mb-1"><i class="fa-solid fa-circle-info me-1"></i>{{ .lcl.review_banner }}</div>
-        <div class="small">
-            {{ .lcl.review_source_label }} {{ .review.SourceName }}{{ if .review.SourceURL }} ·
-            <a href="{{ .review.SourceURL }}" target="_blank" rel="noopener noreferrer">{{ .lcl.review_view_listing }}</a>{{ end }}
-        </div>
-        {{ if .review.ExistingID }}
-        <div class="small mt-1" id="reviewExistingNote">
-            <i class="fa-solid fa-rotate me-1"></i>{{ .lcl.review_existing_note }}
-            <a href="/strain/{{ .review.ExistingID }}" target="_blank" rel="noopener">{{ .strain.Name }} ({{ .review.ExistingBreeder }})</a>
-        </div>
-        {{ end }}
-    </div>
-    {{ end }}
+    <div class="fm-cols jump">
+        <nav class="fm-jump" aria-label="{{ .lcl.fm_on_this_page }}">
+            <h6>{{ .lcl.fm_on_this_page }}</h6>
+            <a href="#s-basics"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>{{ .lcl.fm_basics }}</a>
+            <a href="#s-genetics"><i class="fa-solid fa-dna" aria-hidden="true"></i>{{ .lcl.fm_genetics }}</a>
+            <a href="#s-seeds"><i class="fa-solid fa-box-archive" aria-hidden="true"></i>{{ .lcl.fm_seeds }}</a>
+            <a href="#s-growth"><i class="fa-solid fa-ruler-vertical" aria-hidden="true"></i>{{ .lcl.fm_height_yield }}</a>
+            <a href="#s-profile"><i class="fa-solid fa-flask" aria-hidden="true"></i>{{ .lcl.fm_cannabinoids_effects }}</a>
+            <a href="#s-lineage"><i class="fa-solid fa-sitemap" aria-hidden="true"></i>{{ .lcl.fm_lineage }}</a>
+            <a href="#s-pack"><i class="fa-solid fa-image" aria-hidden="true"></i>{{ .lcl.fm_seed_pack }}</a>
+            <a href="#s-desc"><i class="fa-solid fa-file-lines" aria-hidden="true"></i>{{ .lcl.fm_description }}</a>
+        </nav>
 
-    <form id="editStrainForm"{{ if .reviewMode }} data-mode="review"{{ end }}>
-        <input type="hidden" id="editStrainId" value="{{ .strain.ID }}">
+        <form id="editStrainForm"{{ if .reviewMode }} data-mode="review"{{ end }}>
+            <input type="hidden" id="editStrainId" value="{{ .strain.ID }}">
 
-        <div class="row g-4">
-            <!-- Left column: Form fields + markdown editor -->
-            <div class="col-lg-7">
-                <!-- Basic info card -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary mb-3">
-                            <i class="fa-solid fa-circle-info me-1"></i> Basic Info
-                        </h2>
-
-                        <div class="row g-3">
-                            <!-- Strain Name -->
-                            <div class="col-md-6">
-                                <label for="editStrainName" class="form-label required">{{ .lcl.strain_name }}</label>
-                                <input type="text" class="form-control" id="editStrainName" value="{{ .strain.Name }}" required>
-                            </div>
-
-                            <!-- Breeder -->
-                            <div class="col-md-6">
-                                <label for="editBreederSelect" class="form-label required">{{ .lcl.breeder }}</label>
-                                <select class="form-select" id="editBreederSelect" required
-                                        data-ac-placeholder="{{ .lcl.breeder_search_placeholder }}"
-                                        data-ac-new-text="{{ .lcl.breeder_add_new_named }}"
-                                        data-ac-did-you-mean="{{ .lcl.autocomplete_did_you_mean }}"
-                                        data-ac-suggested="{{ .lcl.autocomplete_suggested }}"
-                                        data-ac-results="{{ .lcl.autocomplete_results }}"
-                                        {{ if .reviewMode }}data-initial-breeder="{{ .strain.Breeder }}"{{ end }}>
-                                    <option value=""></option>
-                                    {{ range .breeders }}
-                                    <option value="{{ .ID }}" {{ if and (not $.reviewMode) (eq .ID $.strain.BreederID) }}selected{{ end }}>{{ .Name }}</option>
-                                    {{ end }}
-                                    <option value="new">{{ .lcl.add_new_breeder }}</option>
-                                </select>
-                                <input type="hidden" id="editNewBreederName">
-                            </div>
-
-                            <!-- URL -->
-                            <div class="col-12">
-                                <label for="editUrl" class="form-label">{{ .lcl.url }}</label>
-                                <input type="text" class="form-control" id="editUrl" value="{{ .strain.Url }}" placeholder="{{ .lcl.strain_url_placeholder }}">
-                            </div>
-
-                            <!-- Short Description -->
-                            <div class="col-12">
-                                <label for="editStrainShortDescription" class="form-label required">{{ .lcl.short_description_txt }}</label>
-                                <input type="text" class="form-control" id="editStrainShortDescription" value="{{ .strain.ShortDescription }}" placeholder="{{ .lcl.short_description_placeholder }}" required>
-                            </div>
-                        </div>
+            {{ if .reviewMode }}
+            <div class="fm-tip" id="importReview"
+                 data-draft="{{ json .review.Draft }}"
+                 data-saved="{{ .lcl.api_import_saved }}">
+                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                <div>
+                    <div>{{ .lcl.review_banner }}</div>
+                    <div class="small mt-1">
+                        {{ .lcl.review_source_label }} {{ .review.SourceName }}{{ if .review.SourceURL }} ·
+                        <a href="{{ .review.SourceURL }}" target="_blank" rel="noopener noreferrer">{{ .lcl.review_view_listing }}</a>{{ end }}
                     </div>
-                </div>
-
-                <!-- Genetics card -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary mb-3">
-                            <i class="fa-solid fa-dna me-1"></i> Genetics
-                        </h2>
-
-                        <div class="row g-3">
-                            <!-- Indica/Sativa Slider -->
-                            <div class="col-12">
-                                <label for="editIndicaSativaSlider" class="form-label">{{ .lcl.i_s_ratio }}</label>
-                                <input type="range" class="form-range" id="editIndicaSativaSlider" min="0" max="100" value="{{ .strain.Indica }}">
-                                <div class="d-flex justify-content-between">
-                                    <small class="fw-semibold strain-indica-text" id="editIndicaLabel">Indica: {{ .strain.Indica }}%</small>
-                                    <small class="fw-semibold strain-sativa-text" id="editSativaLabel">Sativa: {{ .strain.Sativa }}%</small>
-                                </div>
-                                <!-- Live preview bar -->
-                                <div class="strain-ratio-bar mt-2" id="editRatioPreview">
-                                    <div class="strain-ratio-fill" id="editRatioFill" style="width: {{ .strain.Indica }}%"></div>
-                                </div>
-                            </div>
-
-                            <!-- Autoflower -->
-                            <div class="col-md-6">
-                                <label for="editAutoflower" class="form-label required">{{ .lcl.autoflower }}</label>
-                                <select class="form-select" id="editAutoflower" required>
-                                    <option value="true" {{ if .strain.Autoflower }}selected{{ end }}>{{ .lcl.yes }}</option>
-                                    <option value="false" {{ if not .strain.Autoflower }}selected{{ end }}>{{ .lcl.no }}</option>
-                                </select>
-                            </div>
-
-                            <!-- Cycle Time -->
-                            <div class="col-md-6">
-                                <label for="editCycleTime" class="form-label required" id="editCycleTimeLabel"
-                                       data-photo="{{ .lcl.flowering_time }}" data-auto="{{ .lcl.seed_to_harvest }}">{{ if .strain.Autoflower }}{{ .lcl.seed_to_harvest }}{{ else }}{{ .lcl.flowering_time }}{{ end }}</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" id="editCycleTimeMin" min="0" step="any" value="{{ if gt .strain.CycleTimeMin 0 }}{{ daysToWeeks .strain.CycleTimeMin }}{{ end }}"
-                                           placeholder="{{ .lcl.cycle_time_from }}" aria-label="{{ .lcl.cycle_time_from }}">
-                                    <span class="input-group-text">–</span>
-                                    <input type="number" class="form-control" id="editCycleTime" min="0" step="any" value="{{ daysToWeeks .strain.CycleTime }}" required
-                                           placeholder="{{ .lcl.cycle_time_to }}" aria-label="{{ .lcl.cycle_time_to }}">
-                                    <span class="input-group-text">{{ .lcl.unit_weeks }}</span>
-                                </div>
-                                <small class="text-muted" id="editCycleTimeDesc"
-                                       data-photo="{{ .lcl.flowering_time_desc }}" data-auto="{{ .lcl.seed_to_harvest_desc }}">{{ if .strain.Autoflower }}{{ .lcl.seed_to_harvest_desc }}{{ else }}{{ .lcl.flowering_time_desc }}{{ end }}</small>
-                            </div>
-
-                            <!-- Seed Type -->
-                            <div class="col-md-4">
-                                <label for="editSeedType" class="form-label">{{ .lcl.seed_type }}</label>
-                                <select class="form-select" id="editSeedType">
-                                    <option value="" {{ if not .strain.SeedType }}selected{{ end }}>{{ .lcl.seed_type_not_set }}</option>
-                                    <option value="feminized" {{ if eq .strain.SeedType "feminized" }}selected{{ end }}>{{ .lcl.seed_type_feminized }}</option>
-                                    <option value="regular" {{ if eq .strain.SeedType "regular" }}selected{{ end }}>{{ .lcl.seed_type_regular }}</option>
-                                    <option value="clone" {{ if eq .strain.SeedType "clone" }}selected{{ end }}>{{ .lcl.seed_type_clone }}</option>
-                                </select>
-                            </div>
-
-                            <!-- Seed Count -->
-                            <div class="col-md-4">
-                                <label for="editSeedCount" class="form-label">{{ .lcl.seed_count }}</label>
-                                <input type="number" class="form-control" id="editSeedCount" min="0" value="{{ .strain.SeedCount }}">
-                            </div>
-
-                            <!-- Seeds added on -->
-                            <div class="col-md-4">
-                                <label for="editSeedsAddedOn" class="form-label">{{ .lcl.seeds_added_on }}</label>
-                                <input type="date" class="form-control" id="editSeedsAddedOn" value="{{ .strain.SeedsAddedOn }}">
-                                <small class="text-muted">{{ .lcl.seeds_added_on_desc }}</small>
-                            </div>
-
-                            <!-- Seed Location -->
-                            <div class="col-md-8">
-                                <label for="editSeedLocation" class="form-label">{{ .lcl.seed_location }}</label>
-                                <input type="text" class="form-control" id="editSeedLocation" maxlength="255" placeholder="{{ .lcl.seed_location_placeholder }}" value="{{ .strain.SeedLocation }}">
-                            </div>
-
-                            <!-- Wanted -->
-                            <div class="col-md-4 d-flex align-items-end">
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="checkbox" id="editWanted"{{ if .strain.Wanted }} checked{{ end }}>
-                                    <label class="form-check-label" for="editWanted">{{ .lcl.wanted_checkbox }}</label>
-                                    <div><small class="text-muted">{{ .lcl.wanted_desc }}</small></div>
-                                </div>
-                            </div>
-
-                            <!-- Growing information -->
-                            <div class="col-md-6">
-                                <label for="editHeightIndoor" class="form-label">{{ .lcl.height_indoor }}</label>
-                                <input type="text" class="form-control" id="editHeightIndoor" maxlength="255" placeholder="{{ .lcl.height_placeholder }}" value="{{ .strain.HeightIndoor }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="editHeightOutdoor" class="form-label">{{ .lcl.height_outdoor }}</label>
-                                <input type="text" class="form-control" id="editHeightOutdoor" maxlength="255" placeholder="{{ .lcl.height_placeholder }}" value="{{ .strain.HeightOutdoor }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="editYieldIndoor" class="form-label">{{ .lcl.yield_indoor }}</label>
-                                <input type="text" class="form-control" id="editYieldIndoor" maxlength="255" placeholder="{{ .lcl.yield_placeholder }}" value="{{ .strain.YieldIndoor }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="editYieldOutdoor" class="form-label">{{ .lcl.yield_outdoor }}</label>
-                                <input type="text" class="form-control" id="editYieldOutdoor" maxlength="255" placeholder="{{ .lcl.yield_placeholder }}" value="{{ .strain.YieldOutdoor }}">
-                            </div>
-                        </div>
+                    {{ if .review.ExistingID }}
+                    <div class="small mt-1" id="reviewExistingNote">
+                        <i class="fa-solid fa-rotate me-1" aria-hidden="true"></i>{{ .lcl.review_existing_note }}
+                        <a href="/strain/{{ .review.ExistingID }}" target="_blank" rel="noopener">{{ .strain.Name }} ({{ .review.ExistingBreeder }})</a>
                     </div>
+                    {{ end }}
                 </div>
+            </div>
+            {{ end }}
 
-                {{ if .reviewMode }}
-                <!-- Seed pack image choice, applied when the review is saved -->
-                <div class="card mb-4" id="reviewPackagingCard">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary mb-3">
-                            <i class="fa-solid fa-image me-1"></i> {{ .lcl.packaging_image }}
-                        </h2>
-                        {{ if .review.PackagingURL }}
-                        <p class="small mb-2">{{ .lcl.review_packaging_found }}</p>
-                        <img src="{{ .review.PackagingURL }}" alt="{{ .lcl.packaging_image }}" class="img-thumbnail mb-2 d-block" style="max-width:180px">
-                        {{ else if .strain.PackagingImage }}
-                        <p class="small mb-2">{{ .lcl.review_packaging_existing }}</p>
-                        <img src="/{{ .strain.PackagingImage }}" alt="{{ .lcl.packaging_image }}" class="img-thumbnail mb-2 d-block" style="max-width:180px">
-                        {{ end }}
-                        <div class="d-flex flex-wrap gap-3">
-                            {{ if or .review.PackagingURL .strain.PackagingImage }}
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="reviewPackaging" id="reviewPackagingKeep" value="keep" checked>
-                                <label class="form-check-label" for="reviewPackagingKeep">{{ if .review.PackagingURL }}{{ .lcl.packaging_offer_import }}{{ else }}{{ .lcl.review_packaging_keep_existing }}{{ end }}</label>
-                            </div>
+            <div class="fm-card" id="s-basics">
+                <div class="fm-card-h"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><div><h2>{{ .lcl.fm_basics }}</h2></div></div>
+                <div class="fm-grid">
+                    <div class="fm-f">
+                        <label for="editStrainName">{{ .lcl.fm_strain_name }} <span class="req">*</span></label>
+                        <input type="text" class="form-control" id="editStrainName" value="{{ .strain.Name }}" required>
+                    </div>
+                    <div class="fm-f">
+                        <label for="editBreederSelect">{{ .lcl.fm_breeder }} <span class="req">*</span></label>
+                        <select class="form-select" id="editBreederSelect" required
+                                data-ac-placeholder="{{ .lcl.breeder_search_placeholder }}"
+                                data-ac-new-text="{{ .lcl.breeder_add_new_named }}"
+                                data-ac-did-you-mean="{{ .lcl.autocomplete_did_you_mean }}"
+                                data-ac-suggested="{{ .lcl.autocomplete_suggested }}"
+                                data-ac-results="{{ .lcl.autocomplete_results }}"
+                                {{ if .reviewMode }}data-initial-breeder="{{ .strain.Breeder }}"{{ end }}>
+                            <option value=""></option>
+                            {{ range .breeders }}
+                            <option value="{{ .ID }}" {{ if and (not $.reviewMode) (eq .ID $.strain.BreederID) }}selected{{ end }}>{{ .Name }}</option>
                             {{ end }}
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="reviewPackaging" id="reviewPackagingUpload" value="upload">
-                                <label class="form-check-label" for="reviewPackagingUpload">{{ .lcl.packaging_offer_upload }}</label>
-                            </div>
-                            {{ if not .strain.PackagingImage }}
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="reviewPackaging" id="reviewPackagingNone" value="none"{{ if not .review.PackagingURL }} checked{{ end }}>
-                                <label class="form-check-label" for="reviewPackagingNone">{{ .lcl.review_packaging_none }}</label>
-                            </div>
-                            {{ end }}
-                        </div>
-                        <input type="file" id="reviewPackagingFile" class="form-control form-control-sm mt-2 d-none" style="max-width:320px"
-                               accept="image/jpeg,image/png,image/gif,image/webp">
-                        <small class="text-muted d-block mt-2">{{ .lcl.packaging_image_help }}</small>
+                            <option value="new">{{ .lcl.add_new_breeder }}</option>
+                        </select>
+                        <input type="hidden" id="editNewBreederName">
+                    </div>
+                    <div class="fm-f full">
+                        <label for="editStrainShortDescription">{{ .lcl.fm_short_description }} <span class="req">*</span></label>
+                        <input type="text" class="form-control" id="editStrainShortDescription" value="{{ .strain.ShortDescription }}" placeholder="{{ .lcl.fm_short_description_placeholder }}" required>
+                    </div>
+                    <div class="fm-f full">
+                        <label for="editUrl">{{ .lcl.fm_web_page }}</label>
+                        <input type="text" class="form-control" id="editUrl" value="{{ .strain.Url }}" placeholder="{{ .lcl.fm_web_page_placeholder }}">
                     </div>
                 </div>
-                {{ else }}
-                <!-- Seed pack image: actions apply immediately (not part of Save) -->
-                <div class="card mb-4" id="packagingCard" data-strain-id="{{ .strain.ID }}">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary mb-3">
-                            <i class="fa-solid fa-image me-1"></i> {{ .lcl.packaging_image }}
-                        </h2>
-                        {{ if .packagingOffer }}
-                        <div class="alert alert-info d-flex flex-wrap align-items-center gap-2" id="packagingPending">
-                            <img src="{{ .packagingOffer }}" alt="" class="img-thumbnail" style="max-width:90px">
-                            <span class="me-auto">{{ .lcl.packaging_pending_on_edit }}</span>
-                            <button type="button" class="btn btn-sm btn-success" data-packaging-action="accept">{{ .lcl.packaging_offer_import }}</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" data-packaging-action="discard">{{ .lcl.packaging_offer_skip }}</button>
+            </div>
+
+            <div class="fm-card" id="s-genetics">
+                <div class="fm-card-h"><i class="fa-solid fa-dna" aria-hidden="true"></i><div><h2>{{ .lcl.fm_genetics }}</h2></div></div>
+                <div class="fm-grid">
+                    <div class="fm-f full">
+                        <span class="fm-lbl" id="typeLbl">{{ .lcl.fm_type }} <span class="req">*</span></span>
+                        <select class="d-none" id="editAutoflower" tabindex="-1" aria-hidden="true">
+                            <option value="true" {{ if .strain.Autoflower }}selected{{ end }}>{{ .lcl.autoflower }}</option>
+                            <option value="false" {{ if not .strain.Autoflower }}selected{{ end }}>{{ .lcl.photoperiod }}</option>
+                        </select>
+                        <div class="fm-seg" data-for="editAutoflower" role="radiogroup" aria-labelledby="typeLbl" style="max-width:520px">
+                            <label><input type="radio" name="strainType" value="false"><i class="fa-solid fa-sun" aria-hidden="true"></i><div><b>{{ .lcl.photoperiod }}</b><small>{{ .lcl.fm_photo_desc }}</small></div></label>
+                            <label><input type="radio" name="strainType" value="true"><i class="fa-solid fa-bolt" aria-hidden="true"></i><div><b>{{ .lcl.autoflower }}</b><small>{{ .lcl.fm_auto_desc }}</small></div></label>
                         </div>
-                        {{ end }}
-                        <div class="d-flex flex-wrap align-items-center gap-3">
-                            <img id="packagingPreview" alt="{{ .lcl.packaging_image }}" class="img-thumbnail{{ if not .strain.PackagingImage }} d-none{{ end }}"
-                                 style="max-width:160px" {{ if .strain.PackagingImage }}src="/{{ .strain.PackagingImage }}"{{ end }}>
-                            <div class="d-flex flex-wrap gap-2">
-                                <button type="button" class="btn btn-sm btn-outline-primary" id="packagingUploadBtn"
-                                        data-upload="{{ .lcl.packaging_upload }}" data-replace="{{ .lcl.packaging_replace }}">
-                                    {{ if .strain.PackagingImage }}{{ .lcl.packaging_replace }}{{ else }}{{ .lcl.packaging_upload }}{{ end }}
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger{{ if not .strain.PackagingImage }} d-none{{ end }}" id="packagingRemoveBtn">{{ .lcl.packaging_remove }}</button>
-                                <input type="file" id="packagingFile" class="d-none" accept="image/jpeg,image/png,image/gif,image/webp">
-                            </div>
+                    </div>
+                    <div class="fm-f">
+                        <label for="editCycleTimeMin" class="fm-req" id="editCycleTimeLabel"
+                               data-photo="{{ .lcl.fm_flowering_time }}" data-auto="{{ .lcl.fm_seed_to_harvest }}">{{ if .strain.Autoflower }}{{ .lcl.fm_seed_to_harvest }}{{ else }}{{ .lcl.fm_flowering_time }}{{ end }}</label>
+                        <div class="fm-pair">
+                            <div class="fm-unit"><input type="number" class="form-control" id="editCycleTimeMin" min="0" step="any" value="{{ if gt .strain.CycleTimeMin 0 }}{{ daysToWeeks .strain.CycleTimeMin }}{{ end }}" aria-label="{{ .lcl.cycle_time_from }}"><span>{{ .lcl.unit_weeks }}</span></div>
+                            <span>{{ .lcl.cycle_time_to }}</span>
+                            <div class="fm-unit"><input type="number" class="form-control" id="editCycleTime" min="0" step="any" value="{{ daysToWeeks .strain.CycleTime }}" required aria-label="{{ .lcl.cycle_time_to }}"><span>{{ .lcl.unit_weeks }}</span></div>
                         </div>
-                        <small class="text-muted d-block mt-2">{{ .lcl.packaging_image_help }}</small>
+                        <small id="editCycleTimeDesc" data-photo="{{ .lcl.flowering_time_desc }}" data-auto="{{ .lcl.seed_to_harvest_desc }}">{{ if .strain.Autoflower }}{{ .lcl.seed_to_harvest_desc }}{{ else }}{{ .lcl.flowering_time_desc }}{{ end }}</small>
+                    </div>
+                    <div class="fm-f">
+                        <label for="editIndicaSativaSlider">{{ .lcl.fm_indica_sativa }}</label>
+                        <input type="range" class="form-range" id="editIndicaSativaSlider" min="0" max="100" value="{{ .strain.Indica }}">
+                        <div class="strain-ratio-bar" id="editRatioPreview">
+                            <div class="strain-ratio-fill" id="editRatioFill" style="width: {{ .strain.Indica }}%"></div>
+                        </div>
+                        <div class="fm-ratio"><span class="i" id="editIndicaLabel">Indica: {{ .strain.Indica }}%</span><span class="s" id="editSativaLabel">Sativa: {{ .strain.Sativa }}%</span></div>
                     </div>
                 </div>
-                {{ end }}
+            </div>
 
-                <!-- Cannabinoids + effects/flavors/terpenes/medical uses -->
-                <div class="card mb-4" id="strainProfileCard" data-remove="{{ .lcl.strain_attr_remove }}">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary mb-3">
-                            <i class="fa-solid fa-flask me-1"></i> {{ .lcl.strain_edit_cannabinoids }}
-                        </h2>
-                        <div class="row g-3">
-                            <div class="col-sm-6">
-                                <label class="form-label" for="editThcMin">THC %</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" id="editThcMin" min="0" max="100" step="any" placeholder="{{ .lcl.cannabinoid_min }}" value="{{ with .strain.ThcMin }}{{ . }}{{ end }}">
-                                    <span class="input-group-text">–</span>
-                                    <input type="number" class="form-control" id="editThcMax" min="0" max="100" step="any" placeholder="{{ .lcl.cannabinoid_max }}" value="{{ with .strain.ThcMax }}{{ . }}{{ end }}" aria-label="THC {{ .lcl.cannabinoid_max }}">
-                                </div>
-                            </div>
-                            <div class="col-sm-6">
-                                <label class="form-label" for="editCbdMin">CBD %</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" id="editCbdMin" min="0" max="100" step="any" placeholder="{{ .lcl.cannabinoid_min }}" value="{{ with .strain.CbdMin }}{{ . }}{{ end }}">
-                                    <span class="input-group-text">–</span>
-                                    <input type="number" class="form-control" id="editCbdMax" min="0" max="100" step="any" placeholder="{{ .lcl.cannabinoid_max }}" value="{{ with .strain.CbdMax }}{{ . }}{{ end }}" aria-label="CBD {{ .lcl.cannabinoid_max }}">
-                                </div>
-                            </div>
-                            <div class="col-6 col-sm-3">
-                                <label class="form-label" for="editCbnMax">CBN % ({{ .lcl.cannabinoid_max }})</label>
-                                <input type="number" class="form-control" id="editCbnMax" min="0" max="100" step="any" value="{{ with .strain.CbnMax }}{{ . }}{{ end }}">
-                            </div>
-                            <div class="col-6 col-sm-3">
-                                <label class="form-label" for="editCbgMax">CBG % ({{ .lcl.cannabinoid_max }})</label>
-                                <input type="number" class="form-control" id="editCbgMax" min="0" max="100" step="any" value="{{ with .strain.CbgMax }}{{ . }}{{ end }}">
+            <div class="fm-card" id="s-seeds">
+                <div class="fm-card-h"><i class="fa-solid fa-box-archive" aria-hidden="true"></i><div><h2>{{ .lcl.fm_seeds }}</h2><p>{{ .lcl.fm_seeds_desc }}</p></div></div>
+                <div class="fm-grid">
+                    <div class="fm-f">
+                        <label for="editSeedCount">{{ .lcl.fm_seeds_on_hand }}</label>
+                        <div class="fm-step">
+                            <button type="button" data-d="-1" aria-label="{{ .lcl.fm_one_less }}"><i class="fa-solid fa-minus" aria-hidden="true"></i></button>
+                            <input type="number" id="editSeedCount" min="0" value="{{ .strain.SeedCount }}" inputmode="numeric">
+                            <button type="button" data-d="1" aria-label="{{ .lcl.fm_one_more }}"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
+                        </div>
+                    </div>
+                    <div class="fm-f">
+                        <label for="editSeedType">{{ .lcl.fm_seed_type }}</label>
+                        <select class="form-select" id="editSeedType">
+                            <option value="" {{ if not .strain.SeedType }}selected{{ end }}>{{ .lcl.seed_type_not_set }}</option>
+                            <option value="feminized" {{ if eq .strain.SeedType "feminized" }}selected{{ end }}>{{ .lcl.seed_type_feminized }}</option>
+                            <option value="regular" {{ if eq .strain.SeedType "regular" }}selected{{ end }}>{{ .lcl.seed_type_regular }}</option>
+                            <option value="clone" {{ if eq .strain.SeedType "clone" }}selected{{ end }}>{{ .lcl.seed_type_clone }}</option>
+                        </select>
+                    </div>
+                    <div class="fm-f">
+                        <label for="editSeedsAddedOn">{{ .lcl.fm_added_on }}</label>
+                        <input type="date" class="form-control" id="editSeedsAddedOn" value="{{ .strain.SeedsAddedOn }}">
+                        <small>{{ .lcl.seeds_added_on_desc }}</small>
+                    </div>
+                    <div class="fm-f">
+                        <label for="editSeedLocation">{{ .lcl.fm_seed_location }}</label>
+                        <input type="text" class="form-control" id="editSeedLocation" maxlength="255" placeholder="{{ .lcl.seed_location_placeholder }}" value="{{ .strain.SeedLocation }}">
+                    </div>
+                    <label class="fm-sw form-switch full" for="editWanted">
+                        <span><b>{{ .lcl.wanted_checkbox }}</b><small>{{ .lcl.wanted_desc }}</small></span>
+                        <input type="checkbox" class="form-check-input" role="switch" id="editWanted"{{ if .strain.Wanted }} checked{{ end }}>
+                    </label>
+                </div>
+            </div>
+
+            <div class="fm-card" id="s-growth">
+                <div class="fm-card-h"><i class="fa-solid fa-ruler-vertical" aria-hidden="true"></i><div><h2>{{ .lcl.fm_height_yield }} <span class="opt">{{ .lcl.fm_optional }}</span></h2><p>{{ .lcl.fm_height_yield_desc }}</p></div></div>
+                <div class="fm-grid">
+                    <div class="fm-f"><label for="editHeightIndoor">{{ .lcl.fm_height_indoor }}</label><input type="text" class="form-control" id="editHeightIndoor" maxlength="255" placeholder="{{ .lcl.height_placeholder }}" value="{{ .strain.HeightIndoor }}"></div>
+                    <div class="fm-f"><label for="editHeightOutdoor">{{ .lcl.fm_height_outdoor }}</label><input type="text" class="form-control" id="editHeightOutdoor" maxlength="255" placeholder="{{ .lcl.height_placeholder }}" value="{{ .strain.HeightOutdoor }}"></div>
+                    <div class="fm-f"><label for="editYieldIndoor">{{ .lcl.fm_yield_indoor }}</label><input type="text" class="form-control" id="editYieldIndoor" maxlength="255" placeholder="{{ .lcl.yield_placeholder }}" value="{{ .strain.YieldIndoor }}"></div>
+                    <div class="fm-f"><label for="editYieldOutdoor">{{ .lcl.fm_yield_outdoor }}</label><input type="text" class="form-control" id="editYieldOutdoor" maxlength="255" placeholder="{{ .lcl.yield_placeholder }}" value="{{ .strain.YieldOutdoor }}"></div>
+                </div>
+            </div>
+
+            <!-- Cannabinoids + effects/flavors/terpenes/medical uses -->
+            <div class="fm-card" id="s-profile">
+                <div id="strainProfileCard" data-remove="{{ .lcl.strain_attr_remove }}">
+                    <div class="fm-card-h"><i class="fa-solid fa-flask" aria-hidden="true"></i><div><h2>{{ .lcl.fm_cannabinoids_effects }} <span class="opt">{{ .lcl.fm_optional }}</span></h2><p>{{ .lcl.strain_edit_cannabinoids_help }}</p></div></div>
+                    <div class="fm-grid">
+                        <div class="fm-f">
+                            <label for="editThcMin">THC</label>
+                            <div class="fm-pair">
+                                <div class="fm-unit"><input type="number" class="form-control" id="editThcMin" min="0" max="100" step="any" placeholder="{{ .lcl.cannabinoid_min }}" value="{{ with .strain.ThcMin }}{{ . }}{{ end }}"><span>%</span></div>
+                                <span>{{ .lcl.cycle_time_to }}</span>
+                                <div class="fm-unit"><input type="number" class="form-control" id="editThcMax" min="0" max="100" step="any" placeholder="{{ .lcl.cannabinoid_max }}" value="{{ with .strain.ThcMax }}{{ . }}{{ end }}" aria-label="THC {{ .lcl.cannabinoid_max }}"><span>%</span></div>
                             </div>
                         </div>
-                        <small class="text-muted d-block mt-2">{{ .lcl.strain_edit_cannabinoids_help }}</small>
-
-                        <hr class="my-3">
-                        <h3 class="h6 text-primary mb-2">{{ .lcl.straincompass_attributes_title }}</h3>
-                        {{ template "strain-attr-editor" (dict "group" "effects" "label" .lcl.straincompass_effects "items" .strain.Effects "placeholder" .lcl.strain_attr_add_placeholder) }}
-                        {{ template "strain-attr-editor" (dict "group" "flavors" "label" .lcl.straincompass_flavors "items" .strain.Flavors "placeholder" .lcl.strain_attr_add_placeholder) }}
-                        {{ template "strain-attr-editor" (dict "group" "terpenes" "label" .lcl.straincompass_terpenes "items" .strain.Terpenes "placeholder" .lcl.strain_attr_add_placeholder) }}
-                        {{ template "strain-attr-editor" (dict "group" "medical_uses" "label" .lcl.straincompass_medical_uses "items" .strain.MedicalUses "placeholder" .lcl.strain_attr_add_placeholder) }}
-                        <small class="text-muted d-block">{{ .lcl.strain_edit_attributes_help }}</small>
-                    </div>
-                </div>
-
-                <!-- Lineage card -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary mb-3">
-                            <i class="fa-solid fa-sitemap me-1"></i> {{ .lcl.lineage_edit_title }}
-                        </h2>
-                        <div id="lineageEditor"
-                             data-placeholder="{{ .lcl.lineage_parent_placeholder }}"
-                             data-use-text="{{ .lcl.lineage_parent_use_text }}"
-                             data-results="{{ .lcl.autocomplete_results }}"
-                             data-linked="{{ .lcl.lineage_linked }}"
-                             data-unlinked="{{ .lcl.lineage_unlinked }}"
-                             data-remove="{{ .lcl.lineage_remove_parent }}"
-                             {{ if .reviewMode }}data-initial-parents="{{ json .review.Draft.Parents }}"{{ end }}>
-                            <div id="lineageEntries"></div>
-                            <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addParentBtn">
-                                <i class="fa-solid fa-plus me-1"></i> {{ .lcl.lineage_add_parent }}
-                            </button>
-                        </div>
-                        <small class="text-muted d-block mt-2">{{ .lcl.lineage_edit_help }}</small>
-                        {{ if .strain.StraincompassLineageNote }}
-                        <small class="text-muted d-block mt-1">
-                            <i class="fa-solid fa-flask me-1"></i>{{ .lcl.straincompass_lineage_label }}: {{ .strain.StraincompassLineageNote }}
-                        </small>
-                        {{ end }}
-                    </div>
-                </div>
-
-                <!-- Description / Markdown editor card -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h2 class="h5 card-title text-primary mb-0">
-                                <i class="fa-solid fa-file-lines me-1"></i> {{ .lcl.description_txt }}
-                            </h2>
-                            <!-- Markdown toolbar -->
-                            <div class="btn-group btn-group-sm" role="toolbar" aria-label="Markdown formatting">
-                                <button type="button" class="btn btn-outline-secondary md-btn" title="Bold" data-md-action="wrap" data-md-before="**" data-md-after="**"><i class="fa-solid fa-bold"></i></button>
-                                <button type="button" class="btn btn-outline-secondary md-btn" title="Italic" data-md-action="wrap" data-md-before="*" data-md-after="*"><i class="fa-solid fa-italic"></i></button>
-                                <button type="button" class="btn btn-outline-secondary md-btn" title="Heading" data-md-action="prefix" data-md-prefix="### "><i class="fa-solid fa-heading"></i></button>
-                                <button type="button" class="btn btn-outline-secondary md-btn" title="Link" data-md-action="link"><i class="fa-solid fa-link"></i></button>
-                                <button type="button" class="btn btn-outline-secondary md-btn" title="List" data-md-action="prefix" data-md-prefix="- "><i class="fa-solid fa-list"></i></button>
+                        <div class="fm-f">
+                            <label for="editCbdMin">CBD</label>
+                            <div class="fm-pair">
+                                <div class="fm-unit"><input type="number" class="form-control" id="editCbdMin" min="0" max="100" step="any" placeholder="{{ .lcl.cannabinoid_min }}" value="{{ with .strain.CbdMin }}{{ . }}{{ end }}"><span>%</span></div>
+                                <span>{{ .lcl.cycle_time_to }}</span>
+                                <div class="fm-unit"><input type="number" class="form-control" id="editCbdMax" min="0" max="100" step="any" placeholder="{{ .lcl.cannabinoid_max }}" value="{{ with .strain.CbdMax }}{{ . }}{{ end }}" aria-label="CBD {{ .lcl.cannabinoid_max }}"><span>%</span></div>
                             </div>
                         </div>
-                        <textarea class="form-control font-monospace" id="editStrainDescription" rows="16" style="resize: vertical;">{{ .strain.Description }}</textarea>
-                        <small class="text-muted">{{ .lcl.description_txt_desc }}</small>
+                        <div class="fm-f">
+                            <label for="editCbnMax">{{ .lcl.fm_cbn_up_to }}</label>
+                            <div class="fm-unit"><input type="number" class="form-control" id="editCbnMax" min="0" max="100" step="any" value="{{ with .strain.CbnMax }}{{ . }}{{ end }}"><span>%</span></div>
+                        </div>
+                        <div class="fm-f">
+                            <label for="editCbgMax">{{ .lcl.fm_cbg_up_to }}</label>
+                            <div class="fm-unit"><input type="number" class="form-control" id="editCbgMax" min="0" max="100" step="any" value="{{ with .strain.CbgMax }}{{ . }}{{ end }}"><span>%</span></div>
+                        </div>
                     </div>
+                    <hr class="fm-sep">
+                    {{ template "strain-attr-editor" (dict "group" "effects" "label" .lcl.straincompass_effects "items" .strain.Effects "placeholder" .lcl.strain_attr_add_placeholder) }}
+                    {{ template "strain-attr-editor" (dict "group" "flavors" "label" .lcl.straincompass_flavors "items" .strain.Flavors "placeholder" .lcl.strain_attr_add_placeholder) }}
+                    {{ template "strain-attr-editor" (dict "group" "terpenes" "label" .lcl.straincompass_terpenes "items" .strain.Terpenes "placeholder" .lcl.strain_attr_add_placeholder) }}
+                    {{ template "strain-attr-editor" (dict "group" "medical_uses" "label" .lcl.straincompass_medical_uses "items" .strain.MedicalUses "placeholder" .lcl.strain_attr_add_placeholder) }}
+                    <small class="fm-help d-block">{{ .lcl.strain_edit_attributes_help }}</small>
                 </div>
+            </div>
 
-                <!-- Save button -->
-                <div class="d-flex justify-content-end mb-4">
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <span class="spinner-border spinner-border-sm btn-spinner" role="status" aria-hidden="true"></span>
-                        <i class="fa-solid fa-check me-1"></i> {{ if .reviewMode }}{{ .lcl.review_save }}{{ else }}{{ .lcl.save_changes }}{{ end }}
+            <div class="fm-card" id="s-lineage">
+                <div class="fm-card-h"><i class="fa-solid fa-sitemap" aria-hidden="true"></i><div><h2>{{ .lcl.fm_lineage }}</h2><p>{{ .lcl.lineage_edit_help }}</p></div></div>
+                <div id="lineageEditor"
+                     data-placeholder="{{ .lcl.lineage_parent_placeholder }}"
+                     data-use-text="{{ .lcl.lineage_parent_use_text }}"
+                     data-results="{{ .lcl.autocomplete_results }}"
+                     data-linked="{{ .lcl.lineage_linked }}"
+                     data-unlinked="{{ .lcl.lineage_unlinked }}"
+                     data-remove="{{ .lcl.lineage_remove_parent }}"
+                     {{ if .reviewMode }}data-initial-parents="{{ json .review.Draft.Parents }}"{{ end }}>
+                    <div id="lineageEntries"></div>
+                    <button type="button" class="fm-btn light sm mt-1" id="addParentBtn">
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i> {{ .lcl.lineage_add_parent }}
                     </button>
                 </div>
+                {{ if .strain.StraincompassLineageNote }}
+                <small class="fm-help d-block mt-2">
+                    <i class="fa-solid fa-flask me-1" aria-hidden="true"></i>{{ .lcl.straincompass_lineage_label }}: {{ .strain.StraincompassLineageNote }}
+                </small>
+                {{ end }}
             </div>
 
-            <!-- Right column: Live preview -->
-            <div class="col-lg-5">
-                <div class="card strain-preview-card sticky-top" style="top: 1rem;">
-                    <div class="card-body">
-                        <h2 class="h5 card-title text-primary mb-3">
-                            <i class="fa-solid fa-eye me-1"></i> Preview
-                        </h2>
-                        <div class="markdown-body" id="markdownPreview">
-                            {{ .strain.Description | markdownify }}
+            {{ if .reviewMode }}
+            <!-- Seed pack image choice, applied when the review is saved -->
+            <div class="fm-card" id="s-pack">
+                <div id="reviewPackagingCard">
+                    <div class="fm-card-h"><i class="fa-solid fa-image" aria-hidden="true"></i><div><h2>{{ .lcl.fm_seed_pack }} <span class="opt">{{ .lcl.fm_optional }}</span></h2><p>{{ .lcl.packaging_image_help }}</p></div></div>
+                    {{ if .review.PackagingURL }}
+                    <p class="small mb-2">{{ .lcl.review_packaging_found }}</p>
+                    <img src="{{ .review.PackagingURL }}" alt="{{ .lcl.packaging_image }}" class="fm-pack-img mb-2">
+                    {{ else if .strain.PackagingImage }}
+                    <p class="small mb-2">{{ .lcl.review_packaging_existing }}</p>
+                    <img src="/{{ .strain.PackagingImage }}" alt="{{ .lcl.packaging_image }}" class="fm-pack-img mb-2">
+                    {{ end }}
+                    <div class="d-flex flex-wrap gap-3">
+                        {{ if or .review.PackagingURL .strain.PackagingImage }}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="reviewPackaging" id="reviewPackagingKeep" value="keep" checked>
+                            <label class="form-check-label" for="reviewPackagingKeep">{{ if .review.PackagingURL }}{{ .lcl.packaging_offer_import }}{{ else }}{{ .lcl.review_packaging_keep_existing }}{{ end }}</label>
                         </div>
+                        {{ end }}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="reviewPackaging" id="reviewPackagingUpload" value="upload">
+                            <label class="form-check-label" for="reviewPackagingUpload">{{ .lcl.packaging_offer_upload }}</label>
+                        </div>
+                        {{ if not .strain.PackagingImage }}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="reviewPackaging" id="reviewPackagingNone" value="none"{{ if not .review.PackagingURL }} checked{{ end }}>
+                            <label class="form-check-label" for="reviewPackagingNone">{{ .lcl.review_packaging_none }}</label>
+                        </div>
+                        {{ end }}
                     </div>
+                    <input type="file" id="reviewPackagingFile" class="form-control form-control-sm mt-2 d-none" style="max-width:320px"
+                           accept="image/jpeg,image/png,image/gif,image/webp">
                 </div>
             </div>
-        </div>
-    </form>
+            {{ else }}
+            <!-- Seed pack image: actions apply immediately (not part of Save) -->
+            <div class="fm-card" id="s-pack">
+                <div id="packagingCard" data-strain-id="{{ .strain.ID }}">
+                    <div class="fm-card-h"><i class="fa-solid fa-image" aria-hidden="true"></i><div><h2>{{ .lcl.fm_seed_pack }} <span class="opt">{{ .lcl.fm_optional }}</span></h2><p>{{ .lcl.fm_seed_pack_desc }}</p></div></div>
+                    {{ if .packagingOffer }}
+                    <div class="fm-tip d-flex flex-wrap align-items-center gap-2" id="packagingPending">
+                        <img src="{{ .packagingOffer }}" alt="" class="fm-pack-img sm">
+                        <span class="me-auto">{{ .lcl.packaging_pending_on_edit }}</span>
+                        <button type="button" class="fm-btn sm" data-packaging-action="accept">{{ .lcl.packaging_offer_import }}</button>
+                        <button type="button" class="fm-btn light sm" data-packaging-action="discard">{{ .lcl.packaging_offer_skip }}</button>
+                    </div>
+                    {{ end }}
+                    <div class="d-flex flex-wrap align-items-center gap-3">
+                        <img id="packagingPreview" alt="{{ .lcl.packaging_image }}" class="fm-pack-img{{ if not .strain.PackagingImage }} d-none{{ end }}"
+                             {{ if .strain.PackagingImage }}src="/{{ .strain.PackagingImage }}"{{ end }}>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="fm-btn light sm" id="packagingUploadBtn"
+                                    data-upload="{{ .lcl.packaging_upload }}" data-replace="{{ .lcl.packaging_replace }}">
+                                {{ if .strain.PackagingImage }}{{ .lcl.packaging_replace }}{{ else }}{{ .lcl.packaging_upload }}{{ end }}
+                            </button>
+                            <button type="button" class="fm-btn danger sm{{ if not .strain.PackagingImage }} d-none{{ end }}" id="packagingRemoveBtn">{{ .lcl.packaging_remove }}</button>
+                            <input type="file" id="packagingFile" class="d-none" accept="image/jpeg,image/png,image/gif,image/webp">
+                        </div>
+                    </div>
+                    <small class="fm-help d-block mt-2">{{ .lcl.packaging_image_help }}</small>
+                </div>
+            </div>
+            {{ end }}
+
+            {{ template "strain-desc-card" (dict "lcl" .lcl "text" .strain.Description "html" (markdownify .strain.Description)) }}
+
+            {{ if not .reviewMode }}
+            <div class="fm-card fm-danger">
+                <div class="fm-card-h"><i class="fa-solid fa-trash-can" aria-hidden="true"></i><div><h2>{{ .lcl.fm_delete_strain }}</h2><p>{{ .lcl.fm_delete_strain_desc }}</p></div>
+                    <button type="button" class="fm-btn danger sm" id="deleteStrainButton">{{ .lcl.fm_delete_strain_btn }}</button></div>
+            </div>
+            {{ end }}
+
+            <div class="fm-save">
+                <span class="msg"{{ if not .reviewMode }} hidden{{ end }}>{{ if not .reviewMode }}<i class="fa-solid fa-circle" aria-hidden="true"></i>{{ .lcl.fm_unsaved }}{{ end }}</span>
+                <a href="{{ if .reviewMode }}/strains{{ else }}/strain/{{ .strain.ID }}{{ end }}" class="fm-btn light">{{ .lcl.cancel }}</a>
+                <button type="submit" class="fm-btn">
+                    <span class="spinner-border spinner-border-sm btn-spinner" role="status" aria-hidden="true"></span>
+                    <i class="fa-solid fa-check" aria-hidden="true"></i> {{ if .reviewMode }}{{ .lcl.review_save }}{{ else }}{{ .lcl.fm_save_changes }}{{ end }}
+                </button>
+            </div>
+        </form>
+    </div>
     {{ end }}
 </div>
 
 <script nonce="{{ .cspNonce }}">
     var currentStrainID = {{ .strain.ID }};
 </script>
+<script src="/static/js/form-look.js"></script>
 <script src="/static/js/strain-stock-fields.js"></script>
 <script src="/static/js/strain-edit.js"></script>
 <script src="/static/js/strain-lineage-edit.js"></script>
@@ -424,7 +330,7 @@
 {{ define "strain-attr-editor" }}
 <!-- Add/remove list for one attribute group; intensity/level ride along in data attributes so saving keeps them. -->
 <div class="strain-attr-editor mb-3" data-group="{{ .group }}">
-    <label class="form-label small text-muted mb-1">{{ .label }}</label>
+    <div class="fm-lbl mb-1">{{ .label }}</div>
     <div class="d-flex flex-wrap gap-1 mb-1 strain-attr-chips">
         {{ range .items }}
         <span class="badge strain-attr-chip g-{{ $.group }}" data-name="{{ .Name }}"{{ with .Intensity }} data-intensity="{{ . }}"{{ end }}{{ with .Level }} data-level="{{ . }}"{{ end }}>

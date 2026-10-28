@@ -36,10 +36,36 @@ document.addEventListener("DOMContentLoaded", () => {
     // in the Seed Vault: hidden (and unticked) for any other.
     function syncSeedBox() {
         const opt = strainSelect.selectedOptions[0];
-        const hasSeeds = !!opt && Number(opt.dataset.seeds || 0) > 0;
+        const seeds = opt ? Number(opt.dataset.seeds || 0) : 0;
+        const hasSeeds = seeds > 0;
         document.getElementById("seedBox").classList.toggle("d-none", !hasSeeds);
         if (!hasSeeds) document.getElementById("decrementSeedCount").checked = false;
+        const left = document.getElementById("seedLeft");
+        if (hasSeeds && left) {
+            left.textContent = left.dataset.text
+                .replace("{name}", opt.dataset.name || "")
+                .replace("{n}", seeds)
+                .replace("{m}", seeds - 1);
+        }
     }
+
+    // The summary card beside the form.
+    function syncSummary() {
+        const label = sel => {
+            const o = sel.selectedOptions[0];
+            return o && o.value && o.value !== "new" ? (o.dataset.name || o.textContent.trim()) : "–";
+        };
+        const name = document.getElementById("plantName").value.trim();
+        const sumName = document.getElementById("sumName");
+        if (sumName) sumName.textContent = name || sumName.dataset.empty;
+        const zone = zoneSelect.value === "new" ? document.getElementById("newZoneName").value.trim() || "–" : label(zoneSelect);
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+        set("sumStrain", label(strainSelect));
+        set("sumZone", zone);
+        set("sumStage", label(document.getElementById("statusSelect")));
+    }
+    addPlantForm.addEventListener("input", syncSummary);
+    addPlantForm.addEventListener("change", syncSummary);
 
     strainSelect.addEventListener("change", () => {
         syncSeedBox();
@@ -153,6 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (params.get("name")) document.getElementById("plantName").value = params.get("name");
     if (params.get("use_seed") === "1") document.getElementById("decrementSeedCount").checked = true;
     syncSeedBox();
+    syncSummary();
     if (draft && strainSelect.value) {
         const label = strainAC.input.value;
         uiMessages._ready().then(() => {

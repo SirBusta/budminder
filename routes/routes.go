@@ -199,6 +199,7 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 			"currentPath":     currentPath,
 			"version":         version,
 			"prefillName":     c.Query("name"),
+			"scEnabled":       store.StraincompassEnabled() == 1,
 			"breeders":        store.Breeders(),
 			"plants":          handlers.GetLivingPlants(handlers.DBFromContext(c)),
 			"activities":      store.Activities(),

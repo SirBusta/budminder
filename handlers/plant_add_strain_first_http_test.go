@@ -38,7 +38,7 @@ func TestPlantAddPage_NoStrainsYet(t *testing.T) {
 
 	body := e.page(t, "/plant/new")
 	assert.Contains(t, body, `id="strainFirstNote"`)
-	assert.Contains(t, body, "alert-warning", "no strains at all: the note is a warning")
+	assert.Contains(t, body, `class="fm-tip warn"`, "no strains at all: the note is a warning")
 	assert.Contains(t, body, `href="/strains"`)
 }
 
@@ -51,7 +51,7 @@ func TestPlantAddPage_StrainFirst(t *testing.T) {
 
 	body := e.page(t, "/plant/new")
 	assert.Contains(t, body, `id="strainFirstNote"`)
-	assert.Contains(t, body, "alert-info")
+	assert.Contains(t, body, `class="fm-tip" id="strainFirstNote"`)
 	assert.Contains(t, body, `data-strain-first`, "the Strains link saves the form first")
 	assert.Contains(t, body, fmt.Sprintf(`value="%d" data-name="SF Kush"`, strain), "options carry the bare name")
 	assert.NotContains(t, body, `id="newStrainCard"`, "no half-filled Add New Strain form")
@@ -90,5 +90,5 @@ func TestPlantAddPage_SeedCounts(t *testing.T) {
 	body := e.page(t, "/plant/new")
 	assert.Contains(t, body, fmt.Sprintf(`value="%d" data-name="Stocked Kush" data-seeds="4"`, stocked))
 	assert.Contains(t, body, fmt.Sprintf(`value="%d" data-name="Wanted Haze" data-seeds="0"`, wanted))
-	assert.Contains(t, body, `class="col-md-6 d-none" id="seedBox"`, "hidden until a strain with seeds is chosen")
+	assert.Contains(t, body, `class="fm-sw form-switch full d-none" id="seedBox"`, "hidden until a strain with seeds is chosen")
 }
