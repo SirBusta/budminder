@@ -54,6 +54,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The plant page's stage date editor and Settings' VPD range and zone edits show why a save was refused instead of looking saved.
 - Strain description preview: quotes in a link can't add to the link, and only web links are made clickable.
 - Demo: one IPv6 network (/64) counts as one visitor for the limit on new demo copies.
+- The built-in activity types (Water, Feed, Note, Height) and the Height metric keep their names, and Water/Feed their watering/feeding settings; they can't be deleted, and no other activity type can be renamed to one of their names. Icon, color, measurements and unit can still be changed.
+- Going Back to the Plants list from a plant page shows the plant's latest stage and activities instead of the copy from before.
+- A plant without photos no longer writes an error to the log each time its page opens.
 
 ## [1.5.10] - 2026-10-27
 
