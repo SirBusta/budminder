@@ -212,6 +212,30 @@ func TestSmokeReport_AddToStrains(t *testing.T) {
 	assert.Equal(t, 12.86, *r.PricePerGram)
 }
 
+// TestSmokeReport_AddToStrainsLinksImportedListing: when the picked
+// StrainCompass listing is already in Strains (same slug and breeder), the
+// report links to that strain and leaves it as it is.
+func TestSmokeReport_AddToStrainsLinksImportedListing(t *testing.T) {
+	t.Parallel()
+	e := newSensorEnv(t)
+	strain := testutil.SeedStrain(t, e.db, testutil.SeedBreeder(t, e.db, "Cali"), "Grape OG")
+	e.exec(t, `UPDATE strain SET straincompass_slug = 'grape-og', description = 'My notes' WHERE id = $1`, strain)
+
+	code, out := e.postSmoke(t, http.MethodPost, "/smoke", map[string]any{"source": "bought",
+		"strain_name": "Grape OG (dispensary cut)", "breeder_name": "Cali", "add_to_strains": true,
+		"sc_slug": "grape-og", "sc_listing_breeder": "Cali", "score_taste": 8})
+	require.Equal(t, http.StatusOK, code, out)
+	assert.Equal(t, float64(strain), out["strain_id"], "linked to the strain already imported")
+
+	var name, desc string
+	var n int
+	require.NoError(t, e.db.QueryRow(`SELECT name, description FROM strain WHERE id = $1`, strain).Scan(&name, &desc))
+	assert.Equal(t, "Grape OG", name)
+	assert.Equal(t, "My notes", desc)
+	require.NoError(t, e.db.QueryRow(`SELECT COUNT(*) FROM strain`).Scan(&n))
+	assert.Equal(t, 1, n, "no second strain")
+}
+
 func smokePNG(t *testing.T) []byte {
 	t.Helper()
 	img := image.NewRGBA(image.Rect(0, 0, 8, 8))

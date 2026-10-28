@@ -231,6 +231,14 @@ func addSmokeStrain(c *gin.Context, in smokeInput) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	// The picked StrainCompass listing is already in Strains: link to it
+	// as it is (a re-import would rename it and overwrite its text).
+	if slug := strings.TrimSpace(in.SCSlug); slug != "" {
+		if err := db.QueryRow(`SELECT id FROM strain WHERE straincompass_slug = $1 AND breeder_id = $2 ORDER BY id LIMIT 1`,
+			slug, breederID).Scan(&existing); err == nil {
+			return existing, nil
+		}
+	}
 	var id int
 	if slug := strings.TrimSpace(in.SCSlug); slug != "" && store.StraincompassEnabled() == 1 {
 		rec, err := straincompassGetStrainBySlug(store.StraincompassBaseURL(), store.StraincompassAPIKey(), slug, in.StrainName, in.SCListingBreeder)
