@@ -24,9 +24,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Deleting a plant offers to delete its photo files from the uploads folder as well (unchecked by default).
+
 ### Changed
 
 ### Fixed
+
+- PostgreSQL: passwords with spaces, quotes or backslashes, an empty password, and database names with capitals or hyphens work in the connection and startup maintenance.
+- Settings no longer says "saved" when the save failed, and the server refuses a polling interval outside 15-300 seconds.
+- A failed restore puts back the sensor-data indexes it removed.
+- SQLite: readings restored from a JSON backup keep the database's own time format, so charts around the restore day sort correctly.
+- Sensor readings sent during a restore are turned away (503, try again in 60 seconds) instead of colliding with the restored data.
+- SQLite: the old-data cleanup and the backup's "last N days" filter cut off at the right time instead of being off by your timezone offset.
+- First-run setup saves the password before the username, so a failed save can't leave an account without a password.
+- SQLite: a save no longer fails at once with "database is locked" when a background write lands at the same moment; PostgreSQL: seed-count changes made at the same time are no longer lost.
+- More than 10 wrong API keys a minute from one address are refused before the slow key check.
+- Signed-out guests see only visible camera streams, and never their addresses.
+- Camera user names, passwords and address parameters are kept out of the log.
+- An upload without a valid security token is refused before the file is read, instead of after.
+- Uploaded plant photos are saved with the extension of their real image type, not the name they were sent with.
+- Strain lookups wait at most 8 seconds when CannaDB or StrainCompass asks BudMinder to retry later.
+- Saving a strain with a breeder deleted in another tab is refused instead of hiding the strain from the lists.
+- The backup taken before **Update now** works when the install folder's name contains `#` or `%`.
+- Linux: a relative folder typed at the install prompt goes under your home folder; a `%` in the install path no longer breaks the menu icon; **Stop BudMinder** on a busy copy can be retried.
+- An install that has always run from another folder keeps using it when that folder has its photos (PostgreSQL installs have no database file there).
+- The plant page and the Plants list count a plant's days by calendar day on SQLite as on PostgreSQL (a plant started yesterday afternoon is on day 2 all day today).
+- A smoke report's **Also add to my Strains** links to a StrainCompass strain you already have instead of renaming it and overwriting its description.
+- Smoke report form: a new photo made the main one shows first.
+- The plant page's stage date editor and Settings' VPD range and zone edits show why a save was refused instead of looking saved.
+- Strain description preview: quotes in a link can't add to the link, and only web links are made clickable.
+- Demo: one IPv6 network (/64) counts as one visitor for the limit on new demo copies.
 
 ## [1.5.10] - 2026-10-27
 
