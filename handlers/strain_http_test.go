@@ -244,6 +244,35 @@ func TestStrainHTTP_AddStrain_RejectsMissingBreederWhenNoNewBreeder(t *testing.T
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
+// TestStrainHTTP_AddStrain_RejectsUnknownBreeder: a breeder_id that isn't
+// in the breeder table is refused (on the production-like DB without
+// foreign keys it was saved, and the strain vanished from the lists).
+func TestStrainHTTP_AddStrain_RejectsUnknownBreeder(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDBWithoutForeignKeys(t)
+	server := testutil.NewTestServer(t, db)
+
+	const apiKey = "addstr-unknownBreeder-key"
+	testutil.SeedAPIKey(t, db, apiKey)
+
+	c := server.NewClient(t)
+	resp, err := c.Do(testutil.APIReq(t, http.MethodPost, c.BaseURL+"/strains", apiKey,
+		testutil.JSONBody(t, map[string]interface{}{
+			"name":       "Orphan",
+			"breeder_id": 999,
+			"indica":     50,
+			"sativa":     50,
+		}), "application/json"))
+	require.NoError(t, err)
+	defer testutil.DrainAndClose(resp)
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	var n int
+	require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM strain WHERE name = 'Orphan'`).Scan(&n))
+	assert.Zero(t, n)
+}
+
 // ---------------------------------------------------------------------------
 // UpdateStrainHandler
 // ---------------------------------------------------------------------------

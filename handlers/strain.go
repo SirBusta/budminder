@@ -79,7 +79,20 @@ func breederName(db *sql.DB, id int) string {
 // a breeder id, writing the API error response itself when it can't.
 func resolveRequestBreeder(c *gin.Context, db *sql.DB, breederID *int, newBreeder string) (int, bool) {
 	if breederID != nil {
-		return *breederID, true
+		// A strain whose breeder doesn't exist drops out of the
+		// breeder-joined lists, so refuse a stale or made-up id.
+		var id int
+		err := db.QueryRow("SELECT id FROM breeder WHERE id = $1", *breederID).Scan(&id)
+		if errors.Is(err, sql.ErrNoRows) {
+			apiBadRequest(c, "api_breeder_not_found")
+			return 0, false
+		}
+		if err != nil {
+			logger.Log.WithField("func", "resolveRequestBreeder").WithError(err).Error("Failed to look up breeder")
+			apiInternalError(c, "api_database_error")
+			return 0, false
+		}
+		return id, true
 	}
 	id, created, err := findOrCreateBreeder(db, newBreeder)
 	if errors.Is(err, errBreederNameRequired) {
