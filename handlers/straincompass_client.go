@@ -274,12 +274,13 @@ func straincompassBackoff(attempt int) time.Duration {
 	return half + time.Duration(rand.Int63n(int64(half)+1))
 }
 
-// straincompassRetryWait honors a server's Retry-After header exactly
-// (including "0"), falling back to jittered exponential backoff.
+// straincompassRetryWait honors a server's Retry-After header (including
+// "0"), capped at straincompassBackoffMax, falling back to jittered
+// exponential backoff.
 func straincompassRetryWait(attempt int, header string) time.Duration {
 	if header = strings.TrimSpace(header); header != "" {
 		if secs, err := strconv.Atoi(header); err == nil && secs >= 0 {
-			return time.Duration(secs) * time.Second
+			return min(time.Duration(secs)*time.Second, straincompassBackoffMax)
 		}
 	}
 	return straincompassBackoff(attempt)

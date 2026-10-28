@@ -285,15 +285,16 @@ func cannadbBackoff(attempt int) time.Duration {
 // explicit Retry-After header wins and is honored exactly — including "0",
 // which means "retry immediately" — so a cooperative server can keep retries
 // tight. The envelope's retry_after_seconds is the next fallback, and absent
-// both we use jittered exponential backoff.
+// both we use jittered exponential backoff. Server waits are capped at
+// cannadbBackoffMax, since someone is waiting on the lookup.
 func cannadbRetryWait(attempt int, header string, envelopeSeconds int) time.Duration {
 	if header = strings.TrimSpace(header); header != "" {
 		if secs, err := strconv.Atoi(header); err == nil && secs >= 0 {
-			return time.Duration(secs) * time.Second
+			return min(time.Duration(secs)*time.Second, cannadbBackoffMax)
 		}
 	}
 	if envelopeSeconds > 0 {
-		return time.Duration(envelopeSeconds) * time.Second
+		return min(time.Duration(envelopeSeconds)*time.Second, cannadbBackoffMax)
 	}
 	return cannadbBackoff(attempt)
 }

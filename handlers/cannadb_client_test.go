@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestCannadbWebURL(t *testing.T) {
@@ -176,5 +177,20 @@ func TestCannadbGet_EncodesATURI(t *testing.T) {
 	// The :// and / must be percent-encoded in the query string.
 	if gotRaw == "" || !strings.Contains(gotRaw, "uri=at%3A%2F%2Fdid") {
 		t.Fatalf("AT-URI not URL-encoded in query: %q", gotRaw)
+	}
+}
+
+// TestCannadbRetryWait_Capped: a huge Retry-After (header or envelope)
+// doesn't hold the lookup for hours.
+func TestCannadbRetryWait_Capped(t *testing.T) {
+	t.Parallel()
+	if got := cannadbRetryWait(0, "86400", 0); got != cannadbBackoffMax {
+		t.Fatalf("header wait = %v, want %v", got, cannadbBackoffMax)
+	}
+	if got := cannadbRetryWait(0, "", 86400); got != cannadbBackoffMax {
+		t.Fatalf("envelope wait = %v, want %v", got, cannadbBackoffMax)
+	}
+	if got := cannadbRetryWait(0, "2", 0); got != 2*time.Second {
+		t.Fatalf("short wait = %v, want 2s", got)
 	}
 }

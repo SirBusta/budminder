@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestStraincompassWebURL(t *testing.T) {
@@ -402,5 +403,17 @@ func TestStraincompassGetStrainBySlug_QueryUsesNameNotSlug(t *testing.T) {
 	}
 	if gotQuery != "permanent-marker" {
 		t.Fatalf("query = %q, want the slug fallback %q", gotQuery, "permanent-marker")
+	}
+}
+
+// TestStraincompassRetryWait_Capped: a huge Retry-After doesn't hold the
+// lookup for hours.
+func TestStraincompassRetryWait_Capped(t *testing.T) {
+	t.Parallel()
+	if got := straincompassRetryWait(0, "86400"); got != straincompassBackoffMax {
+		t.Fatalf("wait = %v, want %v", got, straincompassBackoffMax)
+	}
+	if got := straincompassRetryWait(0, "2"); got != 2*time.Second {
+		t.Fatalf("short wait = %v, want 2s", got)
 	}
 }
