@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"isley/config"
 	"isley/logger"
@@ -821,17 +822,31 @@ func loadPlantStatusHistory(db *sql.DB, plantID uint) []types.Status {
 	return history
 }
 
+// latestPlantImage returns the plant's newest photo. A plant with no photos
+// gives found == false and no error (that's normal, not worth logging).
+func latestPlantImage(db *sql.DB, plantID uint) (img types.PlantImage, found bool, err error) {
+	err = db.QueryRow("SELECT id, image_path, image_description, image_order, image_date FROM plant_images WHERE plant_id = $1 ORDER BY image_date DESC LIMIT 1", plantID).Scan(
+		&img.ID, &img.ImagePath, &img.ImageDescription, &img.ImageOrder, &img.ImageDate)
+	if errors.Is(err, sql.ErrNoRows) {
+		return img, false, nil
+	}
+	if err != nil {
+		return img, false, err
+	}
+	return img, true, nil
+}
+
 // loadPlantImages fetches the latest image and all images for a plant.
 // Returns (latestImage, allImages).
 func loadPlantImages(db *sql.DB, plantID uint) (types.PlantImage, []types.PlantImage) {
 	fieldLogger := logger.Log.WithField("func", "loadPlantImages")
 
 	// Latest image
-	var latestImage types.PlantImage
-	err := db.QueryRow("SELECT id, image_path, image_description, image_order, image_date FROM plant_images WHERE plant_id = $1 ORDER BY image_date DESC LIMIT 1", plantID).Scan(
-		&latestImage.ID, &latestImage.ImagePath, &latestImage.ImageDescription, &latestImage.ImageOrder, &latestImage.ImageDate)
+	latestImage, found, err := latestPlantImage(db, plantID)
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to query latest image")
+	}
+	if !found {
 		latestImage = types.PlantImage{
 			ID: 0, PlantID: plantID, ImagePath: "/static/img/winston.hat.jpg",
 			ImageDescription: "Placeholder", ImageOrder: DefaultPlantImageOrder,

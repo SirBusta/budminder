@@ -281,3 +281,30 @@ func TestPlantDays_CountCalendarDays(t *testing.T) {
 	}
 	assert.True(t, found, "plant in the living list")
 }
+
+// ---------------------------------------------------------------------------
+// latestPlantImage
+// ---------------------------------------------------------------------------
+
+func TestLatestPlantImage_NoPhotosIsNotAnError(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	strainID := testutil.SeedStrain(t, db, testutil.SeedBreeder(t, db, "B"), "S")
+	plantID := testutil.SeedPlant(t, db, "P", strainID, testutil.SeedZone(t, db, "Z"))
+
+	_, found, err := handlers.LatestPlantImage(db, uint(plantID))
+	assert.NoError(t, err, "a plant without photos must not report an error")
+	assert.False(t, found)
+
+	testutil.SeedPlantImage(t, db, plantID, t.TempDir()+"/a.jpg", []byte("x"))
+	img, found, err := handlers.LatestPlantImage(db, uint(plantID))
+	require.NoError(t, err)
+	assert.True(t, found)
+	assert.NotZero(t, img.ID)
+
+	require.NoError(t, db.Close())
+	_, found, err = handlers.LatestPlantImage(db, uint(plantID))
+	assert.Error(t, err, "a real database failure is still reported")
+	assert.False(t, found)
+}

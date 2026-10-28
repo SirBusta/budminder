@@ -36,6 +36,11 @@ func InsertBareStrain(db *sql.DB, name string, breederID int) (int, error) {
 	return insertBareStrain(db, name, breederID)
 }
 
+// LatestPlantImage is the newest-photo lookup the plant page uses.
+func LatestPlantImage(db *sql.DB, plantID uint) (types.PlantImage, bool, error) {
+	return latestPlantImage(db, plantID)
+}
+
 // SetPhotoCompressClock replaces the photo compression service's clock.
 func SetPhotoCompressClock(s *PhotoCompressService, now func() time.Time) { s.now = now }
 
