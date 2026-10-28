@@ -883,13 +883,17 @@
                         <input type="text" class="form-control" id="activityName" step="any" required>
                     </div>
 
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" id="activityIsWatering">
-                        <label class="form-check-label" for="activityIsWatering">{{ .lcl.activity_flag_watering }}</label>
-                    </div>
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="activityIsFeeding">
-                        <label class="form-check-label" for="activityIsFeeding">{{ .lcl.activity_flag_feeding }}</label>
+                    <div class="mb-3" role="group" aria-labelledby="activityCountsAs" aria-describedby="activityCountsAsHelp">
+                        <div class="form-label" id="activityCountsAs">{{ .lcl.st_col_counts_as }}</div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="activityIsWatering">
+                            <label class="form-check-label" for="activityIsWatering">{{ .lcl.activity_flag_watering }}</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="activityIsFeeding">
+                            <label class="form-check-label" for="activityIsFeeding">{{ .lcl.activity_flag_feeding }}</label>
+                        </div>
+                        <div class="form-text" id="activityCountsAsHelp">{{ .lcl.activity_counts_as_help }}</div>
                     </div>
                     <div class="mb-3 act-look">
                         <label class="form-label">{{ .lcl.activity_icon }}</label>
@@ -1086,13 +1090,17 @@
                         <label for="editActivityName" class="form-label">{{ .lcl.activity_name }}</label>
                         <input type="text" class="form-control" id="editActivityName" step="any" required>
                     </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" id="editActivityIsWatering">
-                        <label class="form-check-label" for="editActivityIsWatering">{{ .lcl.activity_flag_watering }}</label>
-                    </div>
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="editActivityIsFeeding">
-                        <label class="form-check-label" for="editActivityIsFeeding">{{ .lcl.activity_flag_feeding }}</label>
+                    <div class="mb-3" role="group" aria-labelledby="editActivityCountsAs" aria-describedby="editActivityCountsAsHelp">
+                        <div class="form-label" id="editActivityCountsAs">{{ .lcl.st_col_counts_as }}</div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="editActivityIsWatering">
+                            <label class="form-check-label" for="editActivityIsWatering">{{ .lcl.activity_flag_watering }}</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="editActivityIsFeeding">
+                            <label class="form-check-label" for="editActivityIsFeeding">{{ .lcl.activity_flag_feeding }}</label>
+                        </div>
+                        <div class="form-text" id="editActivityCountsAsHelp">{{ .lcl.activity_counts_as_help }}</div>
                     </div>
                     <div class="mb-3 act-look">
                         <label class="form-label">{{ .lcl.activity_icon }}</label>

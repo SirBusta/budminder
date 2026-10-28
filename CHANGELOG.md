@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add plant shows a live summary and how many seeds the strain has left after adding the plant.
 - Add strain points to the StrainCompass search when StrainCompass is turned on.
 - The wrong-password message on the sign-in page is translated; "Remember me" now reads "Keep me signed in on this device".
+- Add/Edit activity type: the Watering and Feeding choices sit under a **Counts as** heading with a line explaining that they update the plant's last watered or last fed date (e.g. Feeding for a foliar feed).
 - Compress existing photos: the tip recommending a full backup moved from the Existing photos row into the confirm window, under the backup option, which now says it covers plant photos only.
 
 ### Fixed
