@@ -139,6 +139,12 @@ func Stop(dataDir string) error {
 	req.Header.Set("X-BudMinder-Key", info.Key)
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {
+		// A busy BudMinder that doesn't answer in time is still running:
+		// keep its run file so a second try can reach it.
+		var ne net.Error
+		if errors.As(err, &ne) && ne.Timeout() {
+			return errors.New("BudMinder didn't answer. Try again in a moment")
+		}
 		_ = os.Remove(filepath.Join(dataDir, runFile)) // left over from a run that didn't exit cleanly
 		return notRunning
 	}
