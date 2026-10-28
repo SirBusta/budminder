@@ -4,6 +4,7 @@ package handlers_test
 
 import (
 	"database/sql"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -99,4 +100,15 @@ func TestPlantsPage_Renders(t *testing.T) {
 	assert.Contains(t, body, "Shown Plant", "the plants are in the page data")
 	assert.Contains(t, body, `href="/plant/new"`, "Add plant for a logged-in user")
 	assert.NotContains(t, body, "quickActivityModal", "the old quick windows are gone")
+}
+
+func TestPlantsPage_NotStoredByBrowser(t *testing.T) {
+	t.Parallel()
+	e := newSensorEnv(t)
+
+	resp := e.client.Get("/plants")
+	defer testutil.DrainAndClose(resp)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "no-store", resp.Header.Get("Cache-Control"),
+		"Back must reload the list, not show a stale copy")
 }

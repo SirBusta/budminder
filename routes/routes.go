@@ -53,6 +53,9 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 		translations := utils.TranslationService.GetTranslations(lang)
 		currentPath, _ := c.Get("currentPath")
 		loggedIn := sessions.Default(c).Get("logged_in") != nil
+		// Back from a plant page must show its new stage, watering etc.,
+		// not the browser's stored copy of the list.
+		c.Header("Cache-Control", "no-store")
 		c.HTML(http.StatusOK, "views/plants.html", gin.H{
 			"pageData":        handlers.PlantsPageData(c, loggedIn, lang, translations),
 			"title":           "Plants",
