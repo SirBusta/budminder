@@ -411,7 +411,7 @@
                             <h4><i class="fa-solid fa-circle-check me-1"></i><span id="pcDoneTitle"></span></h4>
                             <div id="pcDoneSaved"></div>
                             <div id="pcDoneBackup">
-                                <div class="mt-2">{{ .lcl.pc_done_backup_intro }}</div>
+                                <div class="mt-2" id="pcDoneIntro"></div>
                                 <div class="ex-path">
                                     <code id="pcPath"></code>
                                     <button type="button" class="st-btn light sm" id="pcCopy"><i class="fa-regular fa-copy me-1"></i>{{ .lcl.pc_copy }}</button>
@@ -420,7 +420,10 @@
                                 <div>{{ .lcl.pc_done_look }}</div>
                                 <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
                                     <span class="ex-timer"><i class="fa-regular fa-clock"></i><span id="pcTimer"></span></span>
-                                    <button type="button" class="st-btn danger sm ms-auto" id="pcDel"><i class="fa-solid fa-trash-can me-1"></i>{{ .lcl.pc_delete_backup }}</button>
+                                    <span class="d-flex flex-wrap gap-2 ms-auto">
+                                        <button type="button" class="st-btn light sm" id="pcRestore"><i class="fa-solid fa-clock-rotate-left me-1"></i>{{ .lcl.pc_restore }}</button>
+                                        <button type="button" class="st-btn danger sm" id="pcDel"><i class="fa-solid fa-trash-can me-1"></i>{{ .lcl.pc_delete_backup }}</button>
+                                    </span>
                                 </div>
                             </div>
                             <div class="d-none mt-1" id="pcDoneGone"></div>
@@ -429,7 +432,6 @@
                             <div class="st-row-l">
                                 <span class="st-label">{{ .lcl.pc_existing }}</span>
                                 <small>{{ .lcl.pc_existing_desc }}</small>
-                                <small class="pc-tip"><i class="fa-solid fa-circle-info me-1"></i>{{ .lcl.pc_backup_first }} <a href="#backup" data-goto="backup">{{ .lcl.pc_backup_first_link }} <i class="fa-solid fa-arrow-right"></i></a></small>
 
                                 <div class="ex-stats" id="pcStats">
                                     <span class="ex-stat"><b id="pcCount">…</b>{{ .lcl.pc_stat_count }}</span>
@@ -477,6 +479,7 @@
                                 <span><b>{{ .lcl.pc_dlg_backup }}</b>
                                 <small id="pcDlgBkTxt"></small></span>
                             </label>
+                            <p class="dlg-scope"><i class="fa-solid fa-circle-info me-1"></i>{{ .lcl.pc_dlg_backup_scope }} <a href="#backup" id="pcDlgFull">{{ .lcl.pc_dlg_backup_scope_link }}</a>.</p>
                             <div class="dlg-act">
                                 <button type="button" class="st-btn light" data-bs-dismiss="modal">{{ .lcl.cancel }}</button>
                                 <button type="button" class="st-btn" id="pcDlgYes"><i class="fa-solid fa-file-zipper me-1"></i><span></span></button>
@@ -492,7 +495,8 @@
                     "pauseTxt": {{ .lcl.pc_paused_progress }}, "doneTitle": {{ .lcl.pc_done_title }}, "doneSaved": {{ .lcl.pc_done_saved }},
                     "timer": {{ .lcl.pc_done_timer }}, "days": {{ .lcl.pc_days }}, "dayOne": {{ .lcl.pc_day_one }}, "hours": {{ .lcl.pc_hours }},
                     "gone": {{ .lcl.pc_backup_deleted }}, "noBackup": {{ .lcl.pc_no_backup }}, "copied": {{ .lcl.pc_copied }},
-                    "confirmDel": {{ .lcl.pc_confirm_delete }}, "failed": {{ .lcl.failed_to_save_settings }}}</script>
+                    "confirmDel": {{ .lcl.pc_confirm_delete }}, "doneIntro": {{ .lcl.pc_done_backup_intro }},
+                    "confirmRestore": {{ .lcl.pc_confirm_restore }}, "restoredTitle": {{ .lcl.pc_restored_title }}, "restoredText": {{ .lcl.pc_restored_text }}, "restoredOne": {{ .lcl.pc_restored_text_one }}, "failed": {{ .lcl.failed_to_save_settings }}}</script>
             </section>
 
             <!-- ========================== Appearance ========================== -->

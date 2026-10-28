@@ -298,3 +298,90 @@ func TestPhotoCompress_EarlierBackupStillCleanedUp(t *testing.T) {
 	assert.NoDirExists(t, first)
 	assert.NoDirExists(t, second)
 }
+
+func TestPhotoCompress_RestoreBackup(t *testing.T) {
+	t.Parallel()
+	e := newPhotoEnv(t)
+	big := testutil.DetailedPhotoJPEG(t)
+	small, err := utils.CompressJPEG(big, 50)
+	require.NoError(t, err)
+	id1, p1 := e.addPhoto(t, "a.jpg", big)
+	id2, p2 := e.addPhoto(t, "b.jpg", small)
+	id3, p3 := e.addPhoto(t, "c.jpg", big)
+
+	require.NoError(t, e.svc.Start(75, true))
+	e.svc.Wait()
+	dir := e.svc.Job().BackupDir
+	assert.Equal(t, int64(2*len(big)+len(small)), e.svc.Status().BackupBytes)
+	require.Less(t, fileSize(t, p1), len(big))
+
+	// c.jpg is deleted after the run: it stays deleted.
+	require.NoError(t, os.Remove(p3))
+	_, err = e.db.Exec(`DELETE FROM plant_images WHERE id = $1`, id3)
+	require.NoError(t, err)
+
+	require.NoError(t, e.svc.RestoreBackup())
+	got, err := os.ReadFile(p1)
+	require.NoError(t, err)
+	assert.Equal(t, big, got, "the original is back")
+	q, r := e.result(t, id1)
+	assert.False(t, q.Valid)
+	assert.False(t, r.Valid, "counts as never checked again")
+	_, r = e.result(t, id2)
+	assert.Equal(t, "kept", r.String, "a photo the run left alone isn't touched")
+	assert.Equal(t, len(small), fileSize(t, p2))
+	assert.NoFileExists(t, p3)
+	assert.NoDirExists(t, dir)
+
+	st := e.svc.Status()
+	assert.True(t, st.Restored)
+	assert.Equal(t, 1, st.RestoredN)
+	assert.True(t, st.BackupGone)
+
+	est, err := e.svc.Estimate(e.db, 75)
+	require.NoError(t, err)
+	assert.Equal(t, 1, est.Count, "the restored photo can be compressed again")
+
+	assert.ErrorIs(t, e.svc.RestoreBackup(), handlers.ErrPhotoNoBackup, "only once")
+	assert.True(t, e.reopen().Job().Restored, "remembered after a restart")
+}
+
+func TestPhotoCompress_RestoreNeedsABackup(t *testing.T) {
+	t.Parallel()
+	e := newPhotoEnv(t)
+	assert.ErrorIs(t, e.svc.RestoreBackup(), handlers.ErrPhotoNoBackup, "no run yet")
+
+	e.addPhoto(t, "a.jpg", testutil.DetailedPhotoJPEG(t))
+	require.NoError(t, e.svc.Start(75, false))
+	e.svc.Wait()
+	assert.ErrorIs(t, e.svc.RestoreBackup(), handlers.ErrPhotoNoBackup, "run without a backup")
+
+	e.addPhoto(t, "b.jpg", testutil.DetailedPhotoJPEG(t))
+	require.NoError(t, e.svc.Start(75, true))
+	e.svc.Wait()
+	require.NoError(t, e.svc.DeleteBackup())
+	assert.ErrorIs(t, e.svc.RestoreBackup(), handlers.ErrPhotoNoBackup, "backup deleted")
+}
+
+func TestPhotoCompress_RestoreSharedFile(t *testing.T) {
+	t.Parallel()
+	e := newPhotoEnv(t)
+	big := testutil.DetailedPhotoJPEG(t)
+	id1, p := e.addPhoto(t, "a.jpg", big)
+	id2, _ := e.addPhoto(t, "a.jpg", big) // two rows, one file
+
+	require.NoError(t, e.svc.Start(75, true))
+	e.svc.Wait()
+	assert.Equal(t, int64(len(big)), e.svc.Status().BackupBytes, "the file counts once")
+	_, r1 := e.result(t, id1)
+	_, r2 := e.result(t, id2)
+	assert.Equal(t, []string{"compressed", "kept"}, []string{r1.String, r2.String})
+
+	require.NoError(t, e.svc.RestoreBackup())
+	assert.Equal(t, len(big), fileSize(t, p))
+	_, r1 = e.result(t, id1)
+	_, r2 = e.result(t, id2)
+	assert.False(t, r1.Valid)
+	assert.False(t, r2.Valid, "the other row is reset too")
+	assert.Equal(t, 1, e.svc.Status().RestoredN)
+}

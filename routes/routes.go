@@ -405,6 +405,7 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.POST("/settings/photos/existing/finish", handlers.FinishPhotoJobHandler)
 	r.DELETE("/settings/photos/existing/backup", handlers.DeletePhotoBackupHandler)
 	r.POST("/settings/photos/existing/backup/open", handlers.OpenPhotoBackupHandler)
+	r.POST("/settings/photos/existing/backup/restore", handlers.RestorePhotoBackupHandler)
 	r.GET("/settings/photos/compare/photos", handlers.ComparePhotosHandler)
 	r.GET("/settings/photos/compare/sizes", handlers.ComparePhotoSizesHandler)
 	r.GET("/settings/photos/compare/image", handlers.ComparePhotoImageHandler)

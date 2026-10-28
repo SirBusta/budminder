@@ -2,7 +2,7 @@
 // originals or Compression Options and the quality (saved straight away),
 // the estimate for photos already in BudMinder, and Compress existing photos
 // with its confirm dialog, progress, pause/resume and the Done panel with
-// the backup folder. The line under the top menu (photo-job.js) polls the
+// the backup folder (Restore original photos, Delete backup now). The line under the top menu (photo-job.js) polls the
 // run's status and sends it here as "bm-photo-job" events.
 (() => {
     "use strict";
@@ -142,13 +142,16 @@
         const recent = st === "finished" && s.finished_at && (Date.now() - new Date(s.finished_at)) < 7 * 86400e3;
         show("pcDone", recent);
         if (recent) {
-            $("pcDoneTitle").textContent = fill(T.doneTitle, { c: num(s.compressed, 0), k: num(s.kept, 0) });
-            $("pcDoneSaved").textContent = fill(T.doneSaved, { saved: size(s.saved_bytes), before: size(s.bytes_before), after: size(s.bytes_before - s.saved_bytes) });
+            // After Restore the panel says so instead of what was saved.
+            $("pcDoneTitle").textContent = s.restored ? T.restoredTitle : fill(T.doneTitle, { c: num(s.compressed, 0), k: num(s.kept, 0) });
+            $("pcDoneSaved").textContent = s.restored ? fill(s.restored_n === 1 ? T.restoredOne : T.restoredText, { n: num(s.restored_n, 0) })
+                : fill(T.doneSaved, { saved: size(s.saved_bytes), before: size(s.bytes_before), after: size(s.bytes_before - s.saved_bytes) });
             const hasBackup = !!s.backup_path && !s.backup_gone;
             show("pcDoneBackup", hasBackup);
-            show("pcDoneGone", !hasBackup);
+            show("pcDoneGone", !hasBackup && !s.restored);
             $("pcDoneGone").textContent = s.backup_path ? T.gone : T.noBackup;
             if (hasBackup) {
+                $("pcDoneIntro").textContent = fill(T.doneIntro, { s: size(s.backup_bytes) });
                 $("pcPath").textContent = s.backup_path;
                 show("pcOpen", !!s.can_open);
                 const at = new Date(s.deletes_at), left = at - Date.now();
@@ -213,6 +216,20 @@
         uiMessages.showConfirm(T.confirmDel, { danger: true }).then(ok => {
             if (ok) post("/settings/photos/existing/backup", undefined, "DELETE").then(update).catch(() => {});
         });
+    });
+    $("pcRestore").addEventListener("click", () => {
+        uiMessages.showConfirm(T.confirmRestore).then(ok => {
+            if (!ok) return;
+            $("pcRestore").disabled = true;
+            post("/settings/photos/existing/backup/restore").then(s => { update(s); loadEstimate(); })
+                .catch(() => {}).finally(() => { $("pcRestore").disabled = false; });
+        });
+    });
+    // "Backup & data" in the window: close it and switch to that section.
+    $("pcDlgFull").addEventListener("click", e => {
+        e.preventDefault();
+        bootstrap.Modal.getOrCreateInstance(dlg).hide();
+        document.querySelector('#stSide a[data-sec="backup"]')?.click();
     });
     $("pcOpen").addEventListener("click", () => {
         post("/settings/photos/existing/backup/open").catch(() => {});

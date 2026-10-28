@@ -182,6 +182,12 @@ func DeletePhotoBackupHandler(c *gin.Context) {
 	photoJobAnswer(c, PhotoCompressFromContext(c).DeleteBackup())
 }
 
+// RestorePhotoBackupHandler: POST /settings/photos/existing/backup/restore.
+// Puts the original photos back and deletes the backup folder.
+func RestorePhotoBackupHandler(c *gin.Context) {
+	photoJobAnswer(c, PhotoCompressFromContext(c).RestoreBackup())
+}
+
 // OpenPhotoBackupHandler: POST /settings/photos/existing/backup/open. Only
 // for the downloadable programs, asked from the same computer.
 func OpenPhotoBackupHandler(c *gin.Context) {

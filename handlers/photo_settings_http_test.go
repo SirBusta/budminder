@@ -5,6 +5,7 @@ package handlers_test
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"image/jpeg"
 	"io"
@@ -131,6 +132,35 @@ func TestPhotoSettingsHTTP_RunAndLock(t *testing.T) {
 	}
 	resp = r.c.SessionPostJSON(t, "/settings/photos/existing/resume", r.csrf, nil)
 	assert.Equal(t, http.StatusConflict, resp.StatusCode, "nothing paused")
+	testutil.DrainAndClose(resp)
+}
+
+func TestPhotoSettingsHTTP_RestoreBackup(t *testing.T) {
+	t.Parallel()
+	r := newPhotoRoutes(t)
+	id := r.addPhoto(t, "a.jpg")
+	resp := r.c.SessionPostJSON(t, "/settings/photos", r.csrf, map[string]any{"compress": true, "quality": 75})
+	testutil.DrainAndClose(resp)
+	resp = r.c.SessionPostJSON(t, "/settings/photos/existing/start", r.csrf, map[string]any{"backup": true})
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	testutil.DrainAndClose(resp)
+	r.server.PhotoCompress.Wait()
+
+	st := decodeJSON(t, r.c.Get("/settings/photos/existing/status"))
+	assert.Equal(t, float64(len(testutil.DetailedPhotoJPEG(t))), st["backup_bytes"])
+
+	resp = r.c.SessionPostJSON(t, "/settings/photos/existing/backup/restore", r.csrf, nil)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	st = decodeJSON(t, resp)
+	assert.Equal(t, true, st["restored"])
+	assert.Equal(t, float64(1), st["restored_n"])
+	assert.Equal(t, true, st["backup_gone"])
+	var result sql.NullString
+	require.NoError(t, r.server.DB.QueryRow(`SELECT compress_result FROM plant_images WHERE id = $1`, id).Scan(&result))
+	assert.False(t, result.Valid)
+
+	resp = r.c.SessionPostJSON(t, "/settings/photos/existing/backup/restore", r.csrf, nil)
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "the backup is gone")
 	testutil.DrainAndClose(resp)
 }
 

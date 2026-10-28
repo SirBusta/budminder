@@ -25,8 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Deleting a plant offers to delete its photo files from the uploads folder as well (unchecked by default).
+- Compress existing photos: **Restore original photos** puts the originals from the backup copy back in place of the compressed photos (for 7 days after the run), so they can be compressed again later. The finished run also shows the backup's size.
 
 ### Changed
+
+- Compress existing photos: the tip recommending a full backup moved from the Existing photos row into the confirm window, under the backup option, which now says it covers plant photos only.
 
 ### Fixed
 

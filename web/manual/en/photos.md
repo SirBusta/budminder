@@ -63,10 +63,8 @@ Click **Compare Compression Levels** to open the compare page in a new tab. It s
 
 Photos already in BudMinder only change when you use **Compress existing photos**. The **Existing photos** row shows how many plant photos have not been compressed yet, their current size and the estimated savings at the selected quality.
 
-Before compressing, we recommend a full backup with **Include images** turned on under **Settings → Backup & data**, downloaded to keep it somewhere safe (see [Backup and restore](backup-and-restore.md)). The link **Open Backup & data** in the Existing photos row goes there.
-
 1. Select the quality, then click **Compress existing photos**.
-1. Review the summary. **Back up original photos before compressing (Recommended)** is selected by default and needs about as much free disk space as the photos use now.
+1. Review the summary. **Back up original photos before compressing (Recommended)** is selected by default and needs about as much free disk space as the photos use now. This copy covers plant photos only; for a complete backup of BudMinder, use **Settings → Backup & data** (see [Backup and restore](backup-and-restore.md)).
 1. Click **Compress … photos**. Photos are processed one at a time in the background, so you can keep using BudMinder. A line under the top menu shows the progress on every page.
 
 > **Warning:** Compressed photos overwrite the originals. Without the backup, the original files cannot be recovered.
@@ -75,8 +73,11 @@ Click **Stop** to pause the run after the current photo. If BudMinder is closed 
 
 ### The backup folder
 
-When the run finishes, Settings → Photos shows how many photos were compressed and the folder the originals were copied to: `data/backups/photos-before-compression-<date>` inside the BudMinder folder. Click **Copy** to copy the path; when BudMinder runs as the downloadable program on the same computer, **Open folder** opens it.
+When the run finishes, Settings → Photos shows how many photos were compressed, the size of the backup and the folder the originals were copied to: `data/backups/photos-before-compression-<date>` inside the BudMinder folder. Click **Copy** to copy the path; when BudMinder runs as the downloadable program on the same computer, **Open folder** opens it. The panel stays on Settings → Photos while the backup is kept, so you can look through your plant photos and come back to it.
 
-Look through your photos. Once you are satisfied with how they look, click **Delete backup now** to free up the space. BudMinder deletes the folder automatically 7 days after the run finished. To restore an original before then, copy it from the backup folder's `plants` folder back over the photo of the same name in `uploads/plants`.
+- **Restore original photos** puts the originals back in place of the compressed photos and deletes the backup folder. Photos deleted since the run stay deleted. Restored photos count as not compressed, so a later run can compress them again.
+- **Delete backup now** keeps the compressed photos and deletes the folder to free up the space.
+
+BudMinder deletes the folder automatically 7 days after the run finished; after that the originals can no longer be restored.
 
 In Docker, the folder is in the data volume; on Unraid that is `/mnt/user/appdata/budminder/data/backups/` by default.

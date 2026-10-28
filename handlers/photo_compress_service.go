@@ -4,7 +4,7 @@ package handlers
 // install, one photo at a time, that re-encodes plant photos which were
 // never compressed. Optionally it first copies the originals to
 // data/backups/photos-before-compression-<date>, which BudMinder deletes 7
-// days after the run finishes. The run's state lives in a small file in the
+// days after the run finishes; until then Restore puts them back. The run's state lives in a small file in the
 // data folder (not in the database, so a backup restore or a database switch
 // can't bring back a stale run). BudMinder closed mid-run, or Stop, leaves it
 // paused until Resume.
@@ -67,7 +67,10 @@ type PhotoJob struct {
 	Backup      bool          `json:"backup"`
 	BackupDir   string        `json:"backup_dir,omitempty"`
 	BackupDone  bool          `json:"backup_done,omitempty"` // originals copied
+	BackupBytes int64         `json:"backup_bytes,omitempty"`
 	BackupGone  bool          `json:"backup_gone,omitempty"` // deleted (by the user or after 7 days)
+	Restored    bool          `json:"restored,omitempty"`    // the originals were put back (Restore)
+	RestoredN   int           `json:"restored_n,omitempty"`
 	Total       int           `json:"total"`
 	Done        int           `json:"done"`
 	Compressed  int           `json:"compressed"`
@@ -470,8 +473,9 @@ func (s *PhotoCompressService) run(done chan struct{}) {
 			s.backupN = i + 1
 			s.mu.Unlock()
 		}
+		size := dirSize(j.BackupDir) // the folder, not the rows: rows can share a file
 		s.mu.Lock()
-		s.job.BackupDone = true
+		s.job.BackupDone, s.job.BackupBytes = true, size
 		s.saveLocked()
 		s.mu.Unlock()
 	}
@@ -622,6 +626,85 @@ func (s *PhotoCompressService) DeleteBackup() error {
 	return nil
 }
 
+// RestoreBackup puts the originals from the finished run's backup folder back
+// in place of the photos it compressed, marks those photos as never checked
+// (a later run may compress them again) and deletes the folder. Photos
+// deleted since, and photos the run left as they were, are skipped. An error
+// part-way keeps the folder: Restore again finishes the job.
+func (s *PhotoCompressService) RestoreBackup() error {
+	if config.RestoreInProgress.Load() {
+		return ErrPhotoJobRestore
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	j := s.job
+	if j == nil || j.State != PhotoJobFinished || j.BackupDir == "" || !j.BackupDone || j.BackupGone ||
+		!s.isPhotoBackupDir(j.BackupDir) {
+		return ErrPhotoNoBackup
+	}
+	// Every checked row per file name (rows can share a file: once one of
+	// them compressed it, the others were "kept"); a file is put back when
+	// one of its rows says compressed, and all its rows are reset.
+	rows, err := s.db.Query(`SELECT id, image_path, compress_result FROM plant_images WHERE compress_result IS NOT NULL`)
+	if err != nil {
+		return err
+	}
+	byName := map[string][]photoCandidate{}
+	changed := map[string]bool{}
+	for rows.Next() {
+		var p photoCandidate
+		var result string
+		if err := rows.Scan(&p.id, &p.path, &result); err != nil {
+			rows.Close()
+			return err
+		}
+		if f := photoFile(s.uploadDir, p.path); f != "" {
+			byName[filepath.Base(f)] = append(byName[filepath.Base(f)], p)
+			changed[filepath.Base(f)] = changed[filepath.Base(f)] || result == PhotoCompressed
+		}
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	dir := filepath.Join(j.BackupDir, "plants")
+	entries, err := os.ReadDir(dir)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	for _, e := range entries {
+		list := byName[e.Name()]
+		if e.IsDir() || !changed[e.Name()] {
+			continue
+		}
+		f := photoFile(s.uploadDir, list[0].path)
+		if _, err := os.Stat(f); err != nil {
+			continue // the photo was deleted since
+		}
+		b, err := os.ReadFile(filepath.Join(dir, e.Name()))
+		if err != nil {
+			return err
+		}
+		if err := replaceFile(f, b); err != nil {
+			return err
+		}
+		for _, p := range list {
+			if _, err := s.db.Exec(`UPDATE plant_images SET compress_quality = NULL, compress_result = NULL WHERE id = $1`, p.id); err != nil {
+				return err
+			}
+		}
+		j.RestoredN++
+	}
+	if err := os.RemoveAll(j.BackupDir); err != nil {
+		logger.Log.WithError(err).WithField("dir", j.BackupDir).Warn("Photo compression: couldn't delete the backup folder after restoring")
+	}
+	j.BackupGone, j.Restored = true, true
+	s.saveLocked()
+	logger.Log.WithField("photos", j.RestoredN).Info("Photo compression: original photos restored")
+	return nil
+}
+
 // CleanupBackups deletes backup folders whose run finished more than 7
 // days ago.
 func (s *PhotoCompressService) CleanupBackups() {
@@ -698,7 +781,10 @@ type PhotoJobStatus struct {
 	Percent     float64   `json:"percent"`
 	SecondsLeft int       `json:"seconds_left"`
 	BackupPath  string    `json:"backup_path,omitempty"`
+	BackupBytes int64     `json:"backup_bytes"`
 	BackupGone  bool      `json:"backup_gone"`
+	Restored    bool      `json:"restored"`
+	RestoredN   int       `json:"restored_n"`
 	DeletesAt   time.Time `json:"deletes_at,omitempty"`
 	CanOpen     bool      `json:"can_open"`
 	Error       string    `json:"error,omitempty"`
@@ -717,7 +803,7 @@ func (s *PhotoCompressService) Status() PhotoJobStatus {
 	st := PhotoJobStatus{
 		State: j.State, Quality: j.Quality, Total: j.Total, Done: j.Done, Left: max(0, j.Total-j.Done),
 		Compressed: j.Compressed, Kept: j.Kept, BytesBefore: j.BytesBefore, SavedBytes: j.SavedBytes,
-		BackupGone: j.BackupGone, Error: j.Error, Interrupted: j.Interrupted, FinishedAt: j.FinishedAt,
+		BackupGone: j.BackupGone, Restored: j.Restored, RestoredN: j.RestoredN, Error: j.Error, Interrupted: j.Interrupted, FinishedAt: j.FinishedAt,
 	}
 	if j.State == PhotoJobRunning {
 		st.Phase = "compress"
@@ -757,9 +843,27 @@ func (s *PhotoCompressService) Status() PhotoJobStatus {
 		}
 		if j.State == PhotoJobFinished && !j.BackupGone {
 			st.DeletesAt = j.FinishedAt.Add(PhotoBackupKeepFor)
+			if j.BackupBytes == 0 && j.BackupDone {
+				j.BackupBytes = dirSize(j.BackupDir) // a run from before the size was saved
+			}
+			st.BackupBytes = j.BackupBytes
 		}
 	}
 	return st
+}
+
+// dirSize adds up the sizes of the files in dir and its folders.
+func dirSize(dir string) int64 {
+	var n int64
+	_ = filepath.WalkDir(dir, func(_ string, d os.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			if info, err := d.Info(); err == nil {
+				n += info.Size()
+			}
+		}
+		return nil
+	})
+	return n
 }
 
 // BackupDirToOpen returns the finished run's backup folder, for Open folder.
