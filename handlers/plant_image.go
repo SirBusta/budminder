@@ -77,8 +77,11 @@ func UploadPlantImages(c *gin.Context) {
 		sniff := make([]byte, 512)
 		n, _ := file.Read(sniff)
 		mimeType := http.DetectContentType(sniff[:n])
-		allowed := map[string]bool{"image/jpeg": true, "image/png": true, "image/gif": true, "image/webp": true}
-		if !allowed[mimeType] {
+		// The saved name takes its extension from the detected type, not
+		// the name the browser sent.
+		extFor := map[string]string{"image/jpeg": ".jpg", "image/png": ".png", "image/gif": ".gif", "image/webp": ".webp"}
+		ext, ok := extFor[mimeType]
+		if !ok {
 			fileLogger.WithField("mimeType", mimeType).Warn("Rejected upload with disallowed MIME type")
 			apiBadRequest(c, "api_invalid_file_type")
 			return
@@ -91,7 +94,7 @@ func UploadPlantImages(c *gin.Context) {
 
 		// Generate a unique file path under the per-engine upload root.
 		timestamp := time.Now().UnixNano()
-		fileName := fmt.Sprintf("plant_%d_image_%d_%d%s", plantID, index, timestamp, filepath.Ext(fileHeader.Filename))
+		fileName := fmt.Sprintf("plant_%d_image_%d_%d%s", plantID, index, timestamp, ext)
 		savePath := filepath.Join(UploadDirFromContext(c), "plants", fileName)
 		fileLogger = fileLogger.WithField("savePath", savePath)
 

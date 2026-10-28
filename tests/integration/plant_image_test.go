@@ -11,6 +11,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -149,6 +150,29 @@ func TestPlantImage_UploadAcceptsPNG(t *testing.T) {
 	})
 	defer resp.Body.Close()
 	require.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+// TestPlantImage_UploadNamesFileByContent: a PNG sent as "page.html" is
+// saved as .png, so /uploads never serves it as a web page.
+func TestPlantImage_UploadNamesFileByContent(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db, testutil.WithUploadDir(t.TempDir()))
+	fix := seedPlantImageHTTP(t, db)
+
+	c := server.NewClient(t)
+	resp := uploadImages(t, c, fix.PlantID, fix.APIKey, []multipartFile{
+		{name: "page.html", body: pngMagic},
+	})
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var path string
+	require.NoError(t, db.QueryRow(
+		`SELECT image_path FROM plant_images WHERE plant_id = $1`, fix.PlantID,
+	).Scan(&path))
+	assert.Equal(t, ".png", filepath.Ext(path))
 }
 
 func TestPlantImage_UploadRejectsTextFile(t *testing.T) {
