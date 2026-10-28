@@ -158,7 +158,8 @@
             <div class="sr-seg">${b("yes", "sr_yes")}${b("maybe", "sr_maybe")}${b("no", "sr_no")}</div></div>`;
     }
     function photosSection() {
-        const list = [...S.photos.map(p => ({ ...p, kind: "saved" })), ...pending.map(p => ({ ...p, kind: "new" }))];
+        // Same order as allPhotos(), so the main photo shows first.
+        const list = allPhotos().map(a => a.saved ? { ...a.saved, kind: "saved" } : { ...a.pend, kind: "new" });
         const items = list.map((p, i) => `<div class="sr-pitem${i === 0 ? " main" : ""}">
             <img src="${esc(p.preview || p.url)}" alt="">${i === 0 ? `<span class="sr-pmain">${esc(tr("sr_main"))}</span>` : ""}
             <div class="sr-pacts">${i ? `<button type="button" data-pmain="${i}" title="${esc(tr("sr_make_main"))}" aria-label="${esc(tr("sr_make_main"))}"><i class="fa-solid fa-star"></i></button>` : ""}
@@ -423,7 +424,11 @@
     });
 
     // ---------- photos ----------
-    function allPhotos() { return [...S.photos.map(p => ({ saved: p })), ...pending.map(p => ({ pend: p }))]; }
+    // Saved then new photos, or new first once a new one was made the main photo.
+    function allPhotos() {
+        const saved = S.photos.map(p => ({ saved: p })), pend = pending.map(p => ({ pend: p }));
+        return S.pendingFirst ? [...pend, ...saved] : [...saved, ...pend];
+    }
     function movePhoto(i) {
         // Make photo i the main one: saved and pending lists stay separate, so
         // a pending photo can only lead when no saved photo is kept.
