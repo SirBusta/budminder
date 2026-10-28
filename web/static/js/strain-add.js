@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderMarkdownPreview(md) {
         let html = md;
-        html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         html = html.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
         html = html.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
         html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
         html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
         html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, text, url) => /^(https?:\/\/|\/)/i.test(url) ? `<a href="${url}" target="_blank" rel="noopener">${text}</a>` : text);
         html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
         html = html.replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>');
         html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');

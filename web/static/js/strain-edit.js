@@ -187,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let html = md;
 
         // Escape HTML first
-        html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
         // Headers
         html = html.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
@@ -203,10 +203,10 @@ document.addEventListener("DOMContentLoaded", () => {
         html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
 
         // Links
-        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, text, url) => /^(https?:\/\/|\/)/i.test(url) ? `<a href="${url}" target="_blank" rel="noopener">${text}</a>` : text);
 
         // Images
-        html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%">');
+        html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, url) => /^(https?:\/\/|\/)/i.test(url) ? `<img src="${url}" alt="${alt}" style="max-width:100%">` : alt);
 
         // Inline code
         html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
