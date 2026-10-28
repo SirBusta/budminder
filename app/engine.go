@@ -266,9 +266,12 @@ func csrfMiddleware() gin.HandlerFunc {
 				c.Next()
 				return
 			}
-			submitted := c.PostForm("csrf_token")
-			if submitted == "" {
-				submitted = c.GetHeader("X-CSRF-Token")
+			// The header first; the form field only for plain forms
+			// (login, setup, account). Reading it from a multipart body
+			// would store a whole upload before the check.
+			submitted := c.GetHeader("X-CSRF-Token")
+			if submitted == "" && c.ContentType() == "application/x-www-form-urlencoded" {
+				submitted = c.PostForm("csrf_token")
 			}
 			if subtle.ConstantTimeCompare([]byte(submitted), []byte(token)) != 1 {
 				logger.Log.WithField("path", c.Request.URL.Path).Warn("CSRF token validation failed")
