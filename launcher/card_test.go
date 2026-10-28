@@ -60,6 +60,7 @@ func TestWelcomeCard_FirstStart(t *testing.T) {
 		"BudMinder runs in the background",
 		"Hidden icon?",
 		"does not shut down BudMinder",
+		"Stop BudMinder in the Start menu, or right-click the tray icon",
 		"[Got it]",
 		"Open BudMinder on your phone",
 	} {

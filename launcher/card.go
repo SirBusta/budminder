@@ -211,7 +211,7 @@ func WelcomeCard(w Welcome, version string) Card {
 		add(Block{Kind: BlockRows, Rows: []Row{
 			{AppIcon: true, Text: Words("Look for the green leaf icon in the system tray (next to the clock). Click it to open BudMinder, or right-click it for quick options, including **Stop BudMinder** and opening BudMinder on your phone.")},
 			{Icon: faChevronUp, Text: Words("Hidden icon? Click the arrow (**^**) in the system tray and drag the BudMinder leaf onto the taskbar so it always stays visible.")},
-			{Icon: faMoon, Text: Words("Closing this window or your browser does not shut down BudMinder. You can still connect to BudMinder with your phone, and your grow sensor data keeps being logged without interruption.")},
+			{Icon: faMoon, Text: Words("Closing this window or your browser does not shut down BudMinder. You can still connect to BudMinder with your phone, and your grow sensor data keeps being logged without interruption. To stop it, use **Stop BudMinder** in the Start menu, or right-click the tray icon.")},
 		}})
 	} else {
 		add(Block{Kind: BlockRows, Rows: []Row{{Icon: faMoon, Text: Words("Closing this window or your browser does not shut down BudMinder. To stop it, use **Stop BudMinder** in the Start menu.")}}})
