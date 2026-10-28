@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"isley/alerts"
 	"isley/logger"
 	"isley/model"
 )
@@ -235,8 +236,9 @@ func ParseBackupArchive(archive []byte) (BackupPayload, error) {
 // secretSettings are settings rows a backup leaves out. session_secret signs
 // login cookies: anyone holding a backup could otherwise make a valid
 // sign-in cookie for the live install. A restore without it keeps the
-// current key until the next start, which then makes a new one.
-var secretSettings = map[string]bool{"session_secret": true}
+// current key until the next start, which then makes a new one. The mail
+// password (Settings > Alerts) is kept through a restore (keepMailPassword).
+var secretSettings = map[string]bool{"session_secret": true, alerts.SettingEmailPassword: true}
 
 func withoutSecretSettings(rows []map[string]interface{}) []map[string]interface{} {
 	kept := rows[:0]

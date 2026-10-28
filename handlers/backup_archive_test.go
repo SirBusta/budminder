@@ -139,12 +139,15 @@ func TestBuildBackupArchive_SkipSensorData(t *testing.T) {
 }
 
 // The key that signs login cookies stays out of backups: with it, anyone
-// holding a backup could sign in to the live install.
+// holding a backup could sign in to the live install. So does the mail
+// password (Settings > Alerts).
 func TestBuildBackupArchive_LeavesOutSessionKey(t *testing.T) {
 	t.Parallel()
 
 	db := testutil.NewTestDB(t)
 	_, err := handlers.LoadOrCreateSessionSecret(db)
+	require.NoError(t, err)
+	_, err = db.Exec(`INSERT INTO settings (name, value) VALUES ('alert_email_password', 'mail-pass')`)
 	require.NoError(t, err)
 
 	archive, _, err := handlers.BuildBackupArchive(db, handlers.BuildArchiveOptions{SensorDays: -1})
@@ -154,6 +157,7 @@ func TestBuildBackupArchive_LeavesOutSessionKey(t *testing.T) {
 	require.NotEmpty(t, parsed.Settings, "other settings are kept")
 	for _, row := range parsed.Settings {
 		assert.NotEqual(t, "session_secret", row["name"])
+		assert.NotEqual(t, "alert_email_password", row["name"])
 	}
 }
 

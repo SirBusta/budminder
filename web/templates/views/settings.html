@@ -359,6 +359,67 @@
                 </div>
             </section>
 
+            <!-- ============================= Alerts ============================= -->
+            {{/* Alert emails (js/settings-alerts.js, handlers/alert_settings.go).
+                 The saved password never comes to the page. */}}
+            <section class="st-sec" data-sec="alerts" data-title="{{ .lcl.st_sec_alerts }}" data-desc="{{ .lcl.st_sec_alerts_desc }}">
+                <h2 class="st-sec-h"><i class="fa-solid fa-bell"></i>{{ .lcl.st_sec_alerts }}<a href="#alerts" data-goto="alerts">{{ .lcl.st_go_to_section }} <i class="fa-solid fa-arrow-right"></i></a></h2>
+
+                <div class="st-card" id="alCard">
+                    <div class="st-card-h"><i class="fa-solid fa-envelope"></i><div><h3>{{ .lcl.al_email_title }}</h3><p>{{ .lcl.al_email_desc }}</p></div></div>
+                    <label class="st-row st-switch">
+                        <div class="st-row-l"><span class="st-label">{{ .lcl.al_email_on }}</span></div>
+                        <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="alOn" data-al {{ if .alerts.Email.On }}checked{{ end }}></div>
+                    </label>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="alHost">{{ .lcl.al_host }}</label><small>{{ .lcl.al_host_desc }}</small></div>
+                        <div class="st-row-r d-flex gap-2">
+                            <input type="text" class="form-control form-control-sm" id="alHost" placeholder="smtp.gmail.com" value="{{ .alerts.Email.Host }}" maxlength="253" autocomplete="off" spellcheck="false" data-al>
+                            <input type="number" class="form-control form-control-sm al-port" id="alPort" min="1" max="65535" value="{{ .alerts.Email.Port }}" aria-label="{{ .lcl.al_port }}" title="{{ .lcl.al_port }}" data-al>
+                        </div>
+                    </div>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="alSecurity">{{ .lcl.al_security }}</label></div>
+                        <div class="st-row-r">
+                            <select class="form-select form-select-sm" id="alSecurity" data-al>
+                                <option value="starttls"{{ if eq .alerts.Email.Security "starttls" }} selected{{ end }}>{{ .lcl.al_security_starttls }}</option>
+                                <option value="tls"{{ if eq .alerts.Email.Security "tls" }} selected{{ end }}>{{ .lcl.al_security_tls }}</option>
+                                <option value="none"{{ if eq .alerts.Email.Security "none" }} selected{{ end }}>{{ .lcl.al_security_none }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="alUser">{{ .lcl.al_username }}</label><small>{{ .lcl.al_username_desc }}</small></div>
+                        <div class="st-row-r"><input type="text" class="form-control form-control-sm" id="alUser" value="{{ .alerts.Email.Username }}" maxlength="254" autocomplete="off" spellcheck="false" data-al></div>
+                    </div>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="alPass">{{ .lcl.al_password }}</label><small>{{ .lcl.al_password_desc }}</small></div>
+                        <div class="st-row-r d-flex align-items-center gap-2">
+                            <input type="password" class="form-control form-control-sm" id="alPass" maxlength="256" autocomplete="new-password" data-al
+                                   placeholder="{{ if .alerts.PasswordSet }}••••••••{{ end }}">
+                            <span class="badge {{ if .alerts.PasswordSet }}bg-success{{ else }}bg-secondary{{ end }}" id="alPassBadge">{{ if .alerts.PasswordSet }}{{ .lcl.al_password_saved }}{{ else }}{{ .lcl.al_password_none }}{{ end }}</span>
+                        </div>
+                    </div>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="alFrom">{{ .lcl.al_from }}</label><small>{{ .lcl.al_from_desc }}</small></div>
+                        <div class="st-row-r"><input type="email" class="form-control form-control-sm" id="alFrom" value="{{ .alerts.Email.From }}" maxlength="254" autocomplete="off" spellcheck="false" data-al></div>
+                    </div>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="alTo">{{ .lcl.al_to }}</label><small>{{ .lcl.al_to_desc }}</small></div>
+                        <div class="st-row-r"><input type="text" class="form-control form-control-sm" id="alTo" value="{{ .alerts.To }}" maxlength="1000" autocomplete="off" spellcheck="false" data-al></div>
+                    </div>
+                    <div class="st-row">
+                        <div class="st-row-l"><label for="alLink">{{ .lcl.al_link }}</label><small>{{ .lcl.al_link_desc }}</small></div>
+                        <div class="st-row-r"><input type="url" class="form-control form-control-sm" id="alLink" value="{{ .alerts.Email.Link }}" maxlength="300" autocomplete="off" spellcheck="false" data-al></div>
+                    </div>
+                    <div class="st-row">
+                        <div class="st-row-l"><small>{{ .lcl.al_help }}</small><small class="st-ha-result" id="alResult" role="status" aria-live="polite"></small></div>
+                        <div class="st-row-r"><button type="button" class="st-btn light" id="alTest"><i class="fa-solid fa-paper-plane me-1"></i>{{ .lcl.al_test }}</button></div>
+                    </div>
+                </div>
+                <script type="application/json" id="alText">{"sending": {{ .lcl.al_test_sending }}, "saved": {{ .lcl.al_password_saved }}, "none": {{ .lcl.al_password_none }}, "failed": {{ .lcl.failed_to_save_settings }}}</script>
+            </section>
+
             <!-- ============================= Photos ============================= -->
             {{/* Photo size (mockup data/mockups/settings/photos/v5.html):
                  Keep originals or Compression Options, the quality, the
@@ -2525,6 +2586,7 @@
 
 <script src="/static/js/settings-page.js" defer></script>
 <script src="/static/js/settings-photos.js" defer></script>
+<script src="/static/js/settings-alerts.js" defer></script>
 
 <!--Embed the footer.html template at this location-->
 <script src="/static/js/smoke-settings.js" defer></script>

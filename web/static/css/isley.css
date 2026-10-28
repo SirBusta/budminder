@@ -3082,6 +3082,8 @@ th, td {
 .st-ha-result.bad { color: #b91c1c; }
 [data-bs-theme="dark"] .st-ha-result.ok { color: #4ade80; }
 [data-bs-theme="dark"] .st-ha-result.bad { color: #f87171; }
+.st-ha-result.bad { overflow-wrap: anywhere; }
+#alCard .al-port { width: 6.5rem; min-width: 0; flex: none; }
 .sm-ic-b { min-width: 0; }
 .sm-ic h3 { font-size: .98rem; font-weight: 800; margin: 0; }
 .sm-ic .meta { font-size: .8rem; color: var(--sx-muted); }

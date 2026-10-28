@@ -242,6 +242,8 @@ func TestDemo_PhotoSettingsButNotCompressingExisting(t *testing.T) {
 		{"POST", "/settings/photos/existing/resume"}, {"POST", "/settings/photos/existing/finish"},
 		{"DELETE", "/settings/photos/existing/backup"}, {"POST", "/settings/photos/existing/backup/open"},
 		{"POST", "/settings/photos/existing/backup/restore"},
+		// Alert emails would reach real mail servers.
+		{"POST", "/settings/alerts/email"}, {"POST", "/settings/alerts/email/test"},
 	} {
 		code, out := e.json(t, r.method, r.path, map[string]any{"backup": true})
 		assertRefused(t, code, out, r.method+" "+r.path)

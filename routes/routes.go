@@ -397,6 +397,8 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.POST("/record-multi-activity", handlers.RecordMultiPlantActivity)
 	r.POST("/settings", handlers.SaveSettings)
 	// Settings > Photos and the compare page.
+	r.POST("/settings/alerts/email", handlers.SaveAlertEmailHandler)
+	r.POST("/settings/alerts/email/test", handlers.TestAlertEmailHandler)
 	r.POST("/settings/photos", handlers.SavePhotoSettingsHandler)
 	r.GET("/settings/photos/existing", handlers.ExistingPhotosHandler)
 	r.GET("/settings/photos/existing/status", handlers.PhotoJobStatusHandler)
@@ -530,6 +532,7 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 			// Grow setup → Smoke reports: weights and which fields the form shows.
 			"smokeSettings":   handlers.LoadSmokeSettings(db),
 			"photos":          handlers.PhotoSettingsPageData(c),
+			"alerts":          handlers.AlertSettingsPageData(c),
 			"streams":         handlers.GetStreams(db),
 			"loggedIn":        sessions.Default(c).Get("logged_in"),
 			"lcl":             translations,

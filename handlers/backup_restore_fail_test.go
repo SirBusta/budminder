@@ -117,3 +117,28 @@ func TestBackupHTTP_RestoreKeepsSQLiteReadingTimeFormat(t *testing.T) {
 	require.NoError(t, dst.QueryRow(`SELECT COUNT(*) FROM settings WHERE name = 'stale'`).Scan(&stale))
 	assert.Zero(t, stale, "rows from before the restore are gone")
 }
+
+// Backups leave out the mail password (Settings > Alerts), so a restore
+// keeps the one already saved instead of signing the mail server out.
+func TestBackupHTTP_RestoreKeepsMailPassword(t *testing.T) {
+	src := testutil.NewTestDB(t)
+	seedSampleData(t, src)
+	_, err := src.Exec(`INSERT INTO settings (name, value) VALUES ('alert_email_username', 'grower@example.com'), ('alert_email_password', 'old-pass')`)
+	require.NoError(t, err)
+	archive, _, err := handlers.BuildBackupArchive(src, handlers.BuildArchiveOptions{})
+	require.NoError(t, err)
+	payload, err := handlers.ParseBackupArchive(archive)
+	require.NoError(t, err)
+
+	dst := testutil.NewTestDB(t)
+	_, err = dst.Exec(`INSERT INTO settings (name, value) VALUES ('alert_email_password', 'live-pass')`)
+	require.NoError(t, err)
+	status := restoreViaHTTP(t, dst, payload)
+	require.Empty(t, status.Error)
+
+	var user, pass string
+	require.NoError(t, dst.QueryRow(`SELECT value FROM settings WHERE name = 'alert_email_username'`).Scan(&user))
+	require.NoError(t, dst.QueryRow(`SELECT value FROM settings WHERE name = 'alert_email_password'`).Scan(&pass))
+	assert.Equal(t, "grower@example.com", user, "the rest of the mail settings come from the backup")
+	assert.Equal(t, "live-pass", pass)
+}
