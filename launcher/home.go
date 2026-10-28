@@ -98,6 +98,13 @@ func chooseLinux(text, start string) string {
 	fmt.Println("\n" + strings.ReplaceAll(text, "Choose a folder", "Type a folder"))
 	fmt.Printf("\nFolder (press Enter for %s, or type cancel): ", start)
 	line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+	return typedFolder(line, start)
+}
+
+// typedFolder turns the folder typed at the prompt into a full path: Enter
+// is start, ~/x and plain relative names sit under start (the home folder,
+// not wherever the program was started), cancel is "".
+func typedFolder(line, start string) string {
 	line = strings.TrimSpace(line)
 	switch strings.ToLower(line) {
 	case "":
@@ -106,7 +113,10 @@ func chooseLinux(text, start string) string {
 		return ""
 	}
 	if strings.HasPrefix(line, "~/") {
-		line = filepath.Join(start, line[2:])
+		return filepath.Join(start, line[2:])
+	}
+	if !filepath.IsAbs(line) {
+		return filepath.Join(start, line)
 	}
 	return line
 }

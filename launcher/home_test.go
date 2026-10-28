@@ -66,3 +66,22 @@ func TestRiskyFolder(t *testing.T) {
 		}
 	}
 }
+
+// TestTypedFolder: a relative folder typed at the prompt lands under the
+// home folder, not the folder the program was started from.
+func TestTypedFolder(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	abs := filepath.Join(t.TempDir(), "elsewhere")
+	for in, want := range map[string]string{
+		"":          home,
+		"cancel":    "",
+		"~/apps":    filepath.Join(home, "apps"),
+		"apps/grow": filepath.Join(home, "apps", "grow"),
+		abs:         abs,
+	} {
+		if got := typedFolder(in+"\n", home); got != want {
+			t.Errorf("typedFolder(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
