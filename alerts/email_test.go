@@ -61,8 +61,7 @@ func TestEmail_SendsOverEachSecurity(t *testing.T) {
 	for _, mode := range []string{fakes.SMTPStartTLS, fakes.SMTPTLS, fakes.SMTPPlain} {
 		t.Run(mode, func(t *testing.T) {
 			t.Parallel()
-			f := fakes.NewFakeSMTP(t, mode)
-			f.User, f.Pass = "grower@example.com", "app-pass-123"
+			f := fakes.NewFakeSMTP(t, mode, fakes.WithSMTPLogin("grower@example.com", "app-pass-123"))
 			require.NoError(t, emailFor(f, mode).Send(context.Background(), testMsg))
 
 			got := f.Mail()
@@ -84,16 +83,14 @@ func TestEmail_SendsOverEachSecurity(t *testing.T) {
 
 func TestEmail_LoginAuthOnly(t *testing.T) {
 	t.Parallel()
-	f := fakes.NewFakeSMTP(t, fakes.SMTPStartTLS)
-	f.User, f.Pass, f.LoginOnly = "grower@example.com", "app-pass-123", true
+	f := fakes.NewFakeSMTP(t, fakes.SMTPStartTLS, fakes.WithSMTPLogin("grower@example.com", "app-pass-123"), fakes.WithSMTPLoginOnly())
 	require.NoError(t, emailFor(f, alerts.SecuritySTARTTLS).Send(context.Background(), testMsg))
 	assert.Len(t, f.Mail(), 1)
 }
 
 func TestEmail_ErrorsSayWhatWentWrong(t *testing.T) {
 	t.Parallel()
-	f := fakes.NewFakeSMTP(t, fakes.SMTPStartTLS)
-	f.User, f.Pass = "grower@example.com", "right-pass"
+	f := fakes.NewFakeSMTP(t, fakes.SMTPStartTLS, fakes.WithSMTPLogin("grower@example.com", "right-pass"))
 
 	e := emailFor(f, alerts.SecuritySTARTTLS)
 	e.Password = "wrong-pass"
@@ -121,11 +118,9 @@ func TestEmail_ErrorsSayWhatWentWrong(t *testing.T) {
 
 func TestEmail_HintsAdvise(t *testing.T) {
 	t.Parallel()
-	starttls := fakes.NewFakeSMTP(t, fakes.SMTPStartTLS)
-	starttls.User, starttls.Pass = "grower@example.com", "right-pass"
+	starttls := fakes.NewFakeSMTP(t, fakes.SMTPStartTLS, fakes.WithSMTPLogin("grower@example.com", "right-pass"))
 	ssl := fakes.NewFakeSMTP(t, fakes.SMTPTLS)
-	plain := fakes.NewFakeSMTP(t, fakes.SMTPPlain)
-	plain.User, plain.Pass = "grower@example.com", "right-pass"
+	plain := fakes.NewFakeSMTP(t, fakes.SMTPPlain, fakes.WithSMTPLogin("grower@example.com", "right-pass"))
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)

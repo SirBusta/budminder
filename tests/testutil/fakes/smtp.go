@@ -39,10 +39,12 @@ type FakeSMTP struct {
 	Host  string
 	Port  int
 	Certs *x509.CertPool
-	// User and Pass, when set, are the only sign-in accepted.
+	// User and Pass, when set, are the only sign-in accepted; LoginOnly
+	// offers only AUTH LOGIN (like some Microsoft servers). Read-only: set
+	// them with WithSMTPLogin/WithSMTPLoginOnly, before the server starts
+	// (setting them later races with its sessions).
 	User, Pass string
-	// LoginOnly offers only AUTH LOGIN (like some Microsoft servers).
-	LoginOnly bool
+	LoginOnly  bool
 
 	mode string
 	tls  *tls.Config
@@ -51,12 +53,28 @@ type FakeSMTP struct {
 	mail []SMTPMail
 }
 
+// SMTPOption sets up a FakeSMTP before it starts serving.
+type SMTPOption func(*FakeSMTP)
+
+// WithSMTPLogin makes user/pass the only sign-in accepted.
+func WithSMTPLogin(user, pass string) SMTPOption {
+	return func(f *FakeSMTP) { f.User, f.Pass = user, pass }
+}
+
+// WithSMTPLoginOnly offers only AUTH LOGIN.
+func WithSMTPLoginOnly() SMTPOption {
+	return func(f *FakeSMTP) { f.LoginOnly = true }
+}
+
 // NewFakeSMTP starts a FakeSMTP in the given mode, closed when t ends.
-func NewFakeSMTP(t *testing.T, mode string) *FakeSMTP {
+func NewFakeSMTP(t *testing.T, mode string, opts ...SMTPOption) *FakeSMTP {
 	t.Helper()
 	cert, pool := selfSigned(t)
 	f := &FakeSMTP{Host: "127.0.0.1", Certs: pool, mode: mode,
 		tls: &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}}
+	for _, o := range opts {
+		o(f)
+	}
 	var err error
 	if mode == SMTPTLS {
 		f.ln, err = tls.Listen("tcp", "127.0.0.1:0", f.tls)

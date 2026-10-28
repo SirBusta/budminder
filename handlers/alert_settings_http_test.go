@@ -118,8 +118,7 @@ func TestAlertSettingsHTTP_SaveRefusesIncompleteWhenOn(t *testing.T) {
 func TestAlertSettingsHTTP_TestEmail(t *testing.T) {
 	t.Parallel()
 	r := newAlertRoutes(t)
-	f := fakes.NewFakeSMTP(t, fakes.SMTPPlain)
-	f.User, f.Pass = "grower@example.com", "app-pass-123"
+	f := fakes.NewFakeSMTP(t, fakes.SMTPPlain, fakes.WithSMTPLogin("grower@example.com", "app-pass-123"))
 
 	// Unsaved form: the test uses what's typed.
 	code, out := r.post(t, "/settings/alerts/email/test", mailForm(f))
