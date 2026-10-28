@@ -3774,7 +3774,8 @@ a.sd-node.ext { position: relative; padding-right: 1.8rem; }
 .brand-dark { display: none !important; }
 [data-bs-theme="dark"] .brand-light { display: none !important; }
 [data-bs-theme="dark"] .brand-dark { display: block !important; }
-[data-bs-theme="dark"] .brand-wm-lg.brand-dark { display: inline-block !important; }
+[data-bs-theme="dark"] .brand-wm-lg.brand-dark,
+[data-bs-theme="dark"] .fm-auth-brand .brand-dark { display: inline-block !important; }
 /* ============================================
    SMOKE REPORTS (mockup data/mockups/smoke, "Forest" colors: deep green,
    outlined score numbers, solid badges, no pastel fills). sr-* on top of
