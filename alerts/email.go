@@ -21,9 +21,12 @@ import (
 	"net/mail"
 	"net/smtp"
 	"net/textproto"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"isley/secretbox"
 )
 
 // Settings rows for email alerts.
@@ -33,7 +36,7 @@ const (
 	SettingEmailPort     = "alert_email_port"
 	SettingEmailSecurity = "alert_email_security" // SecuritySTARTTLS, SecurityTLS or SecurityNone
 	SettingEmailUser     = "alert_email_username"
-	SettingEmailPassword = "alert_email_password" // left out of backups (handlers.secretSettings)
+	SettingEmailPassword = "alert_email_password" // encrypted (SealPassword); left out of backups (handlers.secretSettings)
 	SettingEmailFrom     = "alert_email_from"
 	SettingEmailTo       = "alert_email_to"  // comma-separated
 	SettingLinkAddress   = "alert_link_base" // e.g. http://192.168.1.10:8080, for links in messages
@@ -57,9 +60,12 @@ type Email struct {
 	Security string
 	Username string
 	Password string
-	From     string
-	To       []string
-	Link     string // BudMinder's address, for links in messages
+	// PasswordLost: a password is saved but can't be decrypted here (no
+	// key file, or another one); it has to be entered again.
+	PasswordLost bool
+	From         string
+	To           []string
+	Link         string // BudMinder's address, for links in messages
 
 	rootCAs *x509.CertPool // tests: trust a self-signed server
 }
@@ -71,8 +77,36 @@ type Message struct {
 	HTML    string
 }
 
-// LoadEmail reads the email settings from the settings table.
-func LoadEmail(db *sql.DB) (Email, error) {
+// SealPassword encrypts a mail password for the settings table with the key
+// in <dataDir>/budminder.key (made on first use, see package secretbox), so
+// the database and its copies only hold scrambled text. "" stays "".
+func SealPassword(dataDir, password string) (string, error) {
+	if password == "" {
+		return "", nil
+	}
+	key, err := secretbox.LoadOrCreateKey(filepath.Join(dataDir, secretbox.KeyFile))
+	if err != nil {
+		return "", err
+	}
+	return secretbox.Seal(key, password)
+}
+
+// OpenPassword decrypts what SealPassword saved. It fails when the key file
+// is missing or isn't the one the password was saved with.
+func OpenPassword(dataDir, sealed string) (string, error) {
+	if sealed == "" {
+		return "", nil
+	}
+	key, err := secretbox.LoadKey(filepath.Join(dataDir, secretbox.KeyFile))
+	if err != nil {
+		return "", err
+	}
+	return secretbox.Open(key, sealed)
+}
+
+// LoadEmail reads the email settings from the settings table, decrypting
+// the password with the key in dataDir.
+func LoadEmail(db *sql.DB, dataDir string) (Email, error) {
 	get := func(name string) (string, error) {
 		var v string
 		err := db.QueryRow("SELECT value FROM settings WHERE name = $1", name).Scan(&v)
@@ -99,7 +133,11 @@ func LoadEmail(db *sql.DB) (Email, error) {
 		e.Security = SecuritySTARTTLS
 	}
 	e.Username = vals[SettingEmailUser]
-	e.Password = vals[SettingEmailPassword]
+	if p, err := OpenPassword(dataDir, vals[SettingEmailPassword]); err == nil {
+		e.Password = p
+	} else {
+		e.PasswordLost = true
+	}
 	e.From = vals[SettingEmailFrom]
 	e.To = SplitAddresses(vals[SettingEmailTo])
 	e.Link = vals[SettingLinkAddress]

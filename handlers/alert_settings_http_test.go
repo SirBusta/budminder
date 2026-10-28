@@ -6,11 +6,14 @@ package handlers_test
 import (
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"isley/alerts"
 	"isley/tests/testutil"
 	"isley/tests/testutil/fakes"
 )
@@ -25,7 +28,7 @@ func newAlertRoutes(t *testing.T) *alertRoutes {
 	t.Helper()
 	db := testutil.NewTestDB(t)
 	testutil.SeedAdmin(t, db, "alerts-pass-123")
-	server := testutil.NewTestServer(t, db)
+	server := testutil.NewTestServer(t, db, testutil.WithDataDir(t.TempDir()))
 	c, csrf := server.LoginAndFetchCSRF(t, "alerts-pass-123", "/settings")
 	return &alertRoutes{server: server, c: c, csrf: csrf}
 }
@@ -38,6 +41,14 @@ func (r *alertRoutes) setting(t *testing.T, name string) string {
 		return ""
 	}
 	return v
+}
+
+// password decrypts the saved mail password with the server's key.
+func (r *alertRoutes) password(t *testing.T) string {
+	t.Helper()
+	p, err := alerts.OpenPassword(r.server.DataDir, r.setting(t, "alert_email_password"))
+	require.NoError(t, err)
+	return p
 }
 
 func (r *alertRoutes) post(t *testing.T, path string, body map[string]any) (int, map[string]any) {
@@ -64,7 +75,8 @@ func TestAlertSettingsHTTP_Save(t *testing.T) {
 	assert.Equal(t, true, out["passwordSet"])
 	assert.Equal(t, "1", r.setting(t, "alert_email_enabled"))
 	assert.Equal(t, "smtp.example.com", r.setting(t, "alert_email_host"))
-	assert.Equal(t, "app-pass-123", r.setting(t, "alert_email_password"))
+	assert.Equal(t, "app-pass-123", r.password(t))
+	assert.NotContains(t, r.setting(t, "alert_email_password"), "app-pass-123", "stored encrypted")
 	assert.Equal(t, "grower@example.com, partner@example.com", r.setting(t, "alert_email_to"))
 	assert.Equal(t, "http://192.168.1.10:8080", r.setting(t, "alert_link_base"))
 
@@ -82,7 +94,7 @@ func TestAlertSettingsHTTP_Save(t *testing.T) {
 	form["security"] = "tls"
 	code, _ = r.post(t, "/settings/alerts/email", form)
 	require.Equal(t, http.StatusOK, code)
-	assert.Equal(t, "app-pass-123", r.setting(t, "alert_email_password"))
+	assert.Equal(t, "app-pass-123", r.password(t))
 	assert.Equal(t, "465", r.setting(t, "alert_email_port"))
 
 	form["username"] = ""
@@ -145,6 +157,18 @@ func TestAlertSettingsHTTP_TestEmail(t *testing.T) {
 	assert.Contains(t, out["error"], "Username and Password not accepted")
 	assert.NotContains(t, out["error"], "wrong-pass")
 	assert.Contains(t, out["hint"], "app password", "with plain advice")
+
+	// A saved password this data folder can't decrypt (key file gone)
+	// counts as none: the page says so and the test sends no password.
+	require.NoError(t, os.Remove(filepath.Join(r.server.DataDir, "budminder.key")))
+	page := r.c.Get("/settings")
+	body, _ := io.ReadAll(page.Body)
+	testutil.DrainAndClose(page)
+	assert.Contains(t, string(body), `id="alPassBadge">Not set<`)
+	form["password"] = ""
+	code, _ = r.post(t, "/settings/alerts/email/test", form)
+	assert.Equal(t, http.StatusBadGateway, code)
+	assert.Len(t, f.Mail(), 2)
 
 	// Incomplete settings are refused before connecting.
 	form["to"] = ""

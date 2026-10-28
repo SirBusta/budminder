@@ -10,6 +10,8 @@ import (
 	"mime/multipart"
 	"net"
 	"net/mail"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -202,16 +204,53 @@ func TestEmail_LoadAndSplit(t *testing.T) {
 		_, err := db.Exec("INSERT INTO settings (name, value) VALUES ($1, $2)", k, v)
 		require.NoError(t, err)
 	}
-	e, err := alerts.LoadEmail(db)
+	e, err := alerts.LoadEmail(db, t.TempDir())
 	require.NoError(t, err)
 	assert.True(t, e.On)
 	assert.Equal(t, 465, e.Port)
 	assert.Equal(t, alerts.SecurityTLS, e.Security)
 	assert.Equal(t, []string{"a@example.com", "b@example.com", "c@example.com"}, e.To)
 
-	empty, err := alerts.LoadEmail(testutil.NewTestDB(t))
+	empty, err := alerts.LoadEmail(testutil.NewTestDB(t), t.TempDir())
 	require.NoError(t, err)
 	assert.False(t, empty.On)
 	assert.Equal(t, alerts.SecuritySTARTTLS, empty.Security)
 	assert.True(t, strings.TrimSpace(empty.Host) == "")
+}
+
+func TestEmail_PasswordIsStoredEncrypted(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	sealed, err := alerts.SealPassword(dir, "app-pass-123")
+	require.NoError(t, err)
+	assert.NotContains(t, sealed, "app-pass-123")
+	_, err = os.Stat(filepath.Join(dir, "budminder.key"))
+	require.NoError(t, err, "the key is made on first use")
+
+	db := testutil.NewTestDB(t)
+	_, err = db.Exec("INSERT INTO settings (name, value) VALUES ($1, $2)", alerts.SettingEmailPassword, sealed)
+	require.NoError(t, err)
+	e, err := alerts.LoadEmail(db, dir)
+	require.NoError(t, err)
+	assert.Equal(t, "app-pass-123", e.Password)
+	assert.False(t, e.PasswordLost)
+
+	// Another data folder (no key, or another key) can't read it.
+	e, err = alerts.LoadEmail(db, t.TempDir())
+	require.NoError(t, err)
+	assert.Equal(t, "", e.Password)
+	assert.True(t, e.PasswordLost)
+	other := t.TempDir()
+	_, err = alerts.SealPassword(other, "x")
+	require.NoError(t, err)
+	_, err = alerts.OpenPassword(other, sealed)
+	assert.Error(t, err)
+
+	// No password: nothing to encrypt, and no key file made for it.
+	empty := t.TempDir()
+	sealed, err = alerts.SealPassword(empty, "")
+	require.NoError(t, err)
+	assert.Equal(t, "", sealed)
+	_, err = os.Stat(filepath.Join(empty, "budminder.key"))
+	assert.True(t, os.IsNotExist(err))
 }

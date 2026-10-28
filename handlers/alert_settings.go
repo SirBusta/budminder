@@ -27,9 +27,12 @@ type AlertSettingsData struct {
 
 // AlertSettingsPageData builds the Settings > Alerts data for a request.
 func AlertSettingsPageData(c *gin.Context) AlertSettingsData {
-	e, err := alerts.LoadEmail(DBFromContext(c))
+	e, err := alerts.LoadEmail(DBFromContext(c), BackupServiceFromContext(c).DataDir())
 	if err != nil {
 		logger.Log.WithError(err).Error("Failed to read email settings")
+	}
+	if e.PasswordLost {
+		logger.Log.Warn("The saved mail password can't be read here (no key file, or another one); enter it again in Settings > Alerts")
 	}
 	d := AlertSettingsData{To: strings.Join(e.To, ", "), PasswordSet: e.Password != ""}
 	e.Password = ""
@@ -53,8 +56,10 @@ type alertEmailRequest struct {
 }
 
 // email turns the request into settings, falling back to the saved
-// password when none was typed. A blank username clears the password.
-func (r alertEmailRequest) email(db *sql.DB) (alerts.Email, error) {
+// password (decrypted with the key in dataDir) when none was typed; one
+// that can't be decrypted counts as none. A blank username clears the
+// password.
+func (r alertEmailRequest) email(db *sql.DB, dataDir string) (alerts.Email, error) {
 	e := alerts.Email{
 		On:       r.On != nil && *r.On,
 		Host:     strings.TrimSpace(r.Host),
@@ -73,7 +78,7 @@ func (r alertEmailRequest) email(db *sql.DB) (alerts.Email, error) {
 		if err != nil {
 			return e, err
 		}
-		e.Password = saved
+		e.Password, _ = alerts.OpenPassword(dataDir, saved)
 	}
 	return e, nil
 }
@@ -107,7 +112,8 @@ func SaveAlertEmailHandler(c *gin.Context) {
 		return
 	}
 	db := DBFromContext(c)
-	e, err := req.email(db)
+	dataDir := BackupServiceFromContext(c).DataDir()
+	e, err := req.email(db, dataDir)
 	if err != nil {
 		apiInternalError(c, "api_database_error")
 		return
@@ -124,13 +130,19 @@ func SaveAlertEmailHandler(c *gin.Context) {
 	if e.Port > 0 {
 		port = strconv.Itoa(e.Port)
 	}
+	sealed, err := alerts.SealPassword(dataDir, e.Password)
+	if err != nil {
+		logger.Log.WithError(err).Error("Could not encrypt the mail password")
+		apiInternalError(c, "failed_to_save_settings")
+		return
+	}
 	rows := [][2]string{
 		{alerts.SettingEmailOn, on},
 		{alerts.SettingEmailHost, e.Host},
 		{alerts.SettingEmailPort, port},
 		{alerts.SettingEmailSecurity, e.Security},
 		{alerts.SettingEmailUser, e.Username},
-		{alerts.SettingEmailPassword, e.Password},
+		{alerts.SettingEmailPassword, sealed},
 		{alerts.SettingEmailFrom, e.From},
 		{alerts.SettingEmailTo, strings.Join(e.To, ", ")},
 		{alerts.SettingLinkAddress, e.Link},
@@ -153,7 +165,7 @@ func TestAlertEmailHandler(c *gin.Context) {
 		apiBadRequest(c, "api_invalid_request_payload")
 		return
 	}
-	e, err := req.email(DBFromContext(c))
+	e, err := req.email(DBFromContext(c), BackupServiceFromContext(c).DataDir())
 	if err != nil {
 		apiInternalError(c, "api_database_error")
 		return
