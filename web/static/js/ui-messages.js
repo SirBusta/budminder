@@ -2,7 +2,7 @@
 // Lightweight UI messaging helper used across templates. Provides:
 // - uiMessages.t(key) -> returns translation if loaded, otherwise key
 // - uiMessages.showToast(message, level)
-// - uiMessages.showConfirm(message, { title, okLabel, danger }) -> Promise<boolean>
+// - uiMessages.showConfirm(message, { title, okLabel, danger, checkbox }) -> Promise<boolean>
 
 (() => {
     const translations = {};
@@ -82,7 +82,9 @@
 
     // showConfirm asks a yes/no question in the app's own dialog (never the
     // browser's plain confirm()). opts: title (default "Confirm"), okLabel
-    // (default "OK", or "Delete" when danger), danger (red button).
+    // (default "OK", or "Delete" when danger), danger (red button), checkbox
+    // ({ label }: an unchecked option under the message; its answer is set
+    // on opts.checkbox.checked).
     async function showConfirm(message, opts = {}) {
         await readyPromise;
         return new Promise((resolve) => {
@@ -103,6 +105,10 @@
                     </div>
                     <div class="modal-body">
                       <p id="uiConfirmMessage"></p>
+                      <div class="form-check d-none" id="uiConfirmOption">
+                        <input class="form-check-input" type="checkbox" id="uiConfirmOptionInput">
+                        <label class="form-check-label" for="uiConfirmOptionInput" id="uiConfirmOptionLabel"></label>
+                      </div>
                     </div>
                     <div class="modal-footer">
                       <button type="button" class="btn btn-secondary" id="uiConfirmCancel"></button>
@@ -119,6 +125,11 @@
             const cancelBtn = modalEl.querySelector('#uiConfirmCancel');
 
             msgEl.textContent = message;
+            const optionEl = modalEl.querySelector('#uiConfirmOption');
+            const optionInput = modalEl.querySelector('#uiConfirmOptionInput');
+            optionInput.checked = false;
+            optionEl.classList.toggle('d-none', !opts.checkbox);
+            if (opts.checkbox) modalEl.querySelector('#uiConfirmOptionLabel').textContent = opts.checkbox.label;
             // Set on every call: translations may have arrived since the
             // dialog was built, and each question has its own title/button.
             modalEl.querySelector('#uiConfirmTitle').textContent = opts.title || t('confirm');
@@ -132,6 +143,7 @@
             const finish = (yes) => {
                 if (answered) return;
                 answered = true;
+                if (opts.checkbox) opts.checkbox.checked = yes && optionInput.checked;
                 okBtn.removeEventListener('click', okHandler);
                 cancelBtn.removeEventListener('click', cancelHandler);
                 modalEl.removeEventListener('hidden.bs.modal', hiddenHandler);

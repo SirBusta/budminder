@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -176,6 +177,23 @@ func compressUpload(body []byte, quality int) ([]byte, sql.NullInt64, sql.NullSt
 		logger.Log.WithError(err).Warn("Photo compression failed; keeping the original")
 	}
 	return body, q, sql.NullString{String: PhotoKept, Valid: true}
+}
+
+// removePlantPhotoFiles deletes a deleted plant's photo files, only those
+// inside the uploads' plants folder, so a stored path can never reach
+// files elsewhere.
+func removePlantPhotoFiles(uploadDir string, stored []string) {
+	root, err := filepath.Abs(filepath.Join(uploadDir, "plants"))
+	if err != nil {
+		return
+	}
+	for _, s := range stored {
+		target, err := filepath.Abs(filepath.FromSlash(s))
+		if s == "" || err != nil || !strings.HasPrefix(target, root+string(filepath.Separator)) {
+			continue
+		}
+		_ = os.Remove(target)
+	}
 }
 
 func DeletePlantImage(c *gin.Context) {

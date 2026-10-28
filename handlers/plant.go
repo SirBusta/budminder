@@ -339,12 +339,27 @@ func DeletePlant(c *gin.Context) {
 	id := c.Param("id")
 
 	db := DBFromContext(c)
+	// ?photos=1: the person chose to delete the photo files as well.
+	var photoFiles []string
+	if c.Query("photos") == "1" {
+		rows, err := db.Query("SELECT image_path FROM plant_images WHERE plant_id = $1", id)
+		if err == nil {
+			for rows.Next() {
+				var p string
+				if rows.Scan(&p) == nil {
+					photoFiles = append(photoFiles, p)
+				}
+			}
+			rows.Close()
+		}
+	}
 	err := DeletePlantById(db, id)
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to delete plant")
 		apiInternalError(c, "api_failed_to_delete_plant")
 		return
 	}
+	removePlantPhotoFiles(UploadDirFromContext(c), photoFiles)
 
 	apiOK(c, "api_plant_deleted")
 }

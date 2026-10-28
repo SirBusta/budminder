@@ -103,13 +103,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // Delete plant
     if (deletePlantButton) {
         deletePlantButton.addEventListener("click", () => {
-            uiMessages.showConfirm(uiMessages.t('confirm_delete_plant'), { title: uiMessages.t('delete_plant'), danger: true })
-                .then(ok => { if (ok) doDelete(); });
+            const photos = { label: uiMessages.t('delete_plant_photo_files') };
+            uiMessages.showConfirm(uiMessages.t('confirm_delete_plant'), { title: uiMessages.t('delete_plant'), danger: true, checkbox: photos })
+                .then(ok => { if (ok) doDelete(photos.checked); });
         });
     }
 
-    function doDelete() {
-        fetch(`/plant/delete/${plantId}`, { method: "DELETE" })
+    function doDelete(withPhotos) {
+        fetch(`/plant/delete/${plantId}` + (withPhotos ? '?photos=1' : ''), { method: "DELETE" })
             .then(response => {
                 if (!response.ok) throw new Error("Failed to delete plant");
                 window.location.href = "/plants";

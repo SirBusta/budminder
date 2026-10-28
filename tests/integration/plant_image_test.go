@@ -290,3 +290,51 @@ func TestPlantImage_DeleteBadID(t *testing.T) {
 	defer resp.Body.Close()
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
+
+// TestPlantImage_DeletePlantPhotosOnRequest: deleting a plant removes its
+// photo files only when asked (?photos=1), and never a file outside the
+// uploads' plants folder.
+func TestPlantImage_DeletePlantPhotosOnRequest(t *testing.T) {
+	t.Parallel()
+	uploadDir := t.TempDir()
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db, testutil.WithUploadDir(uploadDir))
+	fix := seedPlantImageHTTP(t, db)
+	c := server.NewClient(t)
+
+	upload := func(plantID int64) string {
+		resp := uploadImages(t, c, plantID, fix.APIKey, []multipartFile{{name: "photo.jpg", body: jpegMagic}})
+		testutil.DrainAndClose(resp)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		var path string
+		require.NoError(t, db.QueryRow(`SELECT image_path FROM plant_images WHERE plant_id = $1`, plantID).Scan(&path))
+		return path
+	}
+	del := func(plantID int64, query string) {
+		resp, err := c.Do(testutil.APIReq(t, http.MethodDelete,
+			c.BaseURL+"/plant/delete/"+strconv.FormatInt(plantID, 10)+query, fix.APIKey, nil, ""))
+		require.NoError(t, err)
+		testutil.DrainAndClose(resp)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+	}
+
+	// Asked: the file goes; a stored path outside the folder is left alone.
+	gone := upload(fix.PlantID)
+	outside := filepath.Join(t.TempDir(), "keep.jpg")
+	require.NoError(t, os.WriteFile(outside, jpegMagic, 0o644))
+	_, err := db.Exec(`INSERT INTO plant_images (plant_id, image_path, image_description, image_order, image_date) VALUES ($1, $2, '', 2, '2026-04-25')`,
+		fix.PlantID, outside)
+	require.NoError(t, err)
+	del(fix.PlantID, "?photos=1")
+	_, err = os.Stat(gone)
+	assert.True(t, os.IsNotExist(err), "photo file deleted on request")
+	_, err = os.Stat(outside)
+	assert.NoError(t, err, "a file outside uploads/plants is never deleted")
+
+	// Not asked: the file stays.
+	other := int64(testutil.SeedPlant(t, db, "Plant 2", 1, 1))
+	kept := upload(other)
+	del(other, "")
+	_, err = os.Stat(kept)
+	assert.NoError(t, err, "photo file kept when not asked")
+}
