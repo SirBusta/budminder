@@ -182,10 +182,14 @@
             // was never logged (e.g. Planted skipped); days only when logged.
             const cls = isCur ? "cur" : (i < curIdx ? "done" : "");
             const days = reached.has(s.id) ? durations[s.id] : null;
+            // The stage a growing plant is in shows its day number (the day it
+            // entered the stage is Day 1, like the header's week); others how long they lasted.
+            const now = isCur && !FINISHED && days != null ? stageOn(HISTORY, TODAY) : null;
+            const stageDay = now ? daysBetween(now.start, TODAY) + 1 : null;
             const title = !LOGGED_IN ? s.label : reached.has(s.id) ? tr("pp_change_stage_date", { stage: s.label }) : tr("pp_move_to", { stage: s.label });
             return `<div class="pp-stg ${cls}" style="--sc:${color}">
                 <div class="pp-stg-row"><button class="pp-node" ${LOGGED_IN ? `data-stage="${s.id}"` : "disabled"} title="${esc(title)}" aria-label="${esc(title)}"><i class="fa-solid ${icon}"></i></button>${i < stages.length - 1 || smokeStep ? `<div class="pp-seg-line"></div>` : ""}</div>
-                <div class="pp-lbl">${esc(s.label)}${days != null ? `<small>${days}d</small>` : ""}</div></div>`;
+                <div class="pp-lbl">${esc(s.label)}${stageDay != null ? `<small>${esc(tr("pp_day"))} ${stageDay}</small>` : days != null ? `<small>${days}d</small>` : ""}</div></div>`;
         }).join("") + smokeStep;
     }
 
