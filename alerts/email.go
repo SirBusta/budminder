@@ -20,6 +20,7 @@ import (
 	"net"
 	"net/mail"
 	"net/smtp"
+	"net/textproto"
 	"strconv"
 	"strings"
 	"time"
@@ -149,7 +150,7 @@ func validAddress(s string) bool {
 }
 
 // Send delivers m to every recipient. Errors carry the mail server's own
-// words (they never include the password).
+// words (they never include the password); Hint turns them into advice.
 func (e Email) Send(ctx context.Context, m Message) error {
 	if p := e.Problem(); p != "" {
 		return fmt.Errorf("email settings incomplete (%s)", p)
@@ -171,7 +172,7 @@ func (e Email) Send(ctx context.Context, m Message) error {
 		conn, err = d.DialContext(ctx, "tcp", addr)
 	}
 	if err != nil {
-		return fmt.Errorf("connect to %s: %w", addr, err)
+		return failed(stepConnect, fmt.Errorf("connect to %s: %w", addr, err))
 	}
 	if dl, ok := ctx.Deadline(); ok {
 		_ = conn.SetDeadline(dl)
@@ -179,29 +180,29 @@ func (e Email) Send(ctx context.Context, m Message) error {
 	c, err := smtp.NewClient(conn, e.Host)
 	if err != nil {
 		conn.Close()
-		return fmt.Errorf("mail server greeting: %w", err)
+		return failed(stepGreeting, fmt.Errorf("mail server greeting: %w", err))
 	}
 	defer c.Close()
 
 	if e.Security == SecuritySTARTTLS {
 		if ok, _ := c.Extension("STARTTLS"); !ok {
-			return errors.New("the mail server doesn't offer STARTTLS; choose SSL/TLS or None")
+			return failed(stepStartTLS, errors.New("the mail server doesn't offer STARTTLS; choose SSL/TLS or None"))
 		}
 		if err := c.StartTLS(tlsConf); err != nil {
-			return fmt.Errorf("STARTTLS: %w", err)
+			return failed(stepStartTLS, fmt.Errorf("STARTTLS: %w", err))
 		}
 	}
 	if e.Username != "" {
 		if err := c.Auth(e.auth(c)); err != nil {
-			return fmt.Errorf("sign in: %w", err)
+			return failed(stepAuth, fmt.Errorf("sign in: %w", err))
 		}
 	}
 	if err := c.Mail(e.From); err != nil {
-		return fmt.Errorf("sender %s: %w", e.From, err)
+		return failed(stepSender, fmt.Errorf("sender %s: %w", e.From, err))
 	}
 	for _, to := range e.To {
 		if err := c.Rcpt(to); err != nil {
-			return fmt.Errorf("recipient %s: %w", to, err)
+			return failed(stepRecipient, fmt.Errorf("recipient %s: %w", to, err))
 		}
 	}
 	w, err := c.Data()
@@ -216,6 +217,93 @@ func (e Email) Send(ctx context.Context, m Message) error {
 		return fmt.Errorf("send: %w", err)
 	}
 	return c.Quit()
+}
+
+// The steps of Send, so Hint knows where it failed.
+const (
+	stepConnect   = "connect"
+	stepGreeting  = "greeting"
+	stepStartTLS  = "starttls"
+	stepAuth      = "auth"
+	stepSender    = "sender"
+	stepRecipient = "recipient"
+)
+
+type sendError struct {
+	step string
+	err  error
+}
+
+func (s *sendError) Error() string { return s.err.Error() }
+func (s *sendError) Unwrap() error { return s.err }
+
+func failed(step string, err error) error { return &sendError{step, err} }
+
+// microsoftHosts send for Outlook.com, Hotmail, Live and Microsoft 365.
+var microsoftHosts = []string{"outlook.com", "office365.com", "hotmail.com", "live.com"}
+
+func isMicrosoft(host string) bool {
+	host = strings.ToLower(strings.TrimSuffix(host, "."))
+	for _, h := range microsoftHosts {
+		if host == h || strings.HasSuffix(host, "."+h) {
+			return true
+		}
+	}
+	return false
+}
+
+// Hint returns the text key (al_hint_*) of plain advice for an error from
+// Send to host, or "" when there's nothing better than the server's words.
+func Hint(err error, host string) string {
+	var se *sendError
+	if !errors.As(err, &se) {
+		return ""
+	}
+	msg := strings.ToLower(err.Error())
+	code := 0
+	var tp *textproto.Error
+	if errors.As(err, &tp) {
+		code = tp.Code
+	}
+	var dns *net.DNSError
+	var rec tls.RecordHeaderError
+	var verify *tls.CertificateVerificationError
+	var unknown x509.UnknownAuthorityError
+	var name x509.HostnameError
+	var invalid x509.CertificateInvalidError
+	cert := errors.As(err, &verify) || errors.As(err, &unknown) || errors.As(err, &name) || errors.As(err, &invalid)
+
+	switch se.step {
+	case stepConnect, stepGreeting, stepStartTLS:
+		switch {
+		case errors.As(err, &dns):
+			return "al_hint_host"
+		case cert:
+			return "al_hint_cert"
+		case se.step == stepConnect && !errors.As(err, &rec):
+			return "al_hint_reach"
+		}
+		// SSL/TLS on a plain port, a plain start on an SSL port (the server
+		// waits for TLS and never greets), or no STARTTLS offered.
+		return "al_hint_security"
+	case stepAuth:
+		switch {
+		case isMicrosoft(host) || strings.Contains(msg, "5.7.139") || strings.Contains(msg, "basic authentication is disabled"):
+			return "al_hint_microsoft"
+		case strings.Contains(msg, "unencrypted connection"):
+			return "al_hint_unencrypted"
+		case code == 534 || code == 535 || strings.Contains(msg, "password"):
+			return "al_hint_password"
+		}
+	case stepSender:
+		if code == 530 {
+			return "al_hint_login_needed"
+		}
+		return "al_hint_from"
+	case stepRecipient:
+		return "al_hint_to"
+	}
+	return ""
 }
 
 // auth picks PLAIN, or LOGIN when the server only offers that (some

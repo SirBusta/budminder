@@ -145,6 +145,7 @@ func TestAlertSettingsHTTP_TestEmail(t *testing.T) {
 	assert.Equal(t, http.StatusBadGateway, code)
 	assert.Contains(t, out["error"], "Username and Password not accepted")
 	assert.NotContains(t, out["error"], "wrong-pass")
+	assert.Contains(t, out["hint"], "app password", "with plain advice")
 
 	// Incomplete settings are refused before connecting.
 	form["to"] = ""

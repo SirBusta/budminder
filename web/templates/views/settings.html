@@ -372,6 +372,25 @@
                         <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="alOn" data-al {{ if .alerts.Email.On }}checked{{ end }}></div>
                     </label>
                     <div class="st-row">
+                        <div class="st-row-l"><label for="alProvider">{{ .lcl.al_provider }}</label><small>{{ .lcl.al_provider_desc }}</small></div>
+                        <div class="st-row-r">
+                            {{/* Not saved: settings-alerts.js picks it from the mail server name. */}}
+                            <select class="form-select form-select-sm" id="alProvider">
+                                <option value="">{{ .lcl.al_provider_choose }}</option>
+                                <option value="gmail">Gmail</option>
+                                <option value="outlook">Outlook.com, Hotmail, Microsoft 365</option>
+                                <option value="yahoo">Yahoo</option>
+                                <option value="aol">AOL</option>
+                                <option value="icloud">iCloud</option>
+                                <option value="fastmail">Fastmail</option>
+                                <option value="zoho">Zoho</option>
+                                <option value="service">{{ .lcl.al_provider_service }}</option>
+                                <option value="other">{{ .lcl.al_provider_other }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="al-tip" id="alTip" role="note" hidden><i class="fa-solid fa-circle-info"></i><span></span></div>
+                    <div class="st-row">
                         <div class="st-row-l"><label for="alHost">{{ .lcl.al_host }}</label><small>{{ .lcl.al_host_desc }}</small></div>
                         <div class="st-row-r d-flex gap-2">
                             <input type="text" class="form-control form-control-sm" id="alHost" value="{{ .alerts.Email.Host }}" maxlength="253" autocomplete="off" spellcheck="false" data-al>
@@ -417,7 +436,10 @@
                         <div class="st-row-r"><button type="button" class="st-btn light" id="alTest"><i class="fa-solid fa-paper-plane me-1"></i>{{ .lcl.al_test }}</button></div>
                     </div>
                 </div>
-                <script type="application/json" id="alText">{"sending": {{ .lcl.al_test_sending }}, "saved": {{ .lcl.al_password_saved }}, "none": {{ .lcl.al_password_none }}, "failed": {{ .lcl.failed_to_save_settings }}}</script>
+                <script type="application/json" id="alText">{"sending": {{ .lcl.al_test_sending }}, "saved": {{ .lcl.al_password_saved }}, "none": {{ .lcl.al_password_none }}, "failed": {{ .lcl.failed_to_save_settings }},
+                    "tips": {"gmail": {{ .lcl.al_tip_gmail }}, "outlook": {{ .lcl.al_tip_outlook }}, "yahoo": {{ .lcl.al_tip_yahoo }}, "aol": {{ .lcl.al_tip_aol }}, "icloud": {{ .lcl.al_tip_icloud }},
+                             "fastmail": {{ .lcl.al_tip_fastmail }}, "zoho": {{ .lcl.al_tip_zoho }}, "service": {{ .lcl.al_tip_service }}, "other": {{ .lcl.al_tip_other }}},
+                    "tipLink": {{ .lcl.al_tip_link }}}</script>
             </section>
 
             <!-- ============================= Photos ============================= -->

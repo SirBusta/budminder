@@ -146,7 +146,7 @@ func SaveAlertEmailHandler(c *gin.Context) {
 
 // TestAlertEmailHandler: POST /settings/alerts/email/test sends a test
 // email with what's in the form (saved or not), and reports the mail
-// server's answer when it fails.
+// server's answer when it fails, with advice (hint) when there is some.
 func TestAlertEmailHandler(c *gin.Context) {
 	var req alertEmailRequest
 	if err := c.ShouldBindJSON(&req); err != nil || req.On == nil {
@@ -171,7 +171,11 @@ func TestAlertEmailHandler(c *gin.Context) {
 	defer cancel()
 	if err := e.Send(ctx, m); err != nil {
 		logger.Log.WithError(err).WithField("host", e.Host).Warn("Test email failed")
-		c.JSON(http.StatusBadGateway, gin.H{"error": T(c, "al_test_failed") + " " + err.Error()})
+		out := gin.H{"error": T(c, "al_test_failed") + " " + err.Error()}
+		if h := alerts.Hint(err, e.Host); h != "" {
+			out["hint"] = T(c, h)
+		}
+		c.JSON(http.StatusBadGateway, out)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": T(c, "al_test_sent")})

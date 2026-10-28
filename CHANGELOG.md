@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Settings > Alerts with email settings: mail server, port, security (STARTTLS, SSL/TLS or none), sign-in, sender and recipients, and **Send test email**, which shows the mail server's answer if sending fails. The mail password is never shown again, is left out of backups and the database download, and is kept through a restore. (Alerts that use these settings come next.)
+- Settings > Alerts with email settings: mail server, port, security (STARTTLS, SSL/TLS or none), sign-in, sender and recipients, and **Send test email**, which shows the mail server's answer if sending fails, with advice for common problems (wrong or missing app password, security not matching the port, Microsoft refusing passwords). **Provider** fills in the server, port and security for Gmail, Outlook.com/Microsoft 365, Yahoo, AOL, iCloud, Fastmail and Zoho, with a tip on app passwords. The mail password is never shown again, is left out of backups and the database download, and is kept through a restore. (Alerts that use these settings come next.)
 - Deleting a plant offers to delete its photo files from the uploads folder as well (unchecked by default).
 - Compress existing photos: **Restore original photos** puts the originals from the backup copy back in place of the compressed photos (for 7 days after the run), so they can be compressed again later. The finished run also shows the backup's size.
 

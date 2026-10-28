@@ -4,12 +4,15 @@ package alerts_test
 
 import (
 	"context"
+	"errors"
 	"io"
 	"mime"
 	"mime/multipart"
+	"net"
 	"net/mail"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -114,6 +117,59 @@ func TestEmail_ErrorsSayWhatWentWrong(t *testing.T) {
 	e.TrustForTest(nil)
 	assert.Error(t, e.Send(context.Background(), testMsg))
 	assert.Empty(t, f.Mail())
+}
+
+func TestEmail_HintsAdvise(t *testing.T) {
+	t.Parallel()
+	starttls := fakes.NewFakeSMTP(t, fakes.SMTPStartTLS)
+	starttls.User, starttls.Pass = "grower@example.com", "right-pass"
+	ssl := fakes.NewFakeSMTP(t, fakes.SMTPTLS)
+	plain := fakes.NewFakeSMTP(t, fakes.SMTPPlain)
+	plain.User, plain.Pass = "grower@example.com", "right-pass"
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	closedPort := ln.Addr().(*net.TCPAddr).Port
+	ln.Close()
+
+	hint := func(e alerts.Email, host string) string {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		err := e.Send(ctx, testMsg)
+		require.Error(t, err)
+		if host == "" {
+			host = e.Host
+		}
+		return alerts.Hint(err, host)
+	}
+
+	wrong := emailFor(starttls, alerts.SecuritySTARTTLS)
+	wrong.Password = "wrong-pass"
+	assert.Equal(t, "al_hint_password", hint(wrong, ""))
+	assert.Equal(t, "al_hint_microsoft", hint(wrong, "smtp-mail.outlook.com"))
+	assert.Equal(t, "al_hint_microsoft", hint(wrong, "SMTP.Office365.com"))
+
+	assert.Equal(t, "al_hint_security", hint(emailFor(starttls, alerts.SecurityTLS), ""), "SSL/TLS on a STARTTLS port")
+	assert.Equal(t, "al_hint_security", hint(emailFor(ssl, alerts.SecuritySTARTTLS), ""), "STARTTLS on an SSL port")
+	assert.Equal(t, "al_hint_security", hint(emailFor(plain, alerts.SecuritySTARTTLS), ""), "no STARTTLS offered")
+
+	untrusted := emailFor(starttls, alerts.SecuritySTARTTLS)
+	untrusted.TrustForTest(nil)
+	assert.Equal(t, "al_hint_cert", hint(untrusted, ""))
+
+	closed := emailFor(plain, alerts.SecurityNone)
+	closed.Port = closedPort
+	assert.Equal(t, "al_hint_reach", hint(closed, ""))
+
+	unknown := emailFor(plain, alerts.SecurityNone)
+	unknown.Host = "no-such-mail-server.invalid"
+	assert.Equal(t, "al_hint_host", hint(unknown, ""))
+
+	noLogin := emailFor(plain, alerts.SecurityNone)
+	noLogin.Username, noLogin.Password = "", ""
+	assert.Equal(t, "al_hint_login_needed", hint(noLogin, ""))
+
+	assert.Equal(t, "", alerts.Hint(errors.New("something else"), "smtp.gmail.com"))
 }
 
 func TestEmail_Problem(t *testing.T) {

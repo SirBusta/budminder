@@ -3084,6 +3084,14 @@ th, td {
 [data-bs-theme="dark"] .st-ha-result.bad { color: #f87171; }
 .st-ha-result.bad { overflow-wrap: anywhere; }
 #alCard .al-port { width: 6.5rem; min-width: 0; flex: none; }
+#alCard .al-tip { display: flex; gap: .5rem; align-items: baseline; font-size: .8rem; color: var(--sx-ink); background: var(--sx-soft); border-radius: 9px; padding: .55rem .75rem; margin: 0 0 .55rem; }
+#alCard .al-tip[hidden] { display: none; }
+#alCard .al-tip i { color: var(--sx-acc); flex: none; }
+#alCard .al-tip.warn { background: #fffbeb; }
+#alCard .al-tip.warn i { color: #d97706; }
+[data-bs-theme="dark"] #alCard .al-tip.warn { background: rgba(217, 119, 6, .14); }
+#alCard .al-tip a { color: var(--sx-acc); font-weight: 600; white-space: nowrap; }
+#alCard .al-detail { font-weight: 400; color: var(--sx-muted); }
 .sm-ic-b { min-width: 0; }
 .sm-ic h3 { font-size: .98rem; font-weight: 800; margin: 0; }
 .sm-ic .meta { font-size: .8rem; color: var(--sx-muted); }
