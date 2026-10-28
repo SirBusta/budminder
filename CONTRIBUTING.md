@@ -1,4 +1,4 @@
-# Contributing to Isley
+# Contributing to BudMinder
 
 Thanks for your interest in contributing! This guide covers everything you need to get a local development environment running, build the project, run tests, and understand how the codebase is organized.
 
@@ -14,8 +14,8 @@ Thanks for your interest in contributing! This guide covers everything you need 
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/dwot/isley.git
-   cd isley
+   git clone https://github.com/SirBusta/budminder.git
+   cd budminder
    ```
 
 2. **Install Go dependencies:**
@@ -27,22 +27,22 @@ Thanks for your interest in contributing! This guide covers everything you need 
 3. **Run with SQLite (simplest):**
 
    ```bash
-   export ISLEY_DB_DRIVER=sqlite
+   export BUDMINDER_DB_DRIVER=sqlite
    export GIN_MODE=debug
    go run .
    ```
 
-   The app starts on `http://localhost:8080`. Default login is `admin` / `isley`.
+   The app starts on `http://localhost:8080`. A fresh database opens on `/setup`, where you create your account.
 
 4. **Run with PostgreSQL:**
 
    ```bash
-   export ISLEY_DB_DRIVER=postgres
-   export ISLEY_DB_HOST=localhost
-   export ISLEY_DB_PORT=5432
-   export ISLEY_DB_USER=isley
-   export ISLEY_DB_PASSWORD=supersecret
-   export ISLEY_DB_NAME=isleydb
+   export BUDMINDER_DB_DRIVER=postgres
+   export BUDMINDER_DB_HOST=localhost
+   export BUDMINDER_DB_PORT=5432
+   export BUDMINDER_DB_USER=budminder
+   export BUDMINDER_DB_PASSWORD=supersecret
+   export BUDMINDER_DB_NAME=budminderdb
    export GIN_MODE=debug
    go run .
    ```
@@ -50,13 +50,13 @@ Thanks for your interest in contributing! This guide covers everything you need 
 ## Building
 
 ```bash
-go build -o isley .
+go build -o budminder .
 ```
 
 The Docker image uses a two-stage Alpine build. To build it locally:
 
 ```bash
-docker build -t isley:dev .
+docker build -t budminder:dev .
 ```
 
 ## Running Tests
@@ -168,7 +168,7 @@ Postgres floor from its current placeholder of 2.0%.
 ## Project Structure
 
 ```
-isley/
+budminder/
 ├── main.go                  # Entry point, router setup, middleware
 ├── config/                  # Runtime configuration (loaded from DB settings)
 ├── handlers/                # HTTP handler functions
@@ -216,7 +216,7 @@ isley/
 
 **Templates:** Gin loads Go HTML templates from `web/templates/`. Localized strings come from YAML files in `utils/locales/` and are passed to templates as `.lcl`.
 
-**Environment variables:** Application behavior is configured via `ISLEY_*` environment variables (see README). Set `GIN_MODE=debug` during development for verbose logging.
+**Environment variables:** Application behavior is configured via `BUDMINDER_*` environment variables (see README; the older `ISLEY_*` names still work). Set `GIN_MODE=debug` during development for verbose logging.
 
 ## Submitting Changes
 
