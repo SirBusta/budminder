@@ -2,6 +2,7 @@ package demo_test
 
 import (
 	"database/sql"
+	"fmt"
 	"testing"
 	"time"
 
@@ -159,4 +160,20 @@ func TestRollDates_SnapshotWithoutItsDay(t *testing.T) {
 	var v string
 	require.NoError(t, db.QueryRow(`SELECT value FROM settings WHERE name = 'demo_dates_on'`).Scan(&v))
 	assert.Equal(t, time.Now().Format("2006-01-02"), v)
+}
+
+// TestForRequest_IPv6CountsPerSlash64: addresses in one IPv6 /64 share
+// the per-address limit, so rotating them can't push other visitors'
+// copies out.
+func TestForRequest_IPv6CountsPerSlash64(t *testing.T) {
+	t.Parallel()
+	m, _ := newCopies(t, 50)
+	for i := 0; i < demo.CopiesPerIPPerHour; i++ {
+		_, _, _, err := m.ForRequest("", fmt.Sprintf("2001:db8:1:2::%x", i+1), true)
+		require.NoError(t, err)
+	}
+	_, _, _, err := m.ForRequest("", "2001:db8:1:2::ffff", true)
+	assert.ErrorIs(t, err, demo.ErrBusy)
+	_, _, _, err = m.ForRequest("", "2001:db8:1:3::1", true)
+	assert.NoError(t, err, "another /64 is another visitor")
 }

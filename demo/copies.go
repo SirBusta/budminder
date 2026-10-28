@@ -28,6 +28,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"sync"
@@ -303,6 +304,17 @@ func (m *Copies) keepLive(db *sql.DB, now time.Time) {
 	}
 }
 
+// addressKey is what the per-address limit counts: an IPv4 address, or
+// an IPv6 address's /64, which one home or phone can rotate through
+// freely.
+func addressKey(ip string) string {
+	parsed := net.ParseIP(ip)
+	if parsed == nil || parsed.To4() != nil {
+		return ip
+	}
+	return parsed.Mask(net.CIDRMask(64, 128)).String() + "/64"
+}
+
 // ForRequest returns the database and store for this visitor. id is the
 // copy named in their session ("" for none); write says the request changes
 // something, which needs a copy. It returns the id to keep in the session.
@@ -318,6 +330,7 @@ func (m *Copies) ForRequest(id, ip string, write bool) (string, *sql.DB, *config
 		return "", m.baseRead, m.baseStore, nil
 	}
 
+	ip = addressKey(ip)
 	recent := m.started[ip][:0]
 	for _, t := range m.started[ip] {
 		if now.Sub(t) < time.Hour {
