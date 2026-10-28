@@ -213,9 +213,10 @@ func DesktopEntry(exe, icon string) string {
 }
 
 // quoteExec quotes a path for a .desktop Exec line (Desktop Entry spec:
-// double quotes, with ", `, $ and \ escaped).
+// double quotes, with ", `, $ and \ escaped, and % doubled since %f, %u
+// and friends are field codes even inside quotes).
 func quoteExec(p string) string {
-	r := strings.NewReplacer(`\`, `\\\\`, `"`, `\\"`, "`", "\\\\`", "$", `\\$`)
+	r := strings.NewReplacer(`\`, `\\\\`, `"`, `\\"`, "`", "\\\\`", "$", `\\$`, "%", "%%")
 	return `"` + r.Replace(p) + `"`
 }
 
