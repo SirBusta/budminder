@@ -45,8 +45,14 @@ document.addEventListener("DOMContentLoaded", () => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         })
-            .then(response => response.json())
-            .then(() => location.reload())
+            .then(async response => {
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    uiMessages.showToast(data.error || uiMessages.t('failed_to_update_status'), 'danger');
+                    return;
+                }
+                location.reload();
+            })
             .catch(() => uiMessages.showToast(uiMessages.t('failed_to_update_status'), 'danger'));
     });
 
