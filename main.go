@@ -576,7 +576,9 @@ func firstRunHome() {
 // backupDB copies the SQLite database at src into one complete file at dst
 // (VACUUM INTO, which also takes in its -wal journal).
 func backupDB(src, dst string) error {
-	db, err := sql.Open("sqlite", "file:"+filepath.ToSlash(src))
+	// In a file: URI, % # and ? in folder names must be escaped.
+	uri := strings.NewReplacer("%", "%25", "#", "%23", "?", "%3f").Replace(filepath.ToSlash(src))
+	db, err := sql.Open("sqlite", "file:"+uri)
 	if err != nil {
 		return err
 	}
