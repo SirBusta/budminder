@@ -454,10 +454,8 @@ func GetPlant(db *sql.DB, id string) types.Plant {
 	// treat it as UTC and show the previous day west of UTC).
 	startDT = utils.AsLocal(startDT)
 
-	// Calculate current day and week
-	diff := time.Now().Sub(startDT)
-	currentDay := int(diff.Hours()/24) + 1
-	currentWeek := int((diff.Hours() / 24 / 7) + 1)
+	days := calendarDays(startDT, time.Now())
+	currentDay, currentWeek := days+1, days/7+1
 
 	// --- Load related data via focused sub-functions ---
 	statuses := GetStatuses(db)
@@ -1098,6 +1096,16 @@ func UpdatePlant(c *gin.Context) {
 	c.JSON(http.StatusCreated, input)
 }
 
+// calendarDays counts the calendar days from one wall-clock date to
+// another, ignoring the time of day (as the PostgreSQL list query does).
+func calendarDays(from, to time.Time) int {
+	day := func(t time.Time) time.Time {
+		y, m, d := t.Date()
+		return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+	}
+	return int(day(to).Sub(day(from)).Hours() / 24)
+}
+
 func getPlantsByStatus(db *sql.DB, statuses []int) ([]types.PlantListResponse, error) {
 	fieldLogger := logger.Log.WithField("func", "getPlantsByStatus")
 
@@ -1176,23 +1184,23 @@ SELECT
     p.id, p.name, p.description, p.clone, 
     s.name AS strain_name, b.name AS breeder_name, COALESCE(z.name, '') AS zone_name,
     p.start_dt,
-    CAST((julianday('now', 'localtime') - julianday(p.start_dt)) / 7 + 1 AS INT) AS current_week,
-    CAST((julianday('now', 'localtime') - julianday(p.start_dt)) + 1 AS INT) AS current_day,
+    CAST((julianday(date('now', 'localtime')) - julianday(date(p.start_dt))) / 7 + 1 AS INT) AS current_week,
+    CAST((julianday(date('now', 'localtime')) - julianday(date(p.start_dt))) + 1 AS INT) AS current_day,
     COALESCE((
-        SELECT CAST(julianday('now', 'localtime') - julianday(MAX(pa.date)) AS INT)
+        SELECT CAST(julianday(date('now', 'localtime')) - julianday(date(MAX(pa.date))) AS INT)
         FROM plant_activity pa
 		JOIN activity a ON pa.activity_id = a.id
 		WHERE pa.plant_id = p.id AND a.is_watering = TRUE
     ), 0) AS days_since_last_watering,
     COALESCE((
-        SELECT CAST(julianday('now', 'localtime') - julianday(MAX(pa.date)) AS INT)
+        SELECT CAST(julianday(date('now', 'localtime')) - julianday(date(MAX(pa.date))) AS INT)
         FROM plant_activity pa
 		JOIN activity a ON pa.activity_id = a.id
 		WHERE pa.plant_id = p.id AND a.is_feeding = TRUE
     ), 0) AS days_since_last_feeding,
     COALESCE((
         SELECT CAST(
-            julianday(
+            julianday(date(
                 MIN(
                     COALESCE((
                         SELECT MIN(h2.date) FROM plant_status_log h2
@@ -1202,7 +1210,7 @@ SELECT
                     ), datetime('now', 'localtime')),
                     datetime('now', 'localtime')
                 )
-            ) - julianday(MAX(date)) AS INT)
+            )) - julianday(date(MAX(date))) AS INT)
         FROM plant_status_log
         WHERE plant_id = p.id AND status_id = (
             SELECT id FROM plant_status WHERE status = 'Flower'

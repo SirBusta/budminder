@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -248,4 +249,35 @@ func statusIDByName(t *testing.T, db *sql.DB, name string) int {
 	require.NoErrorf(t, db.QueryRow(`SELECT id FROM plant_status WHERE status = $1`, name).Scan(&id),
 		"plant_status row %q must exist", name)
 	return id
+}
+
+// TestPlantDays_CountCalendarDays: a plant started late yesterday is on
+// day 2 today (as on PostgreSQL), on the plant page and in the list,
+// whatever the time of day; flowering since late yesterday is 1 day.
+func TestPlantDays_CountCalendarDays(t *testing.T) {
+	t.Parallel()
+
+	db := testutil.NewTestDB(t)
+	plantID := seedPlantTree(t, db)
+	lateYesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02") + " 23:59:59"
+	_, err := db.Exec(`UPDATE plant SET start_dt = $1 WHERE id = $2`, lateYesterday, plantID)
+	require.NoError(t, err)
+	_, err = db.Exec(`INSERT INTO plant_status_log (plant_id, status_id, date) VALUES ($1, $2, $3)`,
+		plantID, statusIDByName(t, db, "Flower"), lateYesterday)
+	require.NoError(t, err)
+
+	got := handlers.GetPlant(db, idStr(plantID))
+	assert.Equal(t, 2, got.CurrentDay, "plant page")
+	assert.Equal(t, 1, got.CurrentWeek, "plant page")
+
+	var found bool
+	for _, p := range handlers.GetLivingPlants(db) {
+		if p.ID == int(plantID) {
+			found = true
+			assert.Equal(t, 2, p.CurrentDay, "plant list")
+			require.NotNil(t, p.FloweringDays)
+			assert.Equal(t, 1, *p.FloweringDays, "flowering days")
+		}
+	}
+	assert.True(t, found, "plant in the living list")
 }
