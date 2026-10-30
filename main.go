@@ -18,6 +18,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	// Settings > General time zones must load on PCs without zone files (Windows).
+	_ "time/tzdata"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
