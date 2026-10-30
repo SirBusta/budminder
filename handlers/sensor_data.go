@@ -252,12 +252,7 @@ func timeConversion(date string, loc *time.Location, rangeEnd bool) (string, err
 // requestLocation is the Settings timezone, or the server's own when none
 // is set or it doesn't load.
 func requestLocation(c *gin.Context) *time.Location {
-	if tz := ConfigStoreFromContext(c).Timezone(); tz != "" {
-		if loc, err := time.LoadLocation(tz); err == nil {
-			return loc
-		}
-	}
-	return time.Local
+	return settingsLocation(ConfigStoreFromContext(c))
 }
 
 func generateCacheKey(sensor, timeMinutes, startDate, endDate string) string {

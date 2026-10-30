@@ -402,6 +402,12 @@ func SaveClimateHandler(c *gin.Context) {
 	apiOK(c, "api_settings_saved")
 }
 
+// byStage says whether a measure has Low / Target / High per stage: VPD
+// always, temperature and humidity when Targets by stage is on.
+func (cs ClimateSettings) byStage(measure string) bool {
+	return measure == climate.VPD || measure == climate.Temp && cs.TempByStage || measure == climate.RH && cs.RHByStage
+}
+
 // target returns the range in use for a measure at a stage.
 func (cs ClimateSettings) target(measure, stage, phase string, lightsOn bool) climate.Range {
 	lights := "on"
@@ -610,7 +616,7 @@ func (cs ClimateSettings) check(zc ZoneClimate, measure string, s ManagedSensor)
 	if zc.Stage.Stage == "" {
 		return ck
 	}
-	byStage := measure == climate.VPD || measure == climate.Temp && cs.TempByStage || measure == climate.RH && cs.RHByStage
+	byStage := cs.byStage(measure)
 	if byStage {
 		ck.Range = cs.target(measure, zc.Stage.Stage, zc.Phase, zc.LightsOn)
 	}

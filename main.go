@@ -229,6 +229,15 @@ func main() {
 	w.ACIRelogin = handlers.NewACIRelogin(db, configStore, "data", "") // same data folder as the engine
 
 	if !demoMode {
+		// Environment alerts: checked after each poll, sent from their own goroutine.
+		alertEngine := handlers.NewAlertEngine(db, configStore, "data")
+		w.AfterPoll = alertEngine.Check
+		bgWG.Add(1)
+		go func() {
+			defer bgWG.Done()
+			alertEngine.RunSender(ctx)
+		}()
+
 		// Prune old sensor data once before the watcher loop kicks in.
 		if err := w.PruneSensorData(); err != nil {
 			logger.Log.WithError(err).Error("Initial sensor data prune failed")

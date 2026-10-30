@@ -90,6 +90,9 @@ type Watcher struct {
 	// ("Stay signed in") when it refuses the token. attempted is false when
 	// no password is saved. Optional; main wires handlers.NewACIRelogin.
 	ACIRelogin func(ctx context.Context) (attempted bool, err error)
+	// AfterPoll runs at the end of each poll cycle, once the zones' VPD is
+	// saved. Optional; main wires the alert check (handlers.AlertEngine).
+	AfterPoll func(ctx context.Context)
 
 	lastACIRelogin time.Time // Run's goroutine only
 }
@@ -246,6 +249,10 @@ func (w *Watcher) Run(ctx context.Context) {
 			}
 
 			w.computeZoneVPD(ctx)
+
+			if w.AfterPoll != nil {
+				w.AfterPoll(ctx)
+			}
 
 			select {
 			case <-pruneTicker.C:
