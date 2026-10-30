@@ -32,7 +32,11 @@ type sensorEnv struct {
 
 func newSensorEnv(t *testing.T) *sensorEnv {
 	t.Helper()
-	db := testutil.NewTestDB(t)
+	return newSensorEnvOn(t, testutil.NewTestDB(t))
+}
+
+func newSensorEnvOn(t *testing.T, db *sql.DB) *sensorEnv {
+	t.Helper()
 	server := testutil.NewTestServer(t, db)
 	testutil.SeedAdmin(t, db, sensorManagePassword)
 	c, token := server.LoginAndFetchCSRF(t, sensorManagePassword, "/settings")

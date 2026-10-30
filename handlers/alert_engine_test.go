@@ -5,6 +5,7 @@ package handlers_test
 
 import (
 	"context"
+	"database/sql"
 	"strconv"
 	"testing"
 	"time"
@@ -31,7 +32,12 @@ type alertEnv struct {
 // a 32.2 °C (90 °F) high safety limit, and no light schedule.
 func newAlertEnv(t *testing.T) *alertEnv {
 	t.Helper()
-	e := newSensorEnv(t)
+	return newAlertEnvOn(t, testutil.NewTestDB(t))
+}
+
+func newAlertEnvOn(t *testing.T, db *sql.DB) *alertEnv {
+	t.Helper()
+	e := newSensorEnvOn(t, db)
 	require.NoError(t, handlers.EnsureClimateTargets(e.db))
 	a := &alertEnv{sensorEnv: e, dataDir: t.TempDir()}
 	a.tent = testutil.SeedZone(t, e.db, "Tent")

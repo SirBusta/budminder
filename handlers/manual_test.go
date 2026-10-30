@@ -125,6 +125,12 @@ func TestManual_PagesForAGuest(t *testing.T) {
 	assert.Contains(t, string(body), "Growth stages")
 	assert.Contains(t, string(body), `href="/manual/today"`, "the left menu lists the sections")
 
+	resp = c.Get("/manual/alerts")
+	body, _ = io.ReadAll(resp.Body)
+	resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Contains(t, string(body), "Dry run")
+
 	resp = c.Get("/manual")
 	resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
