@@ -48,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- PostgreSQL: a server set to a local time zone no longer shifts new sensor readings. They are now saved in UTC, as charts and alerts expect; readings saved earlier keep their old times.
 - PostgreSQL: passwords with spaces, quotes or backslashes, an empty password, and database names with capitals or hyphens work in the connection and startup maintenance.
 - Settings no longer says "saved" when the save failed, and the server refuses a polling interval outside 15-300 seconds.
 - A failed restore puts back the sensor-data indexes it removed.
