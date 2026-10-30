@@ -110,6 +110,15 @@ func TestCheckLights(t *testing.T) {
 		t.Errorf("as scheduled: %+v %v", m, agree)
 	}
 
+	// Lights that came on and failed later: since the failure, not the switch.
+	failed := time.Date(2026, 6, 10, 7, 50, 0, 0, time.UTC)
+	m, _ = CheckLights(lightReadings(time.Date(2026, 6, 10, 5, 50, 0, 0, time.UTC), now, func(at time.Time) bool {
+		return at.Before(failed) && !at.Before(time.Date(2026, 6, 10, 6, 0, 0, 0, time.UTC))
+	}), 0, s, Flower, now, time.UTC, hold)
+	if m == nil || m.Since.Before(failed) || m.Since.After(failed.Add(5*time.Minute)) {
+		t.Errorf("failed at 07:50: %+v", m)
+	}
+
 	// One agreeing reading in the window: not a mismatch yet.
 	early := now.Add(-10 * time.Minute)
 	m, _ = CheckLights(lightReadings(now.Add(-hold), now, func(at time.Time) bool { return at.Before(early) }), 0, s, Flower, now, time.UTC, hold)

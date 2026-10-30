@@ -414,6 +414,25 @@ func TestAlertEngine_LightMismatch(t *testing.T) {
 	assert.NotNil(t, ev[0].Resolved)
 }
 
+func TestAlertEngine_LightFailsAfterItsSwitch(t *testing.T) {
+	t.Parallel()
+	a := newAlertEnv(t)
+	light, now := a.lightZone(t)
+
+	vals := make([]float64, 60) // on for 40 minutes, then off for 20
+	for i := range 40 {
+		vals[i] = 100
+	}
+	a.readings(t, light, vals...)
+	a.check()
+	ev := a.events(t)
+	require.Len(t, ev, 1)
+	assert.WithinDuration(t, now.Add(-19*time.Minute), ev[0].Started, 2*time.Minute, "since the lights went off, not the switch")
+
+	body := a.page(t, "/settings")
+	assert.Contains(t, body, `"mismatch":true`)
+}
+
 func TestRecentAlerts_OpenFirst(t *testing.T) {
 	t.Parallel()
 	db := testutil.NewTestDB(t)

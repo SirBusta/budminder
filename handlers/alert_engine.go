@@ -361,7 +361,14 @@ func (r *alertRun) lights(zc ZoneClimate, z ZoneSetup, byID map[int]ManagedSenso
 			}
 		}
 		if !found {
-			r.apply(zc.ZoneID, z.Name, s.ID, s.Name, alerts.Change{Key: k, Action: alerts.Start, Value: latest}, &alertStart{since: m.Since})
+			since := m.Since
+			// Read back to the switch: the lights may have followed it and failed later.
+			if longer, err := recentReadings(r.e.DB, s.ID, s.Unit, "", since); err == nil {
+				if full, _ := climate.CheckLights(longer, above, z.Schedule, zc.Stage.Stage, r.now, loc, alerts.LightHold); full != nil && full.Since.After(since) {
+					since = full.Since
+				}
+			}
+			r.apply(zc.ZoneID, z.Name, s.ID, s.Name, alerts.Change{Key: k, Action: alerts.Start, Value: latest}, &alertStart{since: since})
 		}
 	case agree:
 		for _, o := range lightOpen {

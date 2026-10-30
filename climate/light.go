@@ -35,7 +35,7 @@ func LightRuns(readings []Reading, above float64) []LightRun {
 // LightMismatch is a light sensor disagreeing with the schedule.
 type LightMismatch struct {
 	SeenOn bool
-	Since  time.Time // the scheduled switch it missed, or the first reading that disagreed
+	Since  time.Time // the scheduled switch it missed, or the first reading that disagreed after one that agreed
 }
 
 // CheckLights compares a light sensor's readings over the last hold with the
@@ -78,6 +78,15 @@ func CheckLights(readings []Reading, above float64, s Schedule, stage string, no
 	since := recent[0].At
 	if switched {
 		since = sw
+	}
+	// Lights that followed the switch and failed later disagree only from then.
+	for i := len(readings) - 1; i >= 0 && !readings[i].At.Before(since); i-- {
+		if (readings[i].Value > above) == want {
+			if i+1 < len(readings) {
+				since = readings[i+1].At
+			}
+			break
+		}
 	}
 	return &LightMismatch{SeenOn: !want, Since: since}, false
 }
