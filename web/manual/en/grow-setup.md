@@ -13,7 +13,7 @@ The **Light schedule** column shows the zone's lights-on time and hours for its 
 ### Edit zone
 
 - **Light schedule**: choose **On a schedule** and enter the lights-on and lights-off times for Seedling, Veg and Flower, as set on your lights or controller. BudMinder does not control grow lights; the schedule only decides whether the lights-on or lights-off climate targets apply. Times use the time zone in **Settings → General**, and the window shows BudMinder's time now so you can compare it with your controller. Choose **No schedule** for outdoor zones: the lights-on targets then apply all the time. Drying always uses the lights-off targets.
-- **Light check** (optional): pick a light port, lux sensor or smart plug in the zone and the reading above which the lights count as on (0 for an on/off port). The window shows whether the sensor agrees with the schedule right now.
+- **Light check** (optional): pick a light port, lux sensor or smart plug in the zone and the reading above which the lights count as on (0 for an on/off port). The window shows whether the sensor agrees with the schedule right now. If they disagree for 15 minutes, or the lights switch about an hour off the schedule three days running, BudMinder sends an alert. See [Alerts](/manual/alerts).
 - **Plant stage**: when every plant in the zone is in the same stage, the zone follows it. When stages differ, choose which plant to follow; by default it's the plant furthest along. Drying and Curing plants are skipped while others are still growing, and Germinating and Planted count as Seedling. If the chosen plant leaves the zone, the zone follows the plant furthest along again. A zone without plants shows no colors.
 - **Climate sensors that can trigger alerts**: the temperature and humidity sensors that measure the zone's climate, and where its VPD comes from: **From a sensor** (use the sensor's own VPD when it has one, so it matches its app) or **Calculated** from the temperature and humidity, with a leaf temperature offset (leaf temperature minus air temperature, usually −2 to −4 °F).
 
@@ -27,6 +27,7 @@ Climate targets set the ideal climate for each stage. Choose **VPD**, **Temperat
 - **Safety limits** for temperature and humidity apply to every stage, lights on and off. Leave a box empty to skip it. Readings between the limits show no color unless **Targets by stage** is on, which adds Low · Target · High per stage; the safety limits still apply.
 - Each stage row is tagged with the zones in that stage now, and the bar under the grid shows where one zone's current reading falls.
 - **Climate sensors by zone** lists the sensors each zone compares with these targets; set them in each zone's **Edit zone** window.
+- **Climate alerts** at the bottom of the card shows the current alert mode and timing. See [Alerts](/manual/alerts).
 
 Colors appear on the Home page and the Environment page, only for each zone's chosen climate sensors, and only while the zone has plants and the sensor is reporting. Temperatures follow the measurement units in **Settings → General**.
 

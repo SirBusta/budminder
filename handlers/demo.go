@@ -40,6 +40,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 
+	"isley/alerts"
 	"isley/climate"
 	"isley/config"
 	"isley/logger"
@@ -226,6 +227,9 @@ func dBool(_ *gin.Context, v any) (any, error) {
 }
 
 // dOneOf accepts one of the given strings.
+// dRange is dInt for a [min, max] pair.
+func dRange(r [2]int) demoCheck { return dInt(int64(r[0]), int64(r[1])) }
+
 func dOneOf(options ...string) demoCheck {
 	return func(_ *gin.Context, v any) (any, error) {
 		s, ok := v.(string)
@@ -610,6 +614,18 @@ var demoRules = map[string]demoRule{
 			"lights":  dOneOf("on", "off"),
 			"low":     dOpt(dNum(-20, 100)), "target": dOpt(dNum(-20, 100)), "high": dOpt(dNum(-20, 100)),
 		}),
+	}},
+
+	// Settings > Alerts > Climate alerts: the mode and times, nothing else.
+	// Mail settings and test emails have no rule, so they stay refused.
+	"POST /settings/alerts/climate": {fields: map[string]demoCheck{
+		"mode":                    dOneOf(alerts.ModeOff, alerts.ModeDryRun, alerts.ModeEmail),
+		"safety_readings":         dRange(alerts.SafetyReadingsRange),
+		"window_minutes":          dRange(alerts.WindowMinutesRange),
+		"drift_hours":             dRange(alerts.DriftHoursRange),
+		"pause_minutes":           dRange(alerts.PauseMinutesRange),
+		"repeat_critical_minutes": dRange(alerts.RepeatCriticalRange),
+		"repeat_warning_hours":    dRange(alerts.RepeatWarningRange),
 	}},
 
 	// Edit zone: a zone name the demo has, the light schedule, light check,

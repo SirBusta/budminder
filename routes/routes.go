@@ -399,6 +399,7 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	// Settings > Photos and the compare page.
 	r.POST("/settings/alerts/email", handlers.SaveAlertEmailHandler)
 	r.POST("/settings/alerts/email/test", handlers.TestAlertEmailHandler)
+	r.POST("/settings/alerts/climate", handlers.SaveAlertClimateHandler)
 	r.POST("/settings/photos", handlers.SavePhotoSettingsHandler)
 	r.GET("/settings/photos/existing", handlers.ExistingPhotosHandler)
 	r.GET("/settings/photos/existing/status", handlers.PhotoJobStatusHandler)

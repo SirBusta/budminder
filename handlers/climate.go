@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"isley/alerts"
 	"isley/climate"
 	"isley/logger"
 	"isley/model"
@@ -692,6 +693,71 @@ type climatePageZone struct {
 	Now      ZoneClimate               `json:"now"`
 	Options  []climateSensorOption     `json:"sensor_options"`
 	Readings map[string]climateReading `json:"readings"`
+	Light    *zoneLightStatus          `json:"light,omitempty"`
+}
+
+// zoneLightStatus is what Edit zone's Light check says when the saved light
+// sensor and schedule disagree. Times are already formatted for the page.
+type zoneLightStatus struct {
+	Mismatch  bool   `json:"mismatch"`
+	SeenOnNow bool   `json:"seen_on_now"`
+	Since     string `json:"since,omitempty"`
+	Duration  string `json:"duration,omitempty"`
+	Alert     string `json:"alert,omitempty"` // the open alert's delivery state
+	LastFrom  string `json:"last_from,omitempty"`
+	LastTo    string `json:"last_to,omitempty"`
+	Clock     bool   `json:"clock"`
+	Early     bool   `json:"early"`
+	Minutes   int    `json:"minutes,omitempty"`
+	SeenOn    string `json:"seen_on,omitempty"`
+	SeenOff   string `json:"seen_off,omitempty"`
+	SchedOn   string `json:"sched_on,omitempty"`
+	SchedOff  string `json:"sched_off,omitempty"`
+}
+
+// zoneLight works out a zone's Light check message, or nil when all is well
+// or there's nothing to compare. It's the same check the alerts use.
+func zoneLight(db *sql.DB, z ZoneSetup, zc ZoneClimate, unit string, open []alerts.Event, now time.Time, loc *time.Location) *zoneLightStatus {
+	if z.LightSensorID == nil || !zc.Scheduled || zc.Stage.Stage == "" {
+		return nil
+	}
+	readings, err := recentReadings(db, *z.LightSensorID, unit, "", now.Add(-climate.ClockOffsetLookback))
+	if err != nil || len(readings) == 0 {
+		return nil
+	}
+	above := 0.0
+	if z.LightOnAbove != nil {
+		above = *z.LightOnAbove
+	}
+	clock := func(t time.Time) string { return t.In(loc).Format("3:04 PM") }
+	stage := zc.Stage.Stage
+	if s := climate.ClockOffset(readings, above, z.Schedule, stage, now, loc); s != nil {
+		times := z.Schedule[stage]
+		on, _ := time.Parse("15:04", times[0])
+		off, _ := time.Parse("15:04", times[1])
+		return &zoneLightStatus{Clock: true, Early: s.Early, Minutes: s.Minutes, SeenOn: clock(s.SeenOn), SeenOff: clock(s.SeenOff),
+			SchedOn: on.Format("3:04 PM"), SchedOff: off.Format("3:04 PM")}
+	}
+	m, _ := climate.CheckLights(readings, above, z.Schedule, stage, now, loc, alerts.LightHold)
+	if m == nil {
+		return nil
+	}
+	mins := int(now.Sub(m.Since).Minutes())
+	st := &zoneLightStatus{Mismatch: true, SeenOnNow: m.SeenOn, Since: clock(m.Since), Duration: fmt.Sprintf("%d h %d min", mins/60, mins%60)}
+	// The last stretch the sensor saw the lights in the other state.
+	runs := climate.LightRuns(readings, above)
+	for i := len(runs) - 1; i >= 0; i-- {
+		if runs[i].On != m.SeenOn {
+			st.LastFrom, st.LastTo = clock(runs[i].From), clock(runs[i].To)
+			break
+		}
+	}
+	for _, o := range open {
+		if o.Kind == alerts.KindLight && o.ZoneID == z.ID {
+			st.Alert = o.Delivery
+		}
+	}
+	return st
 }
 
 // ClimatePage is the data behind Climate targets and Edit zone.
@@ -727,8 +793,19 @@ func ClimatePageData(c *gin.Context) ClimatePage {
 		logger.Log.WithError(err).Error("Failed to load zone climate")
 		return page
 	}
+	open, err := loadOpenAlerts(db)
+	if err != nil {
+		logger.Log.WithError(err).Warn("Failed to read open alerts")
+	}
+	unitOf := map[int]string{}
+	for _, s := range sensors {
+		unitOf[s.ID] = s.Unit
+	}
 	for id, z := range setups {
 		pz := climatePageZone{ZoneSetup: z, Now: zones[id], Options: []climateSensorOption{}, Readings: map[string]climateReading{}}
+		if z.LightSensorID != nil {
+			pz.Light = zoneLight(db, z, zones[id], unitOf[*z.LightSensorID], open, time.Now(), loc)
+		}
 		for measure, sid := range pz.Now.Sensors {
 			for _, s := range sensors {
 				if s.ID != sid {

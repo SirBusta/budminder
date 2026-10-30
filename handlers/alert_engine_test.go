@@ -325,6 +325,7 @@ func TestAlertEngine_MetricSensorAndUnits(t *testing.T) {
 func (a *alertEnv) lightZone(t *testing.T) (light int, now time.Time) {
 	t.Helper()
 	a.engine.Store.SetTimezone("UTC")
+	a.server.ConfigStore.SetTimezone("UTC")
 	light = testutil.SeedSensor(t, a.db, "acinfinity", "D1", "ACIP.1")
 	a.exec(t, `UPDATE sensors SET zone_id = $1, unit = '%' WHERE id = $2`, a.tent, light)
 	now = time.Now().UTC()
@@ -392,6 +393,11 @@ func TestAlertEngine_LightMismatch(t *testing.T) {
 	assert.Equal(t, alerts.KindLight, ev[0].Kind)
 	assert.Equal(t, alerts.SideOff, ev[0].Side)
 	assert.WithinDuration(t, now.Add(-6*time.Hour), ev[0].Started, 2*time.Minute, "since the switch it missed")
+
+	// Edit zone's Light check says the same, with the open alert.
+	body := a.page(t, "/settings")
+	assert.Contains(t, body, `"mismatch":true`)
+	assert.Contains(t, body, `"alert":"dry_run"`)
 
 	// The sensor comes back on: the alert ends.
 	a.fresh(t, light)

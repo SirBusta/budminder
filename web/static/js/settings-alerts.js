@@ -76,6 +76,37 @@
         pass.placeholder = set ? "••••••••" : "";
     }
 
+    // Climate alerts card: saves when a field changes. Send email with the
+    // Email card off or incomplete still lists alerts, with a warning here.
+    const climateCard = $("alClimateCard"), mode = $("alMode"), modeWarn = $("alModeWarn");
+    const climateOut = $("alClimateResult");
+    function showModeWarn() {
+        modeWarn.hidden = !(mode.value === "email" && climateCard.dataset.emailReady !== "true");
+    }
+    showModeWarn();
+    const num = id => parseInt($(id).value, 10);
+    async function saveClimate() {
+        showModeWarn();
+        climateOut.textContent = "";
+        climateOut.className = "st-ha-result";
+        try {
+            await post("/settings/alerts/climate", {
+                mode: mode.value, safety_readings: num("alSafety"), window_minutes: num("alWindow"), drift_hours: num("alDrift"),
+                pause_minutes: num("alPause"), repeat_critical_minutes: num("alRepeatCrit"), repeat_warning_hours: num("alRepeatWarn"),
+            });
+            flash();
+        } catch (e) {
+            if (!e.demo) {
+                climateOut.className = "st-ha-result bad";
+                climateOut.textContent = e.message;
+            }
+        }
+    }
+    climateCard.addEventListener("change", e => { if (e.target.matches("[data-alc]")) saveClimate(); });
+    climateCard.addEventListener("keydown", e => {
+        if (e.key === "Enter" && e.target.matches("input[data-alc]")) { e.preventDefault(); e.target.blur(); }
+    });
+
     let saving = Promise.resolve();
     function save() {
         const body = form();
@@ -83,6 +114,8 @@
         saving = saving.then(async () => {
             try {
                 const d = await post("/settings/alerts/email", body);
+                climateCard.dataset.emailReady = d.on ? "true" : "false";
+                showModeWarn();
                 if (body.password) pass.value = "";
                 setBadge(d.passwordSet);
                 show("");

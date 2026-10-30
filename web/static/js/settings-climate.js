@@ -331,11 +331,29 @@
         const id = parseInt($("dzLight").value, 10);
         $("dzSensor").style.display = id ? "" : "none";
         const el = $("dzLive");
-        el.classList.remove("bad");
+        el.classList.remove("bad", "warn");
         if (!id || !cur) return;
         const s = (cur.sensor_options || []).find(x => x.id === id);
         if (!s || s.value == null || s.stale) { el.innerHTML = `<i class="fa-solid fa-circle-info me-1"></i>${esc(T.liveNoReading)}`; return; }
         const above = parseFloat($("dzAbove").value) || 0, seen = s.value > above, want = expectedOn();
+        // What the background check found for the saved sensor and schedule.
+        const lt = cur.light;
+        if (lt && id === cur.light_sensor_id && (lt.clock || lt.mismatch)) {
+            if (lt.clock) {
+                el.classList.add("warn");
+                el.innerHTML = `<i class="fa-solid fa-clock me-1"></i><b>${esc(fill(lt.early ? T.liveClockEarly : T.liveClockLate, { minutes: lt.minutes }))}</b> ` +
+                    esc(fill(T.liveClockDays, { seen_on: lt.seen_on, seen_off: lt.seen_off, sched_on: lt.sched_on, sched_off: lt.sched_off }));
+            } else {
+                el.classList.add("bad");
+                let h = `<i class="fa-solid fa-circle-exclamation me-1"></i><b>${esc(lt.seen_on_now ? T.liveMismatchOn : T.liveMismatchOff)}</b> ` +
+                    esc(fill(T.liveSince, { time: lt.since, duration: lt.duration }));
+                if (lt.alert === "sent") h += " " + esc(T.liveAlerted);
+                else if (lt.alert) h += " " + esc(T.liveListed);
+                if (lt.last_from) h += " " + esc(fill(T.liveSeen, { state: lt.seen_on_now ? T.readsOff : T.readsOn, from: lt.last_from, to: lt.last_to }));
+                el.innerHTML = h;
+            }
+            return;
+        }
         const st = seen ? T.readsOn : T.readsOff;
         const o = { state: `<b>${esc(st)}</b>`, sensor: esc(s.name), value: esc(+s.value.toFixed(2)) };
         if (want == null || want === seen) el.innerHTML = `<i class="fa-solid fa-circle-check me-1 cl-g"></i>` + fill(esc(T.liveOk), o);

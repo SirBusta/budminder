@@ -415,6 +415,30 @@ func TestDemo_LimitsNewCopiesPerAddress(t *testing.T) {
 	assert.Equal(t, demo.CopiesPerIPPerHour, e.server.DemoCopies.Count())
 }
 
+func TestDemo_ClimateAlertsCard(t *testing.T) {
+	t.Parallel()
+	e := newDemo(t)
+	card := func(mod func(m map[string]any)) map[string]any {
+		m := map[string]any{"mode": "dry", "safety_readings": 2, "window_minutes": 10, "drift_hours": 2,
+			"pause_minutes": 10, "repeat_critical_minutes": 30, "repeat_warning_hours": 2}
+		if mod != nil {
+			mod(m)
+		}
+		return m
+	}
+	code, _ := e.json(t, "POST", "/settings/alerts/climate", card(nil))
+	assert.Equal(t, http.StatusOK, code)
+	for what, mod := range map[string]func(m map[string]any){
+		"unknown field":    func(m map[string]any) { m["note"] = "hi" },
+		"unknown mode":     func(m map[string]any) { m["mode"] = "<b>" },
+		"out of range":     func(m map[string]any) { m["window_minutes"] = 9999 },
+		"text in a number": func(m map[string]any) { m["drift_hours"] = "two" },
+	} {
+		code, out := e.json(t, "POST", "/settings/alerts/climate", card(mod))
+		assertRefused(t, code, out, what)
+	}
+}
+
 func TestDemo_ClimateTargetsAndEditZone(t *testing.T) {
 	t.Parallel()
 	e := newDemo(t)

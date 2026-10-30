@@ -39,6 +39,7 @@
     {"title": "Settings", "sections": [
       {"slug": "settings-general", "title": "General", "paths": ["/settings"]},
       {"slug": "grow-setup", "title": "Grow setup"},
+      {"slug": "alerts", "title": "Alerts"},
       {"slug": "integrations", "title": "Integrations and API key"}
     ]},
     {"title": "Your data", "sections": [

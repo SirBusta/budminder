@@ -166,6 +166,7 @@ func TestAddProtectedApiRoutes_RegistersAllExpectedRoutes(t *testing.T) {
 		{"PUT", "/zones/:id"},
 		{"DELETE", "/zones/:id"},
 		{"POST", "/settings/climate"},
+		{"POST", "/settings/alerts/climate"},
 		{"POST", "/metrics"},
 		{"PUT", "/metrics/:id"},
 		{"DELETE", "/metrics/:id"},
