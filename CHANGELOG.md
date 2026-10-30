@@ -24,12 +24,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Settings > Grow setup > **Climate targets**: Low · Target · High for VPD, temperature and humidity in each stage, with separate lights-off values and Flower split into Stretch, Full bloom and Ripening (weeks adjustable). Temperature and humidity also have safety limits for every stage. Readings near Target show green, between Target and Low or High amber, and readings that reach Low or High red, on the Home page and the Environment page. Each stage row shows which zones are in it now, and a bar shows where one zone's reading falls. The old VPD ranges by stage carry over as Low and High, with Target halfway between.
+- Edit zone: a **light schedule** per stage (lights-on and lights-off times, or No schedule for outdoor zones), an optional **light check** sensor that shows whether the lights match the schedule, **Plant stage** (which plant's stage the zone follows when plants are in different stages), and **climate sensors** (temperature, humidity, and VPD from a sensor or calculated). The Zones list shows each zone's light schedule and what it is doing now.
 - Settings > Alerts with email settings: mail server, port, security (STARTTLS, SSL/TLS or none), sign-in, sender and recipients, and **Send test email**, which shows the mail server's answer if sending fails, with advice for common problems (wrong or missing app password, security not matching the port, Microsoft refusing passwords). **Provider** fills in the server, port and security for Gmail, Outlook.com/Microsoft 365, Yahoo, AOL, iCloud, Fastmail and Zoho, with a tip on app passwords. The mail password is stored encrypted (the key stays in the data folder as `budminder.key`, never in the database or backups), is never shown again, is left out of backups and the database download, and is kept through a restore. (Alerts that use these settings come next.)
 - Deleting a plant offers to delete its photo files from the uploads folder as well (unchecked by default).
 - Compress existing photos: **Restore original photos** puts the originals from the backup copy back in place of the compressed photos (for 7 days after the run), so they can be compressed again later. The finished run also shows the backup's size.
 
 ### Changed
 
+- Settings > Grow setup: Climate targets sit right under Zones, and replace the "VPD targets by stage" card.
+- Time zones chosen in Settings > General now work on Windows PCs without Go's time zone files (they were ignored before, so times followed the PC's own zone).
 - Sign in and setup: a sprout divider at the top of the card replaces the green tile, matching the "Open on your phone" window; the title and welcome line are centered.
 
 - New look for the sign-in, setup, Account, Add/Edit plant and Add/Edit strain pages (including the import review page): grouped cards, an "On this page" menu on the strain pages, Seed/Clone and Photoperiod/Autoflower choices, a seed stepper, Write/Preview for the description, and Help, language and theme links under the sign-in card. Settings > Account now sits inside the Settings frame.

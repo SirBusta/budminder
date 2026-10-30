@@ -414,3 +414,63 @@ func TestDemo_LimitsNewCopiesPerAddress(t *testing.T) {
 	assert.Equal(t, http.StatusTooManyRequests, last)
 	assert.Equal(t, demo.CopiesPerIPPerHour, e.server.DemoCopies.Count())
 }
+
+func TestDemo_ClimateTargetsAndEditZone(t *testing.T) {
+	t.Parallel()
+	e := newDemo(t)
+	card := func(mod func(m map[string]any)) map[string]any {
+		m := map[string]any{
+			"split_lights": true, "flower_phases": true, "temp_by_stage": false, "rh_by_stage": false,
+			"phase_weeks": []int{4, 8}, "temp_limits": []any{12.5, nil}, "rh_limits": []any{25, 80},
+			"targets": []map[string]any{{"stage": "flower", "phase": "bloom", "measure": "vpd", "lights": "on", "low": 1.2, "target": 1.35, "high": 1.5}},
+		}
+		if mod != nil {
+			mod(m)
+		}
+		return m
+	}
+	code, _ := e.json(t, "POST", "/settings/climate", card(nil))
+	assert.Equal(t, http.StatusOK, code)
+	for what, mod := range map[string]func(m map[string]any){
+		"unknown field": func(m map[string]any) { m["note"] = "hi" },
+		"unknown stage": func(m map[string]any) {
+			m["targets"] = []map[string]any{{"stage": "<b>", "phase": "", "measure": "vpd", "lights": "on"}}
+		},
+		"week out of range": func(m map[string]any) { m["phase_weeks"] = []int{4, 99} },
+		"three limits":      func(m map[string]any) { m["rh_limits"] = []any{1, 2, 3} },
+		"text in a number":  func(m map[string]any) { m["temp_limits"] = []any{"warm", nil} },
+		"extra target field": func(m map[string]any) {
+			m["targets"] = []map[string]any{{"stage": "veg", "phase": "", "measure": "vpd", "lights": "on", "x": 1}}
+		},
+	} {
+		code, out := e.json(t, "POST", "/settings/climate", card(mod))
+		assertRefused(t, code, out, what)
+	}
+
+	zone := "/zones/" + strconv.Itoa(e.zone)
+	ok := func() map[string]any {
+		return map[string]any{
+			"zone_name": "3x3 Tent", "light_schedule": map[string]any{"flower": []string{"06:00", "18:00"}},
+			"light_sensor_id": nil, "light_on_above": 0, "stage_plant_id": e.plant,
+			"vpd_temp_sensor_id": nil, "vpd_humidity_sensor_id": nil, "vpd_source": "calc", "vpd_sensor_id": nil, "leaf_temp_offset": -2,
+		}
+	}
+	code, _ = e.json(t, "PUT", zone, ok())
+	assert.Equal(t, http.StatusOK, code)
+	for what, mod := range map[string]func(m map[string]any){
+		"a new zone name": func(m map[string]any) { m["zone_name"] = "My grow room" },
+		"bad time":        func(m map[string]any) { m["light_schedule"] = map[string]any{"veg": []string{"6 AM", "00:00"}} },
+		"drying schedule": func(m map[string]any) { m["light_schedule"] = map[string]any{"drying": []string{"06:00", "18:00"}} },
+		"three times": func(m map[string]any) {
+			m["light_schedule"] = map[string]any{"veg": []string{"06:00", "12:00", "18:00"}}
+		},
+		"unknown source":     func(m map[string]any) { m["vpd_source"] = "guess" },
+		"huge leaf offset":   func(m map[string]any) { m["leaf_temp_offset"] = 50 },
+		"unknown zone field": func(m map[string]any) { m["color"] = "red" },
+	} {
+		m := ok()
+		mod(m)
+		code, out := e.json(t, "PUT", zone, m)
+		assertRefused(t, code, out, what)
+	}
+}

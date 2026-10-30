@@ -142,3 +142,42 @@ func TestBackupHTTP_RestoreKeepsMailPassword(t *testing.T) {
 	assert.Equal(t, "grower@example.com", user, "the rest of the mail settings come from the backup")
 	assert.Equal(t, "live-pass", pass)
 }
+
+// Climate targets travel with a backup. A backup made before them (no
+// climate_target rows) gets them filled from its own VPD ranges.
+func TestBackupHTTP_RestoreClimateTargets(t *testing.T) {
+	src := testutil.NewTestDB(t)
+	seedSampleData(t, src)
+	require.NoError(t, handlers.EnsureClimateTargets(src))
+	_, err := src.Exec(`UPDATE climate_target SET target = 1.05 WHERE measure = 'vpd' AND lights = 'on'
+		AND phase = '' AND status_id = (SELECT id FROM plant_status WHERE status = 'Veg')`)
+	require.NoError(t, err)
+	archive, _, err := handlers.BuildBackupArchive(src, handlers.BuildArchiveOptions{})
+	require.NoError(t, err)
+	payload, err := handlers.ParseBackupArchive(archive)
+	require.NoError(t, err)
+	require.NotEmpty(t, payload.ClimateTargets)
+
+	vegTarget := func(db *sql.DB) float64 {
+		var v float64
+		require.NoError(t, db.QueryRow(`SELECT target FROM climate_target WHERE measure = 'vpd' AND lights = 'on'
+			AND phase = '' AND status_id = (SELECT id FROM plant_status WHERE status = 'Veg')`).Scan(&v))
+		return v
+	}
+	dst := testutil.NewTestDB(t)
+	status := restoreViaHTTP(t, dst, payload)
+	require.Empty(t, status.Error)
+	assert.Equal(t, 1.05, vegTarget(dst))
+
+	// An older backup: no climate targets, its own Veg VPD range.
+	payload.ClimateTargets = nil
+	for _, row := range payload.PlantStatuses {
+		if row["status"] == "Veg" {
+			row["vpd_low"], row["vpd_high"] = 0.9, 1.3
+		}
+	}
+	old := testutil.NewTestDB(t)
+	status = restoreViaHTTP(t, old, payload)
+	require.Empty(t, status.Error)
+	assert.InDelta(t, 1.1, vegTarget(old), 1e-9)
+}

@@ -259,18 +259,42 @@
                     <div class="st-card-h"><i class="fa-solid fa-tent"></i><div><h3>{{ .lcl.title_zones }}</h3><p>{{ .lcl.settings_zones_desc }}</p></div>
                         <button type="button" class="st-btn" data-bs-toggle="modal" data-bs-target="#addZoneModal"><i class="fa-solid fa-plus me-1"></i>{{ .lcl.add_zone }}</button></div>
                     <table class="st-list st-nosearch-rows">
-                        <thead><tr><th>{{ .lcl.title_zone }}</th><th>{{ .lcl.st_col_plants }}</th><th>{{ .lcl.st_col_sensors }}</th><th></th></tr></thead>
+                        <thead><tr><th>{{ .lcl.title_zone }}</th><th class="zn-hide">{{ .lcl.st_col_plants }}</th><th class="zn-hide">{{ .lcl.st_col_sensors }}</th><th>{{ .lcl.cl_col_light_schedule }}</th><th>{{ .lcl.cl_col_now }}</th><th></th></tr></thead>
                         <tbody>
                         {{ range .zones }}
                         <tr class="clickable-row zone-row" data-zone='{{ json . }}'>
                             <td><i class="fa-solid {{ if or (eq (lower .Name) "outdoor") (eq (lower .Name) "outside") }}fa-tree{{ else }}fa-tent{{ end }} st-zone-ic"></i><b>{{ .Name }}</b></td>
-                            <td>{{ index $.zonePlants .ID }}</td>
-                            <td>{{ index $.zoneSensors .ID }}</td>
+                            <td class="zn-hide">{{ index $.zonePlants .ID }}</td>
+                            <td class="zn-hide">{{ index $.zoneSensors .ID }}</td>
+                            <td class="zn-sched" data-zone-id="{{ .ID }}"></td>
+                            <td class="zn-nowc" data-zone-id="{{ .ID }}"></td>
                             <td class="text-end"><i class="fa-solid fa-pen st-row-edit" aria-hidden="true"></i></td>
                         </tr>
                         {{ end }}
                         </tbody>
                     </table>
+                </div>
+
+                <div class="st-card" id="climateCard">
+                    <div class="st-card-h"><i class="fa-solid fa-temperature-half"></i><div><h3>{{ .lcl.cl_title }}</h3><p>{{ .lcl.cl_desc }}</p></div></div>
+                    <div class="ct-bar">
+                        <div class="sx-seg" id="clMeasure" role="group" aria-label="{{ .lcl.cl_title }}">
+                            <button type="button" data-m="vpd" class="on">{{ .lcl.cl_vpd }}</button>
+                            <button type="button" data-m="temp">{{ .lcl.cl_temperature }}</button>
+                            <button type="button" data-m="rh">{{ .lcl.cl_humidity }}</button>
+                        </div>
+                        <div class="ct-sw form-switch">
+                            <label id="clByStageL"><input class="form-check-input" type="checkbox" role="switch" id="clByStage"> {{ .lcl.cl_by_stage }}</label>
+                            <label id="clNightL"><input class="form-check-input" type="checkbox" role="switch" id="clNight"> {{ .lcl.cl_split_lights }}</label>
+                            <label id="clPhasesL"><input class="form-check-input" type="checkbox" role="switch" id="clPhases"> {{ .lcl.cl_split_phases }}</label>
+                        </div>
+                    </div>
+                    <div class="ct-grid" id="clGrid"></div>
+                    <div class="ct-limnote d-none" id="clLimNote"><i class="fa-solid fa-circle-info me-1"></i>{{ .lcl.cl_limits_note }}</div>
+                    <div class="ct-err d-none" id="clErr"><i class="fa-solid fa-triangle-exclamation me-1"></i>{{ .lcl.cl_err_order }}</div>
+                    <div class="ct-pv" id="clPv"></div>
+                    <div class="ct-zs" id="clZs"><div class="ct-zs-h">{{ .lcl.cl_zs_title }} <small>{{ .lcl.cl_zs_sub }}</small></div></div>
+                    <script type="application/json" id="clData">{{ .climate }}</script>
                 </div>
 
                 <div class="st-card">
@@ -305,14 +329,6 @@
                         </tr>
                         {{ end }}
                         </tbody>
-                    </table>
-                </div>
-
-                <div class="st-card">
-                    <div class="st-card-h"><i class="fa-solid fa-cloud"></i><div><h3>{{ .lcl.st_card_vpd }}</h3><p>{{ .lcl.st_card_vpd_desc }}</p></div></div>
-                    <table class="st-list" id="vpdStageTable">
-                        <thead><tr><th>{{ .lcl.st_col_stage }}</th><th>{{ .lcl.st_col_low }}</th><th>{{ .lcl.st_col_high }}</th><th></th></tr></thead>
-                        <tbody id="vpdStageTableBody"></tbody>
                     </table>
                 </div>
 
@@ -988,7 +1004,7 @@
 
 <!-- Zone Edit Modal -->
 <div class="modal fade" id="editZoneModal" tabindex="-1" aria-labelledby="editZoneModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog cl-zone-dlg sx">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="editZoneModalLabel">{{ .lcl.edit_zone }}</h5>
@@ -997,83 +1013,102 @@
             <div class="modal-body">
                 <form id="editZoneForm">
                     <input type="hidden" id="zoneId">
-                    <div class="mb-3">
-                        <label for="editZoneName" class="form-label">{{ .lcl.zone_name }}</label>
-                        <input type="text" class="form-control" id="editZoneName" step="any" required>
+                    <div class="dz-f"><label for="editZoneName">{{ .lcl.zone_name }}</label>
+                        <input type="text" class="form-control form-control-sm" id="editZoneName" required style="width:220px"></div>
+
+                    <div class="dz-sec">
+                        <div class="dz-hrow">
+                            <h4><i class="fa-regular fa-clock"></i>{{ .lcl.cl_light_schedule }}</h4>
+                            <div class="sx-seg" id="dzSrc">
+                                <button type="button" data-v="sched">{{ .lcl.cl_on_schedule }}</button>
+                                <button type="button" data-v="none">{{ .lcl.cl_no_schedule }}</button>
+                            </div>
+                        </div>
+                        <div id="dzSched">
+                            <p class="dz-note"><i class="fa-solid fa-circle-info me-1"></i>{{ .lcl.cl_no_control }}</p>
+                            <table class="dz-tbl">
+                                <thead><tr><th></th><th><i class="fa-solid fa-sun"></i> {{ .lcl.cl_lights_on }}</th><th><i class="fa-solid fa-moon"></i> {{ .lcl.cl_lights_off }}</th><th></th></tr></thead>
+                                <tbody id="dzRows">
+                                    <tr data-s="seedling"><th>{{ .lcl.seedling_label }}</th><td><input type="time" class="on" aria-label="{{ .lcl.seedling_label }} {{ .lcl.cl_lights_on }}"></td><td><input type="time" class="off" aria-label="{{ .lcl.seedling_label }} {{ .lcl.cl_lights_off }}"></td><td class="hrs"></td></tr>
+                                    <tr data-s="veg"><th>{{ .lcl.veg_label }}</th><td><input type="time" class="on" aria-label="{{ .lcl.veg_label }} {{ .lcl.cl_lights_on }}"></td><td><input type="time" class="off" aria-label="{{ .lcl.veg_label }} {{ .lcl.cl_lights_off }}"></td><td class="hrs"></td></tr>
+                                    <tr data-s="flower"><th>{{ .lcl.flower_label }}</th><td><input type="time" class="on" aria-label="{{ .lcl.flower_label }} {{ .lcl.cl_lights_on }}"></td><td><input type="time" class="off" aria-label="{{ .lcl.flower_label }} {{ .lcl.cl_lights_off }}"></td><td class="hrs"></td></tr>
+                                </tbody>
+                            </table>
+                            <p class="dz-tip">{{ .lcl.cl_schedule_use }}</p>
+                            <p class="dz-clock"><i class="fa-regular fa-clock me-1"></i><span id="dzClock"></span> <a href="#general" data-goto="general" data-bs-dismiss="modal">{{ .lcl.cl_change_tz }}</a></p>
+                        </div>
+                        <div id="dzNone"><p class="dz-tip">{{ .lcl.cl_no_schedule_tip }}</p></div>
                     </div>
-                    <hr>
-                    <p class="text-muted small mb-2">VPD — leave offset blank to disable VPD for this zone.</p>
-                    <div class="mb-3">
-                        <label for="editZoneLeafOffset" class="form-label">Leaf temp offset (°F)</label>
-                        <input type="number" class="form-control" id="editZoneLeafOffset" step="0.1" placeholder="e.g. -2 (leave blank to disable)">
+
+                    <div class="dz-sec" id="dzCheckSec">
+                        <h4><i class="fa-solid fa-lightbulb"></i>{{ .lcl.cl_light_check }}</h4>
+                        <p>{{ .lcl.cl_light_check_desc }}</p>
+                        <div class="dz-f"><label for="dzLight">{{ .lcl.cl_light_sensor }}<small>{{ .lcl.cl_light_sensor_hint }}</small></label>
+                            <select class="form-select form-select-sm" id="dzLight"></select></div>
+                        <div id="dzSensor">
+                            <div class="dz-f"><label for="dzAbove">{{ .lcl.cl_on_above }}<small>{{ .lcl.cl_on_above_hint }}</small></label><input type="number" step="any" class="form-control form-control-sm dz-n" id="dzAbove"></div>
+                            <div class="dz-live" id="dzLive"></div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="editZoneVpdTempSensor" class="form-label">VPD temperature sensor</label>
-                        <select class="form-select" id="editZoneVpdTempSensor">
-                            <option value="">— none —</option>
-                        </select>
+
+                    <div class="dz-sec">
+                        <h4><i class="fa-solid fa-seedling"></i>{{ .lcl.cl_plant_stage }}</h4>
+                        <p id="dzStageTxt"></p>
+                        <div class="dz-f" id="dzStageRow"><label for="dzStage">{{ .lcl.cl_use_stage_of }}<small>{{ .lcl.cl_use_stage_hint }}</small></label>
+                            <select class="form-select form-select-sm" id="dzStage"></select></div>
+                        <p class="dz-note d-none" id="dzStageLeft"></p>
                     </div>
-                    <div class="mb-3">
-                        <label for="editZoneVpdHumSensor" class="form-label">VPD humidity sensor</label>
-                        <select class="form-select" id="editZoneVpdHumSensor">
-                            <option value="">— none —</option>
-                        </select>
+
+                    <div class="dz-sec">
+                        <h4><i class="fa-solid fa-gauge"></i>{{ .lcl.cl_zone_sensors }}</h4>
+                        <p>{{ .lcl.cl_zone_sensors_desc }}</p>
+                        <div id="dzRd">
+                            <div class="dz-f"><label for="editZoneVpdTempSensor">{{ .lcl.cl_temperature }}</label><select class="form-select form-select-sm" id="editZoneVpdTempSensor"></select></div>
+                            <div class="dz-f"><label for="editZoneVpdHumSensor">{{ .lcl.cl_humidity }}</label><select class="form-select form-select-sm" id="editZoneVpdHumSensor"></select></div>
+                            <div class="dz-f"><span>{{ .lcl.cl_vpd }}<small id="dzVpdHint"></small></span>
+                                <div class="sx-seg" id="dzVpdSrc">
+                                    <button type="button" data-v="sensor">{{ .lcl.cl_vpd_sensor }}</button>
+                                    <button type="button" data-v="calc">{{ .lcl.cl_vpd_calc }}</button>
+                                </div></div>
+                            <div class="dz-f" id="dzVpdSensorRow"><label for="dzVpdSensor">{{ .lcl.cl_vpd_sensor_label }}</label><select class="form-select form-select-sm" id="dzVpdSensor"></select></div>
+                            <div class="dz-f" id="dzVpdCalcRow"><label for="editZoneLeafOffset">{{ .lcl.cl_leaf_offset }}<small>{{ .lcl.cl_leaf_offset_hint }}</small></label>
+                                <span class="d-flex align-items-center gap-1"><input type="number" step="0.1" class="form-control form-control-sm dz-n" id="editZoneLeafOffset"> °F</span></div>
+                        </div>
+                        <p id="dzRdNone" class="dz-tip">{{ .lcl.cl_zone_no_sensors }}</p>
                     </div>
-                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> {{ .lcl.save_changes }}</button>
-                    <button type="button" class="btn btn-danger" id="deleteZone"><i class="fa-solid fa-trash"></i> {{ .lcl.delete_zone }}</button>
+
+                    <div class="dlg-act">
+                        <button type="button" class="btn btn-outline-danger btn-sm" id="deleteZone"><i class="fa-solid fa-trash me-1"></i>{{ .lcl.delete_zone }}</button>
+                        <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>{{ .lcl.save_changes }}</button>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
-
-<script nonce="{{ .cspNonce }}">
-(function() {
-    const statusesRaw = {{ json .statuses }};
-    const statuses = typeof statusesRaw === "string" ? JSON.parse(statusesRaw || "[]") : (statusesRaw || []);
-    const sensorsRaw = {{ json .sensors }};
-    const sensors = typeof sensorsRaw === "string" ? JSON.parse(sensorsRaw || "[]") : (sensorsRaw || []);
-    const tbody = document.getElementById('vpdStageTableBody');
-    if (tbody && statuses) {
-        statuses.forEach(function(st) {
-            const tr = document.createElement('tr');
-            tr.dataset.statusId = st.id;
-            tr.innerHTML =
-                '<td>' + st.status + '</td>' +
-                '<td><input type="number" class="form-control form-control-sm vpd-low" step="0.01" value="' + (st.vpd_low != null ? st.vpd_low.toFixed(2) : '') + '" placeholder="—"></td>' +
-                '<td><input type="number" class="form-control form-control-sm vpd-high" step="0.01" value="' + (st.vpd_high != null ? st.vpd_high.toFixed(2) : '') + '" placeholder="—"></td>' +
-                '<td><button type="button" class="btn btn-sm btn-primary vpd-save-btn">Save</button></td>';
-            tbody.appendChild(tr);
-        });
-        tbody.querySelectorAll('.vpd-save-btn').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                const row = btn.closest('tr');
-                const statusId = row.dataset.statusId;
-                const lowVal = row.querySelector('.vpd-low').value;
-                const highVal = row.querySelector('.vpd-high').value;
-                const payload = {
-                    vpd_low:  lowVal  !== '' ? parseFloat(lowVal)  : null,
-                    vpd_high: highVal !== '' ? parseFloat(highVal) : null,
-                };
-                fetch('/statuses/' + statusId + '/vpd', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                }).then(function(r) {
-                    return r.json().catch(function() { return {}; }).then(function(data) {
-                        if (!r.ok) throw new Error(data.error || '');
-                    });
-                }).then(function() { uiMessages.showToast('VPD range saved', 'success'); })
-                  .catch(function(err) { uiMessages.showToast(err.message || 'Failed to save VPD range', 'danger'); });
-            });
-        });
-    }
-
-    // Populate VPD sensor selects when the zone edit modal opens.
-    // This runs after the modal JS below, so we use a custom event approach.
-    window._vpdSensors = sensors || [];
-})();
-</script>
+<script type="application/json" id="clText">{"low": {{ .lcl.cl_low }}, "target": {{ .lcl.cl_target }}, "high": {{ .lcl.cl_high }},
+    "alertLimit": {{ .lcl.cl_alert_limit }}, "alertLimits": {{ .lcl.cl_alert_limits }}, "stageTargets": {{ .lcl.cl_stage_targets }},
+    "lightsOn": {{ .lcl.cl_lights_on }}, "lightsOff": {{ .lcl.cl_lights_off }}, "lightsOnOff": {{ .lcl.cl_lights_on_off }},
+    "on": {{ .lcl.cl_on }}, "off": {{ .lcl.cl_off }}, "safety": {{ .lcl.cl_safety }}, "safetyAll": {{ .lcl.cl_safety_all }},
+    "safetyAlert": {{ .lcl.cl_safety_alert }}, "leaveEmpty": {{ .lcl.cl_leave_empty }},
+    "vpd": {{ .lcl.cl_vpd }}, "temp": {{ .lcl.cl_temperature }}, "rh": {{ .lcl.cl_humidity }},
+    "germinating": {{ .lcl.germinating_label }}, "planted": {{ .lcl.planted_label }}, "curing": {{ .lcl.curing_label }},
+    "seedling": {{ .lcl.seedling_label }}, "veg": {{ .lcl.veg_label }}, "flower": {{ .lcl.flower_label }}, "drying": {{ .lcl.drying_label }},
+    "stretch": {{ .lcl.cl_stretch }}, "bloom": {{ .lcl.cl_bloom }}, "ripen": {{ .lcl.cl_ripen }},
+    "weeksFrom": {{ .lcl.cl_weeks_from }}, "weekOn": {{ .lcl.cl_week_on }}, "inStage": {{ .lcl.cl_in_stage_now }},
+    "zoneNow": {{ .lcl.cl_zone_now }}, "week": {{ .lcl.cl_week_n }}, "flowerPhase": {{ .lcl.cl_flower_phase }},
+    "near": {{ .lcl.cl_near }}, "towardLow": {{ .lcl.cl_toward_low }}, "towardHigh": {{ .lcl.cl_toward_high }},
+    "reachedLow": {{ .lcl.cl_reached_low }}, "reachedHigh": {{ .lcl.cl_reached_high }},
+    "legToward": {{ .lcl.cl_leg_toward }}, "legReached": {{ .lcl.cl_leg_reached }},
+    "withinLimits": {{ .lcl.cl_within_limits }}, "notChecked": {{ .lcl.cl_not_checked }}, "legWithin": {{ .lcl.cl_leg_within }}, "legLimit": {{ .lcl.cl_leg_limit }},
+    "pvNone": {{ .lcl.cl_pv_none }}, "zsNone": {{ .lcl.cl_zs_none }}, "calcVpd": {{ .lcl.cl_calc_vpd }}, "editZone": {{ .lcl.edit_zone }},
+    "noSchedule": {{ .lcl.cl_no_schedule }}, "lightChecked": {{ .lcl.cl_light_checked }}, "schedShort": {{ .lcl.cl_sched_short }}, "hours": {{ .lcl.cl_hours }},
+    "clock": {{ .lcl.cl_clock }}, "none": {{ .lcl.cl_none }},
+    "liveOk": {{ .lcl.cl_live_ok }}, "liveBad": {{ .lcl.cl_live_bad }}, "liveNoReading": {{ .lcl.cl_live_no_reading }}, "readsOn": {{ .lcl.cl_reads_on }}, "readsOff": {{ .lcl.cl_reads_off }},
+    "stageOne": {{ .lcl.cl_stage_one }}, "stageTwo": {{ .lcl.cl_stage_two }}, "stageAll": {{ .lcl.cl_stage_all }},
+    "stageMixed": {{ .lcl.cl_stage_mixed }}, "furthest": {{ .lcl.cl_furthest }}, "stageLeft": {{ .lcl.cl_stage_left }}, "stageEmpty": {{ .lcl.cl_stage_empty }},
+    "vpdHintSensor": {{ .lcl.cl_vpd_hint_sensor }}, "vpdHintNone": {{ .lcl.cl_vpd_hint_none }},
+    "failed": {{ .lcl.failed_to_save_settings }}}</script>
 
 <!-- Activity Edit Modal -->
 <div class="modal fade" id="editActivityModal" tabindex="-1" aria-labelledby="editActivityModalLabel" aria-hidden="true">
@@ -1402,70 +1437,7 @@
     });
 
     document.addEventListener("DOMContentLoaded", () => {
-        const editZoneModal = new bootstrap.Modal(document.getElementById("editZoneModal"));
-        const zoneForm = document.getElementById("editZoneForm");
         const deleteZoneButton = document.getElementById("deleteZone");
-
-        function populateVpdSensorSelect(selectEl, zoneId, selectedId) {
-            const sensors = window._vpdSensors || [];
-            selectEl.innerHTML = '<option value="">— none —</option>';
-            sensors.forEach(function(s) {
-                if (s.source === 'derived') return; // skip derived sensors as VPD inputs
-                if (s.zone_id === zoneId) {
-                    const opt = document.createElement('option');
-                    opt.value = s.id;
-                    opt.textContent = s.name + ' (' + s.unit + ')';
-                    if (selectedId && s.id === selectedId) opt.selected = true;
-                    selectEl.appendChild(opt);
-                }
-            });
-        }
-
-        document.querySelectorAll(".zone-row").forEach(row => {
-            row.addEventListener("click", () => {
-                const zoneData = JSON.parse(row.getAttribute("data-zone"));
-
-                document.getElementById("zoneId").value = zoneData.id;
-                document.getElementById("editZoneName").value = zoneData.name;
-
-                const offsetInput = document.getElementById("editZoneLeafOffset");
-                offsetInput.value = (zoneData.leaf_temp_offset != null) ? zoneData.leaf_temp_offset : '';
-
-                const tempSelect = document.getElementById("editZoneVpdTempSensor");
-                const humSelect  = document.getElementById("editZoneVpdHumSensor");
-                populateVpdSensorSelect(tempSelect, zoneData.id, zoneData.vpd_temp_sensor_id);
-                populateVpdSensorSelect(humSelect,  zoneData.id, zoneData.vpd_humidity_sensor_id);
-
-                editZoneModal.show();
-            });
-        });
-
-        zoneForm.addEventListener("submit", (e) => {
-            e.preventDefault();
-            const zoneId = document.getElementById("zoneId").value;
-            const offsetRaw = document.getElementById("editZoneLeafOffset").value;
-            const tempSensor = document.getElementById("editZoneVpdTempSensor").value;
-            const humSensor  = document.getElementById("editZoneVpdHumSensor").value;
-
-            const payload = {
-                zone_name:              document.getElementById("editZoneName").value,
-                leaf_temp_offset:       offsetRaw !== '' ? parseFloat(offsetRaw) : null,
-                vpd_temp_sensor_id:     tempSensor  !== '' ? parseInt(tempSensor,  10) : null,
-                vpd_humidity_sensor_id: humSensor   !== '' ? parseInt(humSensor,   10) : null,
-            };
-
-            fetch(`/zones/${zoneId}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            })
-                .then(async response => {
-                    const data = await response.json().catch(() => ({}));
-                    if (!response.ok) throw new Error(data.error || "");
-                    location.reload();
-                })
-                .catch(err => uiMessages.showToast(err.message || uiMessages.t('failed_to_update_zone'), 'danger'));
-        });
 
         deleteZoneButton.addEventListener("click", () => {
             const zoneId = document.getElementById("zoneId").value;
@@ -2620,6 +2592,8 @@
 
 <!--Embed the footer.html template at this location-->
 <script src="/static/js/smoke-settings.js" defer></script>
+<script src="/static/js/sensor-kinds.js" defer></script>
+<script src="/static/js/settings-climate.js" defer></script>
 {{ template "common/footer.html" .}}
 
 {{ end }}

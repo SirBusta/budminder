@@ -86,7 +86,7 @@ func TestSettingsPage_ZoneCounts(t *testing.T) {
 	}
 
 	body := e.page(t, "/settings")
-	row := regexp.MustCompile(`(?s)<b>Count Tent</b></td>\s*<td>(\d+)</td>\s*<td>(\d+)</td>`).FindStringSubmatch(body)
+	row := regexp.MustCompile(`(?s)<b>Count Tent</b></td>\s*<td class="zn-hide">(\d+)</td>\s*<td class="zn-hide">(\d+)</td>`).FindStringSubmatch(body)
 	require.NotNil(t, row, "zone row with counts")
 	assert.Equal(t, "2", row[1], "living plants only")
 	assert.Equal(t, "3", row[2], "sensors in the zone")

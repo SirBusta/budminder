@@ -40,6 +40,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 
+	"isley/climate"
 	"isley/config"
 	"isley/logger"
 )
@@ -317,6 +318,40 @@ func dList(max int, fields map[string]demoCheck) demoCheck {
 	}
 }
 
+// dTuple accepts a list of exactly len(checks) items, each passing its check.
+func dTuple(checks ...demoCheck) demoCheck {
+	return func(c *gin.Context, v any) (any, error) {
+		list, ok := v.([]any)
+		if !ok || len(list) != len(checks) {
+			return nil, errDemo
+		}
+		for i, x := range list {
+			if _, err := checks[i](c, x); err != nil {
+				return nil, err
+			}
+		}
+		return v, nil
+	}
+}
+
+// dLightSchedule accepts Edit zone's light schedule: null, or lights-on and
+// lights-off times ("HH:MM") for Seedling, Veg and Flower.
+func dLightSchedule(c *gin.Context, v any) (any, error) {
+	if v == nil {
+		return v, nil
+	}
+	clock := func(_ *gin.Context, x any) (any, error) {
+		if s, ok := x.(string); ok {
+			if _, ok := climate.ParseClock(s); ok {
+				return x, nil
+			}
+		}
+		return nil, errDemo
+	}
+	pair := dTuple(clock, clock)
+	return dObject(map[string]demoCheck{climate.Seedling: pair, climate.Veg: pair, climate.Flower: pair})(c, v)
+}
+
 // dNote accepts a typed note up to DemoMaxNote characters. It is stored
 // as plain text like any note and only shown in this visitor's copy.
 func dNote(_ *gin.Context, v any) (any, error) {
@@ -560,6 +595,32 @@ var demoRules = map[string]demoRule{
 	// visitor's copy changes; uploads stay blocked, and Compress existing
 	// photos (/settings/photos/existing/...) has no rule, so it's refused.
 	"POST /settings/photos": {fields: map[string]demoCheck{"compress": dBool, "quality": dPhotoQuality}},
+
+	// Settings > Grow setup > Climate targets: switches, weeks, limits and
+	// targets (the handler also checks each measure's range and order).
+	"POST /settings/climate": {fields: map[string]demoCheck{
+		"split_lights": dBool, "flower_phases": dBool, "temp_by_stage": dBool, "rh_by_stage": dBool,
+		"phase_weeks": dTuple(dInt(1, 30), dInt(1, 30)),
+		"temp_limits": dTuple(dOpt(dNum(-20, 60)), dOpt(dNum(-20, 60))),
+		"rh_limits":   dTuple(dOpt(dNum(0, 100)), dOpt(dNum(0, 100))),
+		"targets": dList(len(climateRows()), map[string]demoCheck{
+			"stage":   dOneOf(climate.Seedling, climate.Veg, climate.Flower, climate.Drying),
+			"phase":   dOneOf("", climate.Stretch, climate.Bloom, climate.Ripen),
+			"measure": dOneOf(climate.VPD, climate.Temp, climate.RH),
+			"lights":  dOneOf("on", "off"),
+			"low":     dOpt(dNum(-20, 100)), "target": dOpt(dNum(-20, 100)), "high": dOpt(dNum(-20, 100)),
+		}),
+	}},
+
+	// Edit zone: a zone name the demo has, the light schedule, light check,
+	// plant stage and climate sensors (the handler checks they're in the zone).
+	"PUT /zones/:id": {fields: map[string]demoCheck{
+		"zone_name": dKnown("SELECT name FROM zones"), "light_schedule": dLightSchedule,
+		"light_sensor_id": demoOptID, "light_on_above": dOpt(dNum(0, 100000)), "stage_plant_id": demoOptID,
+		"vpd_temp_sensor_id": demoOptID, "vpd_humidity_sensor_id": demoOptID,
+		"vpd_source": dOpt(dOneOf("sensor", "calc")), "vpd_sensor_id": demoOptID,
+		"leaf_temp_offset": dOpt(dNum(-10, 10)),
+	}},
 
 	// Smoke reports: scores, tags and choices; photos can't be added.
 	"POST /smoke":                 {fields: demoSmokeFields},

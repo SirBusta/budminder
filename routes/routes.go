@@ -360,7 +360,7 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.PUT("/zones/:id", handlers.UpdateZoneHandler)
 	r.DELETE("/zones/:id", handlers.DeleteZoneHandler)
 
-	r.POST("/statuses/:id/vpd", handlers.UpdateStatusVPDHandler)
+	r.POST("/settings/climate", handlers.SaveClimateHandler)
 
 	r.POST("/metrics", handlers.AddMetricHandler)
 	r.GET("/metrics", handlers.GetMetricsHandler)
@@ -533,6 +533,7 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 			"smokeSettings":   handlers.LoadSmokeSettings(db),
 			"photos":          handlers.PhotoSettingsPageData(c),
 			"alerts":          handlers.AlertSettingsPageData(c),
+			"climate":         handlers.ClimatePageData(c),
 			"streams":         handlers.GetStreams(db),
 			"loggedIn":        sessions.Default(c).Get("logged_in"),
 			"lcl":             translations,

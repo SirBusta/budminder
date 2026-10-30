@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
+	"isley/climate"
 	"isley/logger"
 	"isley/model/types"
 	"isley/utils"
@@ -43,6 +44,8 @@ type HomeReading struct {
 	Value  *float64 `json:"value"`
 	LastAt int64    `json:"last_at"`
 	Stale  bool     `json:"stale"`
+	// Climate: "ok", "toward" or "reached" for a zone's chosen climate sensors.
+	Climate climate.State `json:"climate,omitempty"`
 }
 
 // HomeCamera is a visible camera stream with its latest snapshot.
@@ -231,12 +234,15 @@ func homeTents(c *gin.Context, db *sql.DB, pollSeconds int, plants []HomePlant) 
 		t.Plants = append(t.Plants, p.ID)
 	}
 
-	for _, s := range ListManagedSensors(db, pollSeconds) {
+	for _, s := range withClimate(db, ListManagedSensors(db, pollSeconds), requestLocation(c)) {
 		t := byZone[s.ZoneID]
 		if t == nil || s.ZoneID == 0 || s.Hidden {
 			continue
 		}
 		r := HomeReading{ID: s.ID, Name: s.Name, Type: s.Type, Unit: s.Unit, Value: s.Value, LastAt: s.LastAt, Stale: s.Stale}
+		if s.Climate != nil {
+			r.Climate = s.Climate.State
+		}
 		if strings.HasPrefix(s.Type, "ACIP.") {
 			t.Ports = append(t.Ports, r)
 		} else if s.ShowHome {

@@ -613,16 +613,6 @@ func loadPlantSensors(db *sql.DB, plantID uint, zoneID int, currentStatus string
 		sensorMap[sid] = s
 	}
 
-	// Find the ideal VPD range for the current status
-	var stageVPDLow, stageVPDHigh *float64
-	for _, st := range statuses {
-		if st.Status == currentStatus {
-			stageVPDLow = st.VPDLow
-			stageVPDHigh = st.VPDHigh
-			break
-		}
-	}
-
 	buildResp := func(s sensorInfo, inherited bool) types.SensorDataResponse {
 		resp := types.SensorDataResponse{
 			ID:        s.ID,
@@ -635,21 +625,6 @@ func loadPlantSensors(db *sql.DB, plantID uint, zoneID int, currentStatus string
 		}
 		if s.Date.Valid {
 			resp.Date = s.Date.Time.Local()
-		}
-		if s.Source == "derived" && s.Type == "VPD" {
-			resp.IsVPD = true
-			if stageVPDLow != nil && stageVPDHigh != nil {
-				resp.IdealLow = stageVPDLow
-				resp.IdealHigh = stageVPDHigh
-				switch {
-				case resp.Value < *stageVPDLow:
-					resp.RangeState = "low"
-				case resp.Value > *stageVPDHigh:
-					resp.RangeState = "high"
-				default:
-					resp.RangeState = "ideal"
-				}
-			}
 		}
 		return resp
 	}

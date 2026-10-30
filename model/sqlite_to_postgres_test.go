@@ -765,9 +765,18 @@ func TestSwitchToPostgres_CopiesEverythingAndKeepsSettings_Postgres(t *testing.T
 	mustExecSQL(t, src, `INSERT INTO smoke_report (id, plant_id, strain_id, strain_name) VALUES (1, 1, 1, 'S')`)
 	mustExecSQL(t, src, `INSERT INTO smoke_report_tag (report_id, kind, name) VALUES (1, 'effect', 'happy')`)
 	mustExecSQL(t, src, `INSERT INTO smoke_report_photo (report_id, path) VALUES (1, 'uploads/smoke/a.jpg')`)
+	mustExecSQL(t, src, `INSERT INTO climate_target (status_id, phase, measure, lights, low, target, high)
+		SELECT id, '', 'vpd', 'on', 0.8, 1.0, 1.2 FROM plant_status WHERE status = 'Veg'`)
 
 	pg := freshPostgresDB(t, true)
+	// Postgres fills its own climate targets when BudMinder first starts on it.
+	mustExecSQL(t, pg, `INSERT INTO climate_target (status_id, phase, measure, lights, low, target, high)
+		SELECT id, '', 'vpd', 'on', 0.1, 0.2, 0.3 FROM plant_status WHERE status = 'Veg'`)
 	require.NoError(t, MigrateSqliteToPostgres(path, pg))
+
+	var vpdTarget float64
+	require.NoError(t, pg.QueryRow(`SELECT target FROM climate_target WHERE measure = 'vpd' AND lights = 'on'`).Scan(&vpdTarget))
+	assert.Equal(t, 1.0, vpdTarget, "your climate targets, not Postgres's starter rows")
 
 	for table, want := range map[string]int{
 		"plant_day_entry": 1, "smoke_report": 1, "smoke_report_tag": 1, "smoke_report_photo": 1,

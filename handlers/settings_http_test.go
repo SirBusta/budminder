@@ -74,6 +74,7 @@ func TestSettingsHTTP_AuthGating(t *testing.T) {
 		{http.MethodPost, "/zones"},
 		{http.MethodPut, "/zones/1"},
 		{http.MethodDelete, "/zones/1"},
+		{http.MethodPost, "/settings/climate"},
 		{http.MethodPost, "/metrics"},
 		{http.MethodPut, "/metrics/1"},
 		{http.MethodDelete, "/metrics/1"},

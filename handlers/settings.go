@@ -6,14 +6,17 @@ import (
 	"crypto/subtle"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"isley/climate"
 	"isley/config"
 	"isley/homeassistant"
 	"isley/logger"
 	"isley/model/types"
 	"isley/utils"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -727,14 +730,29 @@ func AddActivityHandler(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{"id": id})
 }
+
+// UpdateZoneHandler saves the Edit zone window: name, light schedule,
+// light check sensor, the plant whose stage the zone follows, and the
+// climate sensors. Sensors must be in this zone and the plant must be too.
+// Route: PUT /zones/:id
 func UpdateZoneHandler(c *gin.Context) {
 	fieldLogger := logger.Log.WithField("func", "UpdateZoneHandler")
-	id := c.Param("id")
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		apiBadRequest(c, "api_invalid_payload")
+		return
+	}
 	var zone struct {
-		Name                string   `json:"zone_name"`
-		LeafTempOffset      *float64 `json:"leaf_temp_offset"`
-		VPDTempSensorID     *uint    `json:"vpd_temp_sensor_id"`
-		VPDHumiditySensorID *uint    `json:"vpd_humidity_sensor_id"`
+		Name                string           `json:"zone_name"`
+		LeafTempOffset      *float64         `json:"leaf_temp_offset"`
+		VPDTempSensorID     *int             `json:"vpd_temp_sensor_id"`
+		VPDHumiditySensorID *int             `json:"vpd_humidity_sensor_id"`
+		VPDSource           *string          `json:"vpd_source"`
+		VPDSensorID         *int             `json:"vpd_sensor_id"`
+		LightSchedule       climate.Schedule `json:"light_schedule"`
+		LightSensorID       *int             `json:"light_sensor_id"`
+		LightOnAbove        *float64         `json:"light_on_above"`
+		StagePlantID        *int             `json:"stage_plant_id"`
 	}
 	if err := c.ShouldBindJSON(&zone); err != nil {
 		fieldLogger.WithError(err).Error("Failed to update zone")
@@ -745,93 +763,96 @@ func UpdateZoneHandler(c *gin.Context) {
 		apiBadRequest(c, err.Error())
 		return
 	}
+	// Older callers send only a leaf offset: that meant a calculated VPD.
+	source := ""
+	if zone.VPDSource != nil {
+		source = *zone.VPDSource
+	} else if zone.LeafTempOffset != nil {
+		source = "calc"
+	}
+	if source != "" && source != "sensor" && source != "calc" {
+		apiBadRequest(c, "api_invalid_payload")
+		return
+	}
+	if source != "calc" {
+		zone.LeafTempOffset = nil // the derived VPD sensor stops updating
+	} else if *zone.LeafTempOffset < -20 || *zone.LeafTempOffset > 20 {
+		apiBadRequest(c, "api_invalid_payload")
+		return
+	}
+	if source != "sensor" {
+		zone.VPDSensorID = nil
+	}
+	if zone.LightOnAbove != nil && (math.IsNaN(*zone.LightOnAbove) || math.Abs(*zone.LightOnAbove) > 1e6) {
+		apiBadRequest(c, "api_invalid_payload")
+		return
+	}
+	var schedule sql.NullString
+	if zone.LightSchedule != nil {
+		for stage, t := range zone.LightSchedule {
+			_, ok1 := climate.ParseClock(t[0])
+			_, ok2 := climate.ParseClock(t[1])
+			if !ok1 || !ok2 || (stage != climate.Seedling && stage != climate.Veg && stage != climate.Flower) {
+				apiBadRequest(c, "api_zone_bad_schedule")
+				return
+			}
+		}
+		b, _ := json.Marshal(zone.LightSchedule)
+		schedule = sql.NullString{String: string(b), Valid: true}
+	} else {
+		zone.LightSensorID = nil // the light check compares with a schedule
+	}
 
-	// Update zone in database
 	db := DBFromContext(c)
+	for _, sid := range []*int{zone.VPDTempSensorID, zone.VPDHumiditySensorID, zone.VPDSensorID, zone.LightSensorID} {
+		if sid == nil {
+			continue
+		}
+		var n int
+		if err := db.QueryRow("SELECT COUNT(*) FROM sensors WHERE id = $1 AND zone_id = $2", *sid, id).Scan(&n); err != nil || n == 0 {
+			apiBadRequest(c, "api_zone_sensor_not_here")
+			return
+		}
+	}
+	if zone.StagePlantID != nil {
+		var n int
+		if err := db.QueryRow("SELECT COUNT(*) FROM plant WHERE id = $1 AND zone_id = $2", *zone.StagePlantID, id).Scan(&n); err != nil || n == 0 {
+			apiBadRequest(c, "api_zone_plant_not_here")
+			return
+		}
+	}
 
-	// Convert pointer fields to sql.Null types for nullable columns
-	var leafTempOffset sql.NullFloat64
-	if zone.LeafTempOffset != nil {
-		leafTempOffset = sql.NullFloat64{Float64: *zone.LeafTempOffset, Valid: true}
+	var vpdSource sql.NullString
+	if source != "" {
+		vpdSource = sql.NullString{String: source, Valid: true}
 	}
-	var vpdTempSensorID sql.NullInt64
-	if zone.VPDTempSensorID != nil {
-		vpdTempSensorID = sql.NullInt64{Int64: int64(*zone.VPDTempSensorID), Valid: true}
-	}
-	var vpdHumiditySensorID sql.NullInt64
-	if zone.VPDHumiditySensorID != nil {
-		vpdHumiditySensorID = sql.NullInt64{Int64: int64(*zone.VPDHumiditySensorID), Valid: true}
-	}
-
-	_, err := db.Exec(
-		"UPDATE zones SET name = $1, leaf_temp_offset = $2, vpd_temp_sensor_id = $3, vpd_humidity_sensor_id = $4 WHERE id = $5",
-		zone.Name, leafTempOffset, vpdTempSensorID, vpdHumiditySensorID, id,
+	res, err := db.Exec(`UPDATE zones SET name = $1, leaf_temp_offset = $2, vpd_temp_sensor_id = $3, vpd_humidity_sensor_id = $4,
+		vpd_source = $5, vpd_sensor_id = $6, light_schedule = $7, light_sensor_id = $8, light_on_above = $9, stage_plant_id = $10
+		WHERE id = $11`,
+		zone.Name, zone.LeafTempOffset, zone.VPDTempSensorID, zone.VPDHumiditySensorID,
+		vpdSource, zone.VPDSensorID, schedule, zone.LightSensorID, zone.LightOnAbove, zone.StagePlantID, id,
 	)
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to update zone")
 		apiInternalError(c, "api_failed_to_update_zone")
 		return
 	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		apiError(c, http.StatusNotFound, "api_zone_not_found")
+		return
+	}
 
-	// If VPD is enabled (leaf_temp_offset is set), ensure a derived VPD sensor row exists
-	if zone.LeafTempOffset != nil {
-		zoneIDInt, convErr := strconv.Atoi(id)
-		if convErr == nil {
-			vpdSensorName := "VPD (Zone " + id + ")"
-			if _, sErr := findOrCreateSensor(db, vpdSensorName, "derived", id, "VPD", &zoneIDInt, "kPa"); sErr != nil {
-				fieldLogger.WithError(sErr).Warn("Failed to ensure derived VPD sensor for zone")
-			}
+	// A calculated VPD needs its derived sensor row.
+	if source == "calc" {
+		idStr := strconv.Itoa(id)
+		if _, sErr := findOrCreateSensor(db, "VPD (Zone "+idStr+")", "derived", idStr, "VPD", &id, "kPa"); sErr != nil {
+			fieldLogger.WithError(sErr).Warn("Failed to ensure derived VPD sensor for zone")
 		}
 	}
 
-	//Reload Config
 	ConfigStoreFromContext(c).SetZones(GetZones(db))
 
 	apiOK(c, "api_zone_updated")
-}
-
-// UpdateStatusVPDHandler updates the vpd_low and vpd_high columns for a
-// single plant_status row, then refreshes the in-memory statuses store.
-// Route: POST /statuses/:id/vpd
-func UpdateStatusVPDHandler(c *gin.Context) {
-	fieldLogger := logger.Log.WithField("func", "UpdateStatusVPDHandler")
-	id := c.Param("id")
-
-	var payload struct {
-		VPDLow  *float64 `json:"vpd_low"`
-		VPDHigh *float64 `json:"vpd_high"`
-	}
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		fieldLogger.WithError(err).Error("Failed to bind JSON")
-		apiBadRequest(c, "api_invalid_payload")
-		return
-	}
-
-	db := DBFromContext(c)
-
-	var vpdLow sql.NullFloat64
-	if payload.VPDLow != nil {
-		vpdLow = sql.NullFloat64{Float64: *payload.VPDLow, Valid: true}
-	}
-	var vpdHigh sql.NullFloat64
-	if payload.VPDHigh != nil {
-		vpdHigh = sql.NullFloat64{Float64: *payload.VPDHigh, Valid: true}
-	}
-
-	_, err := db.Exec(
-		"UPDATE plant_status SET vpd_low = $1, vpd_high = $2 WHERE id = $3",
-		vpdLow, vpdHigh, id,
-	)
-	if err != nil {
-		fieldLogger.WithError(err).Error("Failed to update status VPD range")
-		apiInternalError(c, "api_failed_to_update_status_vpd")
-		return
-	}
-
-	// Reload statuses in the store
-	ConfigStoreFromContext(c).SetStatuses(GetStatuses(db))
-
-	apiOK(c, "api_status_vpd_updated")
 }
 
 func UpdateMetricHandler(c *gin.Context) {
@@ -1582,6 +1603,9 @@ func LoadSettings(db *sql.DB, store *config.Store) {
 
 	store.SetActivities(GetActivities(db))
 	store.SetMetrics(GetMetrics(db))
+	if err := EnsureClimateTargets(db); err != nil {
+		fieldLogger.WithError(err).Warn("Failed to fill climate targets")
+	}
 	store.SetStatuses(GetStatuses(db))
 	store.SetZones(GetZones(db))
 	store.SetStrains(GetStrains(db))

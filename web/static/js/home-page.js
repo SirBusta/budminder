@@ -141,12 +141,13 @@
     const KIND_LABEL = { temp: "hm_temp", hum: "hm_rh", vpd: "hm_vpd", co2: "hm_co2", soil: "hm_soil" };
     function envLine(tent) {
         const shown = {};
-        tent.readings.forEach(r => { const k = K.kind(r); if (KIND_LABEL[k] && !shown[k] && r.value != null) shown[k] = r; });
+        // A zone's chosen climate sensor wins over others of its kind: it carries the Climate targets color.
+        tent.readings.forEach(r => { const k = K.kind(r); if (KIND_LABEL[k] && r.value != null && (!shown[k] || !shown[k].climate && r.climate)) shown[k] = r; });
         const parts = ["temp", "hum", "vpd", "co2", "soil"].filter(k => shown[k]).map(k => {
             const r = shown[k], { unit, conv } = K.display(r, D.units), dp = K.decimals(r);
             const v = Number(conv(r.value)).toLocaleString(locale, { minimumFractionDigits: dp, maximumFractionDigits: dp });
             const u = unit === "ppm" ? "" : /^[°%]/.test(unit) ? unit : unit ? " " + unit : "";
-            return `<span><small>${esc(t(KIND_LABEL[k]))}</small> <b>${v}</b>${esc(u)}</span>`;
+            return `<span${r.climate ? ` class="cl-state-${r.climate}"` : ""}><small>${esc(t(KIND_LABEL[k]))}</small> <b>${v}</b>${esc(u)}</span>`;
         });
         const light = tent.ports.find(p => K.portIcon(p.name) === "fa-lightbulb" && p.value != null);
         if (light) parts.push(`<span class="sep"></span><span class="hm-light ${light.value > 0 ? "on" : "off"}"><i class="fa-solid fa-lightbulb me-1"></i>${esc(t(light.value > 0 ? "hm_lights_on" : "hm_lights_off"))}</span>`);

@@ -153,16 +153,12 @@ type SensorData struct {
 }
 
 type SensorDataResponse struct {
-	ID         uint      `json:"id"`
-	Name       string    `json:"name"`
-	Unit       string    `json:"unit"`
-	Value      float64   `json:"value"`
-	Date       time.Time `json:"date"`
-	Inherited  bool      `json:"inherited"` // true if sensor is inherited from the plant's zone rather than directly linked
-	IdealLow   *float64  `json:"ideal_low,omitempty"`
-	IdealHigh  *float64  `json:"ideal_high,omitempty"`
-	RangeState string    `json:"range_state,omitempty"` // "", "ideal", "low", "high"
-	IsVPD      bool      `json:"is_vpd,omitempty"`
+	ID        uint      `json:"id"`
+	Name      string    `json:"name"`
+	Unit      string    `json:"unit"`
+	Value     float64   `json:"value"`
+	Date      time.Time `json:"date"`
+	Inherited bool      `json:"inherited"` // true if sensor is inherited from the plant's zone rather than directly linked
 }
 
 type Settings struct {
@@ -186,14 +182,14 @@ type Settings struct {
 	} `json:"straincompass"`
 	// HomeAssistant is a pointer so a settings save that doesn't include it
 	// (an older page, a script) leaves the Home Assistant settings alone.
-	HomeAssistant      *HomeAssistantSettingsInput `json:"homeassistant"`
-	PollingInterval    string                      `json:"polling_interval"`
-	GuestMode          bool                        `json:"guest_mode"`
+	HomeAssistant   *HomeAssistantSettingsInput `json:"homeassistant"`
+	PollingInterval string                      `json:"polling_interval"`
+	GuestMode       bool                        `json:"guest_mode"`
 	// DisableUpdateCheck turns off the daily check for new releases.
-	DisableUpdateCheck bool `json:"disable_update_check"`
-	StreamGrabEnabled  bool                        `json:"stream_grab_enabled"`
-	StreamGrabInterval string                      `json:"stream_grab_interval"`
-	APIKey             string                      `json:"api_key"`
+	DisableUpdateCheck bool   `json:"disable_update_check"`
+	StreamGrabEnabled  bool   `json:"stream_grab_enabled"`
+	StreamGrabInterval string `json:"stream_grab_interval"`
+	APIKey             string `json:"api_key"`
 	// New: allow disabling API ingest from settings form
 	DisableAPIIngest    bool   `json:"disable_api_ingest"`
 	SensorRetentionDays string `json:"sensor_retention_days"`
@@ -243,18 +239,18 @@ type StraincompassSettings struct {
 }
 
 type SettingsData struct {
-	ACI                ACInfinitySettings    `json:"aci"`
-	EC                 EcoWittSettings       `json:"ec"`
-	Cannadb            CannadbSettings       `json:"cannadb"`
-	Straincompass      StraincompassSettings `json:"straincompass"`
-	HomeAssistant      HomeAssistantSettings `json:"homeassistant"`
-	PollingInterval    int                   `json:"polling_interval"`
-	GuestMode          bool                  `json:"guest_mode"`
+	ACI             ACInfinitySettings    `json:"aci"`
+	EC              EcoWittSettings       `json:"ec"`
+	Cannadb         CannadbSettings       `json:"cannadb"`
+	Straincompass   StraincompassSettings `json:"straincompass"`
+	HomeAssistant   HomeAssistantSettings `json:"homeassistant"`
+	PollingInterval int                   `json:"polling_interval"`
+	GuestMode       bool                  `json:"guest_mode"`
 	// UpdateCheck: the daily check for new releases is on (the default).
-	UpdateCheck bool `json:"update_check"`
-	StreamGrabEnabled  bool                  `json:"stream_grab_enabled"`
-	StreamGrabInterval int                   `json:"stream_grab_interval"`
-	APIKey             string                `json:"api_key"`
+	UpdateCheck        bool   `json:"update_check"`
+	StreamGrabEnabled  bool   `json:"stream_grab_enabled"`
+	StreamGrabInterval int    `json:"stream_grab_interval"`
+	APIKey             string `json:"api_key"`
 	// New: reflect whether API ingest is enabled (true) or disabled (false)
 	APIIngestEnabled    bool   `json:"api_ingest_enabled"`
 	SensorRetentionDays int    `json:"sensor_retention_days"`

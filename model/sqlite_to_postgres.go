@@ -45,6 +45,7 @@ var conflictKeys = map[string]string{
 	"smoke_report":       "id",
 	"smoke_report_tag":   "id",
 	"smoke_report_photo": "id",
+	"climate_target":     "status_id, phase, measure, lights",
 }
 
 var boolToIntFields = map[string][]string{
@@ -67,6 +68,7 @@ var orderedTables = []string{
 	// rolling_averages is excluded — it's a trigger-maintained cache (one row per sensor)
 	// that rebuilds automatically on the first sensor_data insert after migration.
 	"plant_status",
+	"climate_target", // after plant_status, which it references
 	"plant",
 	"plant_status_log",
 	"metric",
@@ -88,7 +90,7 @@ var orderedTables = []string{
 // has rows they replace Postgres's: with ON CONFLICT DO NOTHING the starter
 // rows used to win wherever the ids matched, resetting settings to defaults
 // and labeling a custom activity as a built-in one. Children first.
-var seededTables = []string{"activity_metric", "activity", "metric", "plant_status", "settings"}
+var seededTables = []string{"climate_target", "activity_metric", "activity", "metric", "plant_status", "settings"}
 
 // MigrateSqliteToPostgres copies all data from the SQLite database at
 // sqlitePath into the PostgreSQL database pg.  The entire operation runs
@@ -363,6 +365,7 @@ func hasSerialID(table string) bool {
 		"smoke_report":       true,
 		"smoke_report_tag":   true,
 		"smoke_report_photo": true,
+		"climate_target":     true,
 	}
 
 	return serialTables[table]

@@ -225,13 +225,30 @@
         document.getElementById("sxZones").innerHTML = zones.map(z =>
             `<button type="button" data-zone="${z.id}" class="${z.id === zoneId ? "on" : ""}" aria-pressed="${z.id === zoneId}"><i class="fa-solid ${/outdoor|outside/i.test(z.name) ? "fa-tree" : "fa-tent"} me-1"></i>${esc(z.name)}</button>`).join("");
     }
+    // Climate targets color for a zone's chosen climate sensors, worked out
+    // again for each new reading (range and limits are in the sensor's unit).
+    function climateClass(s, v) {
+        const c = s.climate;
+        if (!c || v == null) return "";
+        const r = c.range || {}, [ll, lh] = c.limits || [];
+        let st = (ll != null && v <= ll) || (lh != null && v >= lh) ? "reached" : "";
+        if (!st && (r.low != null || r.high != null)) {
+            if ((r.low != null && v <= r.low) || (r.high != null && v >= r.high)) st = "reached";
+            else if (r.target == null) st = "ok";
+            else {
+                const lim = v < r.target ? r.low : r.high;
+                st = lim == null || Math.abs(v - r.target) <= Math.abs(lim - r.target) / 2 + 1e-9 ? "ok" : "toward";
+            }
+        }
+        return st ? " cl-state-" + st : "";
+    }
     function renderReads(env) {
         document.getElementById("sxReads").innerHTML = `<div class="sx-readings">${env.map(s => {
             const v = nowValue(s), last = latest[s.id];
             const stale = s.stale || (last && Date.now() - last.at > Math.max(5 * MIN, 3 * (P.poll || 60) * 1000));
             return `<button type="button" class="sx-read ${hidden.has(s.id) ? "off" : ""}" data-toggle="${s.id}" style="--c:${s.color}" title="${esc(t("en_toggle"))}" aria-pressed="${!hidden.has(s.id)}">
                 <span class="lbl"><span class="dot"></span>${esc(s.name)}</span>
-                <span class="val">${fmt(v, s.dp)}<small>${esc(s.unit)}</small></span>
+                <span class="val${stale ? "" : climateClass(s, last ? last.v : null)}">${fmt(v, s.dp)}<small>${esc(s.unit)}</small></span>
                 ${stale && last ? `<span class="st">${esc(t("en_last_reading", { ago: ago(last.at) }))}</span>` : ""}
             </button>`;
         }).join("")}</div>`;

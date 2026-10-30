@@ -74,6 +74,9 @@ type BackupPayload struct {
 	SmokeReports     []map[string]interface{} `json:"smoke_report"`
 	SmokeReportTags  []map[string]interface{} `json:"smoke_report_tag"`
 	SmokeReportPhoto []map[string]interface{} `json:"smoke_report_photo"`
+	// Climate targets (migration 043). Absent from older backups: the
+	// restore fills them from plant_status.vpd_low/vpd_high and defaults.
+	ClimateTargets []map[string]interface{} `json:"climate_target"`
 }
 
 // BackupFileInfo is returned by the list endpoint.
@@ -715,6 +718,7 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 		"activity_metric",
 		"activity",
 		"metric",
+		"climate_target",
 		"plant_status",
 		"breeder",
 		"zones",
@@ -732,6 +736,7 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 		{"zones", payload.Zones},
 		{"breeder", payload.Breeders},
 		{"plant_status", payload.PlantStatuses},
+		{"climate_target", payload.ClimateTargets},
 		{"metric", payload.Metrics},
 		{"activity", payload.Activities},
 		{"activity_metric", payload.ActivityMetric},
@@ -955,7 +960,7 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 		seqTables := []string{
 			"settings", "zones", "breeder", "sensors", "sensor_data",
 			"strain", "strain_lineage", "strain_effect", "strain_flavor", "strain_terpene", "strain_medical_use",
-			"plant_status", "plant",
+			"plant_status", "climate_target", "plant",
 			"plant_status_log", "metric", "plant_measurements",
 			"activity", "activity_metric", "plant_activity", "plant_day_entry", "plant_images", "streams",
 			"smoke_report", "smoke_report_tag", "smoke_report_photo",

@@ -171,6 +171,8 @@ type ManagedSensor struct {
 	LastAt   int64    `json:"last_at"` // latest reading, epoch ms; 0 = none yet
 	Stale    bool     `json:"stale"`
 	PlantIDs []int    `json:"plant_ids"`
+	// Climate is set for a zone's chosen climate sensors (Edit zone).
+	Climate *ClimateCheck `json:"climate,omitempty"`
 }
 
 // showsOn maps the stored visibility value onto the Home / Hidden ticks.
@@ -644,7 +646,7 @@ func SensorsPageData(c *gin.Context, prefix string, lang string, translations ma
 	}
 	sort.Slice(zones, func(a, b int) bool { return strings.ToLower(zones[a].Name) < strings.ToLower(zones[b].Name) })
 	data := gin.H{
-		"sensors": ListManagedSensors(db, store.PollingInterval()),
+		"sensors": withClimate(db, ListManagedSensors(db, store.PollingInterval()), requestLocation(c)),
 		"zones":   zones,
 		"units":   utils.NormalizeUnits(store.Units()),
 		"poll":    store.PollingInterval(),
@@ -692,4 +694,15 @@ func ZoneCounts(db *sql.DB) (plants, sensors map[uint]int) {
 		}
 	}
 	return plants, sensors
+}
+
+// withClimate adds each zone's climate check to its chosen climate sensors.
+func withClimate(db *sql.DB, sensors []ManagedSensor, loc *time.Location) []ManagedSensor {
+	checks := ClimateChecks(db, sensors, loc)
+	for i := range sensors {
+		if ck, ok := checks[sensors[i].ID]; ok {
+			sensors[i].Climate = &ck
+		}
+	}
+	return sensors
 }
