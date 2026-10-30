@@ -2,6 +2,7 @@ package alerts
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -38,7 +39,7 @@ type Event struct {
 	Side          string
 	Value         *float64
 	Limit         *float64
-	Detail        string // clock alerts: seen on|seen off|schedule on|schedule off, as HH:MM
+	Detail        string // clock alerts: seen on|seen off|schedule on|schedule off, as HH:MM; sensor alerts: the unit
 	Started       time.Time
 	Notified      time.Time
 	Resolved      *time.Time
@@ -102,9 +103,42 @@ func clockText(hhmm string) string {
 	return t.Format("3:04 PM")
 }
 
+// sensorAmount formats a sensor alert's number in the sensor's own unit.
+func sensorAmount(v *float64, unit string) string {
+	if v == nil {
+		return ""
+	}
+	s := strconv.FormatFloat(math.Round(*v*100)/100, 'f', -1, 64)
+	switch unit {
+	case "":
+		return s
+	case "%":
+		return s + unit
+	}
+	return s + " " + unit
+}
+
+// sensorWhere names a sensor alert's sensor, with its zone if it has one.
+func sensorWhere(e Event) string {
+	if e.Zone == "" {
+		return e.Sensor
+	}
+	return e.Sensor + " (" + e.Zone + ")"
+}
+
 // Title is an event's short name; resolved says it's the back-to-normal one.
 func (w Words) Title(e Event, resolved bool) string {
 	vals := map[string]string{"measure": w.measure(e.Measure), "zone": e.Zone}
+	if e.Kind == KindSensor {
+		vals = map[string]string{"sensor": sensorWhere(e)}
+		switch {
+		case resolved:
+			return w.fill("al_ev_sensor_ok", vals)
+		case e.Side == SideLow:
+			return w.fill("al_ev_sensor_low", vals)
+		}
+		return w.fill("al_ev_sensor_high", vals)
+	}
 	switch {
 	case e.Kind == KindLight && resolved:
 		return w.fill("al_ev_light_ok", vals)
@@ -124,6 +158,13 @@ func (w Words) Title(e Event, resolved bool) string {
 
 // Line is the sentence under an event's title.
 func (w Words) Line(e Event, resolved bool) string {
+	if e.Kind == KindSensor {
+		key := "al_line_sensor_" + e.Side
+		if resolved {
+			key = "al_line_sensor_ok"
+		}
+		return w.fill(key, map[string]string{"sensor": e.Sensor, "value": sensorAmount(e.Value, e.Detail), "limit": sensorAmount(e.Limit, e.Detail)})
+	}
 	vals := map[string]string{"measure": w.measure(e.Measure), "zone": e.Zone,
 		"value": w.Amount(e.Measure, e.Value), "limit": w.Amount(e.Measure, e.Limit)}
 	key := ""

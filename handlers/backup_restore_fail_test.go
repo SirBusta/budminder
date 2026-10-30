@@ -145,6 +145,32 @@ func TestBackupHTTP_RestoreKeepsMailPassword(t *testing.T) {
 
 // Climate targets travel with a backup. A backup made before them (no
 // climate_target rows) gets them filled from its own VPD ranges.
+func TestBackupHTTP_RestoreAlertRules(t *testing.T) {
+	src := testutil.NewTestDB(t)
+	seedSampleData(t, src)
+	sensor := testutil.SeedSensor(t, src, "acinfinity", "D9", "CO2")
+	_, err := src.Exec(`INSERT INTO alert_rule (sensor_id, side, limit_value, hold_minutes, enabled) VALUES ($1, 'low', 12.5, 20, 0)`, sensor)
+	require.NoError(t, err)
+	archive, _, err := handlers.BuildBackupArchive(src, handlers.BuildArchiveOptions{})
+	require.NoError(t, err)
+	payload, err := handlers.ParseBackupArchive(archive)
+	require.NoError(t, err)
+	require.Len(t, payload.AlertRules, 1)
+
+	dst := testutil.NewTestDB(t)
+	status := restoreViaHTTP(t, dst, payload)
+	require.Empty(t, status.Error)
+	var gotSensor, hold, enabled int
+	var side string
+	var limit float64
+	require.NoError(t, dst.QueryRow(`SELECT sensor_id, side, limit_value, hold_minutes, enabled FROM alert_rule`).Scan(&gotSensor, &side, &limit, &hold, &enabled))
+	assert.Equal(t, sensor, gotSensor)
+	assert.Equal(t, "low", side)
+	assert.Equal(t, 12.5, limit)
+	assert.Equal(t, 20, hold)
+	assert.Zero(t, enabled)
+}
+
 func TestBackupHTTP_RestoreClimateTargets(t *testing.T) {
 	src := testutil.NewTestDB(t)
 	seedSampleData(t, src)

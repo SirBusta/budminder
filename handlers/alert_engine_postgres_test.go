@@ -11,6 +11,8 @@
 package handlers_test
 
 import (
+	"net/http"
+	"strconv"
 	"testing"
 	"time"
 
@@ -150,6 +152,47 @@ func TestAlertEngine_PrunesOldEnded_Postgres(t *testing.T) {
 	a.exec(t, `INSERT INTO alert_event (kind, zone_id, side, started_at, notified_at, resolved_at) VALUES ('stage', $1, 'low', $2, $2, $2)`, a.tent, old)
 	a.check()
 	assert.Empty(t, a.events(t))
+}
+
+func TestAlertRules_RoutesAndCycle_Postgres(t *testing.T) {
+	t.Parallel()
+	a := newAlertEnvOn(t, testutil.NewTestPostgresDB(t))
+	f := fakes.NewFakeSMTP(t, fakes.SMTPPlain)
+	a.mail(t, f)
+	a.mode(t, alerts.ModeEmail)
+	co2 := a.co2Sensor(t)
+	rule := a.rule(t, co2)
+	assert.Contains(t, a.page(t, "/settings"), `"sensor_id":`+strconv.Itoa(co2))
+
+	a.readings(t, co2, 1500, 1500, 1500, 1500, 1500, 1500)
+	a.check()
+	a.send()
+	require.Len(t, f.Mail(), 1)
+	assert.Contains(t, f.Mail()[0].Data, "1500 ppm")
+
+	a.fresh(t, co2)
+	a.readings(t, co2, 800, 800, 800, 800, 800, 800)
+	a.check()
+	a.send()
+	require.Len(t, f.Mail(), 2)
+
+	// An edit ends an open alert quietly, and a delete leaves no rule.
+	a.fresh(t, co2)
+	a.readings(t, co2, 1500, 1500, 1500, 1500, 1500, 1500)
+	a.check()
+	body := ruleBody(co2)
+	body["limit"] = 1200.5
+	resp := a.client.SessionPutJSON(t, "/settings/alerts/rules/"+strconv.Itoa(rule), a.token, body)
+	testutil.DrainAndClose(resp)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.NotNil(t, a.events(t)[0].Resolved)
+
+	resp = a.client.SessionDeleteJSON(t, "/settings/alerts/rules/"+strconv.Itoa(rule), a.token, nil)
+	testutil.DrainAndClose(resp)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	var n int
+	require.NoError(t, a.db.QueryRow(`SELECT COUNT(*) FROM alert_rule`).Scan(&n))
+	assert.Zero(t, n)
 }
 
 func TestAlertEvent_OneOpenRowPerAlert_Postgres(t *testing.T) {

@@ -46,6 +46,7 @@ var conflictKeys = map[string]string{
 	"smoke_report_tag":   "id",
 	"smoke_report_photo": "id",
 	"climate_target":     "status_id, phase, measure, lights",
+	"alert_rule":         "id",
 }
 
 var boolToIntFields = map[string][]string{
@@ -63,6 +64,7 @@ var orderedTables = []string{
 	"strain_terpene",
 	"strain_medical_use",
 	"sensors",
+	"alert_rule", // after sensors, which it names
 	"sensor_data",
 	"sensor_data_hourly", // hourly averages outlive the raw readings they came from
 	// rolling_averages is excluded — it's a trigger-maintained cache (one row per sensor)
@@ -366,6 +368,7 @@ func hasSerialID(table string) bool {
 		"smoke_report_tag":   true,
 		"smoke_report_photo": true,
 		"climate_target":     true,
+		"alert_rule":         true,
 	}
 
 	return serialTables[table]

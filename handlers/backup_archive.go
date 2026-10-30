@@ -77,6 +77,7 @@ func BuildBackupArchive(db *sql.DB, opts BuildArchiveOptions) ([]byte, BackupMan
 		{"zones", &payload.Zones},
 		{"breeder", &payload.Breeders},
 		{"sensors", &payload.Sensors},
+		{"alert_rule", &payload.AlertRules},
 		{"rolling_averages", &payload.RollingAvgs},
 		{"plant_status", &payload.PlantStatuses},
 		{"climate_target", &payload.ClimateTargets},

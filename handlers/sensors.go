@@ -984,6 +984,7 @@ func DeleteSensorByID(db *sql.DB, id string) error {
 		{"sensor data", "DELETE FROM sensor_data WHERE sensor_id = $1"},
 		{"sensor hourly rollups", "DELETE FROM sensor_data_hourly WHERE sensor_id = $1"},
 		{"sensor rolling averages", "DELETE FROM rolling_averages WHERE sensor_id = $1"},
+		{"sensor alerts", "DELETE FROM alert_rule WHERE sensor_id = $1"},
 		{"sensor", "DELETE FROM sensors WHERE id = $1"},
 	}
 	for _, s := range stmts {

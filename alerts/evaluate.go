@@ -13,6 +13,7 @@ const (
 	KindDrift  = "drift"  // amber on one side of Target for a long time
 	KindLight  = "light"  // lights disagree with the schedule
 	KindClock  = "clock"  // lights steadily about an hour off the schedule
+	KindSensor = "sensor" // a sensor alert the grower set up (rule.go)
 )
 
 // Severities.
@@ -38,7 +39,7 @@ func Severity(kind string) string {
 	switch kind {
 	case KindSafety:
 		return Critical
-	case KindStage, KindLight:
+	case KindStage, KindLight, KindSensor:
 		return Warning
 	}
 	return Info

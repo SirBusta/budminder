@@ -164,6 +164,10 @@ func (e *AlertEngine) Check(_ context.Context) {
 			log.WithError(err).Error("Failed to check climate alerts")
 			return
 		}
+		if err := run.rules(); err != nil {
+			log.WithError(err).Error("Failed to check sensor alerts")
+			return
+		}
 	}
 	// Whatever wasn't reached no longer applies: the sensor was unassigned, the
 	// zone deleted, its plants gone, or alerts turned off.
@@ -224,6 +228,44 @@ func (r *alertRun) zones() error {
 			r.measure(cs, zc, z, byID[sid], measure, sw, pollEvery, stale, checkDrift)
 		}
 		r.lights(zc, z, byID, loc, stale, checkClock)
+	}
+	return nil
+}
+
+// rules checks every sensor alert that's on. One whose sensor is gone isn't
+// reached, so an open alert of its closes.
+func (r *alertRun) rules() error {
+	e := r.e
+	rules, err := loadAlertRules(e.DB)
+	if err != nil {
+		return err
+	}
+	if len(rules) == 0 {
+		return nil
+	}
+	poll := e.Store.PollingInterval()
+	byID := map[int]ManagedSensor{}
+	for _, s := range ListManagedSensors(e.DB, poll) {
+		byID[s.ID] = s
+	}
+	pollEvery := time.Duration(poll) * time.Second
+	stale := staleAfter(poll)
+	for _, rule := range rules {
+		s, ok := byID[rule.SensorID]
+		if !ok || !rule.Enabled {
+			continue
+		}
+		minWindow := 2 * pollEvery
+		readings, err := recentReadings(e.DB, s.ID, s.Unit, "", r.now.Add(-max(rule.Hold, minWindow)-time.Minute))
+		if err != nil {
+			logger.Log.WithError(err).WithField("sensor", s.ID).Error("Failed to read sensor readings for alerts")
+			continue
+		}
+		in := alerts.RuleInput{Rule: rule, Readings: readings, Now: r.now, Timing: r.cfg.Timing, MinWindow: minWindow, StaleAfter: stale,
+			Open: r.markLive(0, alerts.RuleMeasure(rule.ID), alerts.KindSensor)}
+		for _, c := range alerts.EvaluateRule(in) {
+			r.apply(0, s.Zone, s.ID, s.Name, c, &alertStart{detail: s.Unit})
+		}
 	}
 	return nil
 }

@@ -4686,3 +4686,17 @@ body.bm-tour-open { overflow: hidden; }
 [data-bs-theme="dark"] .cl-state-ok { color: #4ade80; }
 [data-bs-theme="dark"] .cl-state-toward { color: #fbbf24; }
 [data-bs-theme="dark"] .cl-state-reached { color: #f87171; }
+
+/* Sensor alerts (Settings > Alerts). */
+.al-rules { list-style: none; margin: 0; padding: 0; }
+.al-rules li { display: flex; align-items: center; gap: .6rem; padding: .55rem .7rem; border-top: 1px solid var(--sx-line); font-size: .85rem; }
+.al-rules li:first-child { border-top: 0; }
+.al-rules li.off .al-rule-main { color: var(--sx-muted); }
+.al-rule-main { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.al-rule-main b { display: block; font-weight: 600; }
+.al-rule-main span { display: block; font-size: .8rem; }
+.al-rule-btn { flex: none; background: none; border: 0; padding: .25rem .35rem; color: var(--sx-muted); }
+.al-rule-btn:hover { color: var(--sx-ink); }
+.al-rule-num { width: 6.5rem; min-width: 0; flex: none; }
+#alRuleResult:empty { display: none; }
+#alRuleResult { display: block; padding: 0 .7rem .5rem; }

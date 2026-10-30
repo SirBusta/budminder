@@ -505,6 +505,44 @@
                     </div>
                 </div>
 
+                {{/* Sensor alerts (alert_rule, handlers/alert_rules.go; list and form in settings-alerts.js). */}}
+                <div class="st-card" id="alRulesCard">
+                    <div class="st-card-h"><i class="fa-solid fa-gauge-high"></i><div><h3>{{ .lcl.al_rules_title }}</h3><p>{{ .lcl.al_rules_desc }}</p></div>
+                        <button type="button" class="st-btn" id="alRuleAdd"><i class="fa-solid fa-plus me-1"></i>{{ .lcl.al_rule_add }}</button></div>
+                    <ul class="al-rules" id="alRuleList"></ul>
+                    <div class="st-row" id="alRuleEmpty" hidden><div class="st-row-l"><small>{{ .lcl.al_rules_empty }}</small></div></div>
+                    <small class="st-ha-result" id="alRuleResult" role="status" aria-live="polite"></small>
+                    <script type="application/json" id="alRuleData">{{ .alerts.Rules }}</script>
+                </div>
+                <div class="modal fade sx" id="alRuleDlg" tabindex="-1" aria-labelledby="alRuleDlgT" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+                        <div class="modal-header"><h5 class="modal-title" id="alRuleDlgT">{{ .lcl.al_rule_add }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ .lcl.title_close }}"></button></div>
+                        <div class="modal-body">
+                            <div class="mb-3"><label class="form-label" for="alRuleSensor">{{ .lcl.al_rule_sensor }}</label>
+                                <select class="form-select form-select-sm" id="alRuleSensor"></select></div>
+                            <div class="mb-3"><label class="form-label" for="alRuleSide">{{ .lcl.al_rule_when }}</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <select class="form-select form-select-sm" id="alRuleSide">
+                                        <option value="high">{{ .lcl.al_rule_side_high }}</option>
+                                        <option value="low">{{ .lcl.al_rule_side_low }}</option>
+                                    </select>
+                                    <input type="number" step="any" class="form-control form-control-sm al-rule-num" id="alRuleLimit" aria-label="{{ .lcl.al_rule_value }}" title="{{ .lcl.al_rule_value }}">
+                                    <span id="alRuleUnit"></span>
+                                </div></div>
+                            <div class="mb-1"><label class="form-label" for="alRuleHold">{{ .lcl.al_rule_hold }}</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="number" class="form-control form-control-sm al-rule-num" id="alRuleHold" min="{{ index .alerts.Rules.Hold 0 }}" max="{{ index .alerts.Rules.Hold 1 }}" value="10"><span>{{ .lcl.al_unit_minutes }}</span>
+                                </div>
+                                <small class="text-muted">{{ .lcl.al_rule_hold_desc }}</small></div>
+                            <small class="st-ha-result bad" id="alRuleErr" role="alert"></small>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="st-btn light" data-bs-dismiss="modal">{{ .lcl.cancel }}</button>
+                            <button type="button" class="st-btn" id="alRuleSave">{{ .lcl.save_changes }}</button>
+                        </div>
+                    </div></div>
+                </div>
+
                 {{/* Recent alerts (alert_event, handlers/alert_engine.go). */}}
                 <div class="st-card" id="alRecent">
                     <div class="st-card-h"><i class="fa-solid fa-clock-rotate-left"></i><div><h3>{{ .lcl.al_recent_title }}</h3><p>{{ .lcl.al_recent_desc }}</p></div></div>
@@ -527,7 +565,10 @@
                 <script type="application/json" id="alText">{"sending": {{ .lcl.al_test_sending }}, "saved": {{ .lcl.al_password_saved }}, "none": {{ .lcl.al_password_none }}, "failed": {{ .lcl.failed_to_save_settings }},
                     "tips": {"gmail": {{ .lcl.al_tip_gmail }}, "outlook": {{ .lcl.al_tip_outlook }}, "yahoo": {{ .lcl.al_tip_yahoo }}, "aol": {{ .lcl.al_tip_aol }}, "icloud": {{ .lcl.al_tip_icloud }},
                              "fastmail": {{ .lcl.al_tip_fastmail }}, "zoho": {{ .lcl.al_tip_zoho }}, "service": {{ .lcl.al_tip_service }}, "other": {{ .lcl.al_tip_other }}},
-                    "tipLink": {{ .lcl.al_tip_link }}}</script>
+                    "tipLink": {{ .lcl.al_tip_link }},
+                    "ruleAdd": {{ .lcl.al_rule_add }}, "ruleEdit": {{ .lcl.al_rule_edit }}, "ruleDelete": {{ .lcl.al_rule_delete }}, "ruleConfirm": {{ .lcl.al_rule_delete_confirm }},
+                    "ruleOn": {{ .lcl.al_rule_on }}, "ruleLineHigh": {{ .lcl.al_rule_line_high }}, "ruleLineLow": {{ .lcl.al_rule_line_low }},
+                    "ruleBadValue": {{ .lcl.al_rule_bad_value }}, "ruleNoSensors": {{ .lcl.al_rule_no_sensors }}}</script>
             </section>
 
             <!-- ============================= Photos ============================= -->

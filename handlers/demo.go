@@ -446,6 +446,12 @@ var (
 	demoOptID   = dOpt(demoID)
 	demoPercent = dOpt(dNum(0, 100))
 
+	demoAlertRuleFields = map[string]demoCheck{
+		"sensor_id": demoID, "side": dOneOf(alerts.SideLow, alerts.SideHigh),
+		"limit":        dNum(-alerts.RuleLimitMax, alerts.RuleLimitMax),
+		"hold_minutes": dRange(alerts.RuleHoldRange), "enabled": dBool,
+	}
+
 	demoDayFields = map[string]demoCheck{
 		"activity_ids": dIntList(20),
 		"note":         dNote,
@@ -627,6 +633,11 @@ var demoRules = map[string]demoRule{
 		"repeat_critical_minutes": dRange(alerts.RepeatCriticalRange),
 		"repeat_warning_hours":    dRange(alerts.RepeatWarningRange),
 	}},
+
+	// Sensor alerts: numbers and fixed choices only.
+	"POST /settings/alerts/rules":       {fields: demoAlertRuleFields},
+	"PUT /settings/alerts/rules/:id":    {fields: demoAlertRuleFields},
+	"DELETE /settings/alerts/rules/:id": {fields: map[string]demoCheck{}},
 
 	// Edit zone: a zone name the demo has, the light schedule, light check,
 	// plant stage and climate sensors (the handler checks they're in the zone).

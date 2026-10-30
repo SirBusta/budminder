@@ -28,6 +28,7 @@ type AlertSettingsData struct {
 	Climate     alertClimateRequest
 	Ranges      alertClimateRanges
 	Box         alertClimateBox
+	Rules       alertRulesPage
 	Recent      []alertRow
 }
 
@@ -115,6 +116,8 @@ func AlertSettingsPageData(c *gin.Context) AlertSettingsData {
 		DriftName: fillN(T(c, "cl_al_drift_b"), d.Climate.DriftHours),
 		Pause:     fillN(T(c, "cl_al_pause"), d.Climate.PauseMinutes),
 	}
+
+	d.Rules = alertRulesPageData(c)
 
 	events, err := RecentAlerts(db, recentAlertsShown)
 	if err != nil {

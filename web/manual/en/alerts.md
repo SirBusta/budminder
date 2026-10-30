@@ -33,6 +33,14 @@ These times, except the two light checks, can be changed on the card. A few rule
 
 Zones without plants, and sensors not chosen in **Edit zone**, aren't checked.
 
+## Sensor alerts
+
+A sensor alert watches any sensor, whatever it measures, such as CO2, a water tank level or a soil probe. Choose the sensor, **At or above** or **At or below**, a value in the sensor's own unit, and how long readings must stay there. Add as many as you need, up to 100.
+
+An alert starts when every reading for that time has reached the value, and ends after every reading for the same time has been clear of it. An alert that stays active repeats on the **Repeat Low, High and light alerts** schedule. Sensor alerts follow the **Mode** in **Climate alerts**: **Off** turns them off, and **Dry run** lists them without sending email.
+
+Use the switch to turn one alert off without deleting it. Editing an alert starts it over: one that's active ends without an email, and starts again if it still applies. Sensor alerts are part of backups, and deleting a sensor deletes its alerts.
+
 ## Recent alerts
 
 Lists the last 50 alerts, active ones first, with how each was delivered: **Dry run**, **Emailed**, **Email failed** or **Not sent: email is off**. Ended alerts are kept for 90 days. The list isn't part of backups.
@@ -42,5 +50,7 @@ Lists the last 50 alerts, active ones first, with how each was delivered: **Dry 
 **Low VPD in Flower.** A zone in Flower, lights on, has VPD Low 1.0 · Target 1.25 · High 1.5. The dehumidifier stops, and VPD falls to 0.95 kPa. About 5 minutes later most of the last 10 minutes' readings are at or below 1.0, so the **VPD low** alert starts. It repeats every 2 hours. Once the middle reading climbs above 1.05 kPa, you get one back-to-normal email.
 
 **High temperature while VPD looks normal.** Warm, humid air can keep VPD inside its range while the temperature is too high: 92 °F at 75% humidity is a VPD of about 1.3 kPa, inside the range above, yet the plants are hot. With a high safety limit of 90 °F, two readings in a row at 90 °F or above start a **Temperature high** alert, whatever the VPD says. It repeats every 30 minutes until two readings in a row are about 1 °F under the limit.
+
+**CO2 running high.** A sensor alert for a CO2 sensor is set to at or above 1,500 ppm for at least 10 minutes. A short spike doesn't count, because one lower reading in those 10 minutes holds the alert back. Once every reading for 10 minutes has been at 1,500 ppm or more, the alert starts. It ends after 10 minutes of readings under 1,500 ppm, with one back-to-normal email.
 
 **Lights an hour off.** A zone's schedule says on at 6:00 AM and off at 6:00 PM, but the controller's clock wasn't moved for daylight saving, so the lights switch at 5:00 AM and 5:00 PM. For the first days you get **Lights did not turn on or off** alerts. After three days BudMinder sees the steady offset, replaces them with one **Lights are off schedule** notice and tells you what it saw. Check the clock on the light controller, or the time zone in **Settings → General**.

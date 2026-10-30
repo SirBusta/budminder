@@ -6,6 +6,7 @@ package handlers_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -28,6 +29,7 @@ type demoEnv struct {
 	strain int
 	zone   int
 	water  int
+	sensor int
 }
 
 func newDemo(t *testing.T) *demoEnv {
@@ -38,10 +40,11 @@ func newDemo(t *testing.T) *demoEnv {
 	strain := testutil.SeedStrain(t, db, breeder, "Permanent Marker")
 	zone := testutil.SeedZone(t, db, "3x3 Tent")
 	plant := testutil.SeedPlant(t, db, "Permanent Marker #1", strain, zone)
+	sensor := testutil.SeedSensor(t, db, "acinfinity", "D1", "CO2")
 	server := testutil.NewTestServer(t, db, testutil.WithDemo())
 	client := server.NewClient(t)
 	return &demoEnv{server: server, client: client, token: client.FetchMetaCSRFToken("/plants"),
-		plant: plant, strain: strain, zone: zone, water: activityIDByName(t, db, "Water")}
+		plant: plant, strain: strain, zone: zone, water: activityIDByName(t, db, "Water"), sensor: sensor}
 }
 
 // send makes a request with any body, like a hand-made attack would.
@@ -437,6 +440,34 @@ func TestDemo_ClimateAlertsCard(t *testing.T) {
 		code, out := e.json(t, "POST", "/settings/alerts/climate", card(mod))
 		assertRefused(t, code, out, what)
 	}
+}
+
+func TestDemo_SensorAlerts(t *testing.T) {
+	t.Parallel()
+	e := newDemo(t)
+	rule := func(mod func(m map[string]any)) map[string]any {
+		m := map[string]any{"sensor_id": e.sensor, "side": "high", "limit": 1000, "hold_minutes": 5, "enabled": true}
+		if mod != nil {
+			mod(m)
+		}
+		return m
+	}
+	code, out := e.json(t, "POST", "/settings/alerts/rules", rule(nil))
+	require.Equal(t, http.StatusOK, code)
+	id := fmt.Sprint(out["id"])
+	code, _ = e.json(t, "PUT", "/settings/alerts/rules/"+id, rule(func(m map[string]any) { m["limit"] = 1200 }))
+	assert.Equal(t, http.StatusOK, code)
+	for what, mod := range map[string]func(m map[string]any){
+		"unknown field":    func(m map[string]any) { m["note"] = "hi" },
+		"unknown side":     func(m map[string]any) { m["side"] = "<b>" },
+		"out of range":     func(m map[string]any) { m["hold_minutes"] = 9999 },
+		"text in a number": func(m map[string]any) { m["limit"] = "lots" },
+	} {
+		code, out := e.json(t, "POST", "/settings/alerts/rules", rule(mod))
+		assertRefused(t, code, out, what)
+	}
+	code, _ = e.json(t, "DELETE", "/settings/alerts/rules/"+id, nil)
+	assert.Equal(t, http.StatusOK, code)
 }
 
 func TestDemo_ClimateTargetsAndEditZone(t *testing.T) {

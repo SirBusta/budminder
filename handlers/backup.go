@@ -77,6 +77,7 @@ type BackupPayload struct {
 	// Climate targets (migration 043). Absent from older backups: the
 	// restore fills them from plant_status.vpd_low/vpd_high and defaults.
 	ClimateTargets []map[string]interface{} `json:"climate_target"`
+	AlertRules     []map[string]interface{} `json:"alert_rule"`
 }
 
 // BackupFileInfo is returned by the list endpoint.
@@ -713,6 +714,7 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 		"sensor_data_hourly", // rebuilt from the restored sensor_data by the next rollup
 		"sensor_data",
 		"rolling_averages",
+		"alert_rule",
 		"sensors",
 		"strain",
 		"activity_metric",
@@ -741,6 +743,7 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 		{"activity", payload.Activities},
 		{"activity_metric", payload.ActivityMetric},
 		{"sensors", payload.Sensors},
+		{"alert_rule", payload.AlertRules},
 		{"sensor_data", payload.SensorData},
 		{"rolling_averages", payload.RollingAvgs},
 		{"strain", payload.Strains},
@@ -958,7 +961,7 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 	if model.IsPostgres() {
 		svc.UpdateRestoreProgress("sequences", "", 0, 0, 0, totalTablesWithData)
 		seqTables := []string{
-			"settings", "zones", "breeder", "sensors", "sensor_data",
+			"settings", "zones", "breeder", "sensors", "alert_rule", "sensor_data",
 			"strain", "strain_lineage", "strain_effect", "strain_flavor", "strain_terpene", "strain_medical_use",
 			"plant_status", "climate_target", "plant",
 			"plant_status_log", "metric", "plant_measurements",
