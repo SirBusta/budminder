@@ -277,6 +277,65 @@ func LightsOn(s Schedule, stage string, now time.Time, loc *time.Location) (on, 
 	return m >= start || m < end, true
 }
 
+// LastSwitch returns the latest scheduled lights-on or lights-off time at or
+// before now. ok is false when the lights never switch: no schedule for the
+// stage, Drying, or equal on and off times.
+func LastSwitch(s Schedule, stage string, now time.Time, loc *time.Location) (at time.Time, ok bool) {
+	for _, sw := range switches(s, stage, now, loc, 2) {
+		if !sw.At.After(now) && (!ok || sw.At.After(at)) {
+			at, ok = sw.At, true
+		}
+	}
+	return at, ok
+}
+
+// Switch is one scheduled lights-on (On) or lights-off time.
+type Switch struct {
+	At time.Time
+	On bool
+}
+
+// switches lists a stage's scheduled switches on today and the days days
+// before it. Built from wall-clock dates, so they stay right across DST.
+func switches(s Schedule, stage string, now time.Time, loc *time.Location, days int) []Switch {
+	t, have := s[stage]
+	if stage == Drying || !have {
+		return nil
+	}
+	on, ok1 := ParseClock(t[0])
+	off, ok2 := ParseClock(t[1])
+	if !ok1 || !ok2 || on == off {
+		return nil
+	}
+	if loc == nil {
+		loc = now.Location()
+	}
+	local := now.In(loc)
+	var out []Switch
+	for d := days; d >= 0; d-- {
+		y, m, day := local.AddDate(0, 0, -d).Date()
+		out = append(out,
+			Switch{At: time.Date(y, m, day, on/60, on%60, 0, 0, loc), On: true},
+			Switch{At: time.Date(y, m, day, off/60, off%60, 0, 0, loc)})
+	}
+	return out
+}
+
+// Median is the middle of vals (the mean of the two middle values for an even
+// count), 0 when empty. vals is left as it was.
+func Median(vals []float64) float64 {
+	if len(vals) == 0 {
+		return 0
+	}
+	s := append([]float64(nil), vals...)
+	sort.Float64s(s)
+	mid := len(s) / 2
+	if len(s)%2 == 1 {
+		return s[mid]
+	}
+	return (s[mid-1] + s[mid]) / 2
+}
+
 // Hours is the length of a lights-on period in hours (24 when the times are equal).
 func Hours(on, off string) float64 {
 	a, ok1 := ParseClock(on)
