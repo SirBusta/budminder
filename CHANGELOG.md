@@ -31,6 +31,10 @@ used three parts.
 
 ### Fixed
 
+## [2.1] - 2026-11-02
+
+### Fixed
+
 - Windows, macOS and Linux: after **Update now** from 1.5.x to 2.0, the update window warned that BudMinder had not restarted, even though 2.0 was already running. The window now reloads the page when the new version starts. Updating from 2.0 to 2.1 still shows the old warning once. The update is installed, so reload the page.
 
 ## [2.0] - 2026-11-02
