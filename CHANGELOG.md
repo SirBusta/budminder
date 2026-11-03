@@ -31,8 +31,11 @@ used three parts.
 
 - Sensor alert emails now explain how to change the alert's value if the reading is normal, like climate alert emails already do for their limits.
 - Help for Alerts: a note under the Beta note says the default Targets and limits are a starting point, and the examples section is now **Example scenarios**, with clearer wording.
+- Strains: **Enter manually** after a StrainCompass search with no results starts with the name you searched for, and **Find on StrainCompass** opens with the cursor in the search box.
 
 ### Fixed
+
+- Strain descriptions: lines that start with spaces (common in pasted text) showed as a gray code box with a scroll bar. They now show as normal text, as in Preview. The Heading button now always starts the heading at the beginning of the line.
 
 ## [2.1] - 2026-11-02
 

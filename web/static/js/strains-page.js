@@ -246,6 +246,11 @@
         bootstrap.Modal.getOrCreateInstance(el).show();
         return el;
     }
+    // Bootstrap focuses the dialog itself once its fade-in ends, so a field
+    // focused earlier loses the cursor: focus it after that.
+    function focusWhenShown(el, field) {
+        el.addEventListener("shown.bs.modal", () => { const f = field(); if (f) f.focus(); }, { once: true });
+    }
     const closeModal = el => { const m = bootstrap.Modal.getInstance(el); if (m) m.hide(); };
     const err = (el, msg) => { const box = el.querySelector(".sp-err"); if (box) { box.textContent = msg; box.classList.remove("d-none"); } };
 
@@ -322,7 +327,7 @@
             const b = e.target.closest("[data-pick]");
             if (b) openDestForImport(el, results[+b.dataset.pick]);
         });
-        setTimeout(() => $("spFindQ").focus(), 300);
+        focusWhenShown(el, () => $("spFindQ"));
     }
     function openDestForImport(el, r) {
         el.querySelector(".modal-title").innerHTML = esc(tr("sp_add_named", { name: r.name }));
@@ -352,19 +357,21 @@
 
     // Enter manually: the essentials + where it goes; the rest on the strain page.
     let breederAc = null;
-    function openManual() {
+    function openManual(name = "") {
         const el = $("spManual");
         if (!el) return;
         el.querySelector("#spManualDest").innerHTML = destPicker();
         wireDest(el);
         el.querySelectorAll(".sp-err").forEach(x => x.classList.add("d-none"));
-        el.querySelector("#spManualName").value = "";
+        el.querySelector("#spManualName").value = name;
         el.querySelector("#spManualFrom").value = "";
         el.querySelector("#spManualTo").value = "";
         el.querySelector("#spManualType").value = "";
         el.querySelector(".sp-dup").classList.add("d-none");
         if (!breederAc && window.IsleyAutocomplete) breederAc = IsleyAutocomplete.breederPicker($("spManualBreeder"), $("spManualNewBreeder"));
         if (breederAc) breederAc.reset();
+        if (name) manualDupCheck();
+        focusWhenShown(el, () => name && breederAc && breederAc.input ? breederAc.input : $("spManualName"));
         bootstrap.Modal.getOrCreateInstance(el).show();
     }
     function manualBreederName() {
@@ -506,9 +513,11 @@
         const m = t.closest("[data-manual]");
         if (m) {
             e.preventDefault();
+            // From a search with no results: start with the name that was searched.
+            const q = $("spFindQ") && m.closest("#spFind") ? $("spFindQ").value.trim() : "";
             const open = document.querySelector(".modal.show");
             if (open) closeModal(open);
-            setTimeout(openManual, open ? 300 : 0);
+            setTimeout(() => openManual(q), open ? 300 : 0);
             return;
         }
         if (t.closest("#spFindBtn")) { openFind(); return; }

@@ -603,7 +603,7 @@ func buildFuncMap(store *config.Store) template.FuncMap {
 			return time.Now()
 		},
 		"markdownify": func(t string) template.HTML {
-			unsafe := blackfriday.Run([]byte(t))
+			unsafe := blackfriday.Run([]byte(unindent(t)))
 			safe := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
 			return template.HTML(safe)
 		},
@@ -724,6 +724,44 @@ func seedAgeFrom(added string, now time.Time) seedAgeInfo {
 		months = 0
 	}
 	return seedAgeInfo{OK: true, Total: months, Years: months / 12, Months: months % 12}
+}
+
+// unindent drops the indent from lines of text before Markdown sees them.
+// Markdown shows a line that starts with 4 spaces or a tab as a code box, and
+// descriptions pasted from elsewhere often have indented paragraphs. List
+// items keep their indent (it nests them), and so does text inside ``` or ~~~.
+func unindent(s string) string {
+	lines := strings.Split(s, "\n")
+	fence := ""
+	for i, l := range lines {
+		t := strings.TrimLeft(l, " \t")
+		if fence != "" {
+			if strings.HasPrefix(t, fence) {
+				fence = ""
+			}
+			continue
+		}
+		if strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~") {
+			fence = t[:3]
+		}
+		if !isListItem(t) {
+			lines[i] = t
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+// isListItem says whether t (with its indent removed) starts with a list
+// mark: "- ", "* ", "+ " or a number with "." or ")".
+func isListItem(t string) bool {
+	if len(t) >= 2 && strings.ContainsRune("-*+", rune(t[0])) && (t[1] == ' ' || t[1] == '\t') {
+		return true
+	}
+	n := 0
+	for n < len(t) && t[n] >= '0' && t[n] <= '9' {
+		n++
+	}
+	return n > 0 && n+1 < len(t) && (t[n] == '.' || t[n] == ')') && (t[n+1] == ' ' || t[n+1] == '\t')
 }
 
 // simpleTags are the formatting tags simpleHTML lets through.

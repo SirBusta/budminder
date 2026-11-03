@@ -157,11 +157,13 @@ function mdWrap(before, after) {
 function mdPrefix(prefix) {
     const ta = document.getElementById("editStrainDescription");
     if (!ta) return;
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
-    const selected = ta.value.substring(start, end);
-    const lines = selected ? selected.split('\n') : [''];
-    const replacement = lines.map(l => prefix + l).join('\n');
+    // Whole lines: a heading or list mark only works at the start of a line.
+    const start = ta.selectionStart ? ta.value.lastIndexOf('\n', ta.selectionStart - 1) + 1 : 0;
+    let end = ta.selectionEnd > ta.selectionStart && ta.value[ta.selectionEnd - 1] === '\n' ? ta.selectionEnd - 1 : ta.selectionEnd;
+    end = ta.value.indexOf('\n', end);
+    if (end < 0) end = ta.value.length;
+    const lines = ta.value.substring(start, end).split('\n');
+    const replacement = lines.map(l => prefix + l.replace(/^\s+/, '')).join('\n');
     ta.setRangeText(replacement, start, end, 'select');
     ta.focus();
     ta.dispatchEvent(new Event('input'));

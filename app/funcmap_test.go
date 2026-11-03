@@ -1,6 +1,8 @@
 package app
 
 import (
+	"html/template"
+	"strings"
 	"testing"
 	"time"
 
@@ -53,6 +55,19 @@ func TestShowHeightFollowsUnitsSetting(t *testing.T) {
 	store.SetUnits("metric")
 	if got := showHeight("90-150cm"); got != "90-150cm" {
 		t.Errorf("metric = %q", got)
+	}
+}
+
+func TestUnindent(t *testing.T) {
+	t.Parallel()
+	in := "**Lineage**\n    Mother: Triangle Kush.\n\n\tHow to read it.\n- one\n    - nested\n  2. two\n```\n    code stays\n```\n    after"
+	want := "**Lineage**\nMother: Triangle Kush.\n\nHow to read it.\n- one\n    - nested\n  2. two\n```\n    code stays\n```\nafter"
+	if got := unindent(in); got != want {
+		t.Errorf("unindent:\n%q\nwant\n%q", got, want)
+	}
+	html := string(buildFuncMap(config.NewStore())["markdownify"].(func(string) template.HTML)("Intro\n\n    The Aroma. Quiet OG earth."))
+	if strings.Contains(html, "<pre>") || !strings.Contains(html, "<p>The Aroma.") {
+		t.Errorf("an indented paragraph became a code box: %s", html)
 	}
 }
 
