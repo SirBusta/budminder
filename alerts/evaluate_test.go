@@ -171,7 +171,9 @@ func testWords() Words {
 		"al_line_stage_high": "{measure} is {value}, High {limit}.", "al_line_ok": "Readings in {zone} in range.",
 		"al_ev_offline": "Sensors offline in {zone}", "al_ev_offline_all": "Sensors offline", "al_ev_offline_ok": "Back online in {zone}",
 		"al_ev_offline_ok_all": "Back online", "al_line_offline": "No readings from {sensors}.", "al_line_offline_ok": "Resumed.",
-		"al_measure_temp": "Temperature", "al_since": "Since {time}.", "al_still": "Still active.", "al_widen": "Widen.",
+		"al_measure_temp": "Temperature", "al_since": "Since {time}.", "al_still": "Still active.", "al_widen": "Widen.", "al_rule_change": "Change the value.",
+		"al_ev_sensor_high": "{sensor} high", "al_ev_sensor_ok": "{sensor} back to normal",
+		"al_line_sensor_high": "{sensor} is {value}, limit {limit}.", "al_line_sensor_ok": "{sensor} in range.",
 		"al_subject": "BudMinder: {title}", "al_subject_more": "BudMinder: {title} and {n} more", "al_open_budminder": "Open",
 	}
 	return Words{T: func(k string) string { return text[k] }, Units: "metric", Loc: time.UTC}
@@ -218,6 +220,22 @@ func TestBuildMessage_ClimateAdvice(t *testing.T) {
 	stage.Pending = NoticeResolved
 	m = BuildMessage(w, []Event{stage}, "")
 	if !strings.Contains(m.Text, "Climate back to normal in Tent") || strings.Contains(m.Text, "Widen.") {
+		t.Errorf("all clear: %q", m.Text)
+	}
+}
+
+func TestBuildMessage_SensorAdvice(t *testing.T) {
+	t.Parallel()
+	w := testWords()
+	v, l := 1600.0, 1500.0
+	rule := Event{Kind: KindSensor, Measure: RuleMeasure(1), Side: SideHigh, Sensor: "CO2", Detail: "ppm", Value: &v, Limit: &l, Started: evalNow, Pending: NoticeFired}
+	m := BuildMessage(w, []Event{rule}, "")
+	if !strings.Contains(m.Text, "Change the value.") || strings.Contains(m.Text, "Widen.") {
+		t.Errorf("body: %q", m.Text)
+	}
+	rule.Pending = NoticeResolved
+	m = BuildMessage(w, []Event{rule}, "")
+	if !strings.Contains(m.Text, "CO2 back to normal") || strings.Contains(m.Text, "Change the value.") {
 		t.Errorf("all clear: %q", m.Text)
 	}
 }

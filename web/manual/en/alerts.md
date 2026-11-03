@@ -2,6 +2,8 @@ BudMinder sends you an alert notification when a zone's climate, lights or senso
 
 > **Beta.** Alerts are still being tested. Do not rely on them as your only safety check. Feedback is appreciated: [budminder.app@gmail.com](mailto:budminder.app@gmail.com?subject=BudMinder%20alerts%20feedback).
 
+> **Defaults are a starting point.** Adjust the Targets and limits for your grow space in **Settings → Grow setup** → [Climate targets and limits](/manual/grow-setup#climate-targets-and-limits). If you receive too many alert notifications, widen your limits.
+
 ## What sends an alert notification
 
 | Alert | Sent when |
@@ -14,15 +16,13 @@ BudMinder sends you an alert notification when a zone's climate, lights or senso
 
 Set limits in [Climate targets and limits](/manual/grow-setup#climate-targets-and-limits), in **Settings → Grow setup**. Temperature and humidity start with wide limits for each stage. VPD starts with Targets and no limits, so BudMinder sends no VPD alert notification until you set a limit.
 
-Default Targets and limits are guidelines only. Choose values suited to your environment. If you receive too many alert notifications, widen your limits.
-
 BudMinder checks climate and lights only in zones with plants, and only with the sensors chosen in **Edit Zone**. A sensor that never sent a reading does not count as offline.
 
 ## How often alert notifications are sent
 
 | When | What happens |
 |---|---|
-| **First 15 minutes** | Nothing is sent. One reading back in range starts the 15 minutes over, so brief spikes are ignored. |
+| **First 15 minutes** | Nothing is sent. One reading back in range resets the 15-minute count, so brief spikes are ignored. |
 | **At 15 minutes** | The first notification is sent. |
 | **Every 6 hours** | A reminder is sent until the problem ends. Every active alert is included in the same email. |
 | **After 30 minutes back in range** | One final all-clear is sent. If a zone has several climate alerts, you receive one all-clear when the last one ends. |
@@ -66,12 +66,12 @@ Lists the last 50 alerts, active ones first, with how each was delivered: **Send
 
 Click **Clear** to move an ended alert to the **Cleared** tab, or **Clear All Ended** to move every ended alert. Click **Restore** to move one back. Active alerts cannot be cleared. Ended alerts are kept for 90 days, cleared or not. The list is not part of backups.
 
-## Worked examples
+## Example scenarios
 
-**Low VPD in Flower.** A zone in Flower, lights on, has a VPD Low limit of 1.0 kPa. The dehumidifier stops and VPD falls to 0.95 kPa. If every reading for 15 minutes stays at or below 1.0, a **VPD low** alert notification is sent. If the problem continues, reminders are sent every 6 hours. Once no reading has reached 1.0 for 30 minutes, one all-clear is sent.
+**Low VPD in Flower.** A zone in Flower, lights on, has a VPD Low limit of 1.0 kPa. The dehumidifier stops and VPD falls to 0.95 kPa. If every reading for 15 consecutive minutes stays at or below 1.0 kPa, a **VPD low** alert notification is sent. If the problem continues, reminders are sent every 6 hours. Once every reading stays above 1.0 kPa for 30 minutes, one all-clear is sent.
 
-**High temperature while VPD looks normal.** Warm, humid air can keep VPD in range while the temperature is too high: 92 °F at 75% humidity is a VPD of about 1.3 kPa. With a High limit of 90 °F, a **Temperature high** alert notification is sent after 15 minutes at 90 °F or above, whatever the VPD reads.
+**High temperature while VPD looks normal.** Warm, humid air can keep VPD in range while the temperature is too high: 92 °F at 75% humidity is a VPD of about 1.3 kPa. With a High limit of 90 °F, a **Temperature high** alert notification is sent after 15 consecutive minutes at 90 °F or above, regardless of the VPD reading.
 
-**CO2 running high.** A Sensor alert is set to at or above 1,500 ppm. A short spike does not count, because one lower reading starts the 15 minutes over. After 15 minutes at 1,500 ppm or more, the alert notification is sent. After 30 minutes under 1,500 ppm, one all-clear is sent.
+**CO2 running high.** A CO2 Sensor alert is set to **At or above** 1,500 ppm. A brief spike does not count, because one reading below 1,500 ppm resets the 15-minute count. After 15 consecutive minutes at 1,500 ppm or above, an alert notification is sent. Once every reading stays below 1,500 ppm for 30 minutes, one all-clear is sent.
 
-**Lights an hour off.** A zone's schedule says on at 6:00 AM and off at 6:00 PM, but the controller's clock was not moved for daylight saving, so the lights switch at 5:00 AM and 5:00 PM. At first you receive **Lights did not turn on or off** alert notifications. After three days, BudMinder replaces them with one **Lights are off schedule** alert notification that lists the times the sensor saw. To correct this, check the clock on the light controller, or the time zone in **Settings → General**.
+**Light controller clock an hour off.** A zone's schedule says on at 6:00 AM and off at 6:00 PM, but the light controller's clock was not changed for daylight saving time, so the lights switch at 5:00 AM and 5:00 PM. At first you receive **Lights did not turn on or off** alert notifications. After three days, BudMinder sends one **Lights are off schedule** alert notification instead, listing the times the lights actually switched. To correct this, check the clock on the light controller or the time zone in **Settings → General**.

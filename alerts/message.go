@@ -245,8 +245,11 @@ func BuildMessage(w Words, events []Event, link string) Message {
 			if e.Pending == NoticeRepeat {
 				line += " " + w.T("al_still")
 			}
-			if e.Kind == KindStage {
+			switch e.Kind {
+			case KindStage:
 				line += " " + w.T("al_widen")
+			case KindSensor:
+				line += " " + w.T("al_rule_change")
 			}
 		}
 		paras = append(paras, line)
