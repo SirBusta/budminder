@@ -36,6 +36,7 @@ var conflictKeys = map[string]string{
 	"sensor_data":        "id",
 	"streams":            "id",
 	"strain_lineage":     "id",
+	"strain_pack":        "id",
 	"strain_effect":      "id",
 	"strain_flavor":      "id",
 	"strain_terpene":     "id",
@@ -59,6 +60,7 @@ var orderedTables = []string{
 	"breeder", // Must come before strain
 	"strain",
 	"strain_lineage", // After strain — references strain(id)
+	"strain_pack",
 	"strain_effect",
 	"strain_flavor",
 	"strain_terpene",
@@ -359,6 +361,7 @@ func hasSerialID(table string) bool {
 		"breeder":            true,
 		"streams":            true,
 		"strain_lineage":     true,
+		"strain_pack":        true,
 		"strain_effect":      true,
 		"strain_flavor":      true,
 		"strain_terpene":     true,

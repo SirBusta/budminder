@@ -152,6 +152,16 @@
                         <label for="editSeedLocation">{{ .lcl.fm_seed_location }}</label>
                         <input type="text" class="form-control" id="editSeedLocation" maxlength="255" placeholder="{{ .lcl.seed_location_placeholder }}" value="{{ .strain.SeedLocation }}">
                     </div>
+                    <div class="fm-f">
+                        <label for="editPackPrice">{{ .lcl.fm_pack_price }}</label>
+                        <div class="fm-money"><span aria-hidden="true">$</span><input type="number" class="form-control" id="editPackPrice" min="0" max="100000" step="0.01" inputmode="decimal" value="{{ .strain.PackPriceInput }}"></div>
+                        <small>{{ .lcl.fm_pack_help }}</small>
+                        {{ with .strain.EarlierPacks }}<small id="editPackEarlier" data-packs="{{ json . }}" data-text="{{ $.lcl.fm_pack_earlier }}" data-free="{{ $.lcl.fm_freebie }}"></small>{{ end }}
+                    </div>
+                    <label class="fm-sw form-switch" for="editPackFree">
+                        <span><b>{{ .lcl.fm_freebie }}</b><small>{{ .lcl.fm_freebie_desc }}</small></span>
+                        <input type="checkbox" class="form-check-input" role="switch" id="editPackFree"{{ if .strain.PackFree }} checked{{ end }}>
+                    </label>
                     <label class="fm-sw form-switch full" for="editWanted">
                         <span><b>{{ .lcl.wanted_checkbox }}</b><small>{{ .lcl.wanted_desc }}</small></span>
                         <input type="checkbox" class="form-check-input" role="switch" id="editWanted"{{ if .strain.Wanted }} checked{{ end }}>

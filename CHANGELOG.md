@@ -27,6 +27,8 @@ used three parts.
 
 ### Added
 
+- Seed Vault pack prices: enter a **Pack price** and mark a pack as a **Freebie** when you add seeds, restock or edit a strain. Each pack shows on the strain's card with its price and the date it was added, and the list view adds a Pack price column and sort options. A line of totals above the strains on the Seed Vault tab shows the cost and value of the seeds you have left, so both go down as you use seeds. Freebies count toward value only.
+
 ### Changed
 
 - Sensor alert emails now explain how to change the alert's value if the reading is normal, like climate alert emails already do for their limits.

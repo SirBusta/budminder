@@ -168,8 +168,11 @@ func AddStrainSeedsHandler(c *gin.Context) {
 		SeedType     *string `json:"seed_type"`
 		SeedsAddedOn *string `json:"seeds_added_on"`
 		SeedLocation *string `json:"seed_location"`
+		// The new pack (the Restock window). Without it the seeds join
+		// the newest pack (the + on a card).
+		Pack *strainPack `json:"pack"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil || req.Count < 1 || req.Count > 100000 {
+	if err := c.ShouldBindJSON(&req); err != nil || req.Count < 1 || req.Count > 100000 || !req.Pack.valid() {
 		apiBadRequest(c, "api_invalid_request_payload")
 		return
 	}
@@ -221,6 +224,11 @@ func AddStrainSeedsHandler(c *gin.Context) {
 		seed_type = COALESCE($4, seed_type), seed_location = COALESCE($5, seed_location) WHERE id = $6`,
 		count, stock.Wanted, stock.AddedOn, req.SeedType, req.SeedLocation, id); err != nil {
 		fieldLogger.WithError(err).Error("Failed to add seeds")
+		apiInternalError(c, "api_failed_to_update_strain")
+		return
+	}
+	if err := addPackSeeds(tx, id, prev.Count, req.Count, req.Pack, stockToday(c)); err != nil {
+		fieldLogger.WithError(err).Error("Failed to record the seed pack")
 		apiInternalError(c, "api_failed_to_update_strain")
 		return
 	}

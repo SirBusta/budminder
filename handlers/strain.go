@@ -380,6 +380,7 @@ func GetStrain(db *sql.DB, id string) types.Strain {
 		strain.StraincompassVerified = &straincompassVerified.Bool
 	}
 
+	strain.Packs = currentPacks(db, strain.ID)[strain.ID]
 	strain.Effects = getStrainAttributes(db, "strain_effect", strain.ID, true, false)
 	strain.Flavors = getStrainAttributes(db, "strain_flavor", strain.ID, false, false)
 	strain.Terpenes = getStrainAttributes(db, "strain_terpene", strain.ID, false, true)
@@ -466,10 +467,11 @@ func AddStrainHandler(c *gin.Context) {
 		SeedType         string             `json:"seed_type"`
 		Wanted           bool               `json:"wanted"`
 		SeedsAddedOn     string             `json:"seeds_added_on"`
+		Pack             *strainPack        `json:"pack"`
 		Growing          *strainGrowingInfo `json:"growing"`
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil || !req.Pack.valid() {
 		fieldLogger.WithError(err).Error("Failed to bind JSON")
 		apiBadRequest(c, "api_invalid_request_payload")
 		return
@@ -542,10 +544,22 @@ func AddStrainHandler(c *gin.Context) {
 	} else {
 		autoflowerInt = 0
 	}
+	tx, err := db.Begin()
+	if err != nil {
+		apiInternalError(c, "api_failed_to_add_strain")
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
 	var id int
-	err = db.QueryRow(stmt, req.Name, breederID, req.Indica, req.Sativa, autoflowerInt, req.SeedCount, req.Description, req.CycleTime, req.Url, req.ShortDescription,
+	err = tx.QueryRow(stmt, req.Name, breederID, req.Indica, req.Sativa, autoflowerInt, req.SeedCount, req.Description, req.CycleTime, req.Url, req.ShortDescription,
 		nullableStr(growing.HeightIndoor), nullableStr(growing.HeightOutdoor), nullableStr(growing.YieldIndoor), nullableStr(growing.YieldOutdoor),
 		nullableStr(req.SeedLocation), nullableStr(req.SeedType), stock.Wanted, stock.AddedOn, cycleTimeMin).Scan(&id)
+	if err == nil {
+		err = saveFormPack(tx, id, req.Pack, newStrainStock.Count, req.SeedCount, stock.AddedOn, stockToday(c))
+	}
+	if err == nil {
+		err = tx.Commit()
+	}
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to insert strain")
 		apiInternalError(c, "api_failed_to_add_strain")
@@ -617,6 +631,7 @@ func UpdateStrainHandler(c *gin.Context) {
 		SeedType     *string             `json:"seed_type"`
 		Wanted       *bool               `json:"wanted"`
 		SeedsAddedOn *string             `json:"seeds_added_on"`
+		Pack         *strainPack         `json:"pack"`
 		CycleTimeMin *int                `json:"cycle_time_min"`
 		Growing      *strainGrowingInfo  `json:"growing"`
 		Cannabinoids *strainCannabinoids `json:"cannabinoids"`
@@ -628,7 +643,7 @@ func UpdateStrainHandler(c *gin.Context) {
 		} `json:"attributes"`
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil || !req.Pack.valid() {
 		fieldLogger.WithError(err).Error("Failed to bind JSON")
 		apiBadRequest(c, "api_invalid_request_body")
 		return
@@ -753,6 +768,9 @@ func UpdateStrainHandler(c *gin.Context) {
 	if err == nil {
 		_, err = tx.Exec("UPDATE strain SET wanted = $1, seeds_added_on = $2 WHERE id = $3", stock.Wanted, stock.AddedOn, id)
 	}
+	if err == nil {
+		err = saveFormPack(tx, id, req.Pack, prevStock.Count, req.SeedCount, stock.AddedOn, stockToday(c))
+	}
 	if err == nil && req.CycleTimeMin != nil {
 		_, err = tx.Exec("UPDATE strain SET cycle_time_min = $1 WHERE id = $2", cycleTimeMin, id)
 	} else if err == nil {
@@ -845,6 +863,7 @@ func DeleteStrainHandler(c *gin.Context) {
 		`UPDATE smoke_report SET strain_id = NULL WHERE strain_id = $1`,
 		`UPDATE strain_lineage SET parent_strain_id = NULL WHERE parent_strain_id = $1`,
 		`DELETE FROM strain_lineage WHERE strain_id = $1`,
+		`DELETE FROM strain_pack WHERE strain_id = $1`,
 		`DELETE FROM strain_effect WHERE strain_id = $1`,
 		`DELETE FROM strain_flavor WHERE strain_id = $1`,
 		`DELETE FROM strain_terpene WHERE strain_id = $1`,
@@ -986,6 +1005,10 @@ func getStrainsByView(db *sql.DB, where string) ([]types.Strain, error) {
 			return nil, err
 		}
 		strains = append(strains, strain)
+	}
+	packs := currentPacks(db, 0)
+	for i := range strains {
+		strains[i].Packs = packs[strains[i].ID]
 	}
 
 	return strains, nil

@@ -174,6 +174,7 @@ var rolledColumns = []struct{ table, col string }{
 	{"plant_day_entry", "entry_date"},
 	{"plant_images", "image_date"},
 	{"strain", "seeds_added_on"},
+	{"strain_pack", "added_on"},
 	{"smoke_report", "smoked_on"},
 	{"smoke_report", "harvested_on"},
 }

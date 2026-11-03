@@ -57,6 +57,24 @@
     const fmtDate = iso => new Date(iso + "T12:00:00").toLocaleDateString(LANG, { month: "short", day: "numeric", year: "numeric" });
     const fmtMonth = iso => iso ? new Date(iso + "T12:00:00").toLocaleDateString(LANG, { month: "short", year: "numeric" }) : "—";
     const weeks = days => String(Math.round(days / 7 * 10) / 10);
+    // Pack prices are in cents, shown in dollars ("$150", "$12.50", "$2,300").
+    const money = c => { c = Math.round(c); return "$" + (c / 100).toLocaleString(LANG, { minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 }); };
+    // A strain's packs (the first one and each restock) that its seeds on
+    // hand come from, oldest first; the newest one's price sorts the list.
+    const packs = s => inVault(s) ? (s.packs || []) : [];
+    const newestPrice = s => { const p = packs(s)[packs(s).length - 1]; return p && p.price_cents != null ? p.price_cents : null; };
+    // Cost and Value of the seeds left: each pack's price, scaled by the
+    // share of the packs' seeds still on hand. Cost leaves freebies out.
+    function packTotals(s) {
+        const ps = packs(s);
+        const bought = ps.reduce((a, p) => a + p.seeds, 0);
+        const left = bought > 0 ? Math.min(1, s.seed_count / bought) : 0;
+        return {
+            priced: ps.some(p => p.price_cents != null),
+            cost: left * ps.reduce((a, p) => a + (p.free || p.price_cents == null ? 0 : p.price_cents), 0),
+            value: left * ps.reduce((a, p) => a + (p.price_cents || 0), 0),
+        };
+    }
     function floweringText(s) {
         if (!(s.cycle_time > 0)) return "";
         const w = (s.cycle_time_min > 0 && s.cycle_time_min < s.cycle_time ? weeks(s.cycle_time_min) + "–" : "") + weeks(s.cycle_time);
@@ -76,10 +94,21 @@
             const badge = `<span class="sp-b seeds"><i class="fa-solid fa-seedling"></i>${esc(tr(s.seed_count === 1 ? "sp_one_seed" : "sp_n_seeds", { n: s.seed_count }))}</span>`;
             return seedStepper(s, badge) +
                 (s.seed_type && SEEDTYPE[s.seed_type] ? `<span class="sp-b muted">${esc(SEEDTYPE[s.seed_type])}</span>` : "") +
-                (s.seeds_added_on ? `<span class="sp-b ${old ? "old" : "muted"}" title="${esc(tr("sp_seeds_added", { date: fmtDate(s.seeds_added_on) }))}"><i class="fa-${old ? "solid fa-hourglass-half" : "regular fa-calendar"}"></i>${esc(ageText(s.seeds_added_on))}</span>` : "");
+                (s.seeds_added_on ? `<span class="sp-b ${old ? "old" : "muted"}" title="${esc(tr("sp_seeds_added", { date: fmtDate(s.seeds_added_on) }))}"><i class="fa-${old ? "solid fa-hourglass-half" : "regular fa-calendar"}"></i>${esc(ageText(s.seeds_added_on))}</span>` : "") +
+                packBadges(s);
         }
         if (isWanted(s)) return `<span class="sp-b wanted"><i class="fa-solid fa-star"></i>${esc(tr("sp_wanted"))}</span>`;
         return `<span class="sp-b none">${esc(tr("sp_no_seeds"))}</span>${s.seed_type === "clone" ? `<span class="sp-b muted">${esc(SEEDTYPE.clone)}</span>` : ""}`;
+    }
+    // One tag per pack, with what it cost and when it was added: green
+    // "$180 · Oct 2, 2026", blue "Freebie · $150 · Aug 24, 2024". Packs
+    // with no price and no Freebie get none.
+    const packText = p => [p.free ? tr("sp_freebie") : "", p.price_cents != null ? money(p.price_cents) : "", fmtDate(p.added_on)].filter(Boolean).join(" · ");
+    function packBadges(s) {
+        return packs(s).filter(p => p.free || p.price_cents != null).map(p => {
+            const title = tr("sp_pack_title", { date: fmtDate(p.added_on), seeds: tr(p.seeds === 1 ? "sp_one_seed" : "sp_n_seeds", { n: p.seeds }) });
+            return `<span class="sp-b ${p.free ? "free" : "cost"}" title="${esc(title)}"><i class="fa-solid fa-${p.free ? "gift" : "tag"}"></i>${esc(packText(p))}</span>`;
+        }).join("");
     }
     // − / + one seed around the count (Seed Vault cards and list), logged in only.
     function seedStepper(s, inner) {
@@ -119,7 +148,7 @@
     // /strains?breeder=Seed%20Junky#all (the strain page's breeder link) opens filtered.
     try { filter.breeder = new URLSearchParams(location.search).get("breeder") || ""; } catch (e) { /* keep the default */ }
     // Clicking a sorted column again reverses it (where a reverse exists).
-    const PAIR = { oldest: "newest", type: "typedesc" };
+    const PAIR = { oldest: "newest", type: "typedesc", price: "pricelow" };
 
     function apply(list) {
         const q = filter.q.trim().toLowerCase();
@@ -139,6 +168,9 @@
             type: (a, b) => (a.autoflower - b.autoflower) || name(a, b),
             typedesc: (a, b) => (b.autoflower - a.autoflower) || name(a, b),
             flower: (a, b) => (a.autoflower - b.autoflower) || ((a.cycle_time || 9999) - (b.cycle_time || 9999)) || name(a, b),
+            // Strains without a price go last either way.
+            price: (a, b) => ((newestPrice(b) ?? -1) - (newestPrice(a) ?? -1)) || name(a, b),
+            pricelow: (a, b) => ((newestPrice(a) ?? Infinity) - (newestPrice(b) ?? Infinity)) || name(a, b),
         }[filter.sort] || name;
         return out.sort(by);
     }
@@ -153,7 +185,7 @@
             <select class="form-select form-select-sm" data-f="breeder" aria-label="${esc(tr("sp_breeder"))}">${opt("", tr("sp_all_breeders"), filter.breeder)}${breeders.map(b => opt(b, b, filter.breeder)).join("")}</select>
             <select class="form-select form-select-sm" data-f="type" aria-label="${esc(tr("sp_type"))}">${opt("", tr("sp_photo_and_auto"), filter.type)}${opt("photo", tr("sp_photoperiod"), filter.type)}${opt("auto", tr("sp_autoflower"), filter.type)}</select>
             <select class="form-select form-select-sm" data-f="seedType" aria-label="${esc(tr("sp_seed_type"))}">${opt("", tr("sp_any_seed_type"), filter.seedType)}${Object.entries(SEEDTYPE).map(([k, l]) => opt(k, l, filter.seedType)).join("")}</select>
-            <select class="form-select form-select-sm" data-f="sort" aria-label="${esc(tr("sp_sort"))}">${[["name", "sp_sort_name"], ["breeder", "sp_sort_breeder"], ["seeds", "sp_sort_seeds"], ["oldest", "sp_sort_oldest"], ["newest", "sp_sort_newest"], ["flower", "sp_sort_flower"], ["type", "sp_sort_type"], ["typedesc", "sp_sort_typedesc"]].map(([k, l]) => opt(k, tr(l), filter.sort)).join("")}</select>`;
+            <select class="form-select form-select-sm" data-f="sort" aria-label="${esc(tr("sp_sort"))}">${[["name", "sp_sort_name"], ["breeder", "sp_sort_breeder"], ["seeds", "sp_sort_seeds"], ["oldest", "sp_sort_oldest"], ["newest", "sp_sort_newest"], ["price", "sp_sort_price"], ["pricelow", "sp_sort_pricelow"], ["flower", "sp_sort_flower"], ["type", "sp_sort_type"], ["typedesc", "sp_sort_typedesc"]].map(([k, l]) => opt(k, tr(l), filter.sort)).join("")}</select>`;
         $("spQ").addEventListener("input", e => { filter.q = e.target.value; renderList(); });
     }
 
@@ -169,8 +201,15 @@
         </div>`;
     }
 
+    // List view: each pack's price, newest last; "Freebie" under a free one.
+    function packCell(s) {
+        const ps = packs(s).filter(p => p.free || p.price_cents != null);
+        if (!ps.length) return `<span class="text-muted">—</span>`;
+        return ps.map(p => `<div title="${esc(fmtDate(p.added_on))}">${p.price_cents != null ? esc(money(p.price_cents)) : ""}${p.free ? `<div class="small sp-free-note"><i class="fa-solid fa-gift me-1"></i>${esc(tr("sp_freebie"))}</div>` : ""}</div>`).join("");
+    }
+
     function table(list) {
-        const cols = [["name", "sp_col_strain"], [null, "sp_lineage"], ["type", "sp_type"], ["flower", "sp_col_flowering"], ["seeds", "sp_col_seeds"], ["oldest", "sp_col_seed_age"], [null, "sp_col_grows"]];
+        const cols = [["name", "sp_col_strain"], [null, "sp_lineage"], ["type", "sp_type"], ["flower", "sp_col_flowering"], ["seeds", "sp_col_seeds"], ["price", "sp_pack_price"], ["oldest", "sp_col_seed_age"], [null, "sp_col_grows"]];
         if (LOGGED_IN) cols.push([null, ""]);
         const sort = filter.sort;
         return `<div class="sp-tbl"><table><thead><tr>${cols.map(([k, l]) => k
@@ -183,6 +222,7 @@
                 <td class="text-nowrap">${esc(floweringText(s)) || "—"}</td>
                 <td class="text-nowrap">${inVault(s) ? `${seedStepper(s, `<b class="sp-step-n">${s.seed_count}</b>`)} <span class="text-muted small">${esc(SEEDTYPE[s.seed_type] || "")}</span>`
                     : isWanted(s) ? `<span class="sp-b wanted"><i class="fa-solid fa-star"></i>${esc(tr("sp_wanted"))}</span>` : `<span class="text-muted">0</span>`}</td>
+                <td class="text-nowrap">${packCell(s)}</td>
                 <td class="text-nowrap">${inVault(s) && s.seeds_added_on ? `${esc(fmtMonth(s.seeds_added_on))}<div class="small ${isOld(s) ? "sp-age-o" : "text-muted"}">${esc(ageText(s.seeds_added_on))}</div>` : "—"}</td>
                 <td>${grows(s) || `<span class="text-muted">—</span>`}</td>
                 ${LOGGED_IN ? `<td class="text-end">${actions(s, true)}</td>` : ""}
@@ -197,14 +237,30 @@
                 <span><b>${esc(tr(t.label))}</b><small>${esc(tr(t.desc))}</small></span><span class="n">${loaded ? counts[k] : ""}</span></button>`).join("");
     }
 
+    // Seed Vault totals: seeds, strains, Cost and Value of the seeds left
+    // (only once a pack has a price), and how many have old seeds.
+    function vaultSummary() {
+        const vault = STRAINS.filter(inVault);
+        const n = (one, many, k) => tr(k === 1 ? one : many, { n: `<b>${k}</b>` });
+        const seeds = vault.reduce((a, s) => a + s.seed_count, 0);
+        const old = vault.filter(isOld).length;
+        const parts = [`<span>${n("sp_sum_one_seed", "sp_sum_seeds", seeds)}</span>`, `<span>${n("sp_sum_one_strain", "sp_sum_strains", vault.length)}</span>`];
+        const totals = vault.map(packTotals);
+        if (totals.some(t => t.priced)) {
+            const cost = totals.reduce((a, t) => a + t.cost, 0);
+            const value = totals.reduce((a, t) => a + t.value, 0);
+            parts.push(`<span title="${esc(tr("sp_cost_title"))}">${tr("sp_sum_cost", { amount: `<b>${esc(money(cost))}</b>` })}</span>`,
+                `<span title="${esc(tr("sp_value_title"))}">${tr("sp_sum_value", { amount: `<b>${esc(money(value))}</b>` })}</span>`);
+        }
+        if (old) parts.push(`<span class="warn"><i class="fa-solid fa-hourglass-half me-1"></i>${n("sp_sum_one_old", "sp_sum_old", old)}</span>`);
+        return parts.join("");
+    }
+
     function renderList() {
         const list = apply(STRAINS.filter(TABS[tab].pred));
         $("spQuickSort").innerHTML = tab === "vault" ? `${esc(tr("sp_sort_label"))}
             <span class="sp-seg"><button data-qsort="name" class="${filter.sort === "name" ? "on" : ""}">${esc(tr("sp_name"))}</button><button data-qsort="oldest" class="${filter.sort === "oldest" ? "on" : ""}"><i class="fa-solid fa-hourglass-half me-1"></i>${esc(tr("sp_oldest_first"))}</button></span>` : "";
-        const vault = STRAINS.filter(inVault);
-        const old = vault.filter(isOld).length;
-        $("spSummary").innerHTML = !loaded ? "" : tab === "vault"
-            ? `${tr("sp_summary_vault", { seeds: `<b>${vault.reduce((a, s) => a + s.seed_count, 0)}</b>`, strains: `<b>${vault.length}</b>` })}${old ? ` · <span class="warn"><i class="fa-solid fa-hourglass-half me-1"></i>${esc(tr("sp_n_old", { n: old }))}</span>` : ""}`
+        $("spSummary").innerHTML = !loaded ? "" : tab === "vault" ? vaultSummary()
             : tab === "wanted" ? esc(tr("sp_summary_wanted")) : esc(tr("sp_summary_all", { n: list.length, total: STRAINS.length }));
         document.querySelectorAll("[data-layout]").forEach(b => b.classList.toggle("on", b.dataset.layout === layout));
         const out = $("spOut");
@@ -254,7 +310,22 @@
     const closeModal = el => { const m = bootstrap.Modal.getInstance(el); if (m) m.hide(); };
     const err = (el, msg) => { const box = el.querySelector(".sp-err"); if (box) { box.textContent = msg; box.classList.remove("d-none"); } };
 
-    // "Add it to": Seed Vault (count, type, date) | Wanted | Library only.
+    // Pack price + Freebie (the "Add it to" vault fields and the Restock window).
+    let priceRows = 0;
+    function priceRow(sm, cents) {
+        const id = "spPrice" + (++priceRows);
+        return `<div class="row g-2 mt-0 sp-price-row">
+                <div class="col-6"><label class="form-label small mb-0" for="${id}">${esc(tr("sp_pack_price"))}</label><div class="fm-money"><span aria-hidden="true">$</span><input type="number" min="0" max="100000" step="0.01" inputmode="decimal" class="form-control ${sm ? "form-control-sm" : ""}" id="${id}" data-k="price" value="${cents != null ? (cents % 100 ? (cents / 100).toFixed(2) : cents / 100) : ""}"></div></div>
+                <div class="col-6"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" role="switch" id="${id}F" data-k="free"><label class="form-check-label small" for="${id}F">${esc(tr("sp_freebie"))}</label></div></div>
+                <div class="col-12"><p class="small text-muted mb-0">${esc(tr("sp_pack_help"))}</p></div>
+            </div>`;
+    }
+    function readPack(el) {
+        const v = parseFloat(el.querySelector("[data-k=price]").value);
+        return { price_cents: v >= 0 ? Math.round(v * 100) : null, free: el.querySelector("[data-k=free]").checked };
+    }
+
+    // "Add it to": Seed Vault (count, type, date, pack price) | Wanted | Library only.
     // Preset from the tab you're on.
     function destPicker() {
         const dest = tab === "all" ? "library" : tab;
@@ -267,7 +338,7 @@
                 <div class="col-4"><label class="form-label small mb-0">${esc(tr("sp_seeds"))}</label><input type="number" min="1" value="5" class="form-control form-control-sm" data-k="seeds"></div>
                 <div class="col-4"><label class="form-label small mb-0">${esc(tr("sp_seed_type"))}</label><select class="form-select form-select-sm" data-k="seedType">${Object.entries(SEEDTYPE).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select></div>
                 <div class="col-4"><label class="form-label small mb-0">${esc(tr("sp_added_on"))}</label><input type="date" value="${TODAY}" max="${TODAY}" class="form-control form-control-sm" data-k="added"></div>
-            </div></div>`;
+            </div>${priceRow(true, null)}</div>`;
     }
     function wireDest(el) {
         el.querySelectorAll("input[name=spDest]").forEach(r => r.addEventListener("change", () => {
@@ -278,7 +349,7 @@
     function readDest(el) {
         const dest = el.querySelector("input[name=spDest]:checked").value;
         const v = k => el.querySelector(`[data-k=${k}]`).value;
-        return { dest, seeds: Math.max(1, parseInt(v("seeds"), 10) || 1), seedType: v("seedType"), added: v("added") };
+        return { dest, seeds: Math.max(1, parseInt(v("seeds"), 10) || 1), seedType: v("seedType"), added: v("added"), pack: { ...readPack(el), added_on: v("added") } };
     }
 
     const findMine = (name, breeder) => STRAINS.find(s => s.name.trim().toLowerCase() === String(name).trim().toLowerCase() &&
@@ -343,14 +414,18 @@
                 // Demo: no review page (it would let you type); import, place it, open it.
                 try {
                     const imp = await api("POST", "/strains/straincompass/import", { slug: r.slug, name: r.name, listing_breeder: r.breeder || "" });
-                    if (d.dest === "vault") await api("POST", `/strains/${imp.id}/seeds`, { count: d.seeds, seed_type: d.seedType, seeds_added_on: d.added });
+                    if (d.dest === "vault") await api("POST", `/strains/${imp.id}/seeds`, { count: d.seeds, seed_type: d.seedType, seeds_added_on: d.added, pack: d.pack });
                     await api("POST", `/strains/${imp.id}/wanted`, { wanted: d.dest === "wanted" });
                     location.href = "/strain/" + imp.id;
                 } catch (ex) { /* demo.js shows why */ }
                 return;
             }
             const q = new URLSearchParams({ source: "straincompass", slug: r.slug, name: r.name, listing_breeder: r.breeder || "", dest: d.dest });
-            if (d.dest === "vault") { q.set("seed_count", d.seeds); q.set("seed_type", d.seedType); q.set("seeds_added_on", d.added); }
+            if (d.dest === "vault") {
+                q.set("seed_count", d.seeds); q.set("seed_type", d.seedType); q.set("seeds_added_on", d.added);
+                if (d.pack.price_cents != null) q.set("pack_price_cents", d.pack.price_cents);
+                if (d.pack.free) q.set("pack_free", "1");
+            }
             location.href = "/strain/import/review?" + q.toString();
         });
     }
@@ -405,6 +480,7 @@
             cycle_time: Math.round(longEnd * 7), cycle_time_min: shortEnd && shortEnd < longEnd ? Math.round(shortEnd * 7) : 0,
             seed_count: d.dest === "vault" ? d.seeds : 0, seed_type: d.dest === "vault" ? d.seedType : "",
             seeds_added_on: d.dest === "vault" ? d.added : "", wanted: d.dest === "wanted",
+            ...(d.dest === "vault" ? { pack: d.pack } : {}),
         };
         $("spManualSave").disabled = true;
         try {
@@ -413,7 +489,8 @@
         } catch (e) { err(el, e.message); } finally { $("spManualSave").disabled = false; }
     }
 
-    // + Seeds: how many, type, date, where; a Wanted strain moves to the vault.
+    // + Seeds: how many, type, date, where, the new pack's price; a Wanted
+    // strain moves to the vault. The price starts as the newest pack's.
     function openSeeds(id) {
         const s = STRAINS.find(x => x.id === +id);
         if (!s) return;
@@ -428,6 +505,7 @@
                 <div class="col-4"><label class="form-label small mb-0" for="spSeedsD">${esc(tr("sp_added_on"))}</label><input type="date" value="${inVault(s) && s.seeds_added_on ? s.seeds_added_on : TODAY}" max="${TODAY}" class="form-control" id="spSeedsD"></div>
                 <div class="col-12"><label class="form-label small mb-0" for="spSeedsL">${esc(tr("sp_stored_in"))}</label><input class="form-control" id="spSeedsL" value="${esc(s.seed_location || "")}" placeholder="${esc(tr("sp_stored_placeholder"))}"></div>
             </div>
+            ${priceRow(false, newestPrice(s))}
             ${inVault(s) && s.seeds_added_on ? `<p class="small text-muted mt-2 mb-0">${esc(tr("sp_have_already", { n: s.seed_count, date: fmtDate(s.seeds_added_on) }))}</p>` : ""}
             <div class="text-danger small mt-2 d-none sp-err"></div>`,
             `<button class="btn btn-light" data-bs-dismiss="modal">${esc(tr("sp_cancel"))}</button><button class="btn btn-success" id="spSeedsGo">${esc(tr(restock ? "sp_restock" : "sp_add_seeds"))}</button>`);
@@ -436,7 +514,11 @@
             if (!(n >= 1)) { $("spSeedsN").reportValidity(); return; }
             $("spSeedsGo").disabled = true;
             try {
-                await api("POST", `/strains/${s.id}/seeds`, { count: n, seed_type: $("spSeedsT").value, seeds_added_on: $("spSeedsD").value, seed_location: $("spSeedsL").value });
+                // The date box starts at the seeds' first date; left as is,
+                // the new pack is dated today.
+                const date = $("spSeedsD").value;
+                const packDate = inVault(s) && date === s.seeds_added_on ? TODAY : date;
+                await api("POST", `/strains/${s.id}/seeds`, { count: n, seed_type: $("spSeedsT").value, seeds_added_on: date, seed_location: $("spSeedsL").value, pack: { ...readPack(el), added_on: packDate } });
                 closeModal(el);
                 toast(tr(inVault(s) ? "sp_seeds_added_toast" : "sp_moved_to_vault", { n, name: s.name }));
                 if (RETURN_TO) return;   // the hidden handler goes back to the strain page

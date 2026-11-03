@@ -83,6 +83,7 @@ func BuildBackupArchive(db *sql.DB, opts BuildArchiveOptions) ([]byte, BackupMan
 		{"climate_target", &payload.ClimateTargets},
 		{"strain", &payload.Strains},
 		{"strain_lineage", &payload.StrainLineage},
+		{"strain_pack", &payload.StrainPacks},
 		{"strain_effect", &payload.StrainEffects},
 		{"strain_flavor", &payload.StrainFlavors},
 		{"strain_terpene", &payload.StrainTerpenes},

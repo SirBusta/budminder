@@ -282,6 +282,7 @@ func mergeWithExisting(db *sql.DB, r *ImportReview, sourceParents []string) []st
 	s.ID = ex.ID
 	s.SeedCount, s.SeedLocation, s.SeedType, s.PackagingImage = ex.SeedCount, ex.SeedLocation, ex.SeedType, ex.PackagingImage
 	s.Wanted, s.SeedsAddedOn = ex.Wanted, ex.SeedsAddedOn
+	s.Packs = ex.Packs
 	if r.Draft.Provenance.Source == importSourceStraincompass {
 		// StrainCompass's floweringType can only turn the existing
 		// Autoflower setting on, not off.
@@ -398,8 +399,9 @@ func SaveImportedStrainHandler(c *gin.Context) {
 			Choice string `json:"choice"` // keep | none | upload
 			Token  string `json:"token"`
 		} `json:"packaging"`
+		Pack *strainPack `json:"pack"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil || !req.Pack.valid() {
 		apiBadRequest(c, "api_invalid_request_payload")
 		return
 	}
@@ -564,6 +566,7 @@ func SaveImportedStrainHandler(c *gin.Context) {
 				return
 			}
 			req.Wanted, req.SeedsAddedOn = prevStock.Wanted, prevStock.AddedOn
+			req.Pack = nil
 			setCol(cols, vals, "seed_count", req.SeedCount)
 			setCol(cols, vals, "seed_location", nullableStr(req.SeedLocation))
 			setCol(cols, vals, "seed_type", nullableStr(req.SeedType))
@@ -580,6 +583,9 @@ func SaveImportedStrainHandler(c *gin.Context) {
 		err = execUpdateStrain(tx, strainID, cols, vals)
 	} else {
 		strainID, err = execInsertStrain(tx, cols, vals)
+	}
+	if err == nil {
+		err = saveFormPack(tx, strainID, req.Pack, prevStock.Count, req.SeedCount, stock.AddedOn, stockToday(c))
 	}
 	if err == nil {
 		err = replaceStrainAttributes(tx, strainID, attrs)
@@ -667,8 +673,8 @@ func replaceStrainLineageTx(tx *sql.Tx, strainID int, parents []importParent) er
 
 // applyImportDestination presets a new import's stock from the Strains
 // page's "Add it to" choice: dest=vault (+ seed_count, seed_type,
-// seeds_added_on), dest=wanted, or dest=library. Anything missing or
-// invalid falls back to the defaults; the review page shows the result
+// seeds_added_on, and the pack's pack_price_cents and pack_free=1),
+// dest=wanted, or dest=library. Anything missing or invalid falls back to the defaults; the review page shows the result
 // before anything is saved.
 func applyImportDestination(s *types.Strain, q url.Values) {
 	switch q.Get("dest") {
@@ -686,6 +692,11 @@ func applyImportDestination(s *types.Strain, q url.Values) {
 				s.SeedsAddedOn = d
 			}
 		}
+		pack := types.StrainPack{Seeds: n, Free: q.Get("pack_free") == "1", AddedOn: s.SeedsAddedOn}
+		if p, err := strconv.Atoi(q.Get("pack_price_cents")); err == nil && p >= 0 && p <= maxPackCents {
+			pack.PriceCents = &p
+		}
+		s.Packs = []types.StrainPack{pack}
 	case "library":
 		s.Wanted = false
 	case "wanted":

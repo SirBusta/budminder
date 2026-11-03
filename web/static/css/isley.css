@@ -2806,7 +2806,7 @@ th, td {
 .sp-add.secondary { background: var(--sp-card); color: var(--sp-ink); box-shadow: 0 0 0 1px var(--sp-line); }
 .sp-add.secondary:hover { box-shadow: 0 0 0 1px var(--sp-acc); color: var(--sp-acc); }
 
-.sp-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; margin-bottom: .8rem; }
+.sp-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; margin-bottom: 1.1rem; }
 .sp-tab { border: 0; background: var(--sp-card); border-radius: 14px; padding: .7rem .9rem; text-align: left; box-shadow: var(--sp-shadow); display: flex; gap: .75rem; align-items: center; color: var(--sp-ink); }
 .sp-tab .ic { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; background: var(--sp-seg); color: var(--sp-muted); font-size: 1rem; flex: none; }
 .sp-tab b { font-size: 1rem; display: block; }
@@ -2831,9 +2831,11 @@ th, td {
 .sp-seg { display: inline-flex; background: var(--sp-seg); border-radius: 9px; padding: 2px; }
 .sp-seg button { border: 0; background: transparent; font-size: .78rem; font-weight: 600; padding: .25rem .6rem; border-radius: 7px; color: var(--sp-muted); white-space: nowrap; }
 .sp-seg button.on { background: var(--sp-card); color: var(--sp-ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
-.sp-summary { font-size: .82rem; color: var(--sp-muted); }
+/* The tab's totals: one centered line in a pale green band above the cards. */
+.sp-summary { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: .35rem 1rem; background: #e7f3ec; border-radius: 10px; padding: .5rem .8rem; margin: .2rem 0 1.1rem; font-size: .9rem; color: var(--sp-muted); text-align: center; }
+.sp-summary:empty { display: none; }
 .sp-summary b { color: var(--sp-ink); }
-.sp-summary .warn { color: #c2410c; }
+.sp-summary .warn, .sp-summary .warn b { color: #c2410c; }
 
 .sp-b { display: inline-flex; align-items: center; gap: .3rem; font-size: .72rem; font-weight: 600; padding: .14rem .5rem; border-radius: 99px; white-space: nowrap; }
 .sp-b i { font-size: .68rem; }
@@ -2851,6 +2853,11 @@ th, td {
 .sp-b.auto { background: #fef3c7; color: #92400e; }
 .sp-b.photo { background: #e0f2fe; color: #075985; }
 .sp-b.photo i { color: #f59e0b; }
+.sp-b.cost { background: #ecfdf5; color: #047857; }
+.sp-b.free { background: #eff6ff; color: #1d4ed8; }
+.sp-free-note { color: #1d4ed8; }
+/* Restock / Add it to: the Freebie switch lines up with the price box. */
+.sp-price-row .form-switch { padding-top: 1.55rem; }
 
 .sp-btn { border: 1px solid var(--sp-line); background: var(--sp-card); color: var(--sp-ink); border-radius: 8px; font-size: .76rem; font-weight: 600; padding: .25rem .55rem; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; gap: .25rem; }
 .sp-btn:hover { border-color: var(--sp-acc); color: var(--sp-acc); }
@@ -3582,6 +3589,11 @@ th, td {
 [data-bs-theme="dark"] .sp-b.old { background: rgba(251, 146, 60, .15); color: #fdba74; }
 [data-bs-theme="dark"] .sp-b.grow { background: rgba(192, 132, 252, .15); color: #d8b4fe; }
 [data-bs-theme="dark"] .sp-b.photo { background: rgba(56, 189, 248, .14); color: #7dd3fc; }
+[data-bs-theme="dark"] .sp-b.cost { background: rgba(52, 211, 153, .14); color: #6ee7b7; }
+[data-bs-theme="dark"] .sp-b.free { background: rgba(96, 165, 250, .15); color: #93c5fd; }
+[data-bs-theme="dark"] .sp-free-note { color: #93c5fd; }
+[data-bs-theme="dark"] .sp-summary { background: rgba(74, 222, 128, .08); }
+[data-bs-theme="dark"] .sp-summary .warn, [data-bs-theme="dark"] .sp-summary .warn b { color: #fdba74; }
 [data-bs-theme="dark"] .sp-btn.on { background: rgba(251, 191, 36, .14); border-color: rgba(251, 191, 36, .35); color: #fcd34d; }
 [data-bs-theme="dark"] .sm-ic .logo.aci { background: rgba(56, 189, 248, .14); color: #7dd3fc; }
 [data-bs-theme="dark"] .sm-ic .logo.eco { background: rgba(251, 191, 36, .14); color: #fcd34d; }
@@ -4361,6 +4373,10 @@ body.bm-tour-open { overflow: hidden; }
 .fm-f > label .req, .fm-lbl .req { color: #dc2626; margin-left: .15rem; }
 .fm-f > label.fm-req::after { content: " *"; color: #dc2626; }
 .fm-f small, .fm-help { font-size: .76rem; color: var(--sx-muted); }
+/* A money field: the currency sign inside the box, before the number. */
+.fm-money { position: relative; }
+.fm-money > span { position: absolute; left: .75rem; top: 50%; transform: translateY(-50%); color: var(--sx-muted, #6b7280); pointer-events: none; }
+.fm-money input, .fm .fm-money .form-control { padding-left: 1.6rem; }
 .fm-sep { border: 0; border-top: 1px solid var(--sx-line, rgba(0,0,0,.1)); margin: 1.1rem 0; opacity: 1; }
 .fm .form-control, .fm .form-select, .fm-auth .form-control { border-radius: 9px; border-color: var(--color-input-border); font-size: .92rem; padding: .45rem .7rem; }
 .fm .isley-ac-input { background-color: var(--bs-body-bg); }

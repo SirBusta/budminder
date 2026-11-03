@@ -293,6 +293,10 @@ func dIntList(max int) demoCheck {
 }
 
 // dObject accepts an object with only these fields.
+// demoPack is a seed pack's price (cents, up to $10,000 here), Freebie and
+// date.
+var demoPack = dObject(map[string]demoCheck{"price_cents": dOpt(dInt(0, 1_000_000)), "free": dBool, "added_on": dOpt(dDate(true))})
+
 func dObject(fields map[string]demoCheck) demoCheck {
 	return func(c *gin.Context, v any) (any, error) {
 		m, ok := v.(map[string]any)
@@ -571,6 +575,7 @@ var demoRules = map[string]demoRule{
 		"count": dInt(1, 100), "seed_type": dOpt(dOneOf("", "clone", "feminized", "regular")),
 		"seeds_added_on": dOpt(dDate(true)),
 		"seed_location":  dOpt(dKnown("SELECT DISTINCT seed_location FROM strain")),
+		"pack":           dOpt(demoPack),
 	}},
 	"POST /strains/:id/seeds/use": {fields: map[string]demoCheck{"count": dInt(1, 100)}},
 	"POST /strains/:id/wanted":    {fields: map[string]demoCheck{"wanted": dBool}},
@@ -581,7 +586,7 @@ var demoRules = map[string]demoRule{
 			"indica": dInt(0, 100), "sativa": dInt(0, 100), "autoflower": dBool,
 			"seed_count": dInt(0, 1000), "cycle_time": dInt(0, 365), "cycle_time_min": dOpt(dInt(0, 365)),
 			"wanted": dOpt(dBool), "seeds_added_on": dOpt(dDate(true)),
-			"seed_type": dOpt(dOneOf("", "clone", "feminized", "regular")),
+			"seed_type": dOpt(dOneOf("", "clone", "feminized", "regular")), "pack": dOpt(demoPack),
 			"cannabinoids": dOpt(dObject(map[string]demoCheck{
 				"thc_min": demoPercent, "thc_max": demoPercent, "cbd_min": demoPercent,
 				"cbd_max": demoPercent, "cbn_max": demoPercent, "cbg_max": demoPercent,

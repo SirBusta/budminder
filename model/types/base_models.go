@@ -335,6 +335,10 @@ type Strain struct {
 	Flavors     []StrainAttribute `json:"flavors,omitempty"`
 	Terpenes    []StrainAttribute `json:"terpenes,omitempty"`
 	MedicalUses []StrainAttribute `json:"medical_uses,omitempty"`
+
+	// The Seed Vault packs the seeds on hand come from, oldest first
+	// (StrainPack); filled by GetStrain and the list queries.
+	Packs []StrainPack `json:"packs,omitempty"`
 }
 
 // StrainAttribute is a single effect/flavor/terpene/medical-use row imported

@@ -224,6 +224,18 @@ func TestDemo_NumbersHaveLimits(t *testing.T) {
 	assertRefused(t, code, out, "a new seed location is typed text")
 	code, _ = e.json(t, "POST", path, map[string]any{"count": 3})
 	assert.Equal(t, http.StatusOK, code)
+
+	for _, p := range []any{
+		map[string]any{"price_cents": -1, "free": false}, map[string]any{"price_cents": 1_000_001, "free": false},
+		map[string]any{"price_cents": 500, "free": "yes"}, map[string]any{"price_cents": 500, "free": false, "note": "x"}, "150",
+	} {
+		code, out := e.json(t, "POST", path, map[string]any{"count": 1, "pack": p})
+		assertRefused(t, code, out, "pack price")
+	}
+	code, _ = e.json(t, "POST", path, map[string]any{"count": 1, "pack": map[string]any{"price_cents": 15000, "free": true}})
+	assert.Equal(t, http.StatusOK, code)
+	code, _ = e.json(t, "POST", path, map[string]any{"count": 1, "pack": map[string]any{"price_cents": nil, "free": false}})
+	assert.Equal(t, http.StatusOK, code)
 }
 
 func TestDemo_PhotoSettingsButNotCompressingExisting(t *testing.T) {
