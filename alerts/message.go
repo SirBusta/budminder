@@ -20,11 +20,11 @@ const (
 
 // Delivery states on an event.
 const (
-	DeliveryDryRun  = "dry_run"
 	DeliveryPending = "pending"
 	DeliverySent    = "sent"
 	DeliveryFailed  = "failed"
-	DeliveryOff     = "off" // Send email is chosen, but the Email card is off or incomplete
+	DeliveryOff     = "off"    // notifications are off, or the Email settings are incomplete
+	DeliveryPaused  = "paused" // notifications are off, with a mail server entered
 )
 
 // Event is one alert_event row.
@@ -39,7 +39,7 @@ type Event struct {
 	Side          string
 	Value         *float64
 	Limit         *float64
-	Detail        string // clock alerts: seen on|seen off|schedule on|schedule off, as HH:MM; sensor alerts: the unit
+	Detail        string // clock alerts: seen on|seen off|schedule on|schedule off, as HH:MM; sensor alerts: the unit; offline alerts: sensor names
 	Started       time.Time
 	Notified      time.Time
 	Resolved      *time.Time
@@ -47,6 +47,7 @@ type Event struct {
 	DeliveryError string
 	Pending       string
 	Emailed       bool
+	Cleared       bool // moved to Recent alerts' Cleared tab
 }
 
 // Words builds an event's text: T translates a key, Units is the Settings
@@ -140,6 +141,14 @@ func (w Words) Title(e Event, resolved bool) string {
 		return w.fill("al_ev_sensor_high", vals)
 	}
 	switch {
+	case e.Kind == KindOffline && resolved && e.Zone == "":
+		return w.T("al_ev_offline_ok_all")
+	case e.Kind == KindOffline && resolved:
+		return w.fill("al_ev_offline_ok", vals)
+	case e.Kind == KindOffline && e.Zone == "":
+		return w.T("al_ev_offline_all")
+	case e.Kind == KindOffline:
+		return w.fill("al_ev_offline", vals)
 	case e.Kind == KindLight && resolved:
 		return w.fill("al_ev_light_ok", vals)
 	case e.Kind == KindLight:
@@ -148,8 +157,6 @@ func (w Words) Title(e Event, resolved bool) string {
 		return w.fill("al_ev_clock", vals)
 	case resolved:
 		return w.fill("al_ev_ok", vals)
-	case e.Kind == KindDrift:
-		return w.fill("al_ev_drift", vals)
 	case e.Side == SideLow:
 		return w.fill("al_ev_low", vals)
 	}
@@ -169,6 +176,12 @@ func (w Words) Line(e Event, resolved bool) string {
 		"value": w.Amount(e.Measure, e.Value), "limit": w.Amount(e.Measure, e.Limit)}
 	key := ""
 	switch e.Kind {
+	case KindOffline:
+		key = "al_line_offline"
+		if resolved {
+			key = "al_line_offline_ok"
+		}
+		vals["sensors"] = e.Detail
 	case KindLight:
 		switch {
 		case resolved:
@@ -231,6 +244,9 @@ func BuildMessage(w Words, events []Event, link string) Message {
 			line += " " + w.fill("al_since", map[string]string{"time": w.Clock(e.Started)})
 			if e.Pending == NoticeRepeat {
 				line += " " + w.T("al_still")
+			}
+			if e.Kind == KindStage {
+				line += " " + w.T("al_widen")
 			}
 		}
 		paras = append(paras, line)

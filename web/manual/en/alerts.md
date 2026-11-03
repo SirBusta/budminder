@@ -1,56 +1,77 @@
-**Settings → Alerts** lets BudMinder email you when a zone's climate or lights need attention. After each sensor poll, it compares each zone's chosen climate sensors with its [climate targets](/manual/grow-setup#climate-targets) and light schedule.
+BudMinder sends you an alert notification when a zone's climate, lights or sensors need attention. Manage alert notifications in **Settings → Alerts**.
 
-## Email
+> **Beta.** Alerts are still being tested. Do not rely on them as your only safety check. Feedback is appreciated: [budminder.app@gmail.com](mailto:budminder.app@gmail.com?subject=BudMinder%20alerts%20feedback).
 
-Enter your mail server, sign-in, From address and recipients, turn on **Send alert emails**, then click **Send test email**. Gmail and most other mail services require an app password, not your account password. The password is stored encrypted and is left out of backups.
+## What sends an alert notification
 
-## Climate alerts
+| Alert | Sent when |
+|---|---|
+| **Climate (VPD, Temp & Humidity)** | Climate reading reaches a Low or High limit for 15 consecutive minutes |
+| **Lights did not turn on or off** | Lights turn on or off outside the scheduled time for 15 consecutive minutes |
+| **Lights are off schedule** | Lights switch about 1 hour before or after the schedule on each of the last 3 days |
+| **Sensor alerts** | Sensor reaches a user defined value for 15 consecutive minutes |
+| **Sensors offline** | No readings received for 15 minutes from a climate sensor, a light sensor or a sensor with a Sensor alert turned on |
 
-**Mode** decides what happens when an alert starts:
+Set limits in [Climate targets and limits](/manual/grow-setup#climate-targets-and-limits), in **Settings → Grow setup**. Temperature and humidity start with wide limits for each stage. VPD starts with Targets and no limits, so BudMinder sends no VPD alert notification until you set a limit.
 
-- **Off**: nothing is checked.
-- **Dry run** (the default): alerts are listed under **Recent alerts**, but no email is sent. Use it to test your limits in a real tent before turning on email.
-- **Send email**: alerts are listed and emailed. If the Email card is off or incomplete, alerts are listed as **Not sent: email is off**.
+Default Targets and limits are guidelines only. Choose values suited to your environment. If you receive too many alert notifications, widen your limits.
 
-| Alert | Starts when | Repeats while active | Back-to-normal email |
-|---|---|---|---|
-| **Safety limit** (temperature, humidity) | 2 readings in a row reach the limit | Every 30 minutes | Yes |
-| **Low or High** (VPD; temperature and humidity with Targets by stage) | Most readings in the last 10 minutes reach it | Every 2 hours | Yes |
-| **Drifting** | Readings stay amber on one side of Target for 2 hours | No, one notice | No |
-| **Lights did not turn on or off** | The light sensor disagrees with the schedule for 15 minutes | Every 2 hours | Yes |
-| **Lights are off schedule** | Lights switch about 1 hour before or after the schedule on each of the last 3 days | No, one notice | No |
+BudMinder checks climate and lights only in zones with plants, and only with the sensors chosen in **Edit Zone**. A sensor that never sent a reading does not count as offline.
 
-These times, except the two light checks, can be changed on the card. A few rules keep alerts quiet and accurate:
+## How often alert notifications are sent
 
-- **Reaching a value counts.** A High of 1.50 kPa is reached at exactly 1.50.
-- **Short swings are ignored.** Low and High use the middle reading of the window, so an open door doesn't send an alert.
-- **Pause after a light switch.** Low, High and drifting checks wait 10 minutes after lights turn on or off, and readings from before then don't count, so a real problem alerts about 13 minutes after the switch. Safety limits keep running.
-- **Back to normal needs a small margin:** 0.5 °C (about 1 °F), 2% humidity or 0.05 kPa inside the limit.
-- **A sensor that stops reporting** neither sends an alert nor ends one.
-- **Several alerts at once** arrive in one email, with the most serious in the subject. A failed email is tried again every 5 minutes, and the list shows the mail server's answer.
-- **Alerts end without an email** when they no longer apply: the sensor was unassigned, the zone has no plants left, or alerts were turned off.
-- **Emails use the language** that was in use when the Climate alerts card was last saved.
+| When | What happens |
+|---|---|
+| **First 15 minutes** | Nothing is sent. One reading back in range starts the 15 minutes over, so brief spikes are ignored. |
+| **At 15 minutes** | The first notification is sent. |
+| **Every 6 hours** | A reminder is sent until the problem ends. Every active alert is included in the same email. |
+| **After 30 minutes back in range** | One final all-clear is sent. If a zone has several climate alerts, you receive one all-clear when the last one ends. |
 
-Zones without plants, and sensors not chosen in **Edit zone**, aren't checked.
+**Lights are off schedule** is sent once, with no reminder or all-clear. It replaces **Lights did not turn on or off** while the lights stay about 1 hour off schedule.
+
+- **Reaching a value counts.** A High limit of 1.50 kPa is reached at exactly 1.50.
+- **BudMinder waits after lights turn on or off.** It ignores climate readings for the first 10 minutes, so a climate alert can start no sooner than 25 minutes after the change.
+- **A sensor that stops sending readings** does not start or end a climate alert. After 15 minutes, BudMinder sends a **Sensors offline** alert notification.
+- **Alerts that start together** arrive in one email. If an email fails, BudMinder tries again every 5 minutes, and **Recent alerts** shows the mail server's error.
+- **Alerts end without an email** if you remove the limit, if you remove the sensor in **Edit Zone**, or if the zone has no plants left.
+
+## Zone status
+
+Shows each zone's current readings, limits and alerts, and the status of its lights and sensors. The bar for each reading shows these areas:
+
+- **Target zone** (green): near the Target. If a limit is set, this is within half the distance from the Target to the limit.
+- **Caution zone** (amber): between the Target zone and a limit. It appears only when a row has both a Target and a limit.
+- **No target or High/Low limit set** (gray): no Target or limit applies to a reading here.
+- **Alert zone** (red): at or past a limit.
+
+The green mark is the Target. The other mark is the current reading. Reload the page to see new readings.
+
+## Notification methods
+
+Alert notifications are sent by email. Other methods are planned for a future release.
+
+Click **Email** to open its settings. Enter your **Mail server**, **Username**, **Password**, **From address** and **Send to** addresses, then click **Send test email**. If the test email arrives, turn on the switch on the **Email** row. Gmail and most other mail services require an app password, not your account password. The password is stored encrypted and is left out of backups.
+
+Before you can turn on that switch, set a limit in **Climate targets and limits**, add a **Sensor alert**, or set up a **Light check** in **Edit Zone**. With email off, alerts still appear under **Recent alerts**. Emails use the language BudMinder was showing when you last changed the Email settings.
 
 ## Sensor alerts
 
-A sensor alert watches any sensor, whatever it measures, such as CO2, a water tank level or a soil probe. Choose the sensor, **At or above** or **At or below**, a value in the sensor's own unit, and how long readings must stay there. Add as many as you need, up to 100.
+Use a Sensor alert to watch any sensor, such as CO2, a water tank level or a soil probe. Click **Add sensor alert**, then choose the sensor, **At or above** or **At or below**, and a value in the sensor's own unit.
 
-An alert starts when every reading for that time has reached the value, and ends after every reading for the same time has been clear of it. An alert that stays active repeats on the **Repeat Low, High and light alerts** schedule. Sensor alerts follow the **Mode** in **Climate alerts**: **Off** turns them off, and **Dry run** lists them without sending email.
-
-Use the switch to turn one alert off without deleting it. Editing an alert starts it over: one that's active ends without an email, and starts again if it still applies. Sensor alerts are part of backups, and deleting a sensor deletes its alerts.
+Use the switch to turn a Sensor alert off without deleting it. Editing a Sensor alert ends its active alert without an email. A new alert starts if the reading is still at or past the value. Sensor alerts are part of backups, and deleting a sensor deletes its alerts.
 
 ## Recent alerts
 
-Lists the last 50 alerts, active ones first, with how each was delivered: **Dry run**, **Emailed**, **Email failed** or **Not sent: email is off**. Ended alerts are kept for 90 days. The list isn't part of backups.
+Lists the last 50 alerts, active ones first, with how each was delivered: **Sending**, **Emailed**, **Email failed** or **Not sent: notifications are off**.
+
+Click **Clear** to move an ended alert to the **Cleared** tab, or **Clear All Ended** to move every ended alert. Click **Restore** to move one back. Active alerts cannot be cleared. Ended alerts are kept for 90 days, cleared or not. The list is not part of backups.
 
 ## Worked examples
 
-**Low VPD in Flower.** A zone in Flower, lights on, has VPD Low 1.0 · Target 1.25 · High 1.5. The dehumidifier stops, and VPD falls to 0.95 kPa. About 5 minutes later most of the last 10 minutes' readings are at or below 1.0, so the **VPD low** alert starts. It repeats every 2 hours. Once the middle reading climbs above 1.05 kPa, you get one back-to-normal email.
+**Low VPD in Flower.** A zone in Flower, lights on, has a VPD Low limit of 1.0 kPa. The dehumidifier stops and VPD falls to 0.95 kPa. If every reading for 15 minutes stays at or below 1.0, a **VPD low** alert notification is sent. If the problem continues, reminders are sent every 6 hours. Once no reading has reached 1.0 for 30 minutes, one all-clear is sent.
 
-**High temperature while VPD looks normal.** Warm, humid air can keep VPD inside its range while the temperature is too high: 92 °F at 75% humidity is a VPD of about 1.3 kPa, inside the range above, yet the plants are hot. With a high safety limit of 90 °F, two readings in a row at 90 °F or above start a **Temperature high** alert, whatever the VPD says. It repeats every 30 minutes until two readings in a row are about 1 °F under the limit.
+**High temperature while VPD looks normal.** Warm, humid air can keep VPD in range while the temperature is too high: 92 °F at 75% humidity is a VPD of about 1.3 kPa. With a High limit of 90 °F, a **Temperature high** alert notification is sent after 15 minutes at 90 °F or above, whatever the VPD reads.
 
-**CO2 running high.** A sensor alert for a CO2 sensor is set to at or above 1,500 ppm for at least 10 minutes. A short spike doesn't count, because one lower reading in those 10 minutes holds the alert back. Once every reading for 10 minutes has been at 1,500 ppm or more, the alert starts. It ends after 10 minutes of readings under 1,500 ppm, with one back-to-normal email.
+**CO2 running high.** A Sensor alert is set to at or above 1,500 ppm. A short spike does not count, because one lower reading starts the 15 minutes over. After 15 minutes at 1,500 ppm or more, the alert notification is sent. After 30 minutes under 1,500 ppm, one all-clear is sent.
 
-**Lights an hour off.** A zone's schedule says on at 6:00 AM and off at 6:00 PM, but the controller's clock wasn't moved for daylight saving, so the lights switch at 5:00 AM and 5:00 PM. For the first days you get **Lights did not turn on or off** alerts. After three days BudMinder sees the steady offset, replaces them with one **Lights are off schedule** notice and tells you what it saw. Check the clock on the light controller, or the time zone in **Settings → General**.
+**Lights an hour off.** A zone's schedule says on at 6:00 AM and off at 6:00 PM, but the controller's clock was not moved for daylight saving, so the lights switch at 5:00 AM and 5:00 PM. At first you receive **Lights did not turn on or off** alert notifications. After three days, BudMinder replaces them with one **Lights are off schedule** alert notification that lists the times the sensor saw. To correct this, check the clock on the light controller, or the time zone in **Settings → General**.

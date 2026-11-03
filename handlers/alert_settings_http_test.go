@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"isley/alerts"
+	"isley/handlers"
 	"isley/tests/testutil"
 	"isley/tests/testutil/fakes"
 )
@@ -28,6 +29,7 @@ func newAlertRoutes(t *testing.T) *alertRoutes {
 	t.Helper()
 	db := testutil.NewTestDB(t)
 	testutil.SeedAdmin(t, db, "alerts-pass-123")
+	require.NoError(t, handlers.EnsureClimateTargets(db))
 	server := testutil.NewTestServer(t, db, testutil.WithDataDir(t.TempDir()))
 	c, csrf := server.LoginAndFetchCSRF(t, "alerts-pass-123", "/settings")
 	return &alertRoutes{server: server, c: c, csrf: csrf}
@@ -174,4 +176,23 @@ func TestAlertSettingsHTTP_TestEmail(t *testing.T) {
 	form["to"] = ""
 	code, _ = r.post(t, "/settings/alerts/email/test", form)
 	assert.Equal(t, http.StatusBadRequest, code)
+}
+
+// The Beta label stays visible on every alert feature until alerts leave beta.
+func TestAlertSettingsHTTP_BetaLabel(t *testing.T) {
+	t.Parallel()
+	r := newAlertRoutes(t)
+	resp := r.c.Get("/settings")
+	defer testutil.DrainAndClose(resp)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	raw, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	body := string(raw)
+
+	assert.Contains(t, body, `id="alBetaNote"`)
+	assert.Contains(t, body, "Do not rely on them as your only safety check.")
+	assert.Contains(t, body, `href="mailto:budminder.app@gmail.com?subject=BudMinder%20alerts%20feedback"`)
+	assert.NotContains(t, body, `Sensor alerts<em class="st-beta">`, "one note at the top, not a tag on each card")
+	assert.Contains(t, body, `Light check<em class="st-beta">Beta</em></h4>`)
+	assert.Contains(t, body, `<em class="st-beta">Beta</em></a>`, "the Alerts link in the Settings menu")
 }

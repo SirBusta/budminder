@@ -18,10 +18,10 @@ func ruleReadings(now time.Time, every time.Duration, vals ...float64) []climate
 func TestEvaluateRule(t *testing.T) {
 	t.Parallel()
 	now := time.Date(2026, 10, 30, 12, 0, 0, 0, time.UTC)
-	rule := Rule{ID: 7, SensorID: 3, Side: SideHigh, Limit: 100, Hold: 5 * time.Minute, Enabled: true}
+	rule := Rule{ID: 7, SensorID: 3, Side: SideHigh, Limit: 100, Enabled: true}
 	key := Key{KindSensor, "rule:7", SideHigh}
 	check := func(r Rule, open []OpenAlert, readings []climate.Reading) string {
-		c := EvaluateRule(RuleInput{Rule: r, Readings: readings, Now: now, Timing: DefaultTiming(),
+		c := EvaluateRule(RuleInput{Rule: r, Readings: readings, Now: now,
 			MinWindow: 2 * time.Minute, StaleAfter: 10 * time.Minute, Open: open})
 		if len(c) == 0 {
 			return ""
@@ -30,7 +30,17 @@ func TestEvaluateRule(t *testing.T) {
 	}
 	min := time.Minute
 	fresh := []OpenAlert{{Key: key, NotifiedAt: now.Add(-time.Minute)}}
-	due := []OpenAlert{{Key: key, NotifiedAt: now.Add(-3 * time.Hour)}}
+	vals := func(v float64, n int) []float64 {
+		out := make([]float64, n)
+		for i := range out {
+			out[i] = v
+		}
+		return out
+	}
+	oneUnder := vals(105, 16)
+	oneUnder[8] = 99
+	oneOver := vals(99, 31)
+	oneOver[5] = 105
 
 	for _, tc := range []struct {
 		name     string
@@ -39,19 +49,19 @@ func TestEvaluateRule(t *testing.T) {
 		readings []climate.Reading
 		want     string
 	}{
-		{"held long enough", rule, nil, ruleReadings(now, min, 100, 101, 102, 103, 104, 105), Start},
-		{"reaching the limit counts", rule, nil, ruleReadings(now, min, 100, 100, 100, 100, 100, 100), Start},
-		{"one reading under", rule, nil, ruleReadings(now, min, 105, 105, 99, 105, 105, 105), ""},
-		{"older readings don't matter", rule, nil, ruleReadings(now, min, 1, 1, 105, 105, 105, 105, 105, 105), Start},
+		{"held long enough", rule, nil, ruleReadings(now, min, vals(105, 16)...), Start},
+		{"reaching the limit counts", rule, nil, ruleReadings(now, min, vals(100, 16)...), Start},
+		{"too soon", rule, nil, ruleReadings(now, min, vals(105, 6)...), ""},
+		{"one reading under", rule, nil, ruleReadings(now, min, oneUnder...), ""},
+		{"older readings don't matter", rule, nil, ruleReadings(now, min, append(vals(1, 10), vals(105, 16)...)...), Start},
 		{"just came back", rule, nil, ruleReadings(now, min, 105, 105), ""},
 		{"one reading", rule, nil, ruleReadings(now, min, 105), ""},
 		{"no readings", rule, nil, nil, ""},
 		{"stale holds", rule, fresh, ruleReadings(now.Add(-20*min), min, 1, 1, 1, 1, 1, 1), ""},
-		{"still open, not due", rule, fresh, ruleReadings(now, min, 105, 105, 105, 105, 105, 105), ""},
-		{"still open, due", rule, due, ruleReadings(now, min, 105, 105, 105, 105, 105, 105), Repeat},
-		{"partly clear stays open", rule, fresh, ruleReadings(now, min, 105, 99, 99, 99, 99, 99), ""},
-		{"clear for the hold ends", rule, fresh, ruleReadings(now, min, 99, 99, 99, 99, 99, 99), End},
-		{"low side", Rule{ID: 7, Side: SideLow, Limit: 10, Hold: 5 * min}, nil, ruleReadings(now, min, 10, 9, 8, 7, 6, 5), Start},
+		{"still open", rule, fresh, ruleReadings(now, min, vals(105, 31)...), ""},
+		{"partly clear stays open", rule, fresh, ruleReadings(now, min, oneOver...), ""},
+		{"clear for 30 minutes ends", rule, fresh, ruleReadings(now, min, vals(99, 31)...), End},
+		{"low side", Rule{ID: 7, Side: SideLow, Limit: 10}, nil, ruleReadings(now, min, vals(9, 16)...), Start},
 	} {
 		if got := check(tc.rule, tc.open, tc.readings); got != tc.want {
 			t.Errorf("%s: got %q, want %q", tc.name, got, tc.want)

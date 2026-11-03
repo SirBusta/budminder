@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,10 +20,10 @@ import (
 	"isley/utils"
 )
 
-// Climate settings keys (Settings > Grow setup > Climate targets).
+// Climate settings keys (Settings > Grow setup > Climate targets and limits).
 const (
-	climateSplitLightsKey  = "climate_split_lights"
-	climateFlowerPhasesKey = "climate_flower_phases"
+	climateSplitLightsKey  = "climate_split_lights"  // one choice per measure: vpd,temp,rh
+	climateFlowerPhasesKey = "climate_flower_phases" // the same
 	climatePhaseWeeksKey   = "climate_phase_weeks"
 	climateTempByStageKey  = "climate_temp_by_stage"
 	climateRHByStageKey    = "climate_rh_by_stage"
@@ -39,33 +40,50 @@ type ClimateTarget struct {
 	climate.Range
 }
 
-// ClimateSettings is the whole Climate targets card.
+// ClimateSettings is the whole Climate targets and limits card. SplitLights
+// and FlowerPhases hold one choice per measure, in climateMeasures order. The
+// Flower weeks are the same for all three.
 type ClimateSettings struct {
-	SplitLights  bool            `json:"split_lights"`
-	FlowerPhases bool            `json:"flower_phases"`
+	SplitLights  [3]bool         `json:"split_lights"`
+	FlowerPhases [3]bool         `json:"flower_phases"`
 	PhaseWeeks   [2]int          `json:"phase_weeks"` // last week of Stretch, last week of Full bloom
 	TempByStage  bool            `json:"temp_by_stage"`
 	RHByStage    bool            `json:"rh_by_stage"`
-	TempLimits   [2]*float64     `json:"temp_limits"` // °C; nil = skip
+	TempLimits   [2]*float64     `json:"temp_limits"` // °C; nil = no limit; used with by stage off
 	RHLimits     [2]*float64     `json:"rh_limits"`
 	Targets      []ClimateTarget `json:"targets"`
+}
+
+// climateMeasures is the order of SplitLights and FlowerPhases.
+var climateMeasures = [3]string{climate.VPD, climate.Temp, climate.RH}
+
+func measureIndex(measure string) int {
+	for i, m := range climateMeasures {
+		if m == measure {
+			return i
+		}
+	}
+	return 0
 }
 
 // climateKey identifies a target row.
 type climateKey struct{ stage, phase, measure, lights string }
 
 // climateRows lists every row the card has: each measure for Seedling, Veg,
-// Flower (whole and each phase) with lights on and off, and Drying (lights off).
+// Flower (whole and each phase) with lights on and off, and temperature and
+// humidity for Drying (lights off). VPD doesn't apply to Drying.
 func climateRows() []climateKey {
 	var out []climateKey
-	for _, m := range []string{climate.VPD, climate.Temp, climate.RH} {
+	for _, m := range climateMeasures {
 		for _, sp := range [][2]string{{climate.Seedling, ""}, {climate.Veg, ""}, {climate.Flower, ""},
 			{climate.Flower, climate.Stretch}, {climate.Flower, climate.Bloom}, {climate.Flower, climate.Ripen}} {
 			for _, l := range []string{"on", "off"} {
 				out = append(out, climateKey{sp[0], sp[1], m, l})
 			}
 		}
-		out = append(out, climateKey{climate.Drying, "", m, "off"})
+		if m != climate.VPD {
+			out = append(out, climateKey{climate.Drying, "", m, "off"})
+		}
 	}
 	return out
 }
@@ -75,28 +93,60 @@ var climateBounds = map[string][2]float64{climate.VPD: {0, 5}, climate.Temp: {-2
 
 func fToC(f float64) float64 { return math.Round((f-32)*5/9*10000) / 10000 }
 
-// Example values from the Climate targets design: [lights on, lights off]
-// as [low, target, high]; temperature in °F, converted to °C when stored.
-var climateDefaults = map[string]map[string][2][3]float64{
-	climate.VPD: {
-		"seedling": {{0.4, 0.6, 0.8}, {0.3, 0.5, 0.7}}, "veg": {{0.8, 1.0, 1.2}, {0.6, 0.8, 1.0}},
-		"flower": {{1.0, 1.25, 1.5}, {0.8, 1.05, 1.3}}, "stretch": {{1.0, 1.2, 1.4}, {0.8, 1.0, 1.2}},
-		"bloom": {{1.2, 1.35, 1.5}, {1.0, 1.15, 1.3}}, "ripen": {{1.3, 1.45, 1.6}, {1.1, 1.25, 1.4}},
-		"drying": {{0.7, 0.8, 0.9}, {0.7, 0.8, 0.9}}},
-	climate.Temp: {
-		"seedling": {{72, 77, 82}, {66, 70, 74}}, "veg": {{72, 78, 84}, {64, 70, 75}},
-		"flower": {{68, 75, 82}, {60, 66, 72}}, "stretch": {{70, 77, 82}, {62, 68, 72}},
-		"bloom": {{68, 75, 80}, {60, 66, 70}}, "ripen": {{65, 72, 78}, {58, 64, 68}},
-		"drying": {{58, 60, 64}, {58, 60, 64}}},
-	climate.RH: {
-		"seedling": {{60, 68, 75}, {60, 68, 75}}, "veg": {{50, 60, 70}, {50, 60, 70}},
-		"flower": {{40, 50, 60}, {40, 50, 58}}, "stretch": {{45, 52, 60}, {45, 52, 60}},
-		"bloom": {{40, 47, 55}, {40, 47, 55}}, "ripen": {{35, 42, 50}, {35, 42, 48}},
-		"drying": {{55, 60, 65}, {55, 60, 65}}},
+// A new install's VPD Targets, [lights on, lights off]. VPD has no limits out
+// of the box. Flower as one stage uses Full bloom's values.
+var climateDefaultVPD = map[string][2]float64{
+	climate.Seedling: {0.8, 0.8}, climate.Veg: {1.0, 1.0}, climate.Flower: {1.3, 1.2},
+	climate.Stretch: {1.2, 1.2}, climate.Bloom: {1.3, 1.2}, climate.Ripen: {1.5, 1.2},
+}
+
+// A new install's limits for temperature (°F) and humidity, the same for
+// lights on and off and for each Flower phase, with no Target. They are wide,
+// for serious problems only.
+var climateDefaultLimits = map[string]map[string][2]float64{
+	climate.Temp: {climate.Seedling: {60, 90}, climate.Veg: {55, 90}, climate.Flower: {55, 86}},
+	climate.RH:   {climate.Seedling: {55, 90}, climate.Veg: {45, 85}, climate.Flower: {30, 70}},
+}
+
+// Drying starts with all three values, in °F and %.
+var climateDefaultDrying = [3]float64{55, 60, 65}
+
+// The limits with Targets and limits by stage turned off: the widest of the
+// values above.
+var (
+	climateDefaultFlatTemp = [2]float64{55, 90} // °F
+	climateDefaultFlatRH   = [2]float64{30, 90}
+)
+
+// climateDefault is a row's value on a new install.
+func climateDefault(k climateKey) climate.Range {
+	val := func(v float64) *float64 {
+		if k.measure == climate.Temp {
+			v = fToC(v)
+		}
+		return &v
+	}
+	if k.stage == climate.Drying {
+		d := climateDefaultDrying
+		return climate.Range{Low: val(d[0]), Target: val(d[1]), High: val(d[2])}
+	}
+	if k.measure == climate.VPD {
+		key := k.stage
+		if k.phase != "" {
+			key = k.phase
+		}
+		t := climateDefaultVPD[key][0]
+		if k.lights == "off" {
+			t = climateDefaultVPD[key][1]
+		}
+		return climate.Range{Target: &t}
+	}
+	l := climateDefaultLimits[k.measure][k.stage]
+	return climate.Range{Low: val(l[0]), High: val(l[1])}
 }
 
 // The VPD ranges migration 019 seeded; an install that still has them gets
-// the fuller design defaults instead of a copy.
+// the defaults instead of a copy.
 var vpd019 = map[string][2]float64{"Seedling": {0.4, 0.8}, "Veg": {0.8, 1.2}, "Flower": {1.2, 1.5}}
 
 // statusIDs maps stage keys to plant_status ids.
@@ -127,9 +177,9 @@ func statusIDs(q interface {
 }
 
 // EnsureClimateTargets fills climate_target when it is empty: on first start
-// after migration 043, and after restoring a backup made before it. VPD keeps
-// each stage's old Low and High (Target halfway) unless they were never
-// changed from the 019 defaults.
+// after migration 046, and after restoring a backup made before it. VPD keeps
+// each stage's old Low and High as limits if someone changed them from the 019
+// defaults, with the default Target (halfway when that isn't between them).
 func EnsureClimateTargets(db *sql.DB) error {
 	var n int
 	if err := db.QueryRow("SELECT COUNT(*) FROM climate_target").Scan(&n); err != nil || n > 0 {
@@ -172,29 +222,21 @@ func EnsureClimateTargets(db *sql.DB) error {
 		if !ok {
 			continue
 		}
-		key := k.stage
-		if k.phase != "" {
-			key = k.phase
-		}
-		d := climateDefaults[k.measure][key][0]
-		if k.lights == "off" {
-			d = climateDefaults[k.measure][key][1]
-		}
-		lo, t, hi := d[0], d[1], d[2]
-		if k.measure == climate.Temp {
-			lo, t, hi = fToC(lo), fToC(t), fToC(hi)
-		}
+		v := climateDefault(k)
 		if k.measure == climate.VPD {
 			name := climate.StageStatus[k.stage]
-			if r, ok := old[name]; ok && r[0] != nil && r[1] != nil {
+			if r, ok := old[name]; ok && r[0] != nil && r[1] != nil && *r[0] < *r[1] {
 				if def, had := vpd019[name]; !had || *r[0] != def[0] || *r[1] != def[1] {
-					lo, hi = *r[0], *r[1]
-					t = math.Round((lo+hi)/2*1000) / 1000
+					t := math.Round((*r[0]+*r[1])/2*1000) / 1000
+					if v.Target != nil && *v.Target > *r[0] && *v.Target < *r[1] {
+						t = *v.Target
+					}
+					v = climate.Range{Low: r[0], Target: &t, High: r[1]}
 				}
 			}
 		}
 		if _, err := tx.Exec(`INSERT INTO climate_target (status_id, phase, measure, lights, low, target, high)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)`, sid, k.phase, k.measure, k.lights, lo, t, hi); err != nil {
+			VALUES ($1, $2, $3, $4, $5, $6, $7)`, sid, k.phase, k.measure, k.lights, v.Low, v.Target, v.High); err != nil {
 			return err
 		}
 	}
@@ -223,6 +265,40 @@ func parseLimits(s string) [2]*float64 {
 	return out
 }
 
+// parseChoices reads one choice per measure, or def when never saved.
+func parseChoices(s string, def [3]bool) [3]bool {
+	parts := strings.Split(s, ",")
+	if len(parts) != 3 {
+		return def
+	}
+	var out [3]bool
+	for i, p := range parts {
+		out[i] = p == "1"
+	}
+	return out
+}
+
+func formatChoices(c [3]bool) string {
+	parts := make([]string, 3)
+	for i, on := range c {
+		parts[i] = "0"
+		if on {
+			parts[i] = "1"
+		}
+	}
+	return strings.Join(parts, ",")
+}
+
+// loadLimits reads a limit pair, or the defaults when never saved. A saved pair
+// with both boxes empty is "," so it stays empty.
+func loadLimits(db *sql.DB, name string, def [2]*float64) [2]*float64 {
+	v, _ := GetSetting(db, name)
+	if v == "" {
+		return def
+	}
+	return parseLimits(v)
+}
+
 func formatLimits(l [2]*float64) string {
 	s := func(p *float64) string {
 		if p == nil {
@@ -233,13 +309,20 @@ func formatLimits(l [2]*float64) string {
 	return s(l[0]) + "," + s(l[1])
 }
 
-// LoadClimate reads the Climate targets card.
+// LoadClimate reads the Climate targets and limits card. VPD starts with
+// separate lights-off values and Flower phases, the others without.
 func LoadClimate(db *sql.DB) (ClimateSettings, error) {
+	splits, _ := GetSetting(db, climateSplitLightsKey)
+	phases, _ := GetSetting(db, climateFlowerPhasesKey)
+	tempLo, tempHi := fToC(climateDefaultFlatTemp[0]), fToC(climateDefaultFlatTemp[1])
+	rhLo, rhHi := climateDefaultFlatRH[0], climateDefaultFlatRH[1]
 	cs := ClimateSettings{
-		SplitLights:  settingBool(db, climateSplitLightsKey, true),
-		FlowerPhases: settingBool(db, climateFlowerPhasesKey, false),
-		TempByStage:  settingBool(db, climateTempByStageKey, false),
-		RHByStage:    settingBool(db, climateRHByStageKey, false),
+		SplitLights:  parseChoices(splits, [3]bool{true, false, false}),
+		FlowerPhases: parseChoices(phases, [3]bool{true, false, false}),
+		TempByStage:  settingBool(db, climateTempByStageKey, true),
+		RHByStage:    settingBool(db, climateRHByStageKey, true),
+		TempLimits:   loadLimits(db, climateTempLimitsKey, [2]*float64{&tempLo, &tempHi}),
+		RHLimits:     loadLimits(db, climateRHLimitsKey, [2]*float64{&rhLo, &rhHi}),
 		PhaseWeeks:   [2]int{4, 8},
 		Targets:      []ClimateTarget{},
 	}
@@ -251,10 +334,6 @@ func LoadClimate(db *sql.DB) (ClimateSettings, error) {
 			cs.PhaseWeeks = [2]int{w1, w2}
 		}
 	}
-	v, _ := GetSetting(db, climateTempLimitsKey)
-	cs.TempLimits = parseLimits(v)
-	v, _ = GetSetting(db, climateRHLimitsKey)
-	cs.RHLimits = parseLimits(v)
 
 	rows, err := db.Query(`SELECT ps.status, ct.phase, ct.measure, ct.lights, ct.low, ct.target, ct.high
 		FROM climate_target ct JOIN plant_status ps ON ps.id = ct.status_id`)
@@ -274,7 +353,7 @@ func LoadClimate(db *sql.DB) (ClimateSettings, error) {
 			return cs, err
 		}
 		t.Stage = stageOf[status]
-		if t.Stage == "" {
+		if t.Stage == "" || t.Stage == climate.Drying && t.Measure == climate.VPD {
 			continue
 		}
 		t.Low, t.Target, t.High = nullPtr(lo), nullPtr(tg), nullPtr(hi)
@@ -307,7 +386,7 @@ func validateClimate(cs ClimateSettings) string {
 		if !inRange(m, l[0]) || !inRange(m, l[1]) {
 			return "api_climate_out_of_range"
 		}
-		if l[0] != nil && l[1] != nil && *l[0] > *l[1] {
+		if l[0] != nil && l[1] != nil && *l[0] >= *l[1] {
 			return "api_climate_order"
 		}
 	}
@@ -325,10 +404,12 @@ func validateClimate(cs ClimateSettings) string {
 		if !inRange(t.Measure, t.Low) || !inRange(t.Measure, t.Target) || !inRange(t.Measure, t.High) {
 			return "api_climate_out_of_range"
 		}
+		// A Target sits strictly between its limits, because a reading at a
+		// limit starts an alert.
 		v := []*float64{t.Low, t.Target, t.High}
 		for i := 0; i < 2; i++ {
 			for j := i + 1; j < 3; j++ {
-				if v[i] != nil && v[j] != nil && *v[i] > *v[j] {
+				if v[i] != nil && v[j] != nil && *v[i] >= *v[j] {
 					return "api_climate_order"
 				}
 			}
@@ -350,8 +431,8 @@ func SaveClimate(db *sql.DB, cs ClimateSettings) error {
 		return "0"
 	}
 	for name, value := range map[string]string{
-		climateSplitLightsKey:  b(cs.SplitLights),
-		climateFlowerPhasesKey: b(cs.FlowerPhases),
+		climateSplitLightsKey:  formatChoices(cs.SplitLights),
+		climateFlowerPhasesKey: formatChoices(cs.FlowerPhases),
 		climateTempByStageKey:  b(cs.TempByStage),
 		climateRHByStageKey:    b(cs.RHByStage),
 		climatePhaseWeeksKey:   fmt.Sprintf("%d,%d", cs.PhaseWeeks[0], cs.PhaseWeeks[1]),
@@ -382,6 +463,13 @@ func SaveClimate(db *sql.DB, cs ClimateSettings) error {
 	return tx.Commit()
 }
 
+// ClimateZonesHandler returns the zones as the Settings page has them, with
+// fresh readings, so Zone status can redraw after a Grow setup save.
+// Route: GET /settings/climate/zones
+func ClimateZonesHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"zones": ClimatePageData(c).Zones})
+}
+
 // SaveClimateHandler saves the Climate targets card.
 // Route: POST /settings/climate
 func SaveClimateHandler(c *gin.Context) {
@@ -396,7 +484,7 @@ func SaveClimateHandler(c *gin.Context) {
 		return
 	}
 	if err := SaveClimate(DBFromContext(c), cs); err != nil {
-		fieldLogger.WithError(err).Error("Failed to save climate targets")
+		fieldLogger.WithError(err).Error("Failed to save climate targets and limits")
 		apiInternalError(c, "api_failed_to_save_settings")
 		return
 	}
@@ -404,18 +492,27 @@ func SaveClimateHandler(c *gin.Context) {
 }
 
 // byStage says whether a measure has Low / Target / High per stage: VPD
-// always, temperature and humidity when Targets by stage is on.
+// always, temperature and humidity when Targets and limits by stage is on.
 func (cs ClimateSettings) byStage(measure string) bool {
 	return measure == climate.VPD || measure == climate.Temp && cs.TempByStage || measure == climate.RH && cs.RHByStage
 }
 
-// target returns the range in use for a measure at a stage.
-func (cs ClimateSettings) target(measure, stage, phase string, lightsOn bool) climate.Range {
+// rangeNow returns the Low, Target and High in use for a measure at a stage:
+// its row, or the one pair of limits with by stage off.
+func (cs ClimateSettings) rangeNow(measure, stage, phase string, lightsOn bool) climate.Range {
+	if !cs.byStage(measure) {
+		l := cs.TempLimits
+		if measure == climate.RH {
+			l = cs.RHLimits
+		}
+		return climate.Range{Low: l[0], High: l[1]}
+	}
+	i := measureIndex(measure)
 	lights := "on"
-	if stage == climate.Drying || !lightsOn && cs.SplitLights {
+	if stage == climate.Drying || !lightsOn && cs.SplitLights[i] {
 		lights = "off"
 	}
-	if stage != climate.Flower || !cs.FlowerPhases {
+	if stage != climate.Flower || !cs.FlowerPhases[i] {
 		phase = ""
 	}
 	for _, t := range cs.Targets {
@@ -424,6 +521,32 @@ func (cs ClimateSettings) target(measure, stage, phase string, lightsOn bool) cl
 		}
 	}
 	return climate.Range{}
+}
+
+// anyLimit says whether a Low or High limit is set in a row in use.
+func (cs ClimateSettings) anyLimit() bool {
+	for _, m := range []struct {
+		measure string
+		flat    [2]*float64
+	}{{climate.Temp, cs.TempLimits}, {climate.RH, cs.RHLimits}} {
+		if !cs.byStage(m.measure) && (m.flat[0] != nil || m.flat[1] != nil) {
+			return true
+		}
+	}
+	for _, t := range cs.Targets {
+		i := measureIndex(t.Measure)
+		if !cs.byStage(t.Measure) || t.Low == nil && t.High == nil {
+			continue
+		}
+		if t.Lights == "off" && t.Stage != climate.Drying && !cs.SplitLights[i] {
+			continue
+		}
+		if t.Stage == climate.Flower && (t.Phase != "") != cs.FlowerPhases[i] {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 // ZoneSetup is a zone's climate configuration (Edit zone).
@@ -594,12 +717,12 @@ func ZoneClimates(db *sql.DB, cs ClimateSettings, sensors []ManagedSensor, now t
 	return out, setups, nil
 }
 
-// ClimateCheck is how one sensor's readings are colored: the stage range and
-// safety limits in use now, in the sensor's own unit, and its state now.
+// ClimateCheck is how one sensor's readings are colored: the Low, Target and
+// High in use now, in the sensor's own unit, and its state now.
 type ClimateCheck struct {
-	State  climate.State `json:"state"`
-	Range  climate.Range `json:"range"`  // empty for limits only
-	Limits [2]*float64   `json:"limits"` // temperature and humidity safety limits
+	State climate.State `json:"state"`
+	Range climate.Range `json:"range"`
+	Near  float64       `json:"near"` // how close to Target is near on a side with no limit
 }
 
 func cToF(p *float64) *float64 {
@@ -617,29 +740,18 @@ func (cs ClimateSettings) check(zc ZoneClimate, measure string, s ManagedSensor)
 	if zc.Stage.Stage == "" {
 		return ck
 	}
-	byStage := cs.byStage(measure)
-	if byStage {
-		ck.Range = cs.target(measure, zc.Stage.Stage, zc.Phase, zc.LightsOn)
-	}
-	switch measure {
-	case climate.Temp:
-		ck.Limits = cs.TempLimits
-	case climate.RH:
-		ck.Limits = cs.RHLimits
-	}
+	ck.Range = cs.rangeNow(measure, zc.Stage.Stage, zc.Phase, zc.LightsOn)
+	ck.Near = climate.Near[measure]
 	if s.Value != nil && !s.Stale {
 		v := *s.Value
 		if measure == climate.Temp && !utils.IsCelsius(s.Unit) {
 			v = utils.FahrenheitToCelsius(v)
 		}
-		ck.State = climate.Limits(v, ck.Limits[0], ck.Limits[1])
-		if byStage {
-			ck.State = climate.Worse(ck.State, climate.Band(v, ck.Range))
-		}
+		ck.State = climate.Band(measure, v, ck.Range)
 	}
 	if measure == climate.Temp && !utils.IsCelsius(s.Unit) {
 		ck.Range = climate.Range{Low: cToF(ck.Range.Low), Target: cToF(ck.Range.Target), High: cToF(ck.Range.High)}
-		ck.Limits = [2]*float64{cToF(ck.Limits[0]), cToF(ck.Limits[1])}
+		ck.Near = ck.Near * 9 / 5
 	}
 	return ck
 }
@@ -687,13 +799,31 @@ type climateReading struct {
 	Stale bool     `json:"stale"`
 }
 
-// climatePageZone is one zone on Settings > Grow setup.
+// climatePageZone is one zone on Settings > Grow setup and Alerts' Zone status.
 type climatePageZone struct {
 	ZoneSetup
 	Now      ZoneClimate               `json:"now"`
 	Options  []climateSensorOption     `json:"sensor_options"`
 	Readings map[string]climateReading `json:"readings"`
 	Light    *zoneLightStatus          `json:"light,omitempty"`
+	Alerts   []zoneAlert               `json:"alerts"`
+	// The chosen sensors' oldest latest reading, for Zone status.
+	LastAt    int64  `json:"last_at"` // epoch ms; 0 = none yet
+	LastClock string `json:"last_clock,omitempty"`
+	Offline   bool   `json:"offline"`
+}
+
+// zoneAlert is an open alert as Zone status shows it. Times are already
+// formatted for the page.
+type zoneAlert struct {
+	Kind     string `json:"kind"`
+	Measure  string `json:"measure"`
+	Side     string `json:"side"`
+	Delivery string `json:"delivery"`
+	Sent     string `json:"sent"`
+	Next     string `json:"next"`
+	Since    string `json:"since,omitempty"`   // offline alerts: the last reading before they stopped
+	Sensors  string `json:"sensors,omitempty"` // offline alerts: the sensors that stopped
 }
 
 // zoneLightStatus is what Edit zone's Light check says when the saved light
@@ -760,7 +890,7 @@ func zoneLight(db *sql.DB, z ZoneSetup, zc ZoneClimate, unit string, open []aler
 	return st
 }
 
-// ClimatePage is the data behind Climate targets and Edit zone.
+// ClimatePage is the data behind Climate targets and limits, Edit zone and Zone status.
 type ClimatePage struct {
 	Settings ClimateSettings   `json:"settings"`
 	Units    string            `json:"units"`
@@ -784,7 +914,7 @@ func ClimatePageData(c *gin.Context) ClimatePage {
 	page.Minutes = local.Hour()*60 + local.Minute()
 	cs, err := LoadClimate(db)
 	if err != nil {
-		logger.Log.WithError(err).Error("Failed to load climate targets")
+		logger.Log.WithError(err).Error("Failed to load climate targets and limits")
 	}
 	page.Settings = cs
 	sensors := ListManagedSensors(db, store.PollingInterval())
@@ -798,11 +928,25 @@ func ClimatePageData(c *gin.Context) ClimatePage {
 		logger.Log.WithError(err).Warn("Failed to read open alerts")
 	}
 	unitOf := map[int]string{}
+	byID := map[int]ManagedSensor{}
 	for _, s := range sensors {
 		unitOf[s.ID] = s.Unit
+		byID[s.ID] = s
 	}
 	for id, z := range setups {
-		pz := climatePageZone{ZoneSetup: z, Now: zones[id], Options: []climateSensorOption{}, Readings: map[string]climateReading{}}
+		pz := climatePageZone{ZoneSetup: z, Now: zones[id], Options: []climateSensorOption{}, Readings: map[string]climateReading{}, Alerts: []zoneAlert{}}
+		for _, o := range open {
+			if o.ZoneID == id && o.Kind != alerts.KindSensor {
+				za := zoneAlert{Kind: o.Kind, Measure: o.Measure, Side: o.Side, Delivery: o.Delivery,
+					Sent: o.Notified.In(loc).Format("3:04 PM"), Next: o.Notified.Add(alerts.Remind).In(loc).Format("3:04 PM"),
+					Since: clockOrDate(o.Started.Add(-alerts.OfflineAfter), loc)}
+				if o.Kind == alerts.KindOffline {
+					za.Sensors = o.Detail
+				}
+				pz.Alerts = append(pz.Alerts, za)
+			}
+		}
+		pz.lastReading(byID, loc)
 		if z.LightSensorID != nil {
 			pz.Light = zoneLight(db, z, zones[id], unitOf[*z.LightSensorID], open, time.Now(), loc)
 		}
@@ -828,4 +972,34 @@ func ClimatePageData(c *gin.Context) ClimatePage {
 	}
 	sort.Slice(page.Zones, func(i, j int) bool { return strings.ToLower(page.Zones[i].Name) < strings.ToLower(page.Zones[j].Name) })
 	return page
+}
+
+// clockOrDate formats a time for Zone status, with its date unless it's today.
+func clockOrDate(t time.Time, loc *time.Location) string {
+	if t.In(loc).Format("2006-01-02") == time.Now().In(loc).Format("2006-01-02") {
+		return t.In(loc).Format("3:04 PM")
+	}
+	return t.In(loc).Format("Jan 2, 3:04 PM")
+}
+
+// lastReading fills in how recent the zone's chosen sensors' readings are.
+func (pz *climatePageZone) lastReading(byID map[int]ManagedSensor, loc *time.Location) {
+	ids := make([]int, 0, 4)
+	for _, sid := range pz.Now.Sensors {
+		ids = append(ids, sid)
+	}
+	if pz.LightSensorID != nil {
+		ids = append(ids, *pz.LightSensorID)
+	}
+	for _, sid := range ids {
+		s := byID[sid]
+		if s.LastAt != 0 && s.Source != "derived" && (pz.LastAt == 0 || s.LastAt < pz.LastAt) {
+			pz.LastAt = s.LastAt
+		}
+	}
+	if pz.LastAt != 0 {
+		last := time.UnixMilli(pz.LastAt)
+		pz.LastClock = clockOrDate(last, loc)
+		pz.Offline = time.Since(last) >= alerts.OfflineAfter
+	}
 }

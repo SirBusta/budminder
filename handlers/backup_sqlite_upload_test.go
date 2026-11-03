@@ -1,5 +1,8 @@
 package handlers_test
 
+// +parallel:serial — a real restore sets config.RestoreInProgress, which is
+// process-wide: photo compression tests running alongside would be refused.
+
 import (
 	"database/sql"
 	"net/http"
@@ -31,8 +34,6 @@ func openFileDB(t *testing.T, path string) *sql.DB {
 // request failed until a restart. The upload's data must replace the live
 // data and the app must keep answering on the same handle.
 func TestBackupHTTP_UploadSQLiteDB_RestoresIntoOpenDatabase(t *testing.T) {
-	t.Parallel()
-
 	dir := t.TempDir()
 	live := openFileDB(t, filepath.Join(dir, "live.db"))
 	const apiKey = "sqlite-up-restore-key"

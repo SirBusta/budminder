@@ -418,35 +418,24 @@ func TestDemo_LimitsNewCopiesPerAddress(t *testing.T) {
 	assert.Equal(t, demo.CopiesPerIPPerHour, e.server.DemoCopies.Count())
 }
 
-func TestDemo_ClimateAlertsCard(t *testing.T) {
+func TestDemo_RecentAlertsClear(t *testing.T) {
 	t.Parallel()
 	e := newDemo(t)
-	card := func(mod func(m map[string]any)) map[string]any {
-		m := map[string]any{"mode": "dry", "safety_readings": 2, "window_minutes": 10, "drift_hours": 2,
-			"pause_minutes": 10, "repeat_critical_minutes": 30, "repeat_warning_hours": 2}
-		if mod != nil {
-			mod(m)
-		}
-		return m
+	for _, path := range []string{"/settings/alerts/events/1/clear", "/settings/alerts/events/1/restore", "/settings/alerts/clear-ended"} {
+		code, _ := e.json(t, "POST", path, map[string]any{})
+		assert.Equal(t, http.StatusOK, code, path)
+		code, out := e.json(t, "POST", path, map[string]any{"note": "hi"})
+		assertRefused(t, code, out, path)
 	}
-	code, _ := e.json(t, "POST", "/settings/alerts/climate", card(nil))
-	assert.Equal(t, http.StatusOK, code)
-	for what, mod := range map[string]func(m map[string]any){
-		"unknown field":    func(m map[string]any) { m["note"] = "hi" },
-		"unknown mode":     func(m map[string]any) { m["mode"] = "<b>" },
-		"out of range":     func(m map[string]any) { m["window_minutes"] = 9999 },
-		"text in a number": func(m map[string]any) { m["drift_hours"] = "two" },
-	} {
-		code, out := e.json(t, "POST", "/settings/alerts/climate", card(mod))
-		assertRefused(t, code, out, what)
-	}
+	code, out := e.json(t, "POST", "/settings/alerts/climate", map[string]any{"mode": "email"})
+	assertRefused(t, code, out, "the old route")
 }
 
 func TestDemo_SensorAlerts(t *testing.T) {
 	t.Parallel()
 	e := newDemo(t)
 	rule := func(mod func(m map[string]any)) map[string]any {
-		m := map[string]any{"sensor_id": e.sensor, "side": "high", "limit": 1000, "hold_minutes": 5, "enabled": true}
+		m := map[string]any{"sensor_id": e.sensor, "side": "high", "limit": 1000, "enabled": true}
 		if mod != nil {
 			mod(m)
 		}
@@ -460,7 +449,7 @@ func TestDemo_SensorAlerts(t *testing.T) {
 	for what, mod := range map[string]func(m map[string]any){
 		"unknown field":    func(m map[string]any) { m["note"] = "hi" },
 		"unknown side":     func(m map[string]any) { m["side"] = "<b>" },
-		"out of range":     func(m map[string]any) { m["hold_minutes"] = 9999 },
+		"out of range":     func(m map[string]any) { m["limit"] = 1e12 },
 		"text in a number": func(m map[string]any) { m["limit"] = "lots" },
 	} {
 		code, out := e.json(t, "POST", "/settings/alerts/rules", rule(mod))
@@ -475,7 +464,7 @@ func TestDemo_ClimateTargetsAndEditZone(t *testing.T) {
 	e := newDemo(t)
 	card := func(mod func(m map[string]any)) map[string]any {
 		m := map[string]any{
-			"split_lights": true, "flower_phases": true, "temp_by_stage": false, "rh_by_stage": false,
+			"split_lights": []bool{true, false, false}, "flower_phases": []bool{true, false, false}, "temp_by_stage": false, "rh_by_stage": false,
 			"phase_weeks": []int{4, 8}, "temp_limits": []any{12.5, nil}, "rh_limits": []any{25, 80},
 			"targets": []map[string]any{{"stage": "flower", "phase": "bloom", "measure": "vpd", "lights": "on", "low": 1.2, "target": 1.35, "high": 1.5}},
 		}

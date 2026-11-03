@@ -128,6 +128,7 @@ A complete evaluation suite for home harvests and dispensary pickups. Rate appea
 
 ### And also
 
+- Email alerts (beta) for climate, sensors and grow lights. They're still being tested, so don't rely on them as your only safety check. Feedback is appreciated: [budminder.app@gmail.com](mailto:budminder.app@gmail.com)
 - A short guided tour for new users, with animated tips, which you can take again any time from Help
 - One-click strain import from public strain databases, with THC and CBD ranges, effects, terpenes and lineage
 - Hide the smoke report fields you never use, and choose how much each score counts

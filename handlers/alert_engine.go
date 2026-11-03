@@ -1,9 +1,9 @@
 package handlers
 
-// The background check behind environment alerts: after each sensor poll it
-// compares each zone's chosen climate sensors and light check with their
-// targets (rules in package alerts and climate), and keeps alert_event up to
-// date. Email goes out from its own goroutine (RunSender), so a slow mail
+// The background check behind alerts: after each sensor poll it compares each
+// zone's chosen climate sensors and light check with their limits (rules in
+// package alerts and climate), and keeps alert_event up to date. It always
+// runs: with notifications off, alerts are still listed. Email goes out from its own goroutine (RunSender), so a slow mail
 // server can't hold up polling; what's due waits in alert_event.pending, so
 // it survives a restart.
 
@@ -22,8 +22,7 @@ import (
 )
 
 const (
-	alertDriftEvery = 10 * time.Minute // how often drifting is checked (it reads hours of readings)
-	alertClockEvery = time.Hour        // how often the clock offset is checked (days of readings)
+	alertClockEvery = time.Hour // how often the clock offset is checked (days of readings)
 	alertPruneEvery = 24 * time.Hour
 	alertKeepFor    = 90 * 24 * time.Hour // ended alerts are kept this long
 	alertRetryAfter = 5 * time.Minute     // a failed send waits this long
@@ -41,7 +40,7 @@ type AlertEngine struct {
 
 	wake chan struct{}
 
-	lastDrift, lastClock, lastPrune time.Time // Check's goroutine only
+	lastClock, lastPrune time.Time // Check's goroutine only
 }
 
 // NewAlertEngine returns an engine for one store and data folder.
@@ -63,7 +62,7 @@ func settingsLocation(store *config.Store) *time.Location {
 func dbTime(t time.Time) string { return t.UTC().Format(utils.LayoutDB) }
 
 const alertEventColumns = `id, kind, zone_id, zone_name, sensor_id, sensor_name, measure, side, value, limit_value, detail,
-	started_at, notified_at, resolved_at, delivery, delivery_error, pending, emailed`
+	started_at, notified_at, resolved_at, delivery, delivery_error, pending, emailed, cleared`
 
 func scanAlertEvents(rows *sql.Rows) ([]alerts.Event, error) {
 	defer rows.Close()
@@ -73,9 +72,9 @@ func scanAlertEvents(rows *sql.Rows) ([]alerts.Event, error) {
 		var sensor sql.NullInt64
 		var value, limit sql.NullFloat64
 		var resolved sql.NullTime
-		var emailed int
+		var emailed, cleared int
 		if err := rows.Scan(&e.ID, &e.Kind, &e.ZoneID, &e.Zone, &sensor, &e.Sensor, &e.Measure, &e.Side, &value, &limit, &e.Detail,
-			&e.Started, &e.Notified, &resolved, &e.Delivery, &e.DeliveryError, &e.Pending, &emailed); err != nil {
+			&e.Started, &e.Notified, &resolved, &e.Delivery, &e.DeliveryError, &e.Pending, &emailed, &cleared); err != nil {
 			return nil, err
 		}
 		e.SensorID, e.Value, e.Limit = sqlIntPtr(sensor), nullPtr(value), nullPtr(limit)
@@ -83,7 +82,7 @@ func scanAlertEvents(rows *sql.Rows) ([]alerts.Event, error) {
 			t := resolved.Time
 			e.Resolved = &t
 		}
-		e.Emailed = emailed != 0
+		e.Emailed, e.Cleared = emailed != 0, cleared != 0
 		out = append(out, e)
 	}
 	return out, rows.Err()
@@ -98,10 +97,11 @@ func loadOpenAlerts(db *sql.DB) ([]alerts.Event, error) {
 	return scanAlertEvents(rows)
 }
 
-// RecentAlerts lists alerts for Settings > Alerts: open ones first, then newest.
-func RecentAlerts(db *sql.DB, limit int) ([]alerts.Event, error) {
-	rows, err := db.Query(`SELECT `+alertEventColumns+` FROM alert_event
-		ORDER BY CASE WHEN resolved_at IS NULL THEN 0 ELSE 1 END, started_at DESC, id DESC LIMIT $1`, limit)
+// RecentAlerts lists alerts for Settings > Alerts, cleared ones or the others:
+// open ones first, then newest.
+func RecentAlerts(db *sql.DB, cleared bool, limit int) ([]alerts.Event, error) {
+	rows, err := db.Query(`SELECT `+alertEventColumns+` FROM alert_event WHERE cleared = $1
+		ORDER BY CASE WHEN resolved_at IS NULL THEN 0 ELSE 1 END, started_at DESC, id DESC LIMIT $2`, boolInt(cleared), limit)
 	if err != nil {
 		return nil, err
 	}
@@ -134,11 +134,23 @@ func recentReadings(db *sql.DB, sensorID int, unit, measure string, since time.T
 // alertRun is one Check.
 type alertRun struct {
 	e       *AlertEngine
-	cfg     alerts.ClimateConfig
+	mailOn  bool   // notifications are on and the Email settings are complete
+	notSent string // what an alert records when it isn't emailed
 	now     time.Time
 	open    []alerts.Event
-	live    map[string]bool // open alerts that still apply, by alertKey
+	live    map[string]bool    // open alerts that still apply, by alertKey
+	latest  map[string]float64 // the latest reading behind each, by alertKey
+	watched map[int]bool       // sensors that climate, lights or sensor alerts read
 	changed bool
+}
+
+// notSentAs is what an alert records when it isn't emailed: paused when email
+// was set up and then turned off, off otherwise.
+func notSentAs(mail alerts.Email) string {
+	if !mail.On && mail.Host != "" {
+		return alerts.DeliveryPaused
+	}
+	return alerts.DeliveryOff
 }
 
 func alertKey(kind string, zone int, measure, side string) string {
@@ -148,29 +160,31 @@ func alertKey(kind string, zone int, measure, side string) string {
 // Check is one pass over every zone. Errors are logged; the next poll tries again.
 func (e *AlertEngine) Check(_ context.Context) {
 	log := logger.Log.WithField("func", "AlertEngine.Check")
-	cfg, err := alerts.LoadClimateConfig(e.DB)
-	if err != nil {
-		log.WithError(err).Error("Failed to read the Climate alerts settings")
-		return
-	}
 	open, err := loadOpenAlerts(e.DB)
 	if err != nil {
 		log.WithError(err).Error("Failed to read open alerts")
 		return
 	}
-	run := &alertRun{e: e, cfg: cfg, now: e.Now(), open: open, live: map[string]bool{}}
-	if cfg.Mode != alerts.ModeOff {
-		if err := run.zones(); err != nil {
-			log.WithError(err).Error("Failed to check climate alerts")
-			return
-		}
-		if err := run.rules(); err != nil {
-			log.WithError(err).Error("Failed to check sensor alerts")
-			return
-		}
+	run := &alertRun{e: e, now: e.Now(), open: open, live: map[string]bool{}, latest: map[string]float64{}, watched: map[int]bool{}}
+	mail, err := alerts.LoadEmail(e.DB, e.DataDir)
+	if err != nil {
+		log.WithError(err).Error("Failed to read the email settings")
+		return
 	}
+	run.mailOn = mail.On && !mail.PasswordLost && mail.Problem() == ""
+	run.notSent = notSentAs(mail)
+	if err := run.zones(); err != nil {
+		log.WithError(err).Error("Failed to check climate alerts")
+		return
+	}
+	if err := run.rules(); err != nil {
+		log.WithError(err).Error("Failed to check sensor alerts")
+		return
+	}
+	run.offline()
+	run.reminders()
 	// Whatever wasn't reached no longer applies: the sensor was unassigned, the
-	// zone deleted, its plants gone, or alerts turned off.
+	// zone deleted, its plants gone, or the limit removed.
 	for _, o := range run.open {
 		if !run.live[alertKey(o.Kind, o.ZoneID, o.Measure, o.Side)] {
 			run.apply(o.ZoneID, "", 0, "", alerts.Change{Key: alerts.Key{Kind: o.Kind, Measure: o.Measure, Side: o.Side}, Action: alerts.Close}, nil)
@@ -208,11 +222,7 @@ func (r *alertRun) zones() error {
 	for _, s := range sensors {
 		byID[s.ID] = s
 	}
-	checkDrift := r.now.Sub(e.lastDrift) >= alertDriftEvery
 	checkClock := r.now.Sub(e.lastClock) >= alertClockEvery
-	if checkDrift {
-		e.lastDrift = r.now
-	}
 	if checkClock {
 		e.lastClock = r.now
 	}
@@ -225,7 +235,8 @@ func (r *alertRun) zones() error {
 		z := setups[id]
 		sw, _ := climate.LastSwitch(z.Schedule, zc.Stage.Stage, r.now, loc)
 		for measure, sid := range zc.Sensors {
-			r.measure(cs, zc, z, byID[sid], measure, sw, pollEvery, stale, checkDrift)
+			r.watched[sid] = true
+			r.measure(cs, zc, z, byID[sid], measure, sw, pollEvery, stale)
 		}
 		r.lights(zc, z, byID, loc, stale, checkClock)
 	}
@@ -255,19 +266,116 @@ func (r *alertRun) rules() error {
 		if !ok || !rule.Enabled {
 			continue
 		}
+		r.watched[s.ID] = true
 		minWindow := 2 * pollEvery
-		readings, err := recentReadings(e.DB, s.ID, s.Unit, "", r.now.Add(-max(rule.Hold, minWindow)-time.Minute))
+		readings, err := recentReadings(e.DB, s.ID, s.Unit, "", r.now.Add(-max(alerts.Settle, minWindow)-time.Minute))
 		if err != nil {
 			logger.Log.WithError(err).WithField("sensor", s.ID).Error("Failed to read sensor readings for alerts")
 			continue
 		}
-		in := alerts.RuleInput{Rule: rule, Readings: readings, Now: r.now, Timing: r.cfg.Timing, MinWindow: minWindow, StaleAfter: stale,
-			Open: r.markLive(0, alerts.RuleMeasure(rule.ID), alerts.KindSensor)}
+		measure := alerts.RuleMeasure(rule.ID)
+		in := alerts.RuleInput{Rule: rule, Readings: readings, Now: r.now, MinWindow: minWindow, StaleAfter: stale,
+			Open: r.markLive(0, measure, alerts.KindSensor)}
+		r.noteLatest(alerts.KindSensor, 0, measure, readings)
 		for _, c := range alerts.EvaluateRule(in) {
 			r.apply(0, s.Zone, s.ID, s.Name, c, &alertStart{detail: s.Unit})
 		}
 	}
 	return nil
+}
+
+// noteLatest remembers the latest reading for a reminder about these alerts.
+func (r *alertRun) noteLatest(kind string, zone int, measure string, readings []climate.Reading) {
+	if len(readings) == 0 {
+		return
+	}
+	for _, o := range r.open {
+		if o.Kind == kind && o.ZoneID == zone && o.Measure == measure {
+			r.latest[alertKey(o.Kind, o.ZoneID, o.Measure, o.Side)] = readings[len(readings)-1].Value
+		}
+	}
+}
+
+// offline opens one alert per zone for the watched sensors that stopped sending
+// readings, and ends it once all of them have sent new readings for Hold. A sensor
+// that never sent a reading isn't offline: it hasn't started. Calculated VPD
+// follows the sensors behind it, so it isn't named on its own.
+func (r *alertRun) offline() {
+	e := r.e
+	groups := map[int][]ManagedSensor{}
+	names := map[int]string{}
+	for _, s := range ListManagedSensors(e.DB, e.Store.PollingInterval()) {
+		if r.watched[s.ID] && s.Source != "derived" && s.LastAt != 0 {
+			groups[s.ZoneID] = append(groups[s.ZoneID], s)
+			names[s.ZoneID] = s.Zone
+		}
+	}
+	for zone, sensors := range groups {
+		open := r.markLive(zone, "", alerts.KindOffline)
+		var since time.Time
+		for _, o := range r.open {
+			if o.Kind == alerts.KindOffline && o.ZoneID == zone {
+				since = o.Started
+			}
+		}
+		var stopped []string
+		back := true
+		for _, s := range sensors {
+			if r.now.Sub(time.UnixMilli(s.LastAt)) >= alerts.OfflineAfter {
+				stopped = append(stopped, s.Name)
+				continue
+			}
+			if len(open) > 0 {
+				back = back && r.reportingSince(s, since)
+			}
+		}
+		k := alerts.Key{Kind: alerts.KindOffline}
+		switch {
+		case len(stopped) > 0 && len(open) == 0:
+			r.apply(zone, names[zone], 0, "", alerts.Change{Key: k, Action: alerts.Start}, &alertStart{detail: strings.Join(stopped, ", ")})
+		case len(stopped) > 0:
+			if _, err := e.DB.Exec(`UPDATE alert_event SET detail = $1 WHERE kind = $2 AND zone_id = $3 AND resolved_at IS NULL`,
+				strings.Join(stopped, ", "), alerts.KindOffline, zone); err != nil {
+				logger.Log.WithError(err).Error("Failed to update an offline alert")
+			}
+		case len(open) > 0 && back:
+			r.apply(zone, names[zone], 0, "", alerts.Change{Key: k, Action: alerts.End}, nil)
+		}
+	}
+}
+
+// reportingSince says a sensor has sent readings for Hold since the offline
+// alert started. Readings from before the gap don't count.
+func (r *alertRun) reportingSince(s ManagedSensor, started time.Time) bool {
+	readings, err := recentReadings(r.e.DB, s.ID, s.Unit, "", started)
+	return err == nil && len(readings) > 0 && !readings[0].At.After(r.now.Add(-alerts.Hold))
+}
+
+// reminders sends every open alert again once any of them has gone Remind
+// without a notification, so they arrive together in one email. Clock notices
+// are one notice only.
+func (r *alertRun) reminders() {
+	due := false
+	for _, o := range r.open {
+		if o.Kind != alerts.KindClock && r.live[alertKey(o.Kind, o.ZoneID, o.Measure, o.Side)] && r.now.Sub(o.Notified) >= alerts.Remind {
+			due = true
+		}
+	}
+	if !due {
+		return
+	}
+	for _, o := range r.open {
+		key := alertKey(o.Kind, o.ZoneID, o.Measure, o.Side)
+		if o.Kind == alerts.KindClock || !r.live[key] {
+			continue
+		}
+		c := alerts.Change{Key: alerts.Key{Kind: o.Kind, Measure: o.Measure, Side: o.Side}, Action: alerts.Repeat}
+		var value any
+		if v, ok := r.latest[key]; ok {
+			value = v
+		}
+		r.applyRepeat(o.ZoneID, c, value)
+	}
 }
 
 // markLive keeps a zone's open alerts of these kinds and measure from closing.
@@ -288,37 +396,17 @@ func (r *alertRun) markLive(zone int, measure string, kinds ...string) []alerts.
 }
 
 // measure checks one of a zone's climate sensors.
-func (r *alertRun) measure(cs ClimateSettings, zc ZoneClimate, z ZoneSetup, s ManagedSensor, measure string, sw time.Time, poll, stale time.Duration, checkDrift bool) {
-	t := r.cfg.Timing
-	open := r.markLive(zc.ZoneID, measure, alerts.KindSafety, alerts.KindStage, alerts.KindDrift)
+func (r *alertRun) measure(cs ClimateSettings, zc ZoneClimate, z ZoneSetup, s ManagedSensor, measure string, sw time.Time, poll, stale time.Duration) {
+	open := r.markLive(zc.ZoneID, measure, alerts.KindStage)
 	minWindow := 3 * poll
-	back := t.Window
-	if minWindow > back {
-		back = minWindow
-	}
-	// Safety limits need their readings in a row even from a slow sensor.
-	if need := time.Duration(t.SafetyReadings+1) * poll; need > back {
-		back = need
-	}
-	if checkDrift && t.Drift > back {
-		back = t.Drift
-	}
-	readings, err := recentReadings(r.e.DB, s.ID, s.Unit, measure, r.now.Add(-back-time.Minute))
+	readings, err := recentReadings(r.e.DB, s.ID, s.Unit, measure, r.now.Add(-max(alerts.Settle, minWindow)-time.Minute))
 	if err != nil {
 		logger.Log.WithError(err).WithField("sensor", s.ID).Error("Failed to read sensor readings for alerts")
 		return
 	}
-	in := alerts.Input{Measure: measure, Readings: readings, LastSwitch: sw, Now: r.now, Timing: t,
-		MinWindow: minWindow, StaleAfter: stale, CheckDrift: checkDrift, Open: open}
-	switch measure {
-	case climate.Temp:
-		in.Limits = cs.TempLimits
-	case climate.RH:
-		in.Limits = cs.RHLimits
-	}
-	if cs.byStage(measure) {
-		in.Range = cs.target(measure, zc.Stage.Stage, zc.Phase, zc.LightsOn)
-	}
+	r.noteLatest(alerts.KindStage, zc.ZoneID, measure, readings)
+	in := alerts.Input{Measure: measure, Readings: readings, Range: cs.rangeNow(measure, zc.Stage.Stage, zc.Phase, zc.LightsOn),
+		LastSwitch: sw, Now: r.now, MinWindow: minWindow, StaleAfter: stale, Open: open}
 	for _, c := range alerts.Evaluate(in) {
 		r.apply(zc.ZoneID, z.Name, s.ID, s.Name, c, nil)
 	}
@@ -333,6 +421,7 @@ func (r *alertRun) lights(zc ZoneClimate, z ZoneSetup, byID map[int]ManagedSenso
 	if !ok || s.ZoneID != zc.ZoneID {
 		return
 	}
+	r.watched[s.ID] = true
 	lightOpen := r.markLive(zc.ZoneID, "", alerts.KindLight)
 	clockOpen := r.markLive(zc.ZoneID, "", alerts.KindClock)
 	above := 0.0
@@ -340,6 +429,9 @@ func (r *alertRun) lights(zc ZoneClimate, z ZoneSetup, byID map[int]ManagedSenso
 		above = *z.LightOnAbove
 	}
 	back := alerts.LightHold + time.Minute
+	if len(lightOpen) > 0 {
+		back = alerts.Settle + time.Minute
+	}
 	if checkClock {
 		back = climate.ClockOffsetLookback
 	}
@@ -353,6 +445,7 @@ func (r *alertRun) lights(zc ZoneClimate, z ZoneSetup, byID map[int]ManagedSenso
 		return // not reporting: hold
 	}
 	latest := readings[n-1].Value
+	r.noteLatest(alerts.KindLight, zc.ZoneID, "", readings)
 
 	if checkClock {
 		shift := climate.ClockOffset(readings, above, z.Schedule, zc.Stage.Stage, r.now, loc)
@@ -398,9 +491,6 @@ func (r *alertRun) lights(zc ZoneClimate, z ZoneSetup, byID map[int]ManagedSenso
 				continue
 			}
 			found = true
-			if every := r.cfg.Timing.Repeat(alerts.KindLight); every > 0 && r.now.Sub(o.NotifiedAt) >= every {
-				r.apply(zc.ZoneID, z.Name, s.ID, s.Name, alerts.Change{Key: k, Action: alerts.Repeat, Value: latest}, nil)
-			}
 		}
 		if !found {
 			since := m.Since
@@ -412,7 +502,7 @@ func (r *alertRun) lights(zc ZoneClimate, z ZoneSetup, byID map[int]ManagedSenso
 			}
 			r.apply(zc.ZoneID, z.Name, s.ID, s.Name, alerts.Change{Key: k, Action: alerts.Start, Value: latest}, &alertStart{since: since})
 		}
-	case agree:
+	case agree && climate.LightsAgreed(readings, above, z.Schedule, zc.Stage.Stage, r.now, loc, alerts.Settle, alerts.LightHold):
 		for _, o := range lightOpen {
 			r.apply(zc.ZoneID, z.Name, s.ID, s.Name, alerts.Change{Key: o.Key, Action: alerts.End, Value: latest}, nil)
 		}
@@ -425,13 +515,55 @@ type alertStart struct {
 	since  time.Time
 }
 
-// apply writes one change. Dry run lists alerts but never sends.
+// forget takes an alert out of r.open once it has ended in this run.
+func (r *alertRun) forget(c alerts.Change, zone int) {
+	for i, o := range r.open {
+		if o.Kind == c.Kind && o.ZoneID == zone && o.Measure == c.Measure && o.Side == c.Side {
+			r.open = append(r.open[:i:i], r.open[i+1:]...)
+			return
+		}
+	}
+}
+
+// climateStillOpen says another of a zone's climate alerts is still open, so
+// it isn't all clear yet: the zone gets one all-clear, when the last one ends.
+func (r *alertRun) climateStillOpen(zone int) bool {
+	for _, o := range r.open {
+		if o.Kind == alerts.KindStage && o.ZoneID == zone {
+			return true
+		}
+	}
+	return false
+}
+
+// applyRepeat sends an alert again and records the latest reading; value is nil
+// when there isn't one. A notice still waiting to go out stays as it is, and
+// with notifications off it only keeps time.
+func (r *alertRun) applyRepeat(zone int, c alerts.Change, value any) {
+	var err error
+	if r.mailOn {
+		_, err = r.e.DB.Exec(`UPDATE alert_event SET value = COALESCE($1, value), notified_at = $2, delivery = $3,
+			pending = CASE WHEN pending = '' THEN $4 ELSE pending END
+			WHERE kind = $5 AND zone_id = $6 AND measure = $7 AND side = $8 AND resolved_at IS NULL`,
+			value, dbTime(r.now), alerts.DeliveryPending, alerts.NoticeRepeat, c.Kind, zone, c.Measure, c.Side)
+	} else {
+		_, err = r.e.DB.Exec(`UPDATE alert_event SET value = COALESCE($1, value), notified_at = $2
+			WHERE kind = $3 AND zone_id = $4 AND measure = $5 AND side = $6 AND resolved_at IS NULL`,
+			value, dbTime(r.now), c.Kind, zone, c.Measure, c.Side)
+	}
+	if err != nil {
+		logger.Log.WithError(err).WithField("kind", c.Kind).Error("Failed to save an alert")
+		return
+	}
+	r.changed = true
+}
+
+// apply writes one change. With notifications off alerts are listed but never sent.
 func (r *alertRun) apply(zone int, zoneName string, sensorID int, sensorName string, c alerts.Change, start *alertStart) {
 	log := logger.Log.WithField("func", "AlertEngine.apply")
 	db := r.e.DB
-	email := r.cfg.Mode == alerts.ModeEmail
 	value := any(nil)
-	if c.Action != alerts.Close || c.Value != 0 {
+	if c.Action != alerts.Close && c.Kind != alerts.KindOffline {
 		value = c.Value
 	}
 	var limit any
@@ -441,8 +573,8 @@ func (r *alertRun) apply(zone int, zoneName string, sensorID int, sensorName str
 	var err error
 	switch c.Action {
 	case alerts.Start:
-		pending, delivery := "", alerts.DeliveryDryRun
-		if email {
+		pending, delivery := "", r.notSent
+		if r.mailOn {
 			pending, delivery = alerts.NoticeFired, alerts.DeliveryPending
 		}
 		started := r.now
@@ -460,27 +592,18 @@ func (r *alertRun) apply(zone int, zoneName string, sensorID int, sensorName str
 		_, err = db.Exec(`INSERT INTO alert_event (kind, zone_id, zone_name, sensor_id, sensor_name, measure, side, value, limit_value, detail,
 			started_at, notified_at, delivery, pending) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) ON CONFLICT DO NOTHING`,
 			c.Kind, zone, zoneName, sid, sensorName, c.Measure, c.Side, value, limit, detail, dbTime(started), dbTime(r.now), delivery, pending)
-	case alerts.Repeat:
-		// A notice still waiting to go out stays as it is; dry run only keeps time.
-		if email {
-			_, err = db.Exec(`UPDATE alert_event SET value = $1, notified_at = $2, delivery = $3,
-				pending = CASE WHEN pending = '' THEN $4 ELSE pending END
-				WHERE kind = $5 AND zone_id = $6 AND measure = $7 AND side = $8 AND resolved_at IS NULL`,
-				value, dbTime(r.now), alerts.DeliveryPending, alerts.NoticeRepeat, c.Kind, zone, c.Measure, c.Side)
-		} else {
-			_, err = db.Exec(`UPDATE alert_event SET value = $1, notified_at = $2
-				WHERE kind = $3 AND zone_id = $4 AND measure = $5 AND side = $6 AND resolved_at IS NULL`,
-				value, dbTime(r.now), c.Kind, zone, c.Measure, c.Side)
-		}
 	case alerts.End:
-		// Back to normal only follows an alert that was really emailed; one that
+		r.forget(c, zone)
+		// The all clear only follows an alert that was really emailed; one that
 		// never got out needs no second message.
-		_, err = db.Exec(`UPDATE alert_event SET value = $1, resolved_at = $2, retry_at = NULL,
+		notify := r.mailOn && !(c.Kind == alerts.KindStage && r.climateStillOpen(zone))
+		_, err = db.Exec(`UPDATE alert_event SET value = COALESCE($1, value), resolved_at = $2, retry_at = NULL,
 			pending = CASE WHEN emailed = 1 AND $3 = 1 THEN $4 ELSE '' END,
 			delivery = CASE WHEN emailed = 1 AND $3 = 1 THEN $5 ELSE delivery END
 			WHERE kind = $6 AND zone_id = $7 AND measure = $8 AND side = $9 AND resolved_at IS NULL`,
-			value, dbTime(r.now), boolInt(email), alerts.NoticeResolved, alerts.DeliveryPending, c.Kind, zone, c.Measure, c.Side)
+			value, dbTime(r.now), boolInt(notify), alerts.NoticeResolved, alerts.DeliveryPending, c.Kind, zone, c.Measure, c.Side)
 	case alerts.Close:
+		r.forget(c, zone)
 		_, err = db.Exec(`UPDATE alert_event SET resolved_at = $1, pending = '', retry_at = NULL,
 			delivery = CASE WHEN delivery = $2 THEN '' ELSE delivery END
 			WHERE kind = $3 AND zone_id = $4 AND measure = $5 AND side = $6 AND resolved_at IS NULL`,
@@ -519,7 +642,7 @@ func (e *AlertEngine) RunSender(ctx context.Context) {
 	}
 }
 
-// alertWords builds event text for email, in the language saved with the card.
+// alertWords builds event text for email, in the language saved with the Email settings.
 func (e *AlertEngine) alertWords(lang string) alerts.Words {
 	text := utils.TranslationService.GetTranslations(lang)
 	return alerts.Words{Units: e.Store.Units(), Loc: settingsLocation(e.Store), T: func(key string) string {
@@ -548,9 +671,9 @@ func (e *AlertEngine) SendPending(ctx context.Context) {
 	if len(events) == 0 {
 		return
 	}
-	cfg, err := alerts.LoadClimateConfig(e.DB)
+	lang, err := alerts.LoadLanguage(e.DB)
 	if err != nil {
-		log.WithError(err).Error("Failed to read the Climate alerts settings")
+		log.WithError(err).Error("Failed to read the language for alert emails")
 		return
 	}
 	mark := func(q string, args ...any) {
@@ -562,24 +685,20 @@ func (e *AlertEngine) SendPending(ctx context.Context) {
 			log.WithError(err).Error("Failed to record what happened to an alert email")
 		}
 	}
-	if cfg.Mode != alerts.ModeEmail {
-		mark(`UPDATE alert_event SET pending = '', retry_at = NULL, delivery = $1 WHERE id IN (IDS)`, alerts.DeliveryDryRun)
-		return
-	}
 	mail, err := alerts.LoadEmail(e.DB, e.DataDir)
 	if err != nil {
 		log.WithError(err).Error("Failed to read the email settings")
 		return
 	}
 	if !mail.On || mail.PasswordLost || mail.Problem() != "" {
-		mark(`UPDATE alert_event SET pending = '', retry_at = NULL, delivery = $1 WHERE id IN (IDS)`, alerts.DeliveryOff)
+		mark(`UPDATE alert_event SET pending = '', retry_at = NULL, delivery = $1 WHERE id IN (IDS)`, notSentAs(mail))
 		return
 	}
 	link := ""
 	if mail.Link != "" {
 		link = mail.Link + "/settings#alerts"
 	}
-	if err := mail.Send(ctx, alerts.BuildMessage(e.alertWords(cfg.Language), events, link)); err != nil {
+	if err := mail.Send(ctx, alerts.BuildMessage(e.alertWords(lang), events, link)); err != nil {
 		log.WithError(err).WithField("host", mail.Host).Warn("Alert email failed; trying again in 5 minutes")
 		mark(`UPDATE alert_event SET delivery = $1, delivery_error = $2, retry_at = $3 WHERE id IN (IDS)`,
 			alerts.DeliveryFailed, err.Error(), dbTime(now.Add(alertRetryAfter)))

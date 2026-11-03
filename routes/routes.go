@@ -362,6 +362,7 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.DELETE("/zones/:id", handlers.DeleteZoneHandler)
 
 	r.POST("/settings/climate", handlers.SaveClimateHandler)
+	r.GET("/settings/climate/zones", handlers.ClimateZonesHandler)
 
 	r.POST("/metrics", handlers.AddMetricHandler)
 	r.GET("/metrics", handlers.GetMetricsHandler)
@@ -400,7 +401,9 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	// Settings > Photos and the compare page.
 	r.POST("/settings/alerts/email", handlers.SaveAlertEmailHandler)
 	r.POST("/settings/alerts/email/test", handlers.TestAlertEmailHandler)
-	r.POST("/settings/alerts/climate", handlers.SaveAlertClimateHandler)
+	r.POST("/settings/alerts/events/:id/clear", handlers.ClearAlertHandler)
+	r.POST("/settings/alerts/events/:id/restore", handlers.RestoreAlertHandler)
+	r.POST("/settings/alerts/clear-ended", handlers.ClearEndedAlertsHandler)
 	r.POST("/settings/alerts/rules", handlers.AddAlertRuleHandler)
 	r.PUT("/settings/alerts/rules/:id", handlers.UpdateAlertRuleHandler)
 	r.DELETE("/settings/alerts/rules/:id", handlers.DeleteAlertRuleHandler)

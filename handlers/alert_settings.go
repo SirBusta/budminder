@@ -1,6 +1,6 @@
 package handlers
 
-// Settings > Alerts: the Email card (alerts/email.go sends).
+// Settings > Alerts: notification methods (alerts/email.go sends) and Recent alerts.
 
 import (
 	"context"
@@ -24,65 +24,39 @@ type AlertSettingsData struct {
 	Email       alerts.Email
 	To          string // recipients, comma-separated
 	PasswordSet bool
-	EmailReady  bool // on and complete, so Send email can send
-	Climate     alertClimateRequest
-	Ranges      alertClimateRanges
-	Box         alertClimateBox
+	EmailReady  bool // on and complete, so BudMinder can send
+	EmailSetUp  bool // a mail server has been entered, so off means paused
 	Rules       alertRulesPage
-	Recent      []alertRow
+	Events      alertEventLists
 }
 
-// alertClimateRequest is the Climate alerts card.
-type alertClimateRequest struct {
-	Mode           string `json:"mode"`
-	SafetyReadings int    `json:"safety_readings"`
-	WindowMinutes  int    `json:"window_minutes"`
-	DriftHours     int    `json:"drift_hours"`
-	PauseMinutes   int    `json:"pause_minutes"`
-	RepeatCritical int    `json:"repeat_critical_minutes"`
-	RepeatWarning  int    `json:"repeat_warning_hours"`
-}
-
-// alertClimateRanges gives the card's number boxes their limits.
-type alertClimateRanges struct {
-	Safety, Window, Drift, Pause, RepeatCritical, RepeatWarning [2]int
-}
-
-// alertClimateBox is the text of the Climate alerts box on Grow setup.
-type alertClimateBox struct {
-	Title, Safety, Stage, DriftName, Pause string
+// alertEventLists is the two tabs of Recent alerts.
+type alertEventLists struct {
+	Recent  []alertRow `json:"recent"`
+	Cleared []alertRow `json:"cleared"`
 }
 
 // alertRow is one line of Recent alerts.
 type alertRow struct {
-	Severity    string
-	Title       string
-	Line        string
-	Error       string
-	When        string
-	Active      bool
-	State       string
-	Delivery    string
-	DeliveryKey string
+	ID          int    `json:"id"`
+	Severity    string `json:"severity"`
+	Title       string `json:"title"`
+	Line        string `json:"line"`
+	Error       string `json:"error"`
+	When        string `json:"when"`
+	Active      bool   `json:"active"`
+	State       string `json:"state"`
+	Delivery    string `json:"delivery"`
+	DeliveryKey string `json:"delivery_key"`
 }
 
-// recentAlertsShown is how many alerts Settings > Alerts lists.
+// recentAlertsShown is how many alerts each tab of Recent alerts lists.
 const recentAlertsShown = 50
-
-func climateRequest(cfg alerts.ClimateConfig) alertClimateRequest {
-	t := cfg.Timing
-	return alertClimateRequest{
-		Mode: cfg.Mode, SafetyReadings: t.SafetyReadings, WindowMinutes: int(t.Window.Minutes()), DriftHours: int(t.Drift.Hours()),
-		PauseMinutes: int(t.Pause.Minutes()), RepeatCritical: int(t.RepeatCritical.Minutes()), RepeatWarning: int(t.RepeatWarning.Hours()),
-	}
-}
 
 // alertWordsFor builds event text for the request's language.
 func alertWordsFor(c *gin.Context) alerts.Words {
 	return alerts.Words{T: func(key string) string { return T(c, key) }, Units: ConfigStoreFromContext(c).Units(), Loc: requestLocation(c)}
 }
-
-func fillN(s string, n int) string { return strings.ReplaceAll(s, "{n}", strconv.Itoa(n)) }
 
 // AlertSettingsPageData builds the Settings > Alerts data for a request.
 func AlertSettingsPageData(c *gin.Context) AlertSettingsData {
@@ -95,38 +69,29 @@ func AlertSettingsPageData(c *gin.Context) AlertSettingsData {
 		logger.Log.Warn("The saved mail password can't be read here (no key file, or another one); enter it again in Settings > Alerts")
 	}
 	d := AlertSettingsData{To: strings.Join(e.To, ", "), PasswordSet: e.Password != "",
-		EmailReady: e.On && !e.PasswordLost && e.Problem() == ""}
+		EmailReady: e.On && !e.PasswordLost && e.Problem() == "", EmailSetUp: e.Host != ""}
 	e.Password = ""
 	if e.Port == 0 {
 		e.Port = 587
 	}
 	d.Email = e
 
-	cfg, err := alerts.LoadClimateConfig(db)
-	if err != nil {
-		logger.Log.WithError(err).Error("Failed to read the Climate alerts settings")
-	}
-	d.Climate = climateRequest(cfg)
-	d.Ranges = alertClimateRanges{alerts.SafetyReadingsRange, alerts.WindowMinutesRange, alerts.DriftHoursRange,
-		alerts.PauseMinutesRange, alerts.RepeatCriticalRange, alerts.RepeatWarningRange}
-	d.Box = alertClimateBox{
-		Title:     strings.ReplaceAll(T(c, "cl_al_title"), "{mode}", T(c, "al_mode_"+d.Climate.Mode)),
-		Safety:    fillN(T(c, "cl_al_safety"), d.Climate.SafetyReadings),
-		Stage:     fillN(T(c, "cl_al_stage"), d.Climate.WindowMinutes),
-		DriftName: fillN(T(c, "cl_al_drift_b"), d.Climate.DriftHours),
-		Pause:     fillN(T(c, "cl_al_pause"), d.Climate.PauseMinutes),
-	}
-
 	d.Rules = alertRulesPageData(c)
+	d.Events = alertEventLists{Recent: alertRows(c, false), Cleared: alertRows(c, true)}
+	return d
+}
 
-	events, err := RecentAlerts(db, recentAlertsShown)
+// alertRows builds one tab of Recent alerts.
+func alertRows(c *gin.Context, cleared bool) []alertRow {
+	out := []alertRow{}
+	events, err := RecentAlerts(DBFromContext(c), cleared, recentAlertsShown)
 	if err != nil {
 		logger.Log.WithError(err).Error("Failed to read recent alerts")
 	}
 	w := alertWordsFor(c)
 	loc := requestLocation(c)
 	for _, ev := range events {
-		r := alertRow{Severity: alerts.Severity(ev.Kind), Title: w.Title(ev, false), Active: ev.Resolved == nil, DeliveryKey: ev.Delivery}
+		r := alertRow{ID: ev.ID, Severity: alerts.Severity(ev.Kind), Title: w.Title(ev, false), Active: ev.Resolved == nil, DeliveryKey: ev.Delivery}
 		if r.Active {
 			r.Line = w.Line(ev, false)
 			r.State = T(c, "al_state_active")
@@ -141,58 +106,70 @@ func AlertSettingsPageData(c *gin.Context) AlertSettingsData {
 		if ev.Delivery == alerts.DeliveryFailed {
 			r.Error = ev.DeliveryError
 		}
-		d.Recent = append(d.Recent, r)
+		out = append(out, r)
 	}
-	return d
+	return out
 }
 
-// SaveAlertClimateHandler: POST /settings/alerts/climate saves the Climate
-// alerts card. The language in use becomes the language alert emails are
-// written in, since there's no install-wide language.
-func SaveAlertClimateHandler(c *gin.Context) {
-	var req alertClimateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+// setAlertCleared moves one ended alert to the Cleared tab or back.
+func setAlertCleared(c *gin.Context, cleared bool) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
 		apiBadRequest(c, "api_invalid_request_payload")
 		return
 	}
-	if req.Mode != alerts.ModeOff && req.Mode != alerts.ModeDryRun && req.Mode != alerts.ModeEmail {
-		apiBadRequest(c, "api_alert_bad_mode")
-		return
-	}
-	rows := []struct {
-		name  string
-		value int
-		rng   [2]int
-	}{
-		{alerts.SettingSafetyReadings, req.SafetyReadings, alerts.SafetyReadingsRange},
-		{alerts.SettingWindowMinutes, req.WindowMinutes, alerts.WindowMinutesRange},
-		{alerts.SettingDriftHours, req.DriftHours, alerts.DriftHoursRange},
-		{alerts.SettingPauseMinutes, req.PauseMinutes, alerts.PauseMinutesRange},
-		{alerts.SettingRepeatCritical, req.RepeatCritical, alerts.RepeatCriticalRange},
-		{alerts.SettingRepeatWarning, req.RepeatWarning, alerts.RepeatWarningRange},
-	}
-	for _, r := range rows {
-		if r.value < r.rng[0] || r.value > r.rng[1] {
-			apiBadRequest(c, "api_alert_bad_number")
-			return
-		}
-	}
-	db := DBFromContext(c)
-	if err := UpdateSetting(db, nil, alerts.SettingClimateMode, req.Mode); err != nil {
+	if _, err := DBFromContext(c).Exec(`UPDATE alert_event SET cleared = $1 WHERE id = $2 AND resolved_at IS NOT NULL`, boolInt(cleared), id); err != nil {
 		apiInternalError(c, "api_database_error")
 		return
-	}
-	if err := UpdateSetting(db, nil, alerts.SettingLanguage, utils.GetLanguage(c)); err != nil {
-		apiInternalError(c, "api_database_error")
-		return
-	}
-	for _, r := range rows {
-		if err := UpdateSetting(db, nil, r.name, strconv.Itoa(r.value)); err != nil {
-			apiInternalError(c, "api_database_error")
-			return
-		}
 	}
 	apiOK(c, "api_settings_saved")
+}
+
+// ClearAlertHandler: POST /settings/alerts/events/:id/clear. An active alert
+// can't be cleared. Cleared alerts still go after 90 days.
+func ClearAlertHandler(c *gin.Context) { setAlertCleared(c, true) }
+
+// RestoreAlertHandler: POST /settings/alerts/events/:id/restore.
+func RestoreAlertHandler(c *gin.Context) { setAlertCleared(c, false) }
+
+// ClearEndedAlertsHandler: POST /settings/alerts/clear-ended.
+func ClearEndedAlertsHandler(c *gin.Context) {
+	if _, err := DBFromContext(c).Exec(`UPDATE alert_event SET cleared = 1 WHERE resolved_at IS NOT NULL`); err != nil {
+		apiInternalError(c, "api_database_error")
+		return
+	}
+	apiOK(c, "api_settings_saved")
+}
+
+// anyAlertSet says something could send an alert notification: a limit in use,
+// a sensor alert that's on, or a Light check.
+func anyAlertSet(db *sql.DB) (bool, error) {
+	cs, err := LoadClimate(db)
+	if err != nil {
+		return false, err
+	}
+	if cs.anyLimit() {
+		return true, nil
+	}
+	rules, err := loadAlertRules(db)
+	if err != nil {
+		return false, err
+	}
+	for _, r := range rules {
+		if r.Enabled {
+			return true, nil
+		}
+	}
+	zones, err := LoadZoneSetups(db)
+	if err != nil {
+		return false, err
+	}
+	for _, z := range zones {
+		if z.LightSensorID != nil && len(z.Schedule) > 0 {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 type alertEmailRequest struct {
@@ -256,7 +233,9 @@ func alertEmailProblem(e alerts.Email, full bool) string {
 	return ""
 }
 
-// SaveAlertEmailHandler: POST /settings/alerts/email.
+// SaveAlertEmailHandler: POST /settings/alerts/email. Turning notifications on
+// is refused while nothing could send one. The language in use becomes the
+// language alert emails are written in, since there's no install-wide language.
 func SaveAlertEmailHandler(c *gin.Context) {
 	var req alertEmailRequest
 	if err := c.ShouldBindJSON(&req); err != nil || req.On == nil {
@@ -273,6 +252,22 @@ func SaveAlertEmailHandler(c *gin.Context) {
 	if p := alertEmailProblem(e, e.On); p != "" {
 		apiBadRequest(c, p)
 		return
+	}
+	if e.On {
+		was, err := GetSetting(db, alerts.SettingEmailOn)
+		if err != nil {
+			apiInternalError(c, "api_database_error")
+			return
+		}
+		set, err := anyAlertSet(db)
+		if err != nil {
+			apiInternalError(c, "api_database_error")
+			return
+		}
+		if was != "1" && !set {
+			c.JSON(http.StatusBadRequest, gin.H{"code": "nothing_set", "error": T(c, "al_refuse_plain")})
+			return
+		}
 	}
 	on := "0"
 	if e.On {
@@ -298,6 +293,7 @@ func SaveAlertEmailHandler(c *gin.Context) {
 		{alerts.SettingEmailFrom, e.From},
 		{alerts.SettingEmailTo, strings.Join(e.To, ", ")},
 		{alerts.SettingLinkAddress, e.Link},
+		{alerts.SettingLanguage, utils.GetLanguage(c)},
 	}
 	for _, r := range rows {
 		if err := UpdateSetting(db, nil, r[0], r[1]); err != nil {

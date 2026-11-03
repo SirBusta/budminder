@@ -205,5 +205,5 @@ func TestBackupHTTP_RestoreClimateTargets(t *testing.T) {
 	old := testutil.NewTestDB(t)
 	status = restoreViaHTTP(t, old, payload)
 	require.Empty(t, status.Error)
-	assert.InDelta(t, 1.1, vegTarget(old), 1e-9)
+	assert.InDelta(t, 1.0, vegTarget(old), 1e-9) // the default Target, between the old limits
 }

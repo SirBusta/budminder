@@ -105,7 +105,9 @@
         q.value = "";
         search();
         showSection(g.dataset.goto, true);
-        window.scrollTo(0, 0);
+        const card = g.dataset.gotoCard && document.getElementById(g.dataset.gotoCard);
+        if (card) card.scrollIntoView({ block: "start" });
+        else window.scrollTo(0, 0);
     });
     window.addEventListener("popstate", () => {
         const k = location.hash.slice(1);

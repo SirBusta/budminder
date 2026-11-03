@@ -226,19 +226,17 @@
             `<button type="button" data-zone="${z.id}" class="${z.id === zoneId ? "on" : ""}" aria-pressed="${z.id === zoneId}"><i class="fa-solid ${/outdoor|outside/i.test(z.name) ? "fa-tree" : "fa-tent"} me-1"></i>${esc(z.name)}</button>`).join("");
     }
     // Climate targets color for a zone's chosen climate sensors, worked out
-    // again for each new reading (range and limits are in the sensor's unit).
+    // again for each new reading (range and near are in the sensor's unit).
     function climateClass(s, v) {
         const c = s.climate;
         if (!c || v == null) return "";
-        const r = c.range || {}, [ll, lh] = c.limits || [];
-        let st = (ll != null && v <= ll) || (lh != null && v >= lh) ? "reached" : "";
-        if (!st && (r.low != null || r.high != null)) {
-            if ((r.low != null && v <= r.low) || (r.high != null && v >= r.high)) st = "reached";
-            else if (r.target == null) st = "ok";
-            else {
-                const lim = v < r.target ? r.low : r.high;
-                st = lim == null || Math.abs(v - r.target) <= Math.abs(lim - r.target) / 2 + 1e-9 ? "ok" : "toward";
-            }
+        const r = c.range || {};
+        let st = "";
+        if ((r.low != null && v <= r.low) || (r.high != null && v >= r.high)) st = "reached";
+        else if (r.target != null) {
+            const lim = v < r.target ? r.low : r.high, d = Math.abs(v - r.target);
+            if (lim == null) st = d <= c.near + 1e-9 ? "ok" : "";
+            else st = d <= Math.abs(lim - r.target) / 2 + 1e-9 ? "ok" : "toward";
         }
         return st ? " cl-state-" + st : "";
     }

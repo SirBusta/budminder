@@ -29,7 +29,8 @@ type alertEnv struct {
 }
 
 // newAlertEnv makes a zone "Tent" with a Veg plant and chosen climate sensors,
-// a 32.2 °C (90 °F) high safety limit, and no light schedule.
+// the default limits (temperature 55 to 90 °F, humidity 45% to 85%, VPD none)
+// and no light schedule.
 func newAlertEnv(t *testing.T) *alertEnv {
 	t.Helper()
 	return newAlertEnvOn(t, testutil.NewTestDB(t))
@@ -50,7 +51,6 @@ func newAlertEnvOn(t *testing.T, db *sql.DB) *alertEnv {
 	livingPlant(t, e, "Veg plant", a.tent, "Veg")
 	e.exec(t, `UPDATE zones SET vpd_temp_sensor_id = $1, vpd_humidity_sensor_id = $2, vpd_source = 'sensor', vpd_sensor_id = $3 WHERE id = $4`,
 		a.temp, a.hum, a.vpd, a.tent)
-	testutil.UpsertSetting(t, e.db, "climate_temp_limits", ",32.2222")
 	store := config.NewStore()
 	store.SetPollingInterval(60)
 	a.engine = handlers.NewAlertEngine(e.db, store, a.dataDir)
@@ -73,9 +73,25 @@ func (a *alertEnv) fresh(t *testing.T, sensor int) {
 	a.exec(t, `DELETE FROM sensor_data WHERE sensor_id = $1`, sensor)
 }
 
-func (a *alertEnv) mode(t *testing.T, mode string) {
+// held saves 16 readings of v, one a minute: enough to start an alert.
+func (a *alertEnv) held(t *testing.T, sensor int, v float64) {
 	t.Helper()
-	testutil.UpsertSetting(t, a.db, alerts.SettingClimateMode, mode)
+	a.readings(t, sensor, repeated(v, 16)...)
+}
+
+// settled replaces a sensor's readings with 31 of v: enough to end an alert.
+func (a *alertEnv) settled(t *testing.T, sensor int, v float64) {
+	t.Helper()
+	a.fresh(t, sensor)
+	a.readings(t, sensor, repeated(v, 31)...)
+}
+
+func repeated(v float64, n int) []float64 {
+	out := make([]float64, n)
+	for i := range out {
+		out[i] = v
+	}
+	return out
 }
 
 func (a *alertEnv) mail(t *testing.T, f *fakes.FakeSMTP) {
@@ -94,7 +110,7 @@ func (a *alertEnv) mail(t *testing.T, f *fakes.FakeSMTP) {
 
 func (a *alertEnv) events(t *testing.T) []alerts.Event {
 	t.Helper()
-	ev, err := handlers.RecentAlerts(a.db, 100)
+	ev, err := handlers.RecentAlerts(a.db, false, 100)
 	require.NoError(t, err)
 	return ev
 }
@@ -103,26 +119,59 @@ func (a *alertEnv) check() { a.engine.Check(context.Background()) }
 
 func (a *alertEnv) send() { a.engine.SendPending(context.Background()) }
 
-func TestAlertEngine_DryRunListsAndSendsNothing(t *testing.T) {
+func TestAlertEngine_NotificationsOffListsAndSendsNothing(t *testing.T) {
 	t.Parallel()
 	a := newAlertEnv(t)
 	f := fakes.NewFakeSMTP(t, fakes.SMTPPlain)
 	a.mail(t, f)
-	// Dry run is the default: no mode saved.
-	a.readings(t, a.temp, 80, 95, 96) // °F, 90 °F limit
+	testutil.UpsertSetting(t, a.db, alerts.SettingEmailOn, "0")
+	a.held(t, a.temp, 95) // °F, 90 °F limit
 	a.check()
 	a.send()
 
 	ev := a.events(t)
 	require.Len(t, ev, 1)
-	assert.Equal(t, alerts.KindSafety, ev[0].Kind)
+	assert.Equal(t, alerts.KindStage, ev[0].Kind)
 	assert.Equal(t, "high", ev[0].Side)
 	assert.Equal(t, "Tent", ev[0].Zone)
-	assert.Equal(t, alerts.DeliveryDryRun, ev[0].Delivery)
-	assert.InDelta(t, 35.56, *ev[0].Value, 0.01, "stored in °C")
+	assert.Equal(t, alerts.DeliveryPaused, ev[0].Delivery, "email set up, then turned off")
+	assert.InDelta(t, 35, *ev[0].Value, 0.01, "stored in °C")
 	assert.InDelta(t, 32.22, *ev[0].Limit, 0.01)
 	assert.Empty(t, ev[0].Pending)
 	assert.Empty(t, f.Mail())
+}
+
+func TestAlertEngine_NeverSetUpRecordsOff(t *testing.T) {
+	t.Parallel()
+	a := newAlertEnv(t)
+	a.held(t, a.temp, 95)
+	a.check()
+	a.send()
+	ev := a.events(t)
+	require.Len(t, ev, 1)
+	assert.Equal(t, alerts.DeliveryOff, ev[0].Delivery)
+}
+
+func TestAlertEngine_NoAlertsOutOfTheBoxForVPD(t *testing.T) {
+	t.Parallel()
+	a := newAlertEnv(t)
+	a.held(t, a.vpd, 3)
+	a.check()
+	assert.Empty(t, a.events(t), "VPD has a Target and no limits")
+}
+
+func TestAlertEngine_BriefSpikeSendsNothing(t *testing.T) {
+	t.Parallel()
+	a := newAlertEnv(t)
+	a.readings(t, a.temp, 80, 80, 80, 95, 95, 95, 95, 95, 95)
+	a.check()
+	assert.Empty(t, a.events(t))
+	a.fresh(t, a.temp)
+	vals := repeated(95, 16)
+	vals[7] = 89
+	a.readings(t, a.temp, vals...)
+	a.check()
+	assert.Empty(t, a.events(t), "one reading in range restarts the 15 minutes")
 }
 
 func TestAlertEngine_EmailGroupsAndNeverFiresTwice(t *testing.T) {
@@ -130,22 +179,18 @@ func TestAlertEngine_EmailGroupsAndNeverFiresTwice(t *testing.T) {
 	a := newAlertEnv(t)
 	f := fakes.NewFakeSMTP(t, fakes.SMTPPlain, fakes.WithSMTPLogin("grower@example.com", "app-secret-99"))
 	a.mail(t, f)
-	a.mode(t, alerts.ModeEmail)
-	a.readings(t, a.temp, 95, 95, 95)
-	vals := make([]float64, 11)
-	for i := range vals {
-		vals[i] = 2.0 // Veg High is 1.2 (lights on, no schedule)
-	}
-	a.readings(t, a.vpd, vals...)
+	a.held(t, a.temp, 95)
+	a.held(t, a.hum, 90) // Veg High is 85%
 	a.check()
 	a.send()
 
 	mail := f.Mail()
 	require.Len(t, mail, 1, "both alerts in one email")
-	assert.Contains(t, mail[0].Data, "Temperature high in Tent", "the most serious names the subject")
 	assert.Contains(t, mail[0].Data, "and 1 more")
+	assert.Contains(t, mail[0].Data, "Temperature high in Tent")
 	assert.Contains(t, mail[0].Data, "95 =C2=B0F")
-	assert.Contains(t, mail[0].Data, "VPD high in Tent")
+	assert.Contains(t, mail[0].Data, "Humidity high in Tent")
+	assert.Contains(t, mail[0].Data, "widen the limits")
 	assert.Contains(t, mail[0].Data, "http://192.168.1.10:8080/settings#alerts")
 	assert.NotContains(t, mail[0].Data, "app-secret-99")
 
@@ -166,48 +211,75 @@ func TestAlertEngine_EmailGroupsAndNeverFiresTwice(t *testing.T) {
 	}
 }
 
-func TestAlertEngine_RepeatAndBackToNormal(t *testing.T) {
+func TestAlertEngine_RemindersComeTogetherAndOneAllClear(t *testing.T) {
 	t.Parallel()
 	a := newAlertEnv(t)
 	f := fakes.NewFakeSMTP(t, fakes.SMTPPlain)
 	a.mail(t, f)
-	a.mode(t, alerts.ModeEmail)
-	a.readings(t, a.temp, 95, 95)
+	a.held(t, a.temp, 95)
+	a.held(t, a.hum, 90)
 	a.check()
 	a.send()
 	require.Len(t, f.Mail(), 1)
 
-	// 31 minutes later, still too hot: a repeat.
-	a.exec(t, `UPDATE alert_event SET notified_at = $1`, time.Now().UTC().Add(-31*time.Minute).Format("2006-01-02 15:04:05"))
+	// Not yet six hours.
+	a.exec(t, `UPDATE alert_event SET notified_at = $1`, utcDB(time.Now().Add(-5*time.Hour)))
+	a.check()
+	a.send()
+	require.Len(t, f.Mail(), 1)
+
+	// Six hours since one of them: both go out in one reminder.
+	a.exec(t, `UPDATE alert_event SET notified_at = $1 WHERE measure = 'temp'`, utcDB(time.Now().Add(-6*time.Hour-time.Minute)))
 	a.check()
 	a.send()
 	require.Len(t, f.Mail(), 2)
 	assert.Contains(t, f.Mail()[1].Data, "Still active.")
+	assert.Contains(t, f.Mail()[1].Data, "Temperature high")
+	assert.Contains(t, f.Mail()[1].Data, "Humidity high")
 
-	// Cool again: one back-to-normal email and the alert ends.
-	a.fresh(t, a.temp)
-	a.readings(t, a.temp, 80, 80)
+	// Temperature settles first: no email, because the zone isn't all clear yet.
+	a.settled(t, a.temp, 80)
+	a.check()
+	a.send()
+	require.Len(t, f.Mail(), 2)
+
+	// Humidity settles: one all clear.
+	a.settled(t, a.hum, 60)
 	a.check()
 	a.send()
 	require.Len(t, f.Mail(), 3)
-	assert.Contains(t, f.Mail()[2].Data, "Temperature back to normal in Tent")
-	ev := a.events(t)
-	require.Len(t, ev, 1)
-	require.NotNil(t, ev[0].Resolved)
-	assert.Empty(t, ev[0].Pending)
-	assert.InDelta(t, 26.67, *ev[0].Value, 0.01)
+	assert.Contains(t, f.Mail()[2].Data, "Climate back to normal in Tent")
+	for _, e := range a.events(t) {
+		require.NotNil(t, e.Resolved)
+		assert.Empty(t, e.Pending)
+	}
 }
 
-func TestAlertEngine_NoBackToNormalWithoutAnEmailedAlert(t *testing.T) {
+func TestAlertEngine_AllClearWaitsThirtyMinutes(t *testing.T) {
 	t.Parallel()
 	a := newAlertEnv(t)
 	f := fakes.NewFakeSMTP(t, fakes.SMTPPlain)
 	a.mail(t, f)
-	a.readings(t, a.temp, 95, 95)
-	a.check() // dry run: listed, not emailed
-	a.mode(t, alerts.ModeEmail)
-	a.fresh(t, a.temp)
-	a.readings(t, a.temp, 80, 80)
+	a.held(t, a.temp, 95)
+	a.check()
+	a.send()
+	require.Len(t, f.Mail(), 1)
+
+	a.readings(t, a.temp, 80, 80, 80, 80, 80)
+	a.check()
+	a.send()
+	assert.Len(t, f.Mail(), 1, "only 5 minutes in range")
+	assert.Nil(t, a.events(t)[0].Resolved)
+}
+
+func TestAlertEngine_NoAllClearWithoutAnEmailedAlert(t *testing.T) {
+	t.Parallel()
+	a := newAlertEnv(t)
+	a.held(t, a.temp, 95)
+	a.check() // notifications off: listed, not emailed
+	f := fakes.NewFakeSMTP(t, fakes.SMTPPlain)
+	a.mail(t, f)
+	a.settled(t, a.temp, 80)
 	a.check()
 	a.send()
 	assert.Empty(t, f.Mail())
@@ -222,8 +294,7 @@ func TestAlertEngine_FailedSendRetries(t *testing.T) {
 	sealed, err := alerts.SealPassword(a.dataDir, "wrong-pass")
 	require.NoError(t, err)
 	testutil.UpsertSetting(t, a.db, alerts.SettingEmailPassword, sealed)
-	a.mode(t, alerts.ModeEmail)
-	a.readings(t, a.temp, 95, 95)
+	a.held(t, a.temp, 95)
 	a.check()
 	a.send()
 
@@ -248,23 +319,12 @@ func TestAlertEngine_FailedSendRetries(t *testing.T) {
 	assert.Empty(t, ev[0].DeliveryError)
 }
 
-func TestAlertEngine_EmailOffIsMarkedNotSent(t *testing.T) {
-	t.Parallel()
-	a := newAlertEnv(t)
-	a.mode(t, alerts.ModeEmail)
-	a.readings(t, a.temp, 95, 95)
-	a.check()
-	a.send()
-	ev := a.events(t)
-	require.Len(t, ev, 1)
-	assert.Equal(t, alerts.DeliveryOff, ev[0].Delivery)
-	assert.Empty(t, ev[0].Pending)
-}
-
 func TestAlertEngine_ClosesQuietlyWhenItNoLongerApplies(t *testing.T) {
 	t.Parallel()
 	for name, change := range map[string]func(a *alertEnv, t *testing.T){
-		"mode off": func(a *alertEnv, t *testing.T) { a.mode(t, alerts.ModeOff) },
+		"limit removed": func(a *alertEnv, t *testing.T) {
+			a.exec(t, `UPDATE climate_target SET high = NULL WHERE measure = 'temp'`)
+		},
 		"sensor unassigned": func(a *alertEnv, t *testing.T) {
 			a.exec(t, `UPDATE zones SET vpd_temp_sensor_id = NULL WHERE id = $1`, a.tent)
 		},
@@ -282,8 +342,7 @@ func TestAlertEngine_ClosesQuietlyWhenItNoLongerApplies(t *testing.T) {
 			a := newAlertEnv(t)
 			f := fakes.NewFakeSMTP(t, fakes.SMTPPlain)
 			a.mail(t, f)
-			a.mode(t, alerts.ModeEmail)
-			a.readings(t, a.temp, 95, 95)
+			a.held(t, a.temp, 95)
 			a.check()
 			a.send()
 			require.Len(t, f.Mail(), 1)
@@ -298,28 +357,124 @@ func TestAlertEngine_ClosesQuietlyWhenItNoLongerApplies(t *testing.T) {
 	}
 }
 
+func TestAlertEngine_FlatLimitsWhenByStageIsOff(t *testing.T) {
+	t.Parallel()
+	a := newAlertEnv(t)
+	testutil.UpsertSetting(t, a.db, "climate_temp_by_stage", "0")
+	testutil.UpsertSetting(t, a.db, "climate_temp_limits", ",26.6667") // 80 °F
+	a.held(t, a.temp, 85)
+	a.check()
+	ev := a.events(t)
+	require.Len(t, ev, 1)
+	assert.InDelta(t, 26.6667, *ev[0].Limit, 1e-3)
+}
+
 func TestAlertEngine_StaleSensorHolds(t *testing.T) {
 	t.Parallel()
 	a := newAlertEnv(t)
-	a.readings(t, a.temp, 95, 95)
+	a.held(t, a.temp, 95)
 	a.check()
 	require.Len(t, a.events(t), 1)
-	a.exec(t, `UPDATE sensor_data SET create_dt = $1 WHERE sensor_id = $2`, time.Now().UTC().Add(-20*time.Minute).Format("2006-01-02 15:04:05"), a.temp)
+	a.exec(t, `UPDATE sensor_data SET create_dt = $1 WHERE sensor_id = $2`, time.Now().UTC().Add(-10*time.Minute).Format("2006-01-02 15:04:05"), a.temp)
 	a.check()
 	ev := a.events(t)
 	require.Len(t, ev, 1)
 	assert.Nil(t, ev[0].Resolved, "not reporting isn't back to normal")
 }
 
+func TestAlertEngine_SensorsOffline(t *testing.T) {
+	t.Parallel()
+	a := newAlertEnv(t)
+	f := fakes.NewFakeSMTP(t, fakes.SMTPPlain)
+	a.mail(t, f)
+	offline := func(ev []alerts.Event) *alerts.Event {
+		for i := range ev {
+			if ev[i].Kind == alerts.KindOffline {
+				return &ev[i]
+			}
+		}
+		return nil
+	}
+	a.exec(t, `UPDATE sensors SET name = 'Tent temp' WHERE id = $1`, a.temp)
+	a.exec(t, `UPDATE sensors SET name = 'Tent humidity' WHERE id = $1`, a.hum)
+	a.readings(t, a.hum, 60, 60)
+
+	// 10 minutes without a reading: not yet. A sensor with no readings at all hasn't started.
+	a.exec(t, `INSERT INTO sensor_data (sensor_id, value, create_dt) VALUES ($1, 70, $2)`, a.temp, utcDB(time.Now().Add(-10*time.Minute)))
+	a.check()
+	assert.Nil(t, offline(a.events(t)))
+
+	a.fresh(t, a.temp)
+	a.exec(t, `INSERT INTO sensor_data (sensor_id, value, create_dt) VALUES ($1, 70, $2)`, a.temp, utcDB(time.Now().Add(-16*time.Minute)))
+	a.check()
+	a.send()
+	ev := offline(a.events(t))
+	require.NotNil(t, ev)
+	assert.Equal(t, "Tent temp", ev.Detail)
+	assert.Equal(t, alerts.Critical, alerts.Severity(ev.Kind))
+	require.Len(t, f.Mail(), 1)
+	assert.Contains(t, f.Mail()[0].Data, "Sensors offline in Tent")
+	assert.Contains(t, f.Mail()[0].Data, "No readings for 15 minutes from Tent temp.")
+
+	// A second sensor stops: the same alert names both, with no second email.
+	a.exec(t, `UPDATE sensor_data SET create_dt = $1 WHERE sensor_id = $2`, utcDB(time.Now().Add(-50*time.Minute)), a.hum)
+	a.check()
+	a.send()
+	ev = offline(a.events(t))
+	assert.Contains(t, ev.Detail, "Tent temp")
+	assert.Contains(t, ev.Detail, "Tent humidity")
+	assert.Len(t, f.Mail(), 1)
+
+	// Back with one new reading: still open. Readings from before the alert
+	// started don't count toward being back.
+	a.exec(t, `UPDATE alert_event SET started_at = $1 WHERE kind = 'offline'`, utcDB(time.Now().Add(-20*time.Minute)))
+	for _, s := range []int{a.temp, a.hum} {
+		a.fresh(t, s)
+		a.exec(t, `INSERT INTO sensor_data (sensor_id, value, create_dt) VALUES ($1, 65, $2)`, s, utcDB(time.Now().Add(-25*time.Minute)))
+		a.readings(t, s, 65)
+	}
+	a.check()
+	assert.Nil(t, offline(a.events(t)).Resolved)
+
+	// Back for 15 minutes: one email.
+	a.settled(t, a.temp, 70)
+	a.settled(t, a.hum, 60)
+	a.check()
+	a.send()
+	assert.NotNil(t, offline(a.events(t)).Resolved)
+	require.Len(t, f.Mail(), 2)
+	assert.Contains(t, f.Mail()[1].Data, "Sensors back online in Tent")
+}
+
+func TestAlertEngine_OfflineCoversSensorAlerts(t *testing.T) {
+	t.Parallel()
+	a := newAlertEnv(t)
+	co2 := a.co2Sensor(t)
+	a.rule(t, co2)
+	a.exec(t, `INSERT INTO sensor_data (sensor_id, value, create_dt) VALUES ($1, 800, $2)`, co2, utcDB(time.Now().Add(-time.Hour)))
+	a.check()
+	ev := a.events(t)
+	require.Len(t, ev, 1)
+	assert.Equal(t, alerts.KindOffline, ev[0].Kind)
+	assert.Equal(t, "CO2", ev[0].Detail)
+
+	// A sensor nothing reads isn't watched.
+	a2 := newAlertEnv(t)
+	other := a2.co2Sensor(t)
+	a2.exec(t, `INSERT INTO sensor_data (sensor_id, value, create_dt) VALUES ($1, 800, $2)`, other, utcDB(time.Now().Add(-time.Hour)))
+	a2.check()
+	assert.Empty(t, a2.events(t))
+}
+
 func TestAlertEngine_MetricSensorAndUnits(t *testing.T) {
 	t.Parallel()
 	a := newAlertEnv(t)
 	a.exec(t, `UPDATE sensors SET unit = '°C' WHERE id = $1`, a.temp)
-	a.readings(t, a.temp, 31, 31)
+	a.held(t, a.temp, 31)
 	a.check()
 	assert.Empty(t, a.events(t), "31 °C is under the limit")
 	a.fresh(t, a.temp)
-	a.readings(t, a.temp, 33, 33)
+	a.held(t, a.temp, 33)
 	a.check()
 	ev := a.events(t)
 	require.Len(t, ev, 1)
@@ -403,11 +558,14 @@ func TestAlertEngine_LightMismatch(t *testing.T) {
 	// Edit zone's Light check says the same, with the open alert.
 	body := a.page(t, "/settings")
 	assert.Contains(t, body, `"mismatch":true`)
-	assert.Contains(t, body, `"alert":"dry_run"`)
+	assert.Contains(t, body, `"alert":"off"`)
 
-	// The sensor comes back on: the alert ends.
+	// The sensor comes back on: the alert ends after 30 minutes of agreeing.
 	a.fresh(t, light)
 	a.readings(t, light, 100, 100)
+	a.check()
+	assert.Nil(t, a.events(t)[0].Resolved)
+	a.settled(t, light, 100)
 	a.check()
 	ev = a.events(t)
 	require.Len(t, ev, 1)
@@ -442,10 +600,23 @@ func TestRecentAlerts_OpenFirst(t *testing.T) {
 	require.NoError(t, err)
 	_, err = db.Exec(ins, alerts.KindStage, "high", at(12), at(13))
 	require.NoError(t, err)
-	got, err := handlers.RecentAlerts(db, 10)
+	got, err := handlers.RecentAlerts(db, false, 10)
 	require.NoError(t, err)
 	require.Len(t, got, 2)
 	assert.Equal(t, "low", got[0].Side, "the open one first, though older")
+
+	// The Cleared tab has only what was cleared.
+	_, err = db.Exec(`UPDATE alert_event SET cleared = 1 WHERE side = 'high'`)
+	require.NoError(t, err)
+	got, err = handlers.RecentAlerts(db, false, 10)
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	assert.Equal(t, "low", got[0].Side)
+	got, err = handlers.RecentAlerts(db, true, 10)
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	assert.Equal(t, "high", got[0].Side)
+	assert.True(t, got[0].Cleared)
 }
 
 func TestAlertEvent_OneOpenRowPerAlert(t *testing.T) {

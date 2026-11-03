@@ -19,12 +19,11 @@ import (
 
 // alertRuleRow is a sensor alert as the page and the save routes see it.
 type alertRuleRow struct {
-	ID          int     `json:"id"`
-	SensorID    int     `json:"sensor_id"`
-	Side        string  `json:"side"`
-	Limit       float64 `json:"limit"`
-	HoldMinutes int     `json:"hold_minutes"`
-	Enabled     bool    `json:"enabled"`
+	ID       int     `json:"id"`
+	SensorID int     `json:"sensor_id"`
+	Side     string  `json:"side"`
+	Limit    float64 `json:"limit"`
+	Enabled  bool    `json:"enabled"`
 }
 
 // alertRuleSensor is a sensor the form can pick.
@@ -39,11 +38,14 @@ type alertRuleSensor struct {
 type alertRulesPage struct {
 	Rules   []alertRuleRow    `json:"rules"`
 	Sensors []alertRuleSensor `json:"sensors"`
-	Hold    [2]int            `json:"hold"`
 }
 
+// ruleHoldMinutes is what alert_rule.hold_minutes keeps: every sensor alert
+// follows alerts.Hold, and the column stays so older backups still restore.
+const ruleHoldMinutes = 15
+
 func loadAlertRules(db *sql.DB) ([]alerts.Rule, error) {
-	rows, err := db.Query(`SELECT id, sensor_id, side, limit_value, hold_minutes, enabled FROM alert_rule ORDER BY id`)
+	rows, err := db.Query(`SELECT id, sensor_id, side, limit_value, enabled FROM alert_rule ORDER BY id`)
 	if err != nil {
 		return nil, err
 	}
@@ -51,11 +53,11 @@ func loadAlertRules(db *sql.DB) ([]alerts.Rule, error) {
 	var out []alerts.Rule
 	for rows.Next() {
 		var r alerts.Rule
-		var hold, enabled int
-		if err := rows.Scan(&r.ID, &r.SensorID, &r.Side, &r.Limit, &hold, &enabled); err != nil {
+		var enabled int
+		if err := rows.Scan(&r.ID, &r.SensorID, &r.Side, &r.Limit, &enabled); err != nil {
 			return nil, err
 		}
-		r.Hold, r.Enabled = time.Duration(hold)*time.Minute, enabled != 0
+		r.Enabled = enabled != 0
 		out = append(out, r)
 	}
 	return out, rows.Err()
@@ -64,7 +66,7 @@ func loadAlertRules(db *sql.DB) ([]alerts.Rule, error) {
 // alertRulesPageData lists the rules whose sensor still exists, and the sensors.
 func alertRulesPageData(c *gin.Context) alertRulesPage {
 	db := DBFromContext(c)
-	page := alertRulesPage{Rules: []alertRuleRow{}, Sensors: []alertRuleSensor{}, Hold: alerts.RuleHoldRange}
+	page := alertRulesPage{Rules: []alertRuleRow{}, Sensors: []alertRuleSensor{}}
 	known := map[int]bool{}
 	for _, s := range ListManagedSensors(db, ConfigStoreFromContext(c).PollingInterval()) {
 		known[s.ID] = true
@@ -83,17 +85,16 @@ func alertRulesPageData(c *gin.Context) alertRulesPage {
 }
 
 func ruleRow(r alerts.Rule) alertRuleRow {
-	return alertRuleRow{ID: r.ID, SensorID: r.SensorID, Side: r.Side, Limit: r.Limit, HoldMinutes: int(r.Hold.Minutes()), Enabled: r.Enabled}
+	return alertRuleRow{ID: r.ID, SensorID: r.SensorID, Side: r.Side, Limit: r.Limit, Enabled: r.Enabled}
 }
 
 // alertRuleRequest is the form. Enabled and Limit are pointers so that leaving
 // them out is an error, not off and zero.
 type alertRuleRequest struct {
-	SensorID    int      `json:"sensor_id"`
-	Side        string   `json:"side"`
-	Limit       *float64 `json:"limit"`
-	HoldMinutes int      `json:"hold_minutes"`
-	Enabled     *bool    `json:"enabled"`
+	SensorID int      `json:"sensor_id"`
+	Side     string   `json:"side"`
+	Limit    *float64 `json:"limit"`
+	Enabled  *bool    `json:"enabled"`
 }
 
 // bindAlertRule reads and checks the form, and answers the request if it's wrong.
@@ -108,10 +109,6 @@ func bindAlertRule(c *gin.Context) (alertRuleRequest, bool) {
 		return req, false
 	}
 	if req.Limit == nil || math.IsNaN(*req.Limit) || math.Abs(*req.Limit) > alerts.RuleLimitMax {
-		apiBadRequest(c, "api_alert_bad_number")
-		return req, false
-	}
-	if req.HoldMinutes < alerts.RuleHoldRange[0] || req.HoldMinutes > alerts.RuleHoldRange[1] {
 		apiBadRequest(c, "api_alert_bad_number")
 		return req, false
 	}
@@ -138,7 +135,7 @@ func alertRuleID(c *gin.Context) (int, bool) {
 }
 
 func (r alertRuleRequest) row(id int) alertRuleRow {
-	return alertRuleRow{ID: id, SensorID: r.SensorID, Side: r.Side, Limit: *r.Limit, HoldMinutes: r.HoldMinutes, Enabled: *r.Enabled}
+	return alertRuleRow{ID: id, SensorID: r.SensorID, Side: r.Side, Limit: *r.Limit, Enabled: *r.Enabled}
 }
 
 // AddAlertRuleHandler: POST /settings/alerts/rules.
@@ -159,7 +156,7 @@ func AddAlertRuleHandler(c *gin.Context) {
 	}
 	var id int
 	err := db.QueryRow(`INSERT INTO alert_rule (sensor_id, side, limit_value, hold_minutes, enabled) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-		req.SensorID, req.Side, *req.Limit, req.HoldMinutes, boolInt(*req.Enabled)).Scan(&id)
+		req.SensorID, req.Side, *req.Limit, ruleHoldMinutes, boolInt(*req.Enabled)).Scan(&id)
 	if err != nil {
 		logger.Log.WithError(err).Error("Failed to save a sensor alert")
 		apiInternalError(c, "api_database_error")
@@ -181,8 +178,8 @@ func UpdateAlertRuleHandler(c *gin.Context) {
 		return
 	}
 	db := DBFromContext(c)
-	res, err := db.Exec(`UPDATE alert_rule SET sensor_id = $1, side = $2, limit_value = $3, hold_minutes = $4, enabled = $5 WHERE id = $6`,
-		req.SensorID, req.Side, *req.Limit, req.HoldMinutes, boolInt(*req.Enabled), id)
+	res, err := db.Exec(`UPDATE alert_rule SET sensor_id = $1, side = $2, limit_value = $3, enabled = $4 WHERE id = $5`,
+		req.SensorID, req.Side, *req.Limit, boolInt(*req.Enabled), id)
 	if err == nil {
 		var n int64
 		if n, err = res.RowsAffected(); err == nil && n == 0 {

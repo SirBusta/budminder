@@ -25,31 +25,78 @@ func TestBand(t *testing.T) {
 		{1.50, Reached}, // reaching High counts
 	}
 	for _, c := range cases {
-		if got := Band(c.v, r); got != c.want {
+		if got := Band(VPD, c.v, r); got != c.want {
 			t.Errorf("Band(%v) = %q, want %q", c.v, got, c.want)
 		}
 	}
-	if got := Band(1, Range{}); got != None {
+	if got := Band(VPD, 1, Range{}); got != None {
 		t.Errorf("empty range = %q", got)
 	}
-	if got := Band(0.5, Range{Low: f(1), High: f(2)}); got != Reached {
+	if got := Band(VPD, 0.5, Range{Low: f(1), High: f(2)}); got != Reached {
 		t.Errorf("no target below low = %q", got)
 	}
-	if got := Band(1.5, Range{Low: f(1), High: f(2)}); got != OK {
+	if got := Band(VPD, 1.5, Range{Low: f(1), High: f(2)}); got != None {
 		t.Errorf("no target inside = %q", got)
+	}
+	// A Target with no limit on that side: near shows green, further shows nothing.
+	target := Range{Target: f(1.2)}
+	if got := Band(VPD, 1.35, target); got != OK {
+		t.Errorf("near a Target with no limits = %q", got)
+	}
+	if got := Band(VPD, 1.45, target); got != None {
+		t.Errorf("far from a Target with no limits = %q", got)
+	}
+	if got := Band(RH, 56, Range{Target: f(50)}); got != OK {
+		t.Errorf("humidity near = %q", got)
+	}
+	if got := Band(Temp, 23, Range{Target: f(25)}); got != OK {
+		t.Errorf("temperature near = %q", got)
+	}
+	// One limit: amber toward it, nothing on the other side.
+	oneSide := Range{Target: f(1.2), High: f(1.6)}
+	if got := Band(VPD, 1.5, oneSide); got != Toward {
+		t.Errorf("toward the one limit = %q", got)
+	}
+	if got := Band(VPD, 0.8, oneSide); got != None {
+		t.Errorf("the side with no limit = %q", got)
 	}
 }
 
-func TestLimits(t *testing.T) {
+func TestLightsAgreed(t *testing.T) {
 	t.Parallel()
-	if Limits(25, f(25), nil) != Reached || Limits(30, nil, f(30)) != Reached {
-		t.Error("reaching a limit should be red")
+	s := Schedule{Veg: {"06:00", "18:00"}}
+	now := time.Date(2026, 10, 30, 12, 0, 0, 0, time.UTC)
+	at := func(vals ...float64) []Reading {
+		out := make([]Reading, len(vals))
+		for i, v := range vals {
+			out[i] = Reading{At: now.Add(time.Duration(i-len(vals)+1) * 5 * time.Minute), Value: v}
+		}
+		return out
 	}
-	if Limits(26, f(25), f(30)) != None || Limits(5, nil, nil) != None {
-		t.Error("inside limits shows no color")
+	agreed := func(r []Reading, when time.Time) bool {
+		return LightsAgreed(r, 0, s, Veg, when, time.UTC, 30*time.Minute, 15*time.Minute)
 	}
-	if Worse(OK, Reached) != Reached || Worse(Toward, None) != Toward {
-		t.Error("Worse")
+	if !agreed(at(1, 1, 1, 1, 1, 1, 1), now) {
+		t.Error("30 minutes on, as scheduled")
+	}
+	if agreed(at(1, 1, 0, 1, 1, 1, 1), now) {
+		t.Error("one reading off in the 30 minutes")
+	}
+	if agreed(at(1, 1), now) {
+		t.Error("too few readings to tell")
+	}
+	// Just after a switch, lights that lag behind don't count against it.
+	r := make([]Reading, 0, 7)
+	switched := time.Date(2026, 10, 30, 6, 20, 0, 0, time.UTC)
+	for i := 6; i >= 0; i-- {
+		v := 1.0
+		if i > 3 {
+			v = 0
+		}
+		r = append(r, Reading{At: switched.Add(-time.Duration(i) * 5 * time.Minute), Value: v})
+	}
+	if !agreed(r, switched) {
+		t.Error("off until shortly after the switch, then on")
 	}
 }
 

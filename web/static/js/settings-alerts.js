@@ -1,8 +1,9 @@
-// Settings > Alerts (settings.html, handlers/alert_settings.go): the Email
-// card saves when a field changes (POST /settings/alerts/email) and Send
-// test email sends with what's typed, saved or not. A blank password field
-// keeps the saved password. Provider (not saved) fills in a provider's
-// server, port and security and shows its tip.
+// Settings > Alerts (settings.html, handlers/alert_settings.go): the line on
+// What sends an alert notification, the Email method, Sensor alerts and Recent
+// alerts. Email saves when a field changes (POST /settings/alerts/email) and
+// Send test email sends with what's typed, saved or not. A blank password field
+// keeps the saved password. Provider (not saved) fills in a provider's server,
+// port and security and shows its tip. Zone status is in settings-climate.js.
 (() => {
     "use strict";
     const card = document.getElementById("alCard");
@@ -56,6 +57,7 @@
             const err = new Error(d.error || T.failed);
             err.demo = d.demo;
             err.hint = d.hint;
+            err.code = d.code;
             throw err;
         }
         return d;
@@ -76,39 +78,9 @@
         pass.placeholder = set ? "••••••••" : "";
     }
 
-    // Climate alerts card: saves when a field changes. Send email with the
-    // Email card off or incomplete still lists alerts, with a warning here.
-    const climateCard = $("alClimateCard"), mode = $("alMode"), modeWarn = $("alModeWarn");
-    const climateOut = $("alClimateResult");
-    function showModeWarn() {
-        modeWarn.hidden = !(mode.value === "email" && climateCard.dataset.emailReady !== "true");
-    }
-    showModeWarn();
-    const num = id => parseInt($(id).value, 10);
-    async function saveClimate() {
-        showModeWarn();
-        climateOut.textContent = "";
-        climateOut.className = "st-ha-result";
-        try {
-            await post("/settings/alerts/climate", {
-                mode: mode.value, safety_readings: num("alSafety"), window_minutes: num("alWindow"), drift_hours: num("alDrift"),
-                pause_minutes: num("alPause"), repeat_critical_minutes: num("alRepeatCrit"), repeat_warning_hours: num("alRepeatWarn"),
-            });
-            flash();
-        } catch (e) {
-            if (!e.demo) {
-                climateOut.className = "st-ha-result bad";
-                climateOut.textContent = e.message;
-            }
-        }
-    }
-    climateCard.addEventListener("change", e => { if (e.target.matches("[data-alc]")) saveClimate(); });
-    climateCard.addEventListener("keydown", e => {
-        if (e.key === "Enter" && e.target.matches("input[data-alc]")) { e.preventDefault(); e.target.blur(); }
-    });
-
     // Sensor alerts card: a list, each with a switch, and a window to add or edit.
     const ruleData = JSON.parse($("alRuleData").textContent || "{}");
+    const esc = v => String(v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
     const rules = ruleData.rules || [], sensors = ruleData.sensors || [];
     const ruleList = $("alRuleList"), ruleOut = $("alRuleResult"), ruleErr = $("alRuleErr");
     const ruleDlg = new bootstrap.Modal($("alRuleDlg"));
@@ -136,8 +108,7 @@
     }
     function ruleLine(r) {
         const s = sensorOf(r.sensor_id);
-        return (r.side === "low" ? T.ruleLineLow : T.ruleLineHigh)
-            .replace("{limit}", amount(r.limit, s ? s.unit : "")).replace("{n}", r.hold_minutes);
+        return (r.side === "low" ? T.ruleLineLow : T.ruleLineHigh).replace("{limit}", amount(r.limit, s ? s.unit : ""));
     }
     function drawRules() {
         ruleList.replaceChildren();
@@ -167,6 +138,7 @@
                     await ruleSend("PUT", `/settings/alerts/rules/${r.id}`, { ...r, enabled: box.checked });
                     r.enabled = box.checked;
                     li.classList.toggle("off", !r.enabled);
+                    drawState();
                     ruleOut.textContent = "";
                     flash();
                 } catch (e) {
@@ -194,6 +166,7 @@
                     await ruleSend("DELETE", `/settings/alerts/rules/${r.id}`);
                     rules.splice(rules.indexOf(r), 1);
                     drawRules();
+                    drawState();
                     flash();
                 } catch (e) {
                     ruleFail(e);
@@ -214,7 +187,6 @@
         if (r) pick.value = r.sensor_id;
         $("alRuleSide").value = r ? r.side : "high";
         $("alRuleLimit").value = r ? r.limit : "";
-        $("alRuleHold").value = r ? r.hold_minutes : 10;
         $("alRuleDlgT").textContent = r ? T.ruleEdit : T.ruleAdd;
         ruleErr.textContent = "";
         ruleUnit();
@@ -237,7 +209,7 @@
         }
         const body = {
             sensor_id: parseInt($("alRuleSensor").value, 10), side: $("alRuleSide").value, limit,
-            hold_minutes: num("alRuleHold"), enabled: editing ? editing.enabled : true,
+            enabled: editing ? editing.enabled : true,
         };
         try {
             const saved = editing ? await ruleSend("PUT", `/settings/alerts/rules/${editing.id}`, body)
@@ -245,6 +217,8 @@
             if (editing) Object.assign(editing, saved);
             else rules.push(saved);
             drawRules();
+            hideRefuse();
+            drawState();
             ruleDlg.hide();
             ruleOut.textContent = "";
             flash();
@@ -255,6 +229,117 @@
     });
     drawRules();
 
+    // What sends an alert notification: whether notifications are on, and what's missing.
+    const setUp = data.dataset.setUp === "true";
+    const toLine = () => $("alTo").value.trim();
+    const cardLink = `<a href="#grow" data-goto="grow" data-goto-card="climateCard">${esc(T.climateCard)}</a>`;
+    const fillLink = s => esc(s).replace("{link}", cardLink);
+    function anySet() {
+        const c = window.bmClimate;
+        return (c ? c.anyLimit() || c.anyLight() : true) || rules.some(r => r.enabled);
+    }
+    function drawState() {
+        const el = $("alState"), any = anySet(), ok = on.checked && any;
+        const warn = '<i class="fa-solid fa-triangle-exclamation"></i>';
+        const jump = t => `<a href="#alMethods" data-al-jump="alMethods">${esc(t)}</a>`;
+        el.classList.toggle("warn", !ok);
+        el.classList.toggle("ok", ok);
+        el.innerHTML = ok
+            ? `<i class="fa-solid fa-circle-check"></i><span>${esc(T.stOn.replace("{to}", toLine()))}</span>`
+            : on.checked ? `${warn}<span>${fillLink(T.stNoLimit)}</span>`
+            : !any ? `${warn}<span>${fillLink(T.stOffNoLimit)}</span>`
+            : setUp ? `${warn}<span>${esc(T.stPaused)} ${jump(T.stTurnOn)}</span>`
+            : `${warn}<span>${esc(T.stOff)} ${jump(T.stSetUp)}</span>`;
+        $("alMailSt").textContent = on.checked ? T.sendingTo.replace("{to}", toLine()) : T.mailOff;
+        const title = $("clAlTitle");
+        if (title) title.textContent = ok ? T.boxOn : T.boxOff;
+    }
+    function hideRefuse() { $("alRefuse").hidden = true; }
+    document.addEventListener("bm:climate-change", () => { hideRefuse(); drawState(); });
+    $("alWhat").closest("section").addEventListener("click", e => {
+        const a = e.target.closest("[data-al-jump]");
+        if (!a) return;
+        e.preventDefault();
+        $(a.dataset.alJump).scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    drawState();
+
+    // Notification methods: click a row to open or close its fields.
+    card.addEventListener("click", e => {
+        const b = e.target.closest(".ax-meth-t");
+        if (b) b.setAttribute("aria-expanded", b.closest(".ax-meth").classList.toggle("open"));
+    });
+
+    // Recent alerts: two tabs. Clear and Restore apply to ended alerts only.
+    const evs = JSON.parse($("alEvData").textContent || "{}");
+    evs.recent = evs.recent || [];
+    evs.cleared = evs.cleared || [];
+    let evTab = "recent";
+    const evOut = $("alEvResult");
+    function drawEvents() {
+        const ul = $("alEv"), list = evs[evTab];
+        ul.replaceChildren();
+        for (const ev of list) {
+            const li = document.createElement("li");
+            li.className = "al-ev-" + ev.severity + (ev.active ? "" : " ended");
+            li.innerHTML = `<div class="al-ev-main"><b>${esc(ev.title)}</b>` + (ev.line ? `<span>${esc(ev.line)}</span>` : "") +
+                (ev.error ? `<small class="al-detail">${esc(ev.error)}</small>` : "") + `</div>` +
+                `<div class="al-ev-meta"><small>${esc(ev.when)}</small><span class="badge ${ev.active ? "bg-danger" : "bg-secondary"}">${esc(ev.state)}</span>` +
+                (ev.delivery ? `<span class="badge al-ev-del al-ev-del-${esc(ev.delivery_key)}">${esc(ev.delivery)}</span>` : "") +
+                (ev.active ? "" : `<button type="button" class="st-btn light sm" data-ev="${ev.id}"><i class="fa-solid ${evTab === "recent" ? "fa-check" : "fa-rotate-left"} me-1"></i>${esc(evTab === "recent" ? T.evClear : T.evRestore)}</button>`) + `</div>`;
+            ul.append(li);
+        }
+        if (!list.length) {
+            const li = document.createElement("li");
+            li.className = "ended";
+            li.innerHTML = `<div class="al-ev-main">${esc(evTab === "recent" ? T.evNoRecent : T.evNoCleared)}</div>`;
+            ul.append(li);
+        }
+        $("alEvRecentN").textContent = evs.recent.length;
+        $("alEvClearedN").textContent = evs.cleared.length;
+        $("alClearAll").style.display = evTab === "recent" && evs.recent.some(e => !e.active) ? "" : "none";
+        $("alEvTabs").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.t === evTab));
+    }
+    function evFail(e) {
+        evOut.className = "st-ha-result";
+        evOut.textContent = "";
+        if (e.demo) return;
+        evOut.className = "st-ha-result bad";
+        evOut.textContent = e.message;
+    }
+    const newestFirst = (a, b) => (a.active === b.active ? b.id - a.id : a.active ? -1 : 1);
+    $("alEvTabs").addEventListener("click", e => {
+        const b = e.target.closest("button");
+        if (b) { evTab = b.dataset.t; drawEvents(); }
+    });
+    $("alEv").addEventListener("click", async e => {
+        const b = e.target.closest("[data-ev]");
+        if (!b) return;
+        const id = +b.dataset.ev, from = evs[evTab], to = evTab === "recent" ? evs.cleared : evs.recent;
+        try {
+            await post(`/settings/alerts/events/${id}/${evTab === "recent" ? "clear" : "restore"}`, {});
+            const i = from.findIndex(x => x.id === id);
+            if (i >= 0) { to.push(from.splice(i, 1)[0]); to.sort(newestFirst); }
+            evOut.textContent = "";
+            drawEvents();
+        } catch (err) {
+            evFail(err);
+        }
+    });
+    $("alClearAll").addEventListener("click", async () => {
+        try {
+            await post("/settings/alerts/clear-ended", {});
+            evs.cleared.push(...evs.recent.filter(x => !x.active));
+            evs.cleared.sort(newestFirst);
+            evs.recent = evs.recent.filter(x => x.active);
+            evOut.textContent = "";
+            drawEvents();
+        } catch (err) {
+            evFail(err);
+        }
+    });
+    drawEvents();
+
     let saving = Promise.resolve();
     function save() {
         const body = form();
@@ -262,8 +347,7 @@
         saving = saving.then(async () => {
             try {
                 const d = await post("/settings/alerts/email", body);
-                climateCard.dataset.emailReady = d.on ? "true" : "false";
-                showModeWarn();
+                hideRefuse();
                 if (body.password) pass.value = "";
                 setBadge(d.passwordSet);
                 show("");
@@ -271,8 +355,18 @@
             } catch (e) {
                 // Turning email on with something missing: leave it off.
                 if (body.on) on.checked = false;
-                if (!e.demo) show(e.message, false);
+                if (e.code === "nothing_set") {
+                    $("alRefuseText").innerHTML = fillLink(T.refuse);
+                    $("alRefuse").hidden = false;
+                } else if (!e.demo) {
+                    // The error shows under Send test email, so open the fields.
+                    const m = card.querySelector(".ax-meth");
+                    m.classList.add("open");
+                    m.querySelector(".ax-meth-t").setAttribute("aria-expanded", "true");
+                    show(e.message, false);
+                }
             }
+            drawState();
         });
         return saving;
     }

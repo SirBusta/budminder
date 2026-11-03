@@ -448,8 +448,8 @@ var (
 
 	demoAlertRuleFields = map[string]demoCheck{
 		"sensor_id": demoID, "side": dOneOf(alerts.SideLow, alerts.SideHigh),
-		"limit":        dNum(-alerts.RuleLimitMax, alerts.RuleLimitMax),
-		"hold_minutes": dRange(alerts.RuleHoldRange), "enabled": dBool,
+		"limit":   dNum(-alerts.RuleLimitMax, alerts.RuleLimitMax),
+		"enabled": dBool,
 	}
 
 	demoDayFields = map[string]demoCheck{
@@ -606,10 +606,12 @@ var demoRules = map[string]demoRule{
 	// photos (/settings/photos/existing/...) has no rule, so it's refused.
 	"POST /settings/photos": {fields: map[string]demoCheck{"compress": dBool, "quality": dPhotoQuality}},
 
-	// Settings > Grow setup > Climate targets: switches, weeks, limits and
-	// targets (the handler also checks each measure's range and order).
+	// Settings > Grow setup > Climate targets and limits: switches, weeks,
+	// limits and targets (the handler also checks each measure's range and order).
 	"POST /settings/climate": {fields: map[string]demoCheck{
-		"split_lights": dBool, "flower_phases": dBool, "temp_by_stage": dBool, "rh_by_stage": dBool,
+		"split_lights":  dTuple(dBool, dBool, dBool),
+		"flower_phases": dTuple(dBool, dBool, dBool),
+		"temp_by_stage": dBool, "rh_by_stage": dBool,
 		"phase_weeks": dTuple(dInt(1, 30), dInt(1, 30)),
 		"temp_limits": dTuple(dOpt(dNum(-20, 60)), dOpt(dNum(-20, 60))),
 		"rh_limits":   dTuple(dOpt(dNum(0, 100)), dOpt(dNum(0, 100))),
@@ -622,17 +624,11 @@ var demoRules = map[string]demoRule{
 		}),
 	}},
 
-	// Settings > Alerts > Climate alerts: the mode and times, nothing else.
-	// Mail settings and test emails have no rule, so they stay refused.
-	"POST /settings/alerts/climate": {fields: map[string]demoCheck{
-		"mode":                    dOneOf(alerts.ModeOff, alerts.ModeDryRun, alerts.ModeEmail),
-		"safety_readings":         dRange(alerts.SafetyReadingsRange),
-		"window_minutes":          dRange(alerts.WindowMinutesRange),
-		"drift_hours":             dRange(alerts.DriftHoursRange),
-		"pause_minutes":           dRange(alerts.PauseMinutesRange),
-		"repeat_critical_minutes": dRange(alerts.RepeatCriticalRange),
-		"repeat_warning_hours":    dRange(alerts.RepeatWarningRange),
-	}},
+	// Settings > Alerts: mail settings and test emails have no rule, so they
+	// stay refused. Recent alerts' Clear, Restore and Clear All Ended send nothing.
+	"POST /settings/alerts/events/:id/clear":   {fields: map[string]demoCheck{}},
+	"POST /settings/alerts/events/:id/restore": {fields: map[string]demoCheck{}},
+	"POST /settings/alerts/clear-ended":        {fields: map[string]demoCheck{}},
 
 	// Sensor alerts: numbers and fixed choices only.
 	"POST /settings/alerts/rules":       {fields: demoAlertRuleFields},

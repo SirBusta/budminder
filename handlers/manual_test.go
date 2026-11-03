@@ -129,7 +129,8 @@ func TestManual_PagesForAGuest(t *testing.T) {
 	body, _ = io.ReadAll(resp.Body)
 	resp.Body.Close()
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Contains(t, string(body), "Dry run")
+	assert.Contains(t, string(body), "Sensors offline")
+	assert.NotContains(t, string(body), "Dry run")
 
 	resp = c.Get("/manual")
 	resp.Body.Close()

@@ -58,9 +58,9 @@ type State string
 
 const (
 	None    State = ""        // no color
-	OK      State = "ok"      // near Target
-	Toward  State = "toward"  // between Target and Low or High
-	Reached State = "reached" // reached Low or High
+	OK      State = "ok"      // in the Target zone
+	Toward  State = "toward"  // between the Target zone and a limit
+	Reached State = "reached" // reached a Low or High limit
 )
 
 // Range is one Low / Target / High set; nil means not set.
@@ -70,30 +70,35 @@ type Range struct {
 	High   *float64 `json:"high"`
 }
 
-// Band compares v with r. Reaching Low or High counts (inclusive). Near
-// Target is within half the distance from Target to that side's limit.
-// Without a Target only Low and High are checked.
-func Band(v float64, r Range) State {
-	if r.Low == nil && r.High == nil && r.Target == nil {
-		return None
-	}
+// Near is how close to Target counts as near on a side with no limit
+// (temperature in °C: 5 °F).
+var Near = map[string]float64{VPD: 0.2, Temp: 25.0 / 9, RH: 7}
+
+// Band compares a measure's value v with r. Reaching a limit counts
+// (inclusive). Near Target is within half the distance from Target to that
+// side's limit, or within Near on a side with no limit, where anything further
+// shows no color. Without a Target only the limits show.
+func Band(measure string, v float64, r Range) State {
 	if r.Low != nil && v <= *r.Low || r.High != nil && v >= *r.High {
 		return Reached
 	}
 	if r.Target == nil {
-		return OK
+		return None
 	}
 	t := *r.Target
 	limit := r.High
 	if v < t {
 		limit = r.Low
 	}
-	if limit == nil {
-		return OK
-	}
 	d := v - t
 	if d < 0 {
 		d = -d
+	}
+	if limit == nil {
+		if d <= Near[measure]+1e-9 {
+			return OK
+		}
+		return None
 	}
 	gap := *limit - t
 	if gap < 0 {
@@ -103,23 +108,6 @@ func Band(v float64, r Range) State {
 		return OK
 	}
 	return Toward
-}
-
-// Limits checks a safety limit pair: only reaching one shows (red).
-func Limits(v float64, low, high *float64) State {
-	if low != nil && v <= *low || high != nil && v >= *high {
-		return Reached
-	}
-	return None
-}
-
-// Worse returns the more serious of two states.
-func Worse(a, b State) State {
-	rank := map[State]int{None: 0, OK: 1, Toward: 2, Reached: 3}
-	if rank[b] > rank[a] {
-		return b
-	}
-	return a
 }
 
 // Plant is one plant in a zone, with its current status.

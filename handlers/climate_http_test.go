@@ -5,6 +5,7 @@ package handlers_test
 // light schedule and sensors, and coloring readings.
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"testing"
@@ -41,23 +42,58 @@ func TestClimate_FilledFromOldVPDRanges(t *testing.T) {
 	cs, err := handlers.LoadClimate(db)
 	require.NoError(t, err)
 
-	// A changed range keeps its Low and High, Target halfway, lights on and off.
+	// A changed range keeps its Low and High as limits, with the default
+	// Target, lights on and off.
 	for _, lights := range []string{"on", "off"} {
 		r := targetOf(t, cs, climate.Veg, "", climate.VPD, lights)
 		assert.InDelta(t, 0.9, *r.Low, 1e-9)
-		assert.InDelta(t, 1.1, *r.Target, 1e-9)
+		assert.InDelta(t, 1.0, *r.Target, 1e-9)
 		assert.InDelta(t, 1.3, *r.High, 1e-9)
 	}
-	// An untouched 019 range gets the design's defaults.
+	// An untouched 019 range gets the defaults: a Target and no limits.
 	r := targetOf(t, cs, climate.Seedling, "", climate.VPD, "off")
-	assert.InDelta(t, 0.5, *r.Target, 1e-9)
-	// Temperatures are stored in °C.
-	r = targetOf(t, cs, climate.Flower, climate.Bloom, climate.Temp, "on")
-	assert.InDelta(t, 23.8889, *r.Target, 1e-4) // 75 °F
-	assert.Len(t, cs.Targets, 3*(6*2+1))
+	assert.InDelta(t, 0.8, *r.Target, 1e-9)
+	assert.Nil(t, r.Low)
+	assert.Nil(t, r.High)
+	// VPD's values for each Flower phase and for lights off.
+	for _, c := range []struct {
+		phase, lights string
+		want          float64
+	}{{"", "on", 1.3}, {"", "off", 1.2}, {climate.Stretch, "on", 1.2}, {climate.Stretch, "off", 1.2},
+		{climate.Bloom, "on", 1.3}, {climate.Bloom, "off", 1.2}, {climate.Ripen, "on", 1.5}, {climate.Ripen, "off", 1.2}} {
+		assert.InDelta(t, c.want, *targetOf(t, cs, climate.Flower, c.phase, climate.VPD, c.lights).Target, 1e-9, c.phase+c.lights)
+	}
+	// Temperature and humidity: limits and no Target, in every row. Temperatures are stored in °C.
+	for _, phase := range []string{"", climate.Stretch, climate.Bloom, climate.Ripen} {
+		for _, lights := range []string{"on", "off"} {
+			r = targetOf(t, cs, climate.Flower, phase, climate.Temp, lights)
+			assert.Nil(t, r.Target)
+			assert.InDelta(t, 12.7778, *r.Low, 1e-4) // 55 °F
+			assert.InDelta(t, 30.0, *r.High, 1e-4)   // 86 °F
+			r = targetOf(t, cs, climate.Flower, phase, climate.RH, lights)
+			assert.Nil(t, r.Target)
+			assert.InDelta(t, 30, *r.Low, 1e-9)
+			assert.InDelta(t, 70, *r.High, 1e-9)
+		}
+	}
+	// Drying has all three for temperature and humidity, and no VPD.
+	r = targetOf(t, cs, climate.Drying, "", climate.RH, "off")
+	assert.InDelta(t, 60, *r.Target, 1e-9)
+	assert.InDelta(t, 55, *r.Low, 1e-9)
+	assert.InDelta(t, 65, *r.High, 1e-9)
+	for _, x := range cs.Targets {
+		assert.False(t, x.Stage == climate.Drying && x.Measure == climate.VPD, "VPD does not apply to Drying")
+	}
+	assert.Len(t, cs.Targets, 3*6*2+2)
 	assert.Equal(t, [2]int{4, 8}, cs.PhaseWeeks)
-	assert.True(t, cs.SplitLights)
-	assert.False(t, cs.FlowerPhases)
+	assert.Equal(t, [3]bool{true, false, false}, cs.SplitLights)
+	assert.Equal(t, [3]bool{true, false, false}, cs.FlowerPhases)
+	assert.True(t, cs.TempByStage)
+	assert.True(t, cs.RHByStage)
+	assert.InDelta(t, 12.7778, *cs.TempLimits[0], 1e-4)
+	assert.InDelta(t, 32.2222, *cs.TempLimits[1], 1e-4)
+	assert.InDelta(t, 30, *cs.RHLimits[0], 1e-9)
+	assert.InDelta(t, 90, *cs.RHLimits[1], 1e-9)
 
 	// It only fills an empty table.
 	_, err = db.Exec(`UPDATE plant_status SET vpd_low = 0.1 WHERE status = 'Veg'`)
@@ -66,6 +102,20 @@ func TestClimate_FilledFromOldVPDRanges(t *testing.T) {
 	cs, err = handlers.LoadClimate(db)
 	require.NoError(t, err)
 	assert.InDelta(t, 0.9, *targetOf(t, cs, climate.Veg, "", climate.VPD, "on").Low, 1e-9)
+
+	// A default Target outside the old limits can't be used: Target halfway.
+	db2 := testutil.NewTestDB(t)
+	_, err = db2.Exec(`DELETE FROM climate_target`)
+	require.NoError(t, err)
+	_, err = db2.Exec(`UPDATE plant_status SET vpd_low = 1.1, vpd_high = 1.5 WHERE status = 'Veg'`)
+	require.NoError(t, err)
+	require.NoError(t, handlers.EnsureClimateTargets(db2))
+	cs, err = handlers.LoadClimate(db2)
+	require.NoError(t, err)
+	r = targetOf(t, cs, climate.Veg, "", climate.VPD, "on")
+	assert.InDelta(t, 1.1, *r.Low, 1e-9)
+	assert.InDelta(t, 1.3, *r.Target, 1e-9)
+	assert.InDelta(t, 1.5, *r.High, 1e-9)
 }
 
 func TestClimate_SaveCard(t *testing.T) {
@@ -77,7 +127,7 @@ func TestClimate_SaveCard(t *testing.T) {
 
 	body := func(mod func(m map[string]any)) map[string]any {
 		m := map[string]any{
-			"split_lights": false, "flower_phases": true, "phase_weeks": []int{3, 7},
+			"split_lights": []bool{false, true, false}, "flower_phases": []bool{true, false, true}, "phase_weeks": []int{3, 7},
 			"temp_by_stage": true, "rh_by_stage": false,
 			"temp_limits": []any{12.5, nil}, "rh_limits": []any{25, 80},
 			"targets": []map[string]any{{"stage": "veg", "phase": "", "measure": "rh", "lights": "on", "low": 50, "target": 55, "high": 65}},
@@ -96,12 +146,12 @@ func TestClimate_SaveCard(t *testing.T) {
 
 	got, err := handlers.LoadClimate(e.db)
 	require.NoError(t, err)
-	assert.False(t, got.SplitLights)
-	assert.True(t, got.FlowerPhases)
+	assert.Equal(t, [3]bool{false, true, false}, got.SplitLights)
+	assert.Equal(t, [3]bool{true, false, true}, got.FlowerPhases)
 	assert.True(t, got.TempByStage)
 	assert.Equal(t, [2]int{3, 7}, got.PhaseWeeks)
 	assert.Equal(t, 12.5, *got.TempLimits[0])
-	assert.Nil(t, got.TempLimits[1], "an empty safety limit is skipped")
+	assert.Nil(t, got.TempLimits[1], "an empty limit stays empty")
 	assert.Equal(t, 55.0, *targetOf(t, got, climate.Veg, "", climate.RH, "on").Target)
 	// Rows not sent stay as they were.
 	assert.Equal(t, *targetOf(t, cs, climate.Veg, "", climate.VPD, "on").Target, *targetOf(t, got, climate.Veg, "", climate.VPD, "on").Target)
@@ -109,6 +159,16 @@ func TestClimate_SaveCard(t *testing.T) {
 	refused := map[string]func(m map[string]any){
 		"low above high": func(m map[string]any) {
 			m["targets"] = []map[string]any{{"stage": "veg", "phase": "", "measure": "vpd", "lights": "on", "low": 1.2, "target": 1.0, "high": 0.8}}
+		},
+		"target past a limit": func(m map[string]any) {
+			m["targets"] = []map[string]any{{"stage": "flower", "phase": "", "measure": "rh", "lights": "on", "low": 30, "target": 75, "high": 70}}
+		},
+		"target equal to a limit": func(m map[string]any) {
+			m["targets"] = []map[string]any{{"stage": "flower", "phase": "", "measure": "rh", "lights": "on", "low": 30, "target": 70, "high": 70}}
+		},
+		"low equal to high": func(m map[string]any) { m["rh_limits"] = []any{70, 70} },
+		"vpd on drying": func(m map[string]any) {
+			m["targets"] = []map[string]any{{"stage": "drying", "phase": "", "measure": "vpd", "lights": "off", "target": 1}}
 		},
 		"weeks backwards": func(m map[string]any) { m["phase_weeks"] = []int{6, 3} },
 		"unknown stage": func(m map[string]any) {
@@ -217,22 +277,21 @@ func TestClimate_ReadingColors(t *testing.T) {
 		e.exec(t, `INSERT INTO sensor_data (sensor_id, value, create_dt) VALUES ($1, $2, $3)`, id, v, time.Now().UTC().Format("2006-01-02 15:04:05"))
 		return id
 	}
-	vpd := reading(tent, "ACI.1.3", "kPa", 0.8)    // Veg lights on: 0.8 · 1.0 · 1.2, reaching Low
-	temp := reading(tent, "ACI.1.0", "°F", 95)     // over a 90 °F safety limit
-	hum := reading(tent, "ACI.1.2", "%", 60)       // inside the limits: no color
+	vpd := reading(tent, "ACI.1.3", "kPa", 1.1)    // Veg: Target 1.0 and no limits, near it
+	temp := reading(tent, "ACI.1.0", "°F", 95)     // over Veg's 90 °F High limit
+	hum := reading(tent, "ACI.1.2", "%", 60)       // inside the limits, no Target: no color
 	other := reading(tent, "ACI.2.11", "ppm", 900) // not a climate sensor
 	quiet := reading(empty, "ACI.1.3", "kPa", 3)   // no plants: no color
 	livingPlant(t, e, "Veg plant", tent, "Veg")
 	e.exec(t, `UPDATE zones SET vpd_temp_sensor_id = $1, vpd_humidity_sensor_id = $2, vpd_source = 'sensor', vpd_sensor_id = $3 WHERE id = $4`, temp, hum, vpd, tent)
 	e.exec(t, `UPDATE zones SET vpd_source = 'sensor', vpd_sensor_id = $1 WHERE id = $2`, quiet, empty)
-	testutil.UpsertSetting(t, e.db, "climate_temp_limits", "12.7778,32.2222")
-	testutil.UpsertSetting(t, e.db, "climate_rh_limits", "25,80")
 
 	checks := handlers.ClimateChecks(e.db, handlers.ListManagedSensors(e.db, 60), time.UTC)
-	assert.Equal(t, climate.Reached, checks[vpd].State)
+	assert.Equal(t, climate.OK, checks[vpd].State)
 	assert.InDelta(t, 1.0, *checks[vpd].Range.Target, 1e-9)
 	assert.Equal(t, climate.Reached, checks[temp].State)
-	assert.InDelta(t, 90, *checks[temp].Limits[1], 1e-3, "limits in the sensor's own unit")
+	assert.InDelta(t, 90, *checks[temp].Range.High, 1e-3, "limits in the sensor's own unit")
+	assert.InDelta(t, 5, checks[temp].Near, 1e-9)
 	assert.Equal(t, climate.None, checks[hum].State)
 	assert.NotContains(t, checks, other)
 	assert.Equal(t, climate.None, checks[quiet].State)
@@ -241,4 +300,28 @@ func TestClimate_ReadingColors(t *testing.T) {
 	body := e.page(t, "/settings")
 	assert.Contains(t, body, `id="clData"`)
 	assert.Contains(t, body, `"stage":"veg"`)
+
+	// Zone status asks for fresh readings after a Grow setup save.
+	e.exec(t, `INSERT INTO sensor_data (sensor_id, value, create_dt) VALUES ($1, 1.3, $2)`, vpd, time.Now().UTC().Add(time.Second).Format("2006-01-02 15:04:05"))
+	resp := e.client.Get("/settings/climate/zones")
+	defer testutil.DrainAndClose(resp)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	var out struct {
+		Zones []struct {
+			ID       int `json:"id"`
+			Readings map[string]struct {
+				Value *float64 `json:"value"`
+			} `json:"readings"`
+		} `json:"zones"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&out))
+	found := false
+	for _, z := range out.Zones {
+		if z.ID == tent {
+			found = true
+			require.NotNil(t, z.Readings["vpd"].Value)
+			assert.InDelta(t, 1.3, *z.Readings["vpd"].Value, 1e-9)
+		}
+	}
+	assert.True(t, found, "the tent is listed")
 }

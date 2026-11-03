@@ -30,9 +30,8 @@ func TestAlertEngine_EmailLifecycle_Postgres(t *testing.T) {
 	a := newAlertEnvOn(t, testutil.NewTestPostgresDB(t))
 	f := fakes.NewFakeSMTP(t, fakes.SMTPPlain)
 	a.mail(t, f)
-	a.mode(t, alerts.ModeEmail)
 
-	a.readings(t, a.temp, 95, 95)
+	a.held(t, a.temp, 95)
 	a.check()
 	a.send()
 	require.Len(t, f.Mail(), 1)
@@ -43,58 +42,101 @@ func TestAlertEngine_EmailLifecycle_Postgres(t *testing.T) {
 	assert.InDelta(t, 32.22, *ev[0].Limit, 0.01)
 	assert.WithinDuration(t, time.Now(), ev[0].Started, time.Minute, "started_at reads back in UTC")
 
-	a.exec(t, `UPDATE alert_event SET notified_at = $1`, utcDB(time.Now().Add(-31*time.Minute)))
+	a.exec(t, `UPDATE alert_event SET notified_at = $1`, utcDB(time.Now().Add(-6*time.Hour-time.Minute)))
 	a.check()
 	a.send()
 	require.Len(t, f.Mail(), 2)
 	assert.Contains(t, f.Mail()[1].Data, "Still active.")
 
-	a.fresh(t, a.temp)
-	a.readings(t, a.temp, 80, 80)
+	a.settled(t, a.temp, 80)
 	a.check()
 	a.send()
 	require.Len(t, f.Mail(), 3)
-	assert.Contains(t, f.Mail()[2].Data, "Temperature back to normal in Tent")
+	assert.Contains(t, f.Mail()[2].Data, "Climate back to normal in Tent")
 	ev = a.events(t)
 	require.Len(t, ev, 1)
 	require.NotNil(t, ev[0].Resolved)
 	assert.Empty(t, ev[0].Pending)
 }
 
-func TestAlertEngine_DryRunRepeatEndAndClose_Postgres(t *testing.T) {
+func TestAlertEngine_NotificationsOffRepeatEndAndClose_Postgres(t *testing.T) {
 	t.Parallel()
 	a := newAlertEnvOn(t, testutil.NewTestPostgresDB(t))
 
-	a.readings(t, a.temp, 95, 95)
+	a.held(t, a.temp, 95)
 	a.check()
 	ev := a.events(t)
 	require.Len(t, ev, 1)
-	assert.Equal(t, alerts.DeliveryDryRun, ev[0].Delivery)
+	assert.Equal(t, alerts.DeliveryOff, ev[0].Delivery)
 
-	// Repeat in dry run only keeps time.
-	old := time.Now().Add(-31 * time.Minute).UTC()
+	// A reminder with notifications off only keeps time.
+	old := time.Now().Add(-6*time.Hour - time.Minute).UTC()
 	a.exec(t, `UPDATE alert_event SET notified_at = $1`, utcDB(old))
 	a.check()
 	assert.True(t, a.events(t)[0].Notified.After(old.Add(time.Minute)))
 
-	// End, with the email switch off ($3 = 0).
-	a.fresh(t, a.temp)
-	a.readings(t, a.temp, 80, 80)
+	// End, with no email to send ($3 = 0).
+	a.settled(t, a.temp, 80)
 	a.check()
 	ev = a.events(t)
 	require.NotNil(t, ev[0].Resolved)
-	assert.Equal(t, alerts.DeliveryDryRun, ev[0].Delivery)
+	assert.Equal(t, alerts.DeliveryOff, ev[0].Delivery)
 
-	// A new alert, closed because the mode went Off.
+	// A new alert, closed because its limit was removed.
 	a.fresh(t, a.temp)
-	a.readings(t, a.temp, 95, 95)
+	a.held(t, a.temp, 95)
 	a.check()
-	a.mode(t, alerts.ModeOff)
+	a.exec(t, `UPDATE climate_target SET high = NULL WHERE measure = 'temp'`)
 	a.check()
 	ev = a.events(t)
 	require.Len(t, ev, 2)
 	assert.NotNil(t, ev[0].Resolved)
 	assert.NotNil(t, ev[1].Resolved)
+}
+
+func TestAlertEngine_SensorsOffline_Postgres(t *testing.T) {
+	t.Parallel()
+	a := newAlertEnvOn(t, testutil.NewTestPostgresDB(t))
+	f := fakes.NewFakeSMTP(t, fakes.SMTPPlain)
+	a.mail(t, f)
+	a.exec(t, `INSERT INTO sensor_data (sensor_id, value, create_dt) VALUES ($1, 70, $2)`, a.temp, utcDB(time.Now().Add(-16*time.Minute)))
+	a.check()
+	a.send()
+	ev := a.events(t)
+	require.Len(t, ev, 1)
+	assert.Equal(t, alerts.KindOffline, ev[0].Kind)
+	require.Len(t, f.Mail(), 1)
+
+	// A reminder with no reading to record (a nil value in COALESCE).
+	a.exec(t, `UPDATE alert_event SET notified_at = $1`, utcDB(time.Now().Add(-6*time.Hour-time.Minute)))
+	a.check()
+	a.send()
+	require.Len(t, f.Mail(), 2)
+
+	// Back for 15 minutes since the alert started.
+	a.exec(t, `UPDATE alert_event SET started_at = $1 WHERE kind = 'offline'`, utcDB(time.Now().Add(-20*time.Minute)))
+	a.settled(t, a.temp, 70)
+	a.check()
+	a.send()
+	require.Len(t, f.Mail(), 3)
+	assert.Contains(t, f.Mail()[2].Data, "Sensors back online in Tent")
+}
+
+func TestAlertEvents_Clear_Postgres(t *testing.T) {
+	t.Parallel()
+	a := newAlertEnvOn(t, testutil.NewTestPostgresDB(t))
+	a.exec(t, `INSERT INTO alert_event (kind, zone_id, side, started_at, notified_at, resolved_at) VALUES ('stage', $1, 'low', $2, $2, $2)`, a.tent, utcDB(time.Now()))
+	id := a.events(t)[0].ID
+	resp := a.client.SessionPostJSON(t, "/settings/alerts/events/"+strconv.Itoa(id)+"/clear", a.token, map[string]any{})
+	testutil.DrainAndClose(resp)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Empty(t, a.events(t))
+	got, err := handlers.RecentAlerts(a.db, true, 10)
+	require.NoError(t, err)
+	assert.Len(t, got, 1)
+	resp = a.client.SessionPostJSON(t, "/settings/alerts/clear-ended", a.token, map[string]any{})
+	testutil.DrainAndClose(resp)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestAlertEngine_FailedSendRetries_Postgres(t *testing.T) {
@@ -105,8 +147,7 @@ func TestAlertEngine_FailedSendRetries_Postgres(t *testing.T) {
 	sealed, err := alerts.SealPassword(a.dataDir, "wrong-pass")
 	require.NoError(t, err)
 	testutil.UpsertSetting(t, a.db, alerts.SettingEmailPassword, sealed)
-	a.mode(t, alerts.ModeEmail)
-	a.readings(t, a.temp, 95, 95)
+	a.held(t, a.temp, 95)
 	a.check()
 	a.send()
 	ev := a.events(t)
@@ -137,10 +178,9 @@ func TestAlertEngine_LightMismatchAndPage_Postgres(t *testing.T) {
 
 	body := a.page(t, "/settings")
 	assert.Contains(t, body, `"mismatch":true`)
-	assert.Contains(t, body, `"alert":"dry_run"`)
+	assert.Contains(t, body, `"alert":"off"`)
 
-	a.fresh(t, light)
-	a.readings(t, light, 100, 100)
+	a.settled(t, light, 100)
 	a.check()
 	assert.NotNil(t, a.events(t)[0].Resolved)
 }
@@ -159,26 +199,24 @@ func TestAlertRules_RoutesAndCycle_Postgres(t *testing.T) {
 	a := newAlertEnvOn(t, testutil.NewTestPostgresDB(t))
 	f := fakes.NewFakeSMTP(t, fakes.SMTPPlain)
 	a.mail(t, f)
-	a.mode(t, alerts.ModeEmail)
 	co2 := a.co2Sensor(t)
 	rule := a.rule(t, co2)
 	assert.Contains(t, a.page(t, "/settings"), `"sensor_id":`+strconv.Itoa(co2))
 
-	a.readings(t, co2, 1500, 1500, 1500, 1500, 1500, 1500)
+	a.held(t, co2, 1500)
 	a.check()
 	a.send()
 	require.Len(t, f.Mail(), 1)
 	assert.Contains(t, f.Mail()[0].Data, "1500 ppm")
 
-	a.fresh(t, co2)
-	a.readings(t, co2, 800, 800, 800, 800, 800, 800)
+	a.settled(t, co2, 800)
 	a.check()
 	a.send()
 	require.Len(t, f.Mail(), 2)
 
 	// An edit ends an open alert quietly, and a delete leaves no rule.
 	a.fresh(t, co2)
-	a.readings(t, co2, 1500, 1500, 1500, 1500, 1500, 1500)
+	a.held(t, co2, 1500)
 	a.check()
 	body := ruleBody(co2)
 	body["limit"] = 1200.5
@@ -213,7 +251,7 @@ func TestAlertEvent_OneOpenRowPerAlert_Postgres(t *testing.T) {
 	_, err = db.Exec(ins)
 	assert.NoError(t, err, "a new alert after the old one ended")
 
-	got, err := handlers.RecentAlerts(db, 10)
+	got, err := handlers.RecentAlerts(db, false, 10)
 	require.NoError(t, err)
 	require.Len(t, got, 2)
 	assert.Nil(t, got[0].Resolved, "the open one first")

@@ -291,19 +291,16 @@
                     </div>
                     <div class="ct-grid" id="clGrid"></div>
                     <div class="ct-limnote d-none" id="clLimNote"><i class="fa-solid fa-circle-info me-1"></i>{{ .lcl.cl_limits_note }}</div>
-                    <div class="ct-err d-none" id="clErr"><i class="fa-solid fa-triangle-exclamation me-1"></i>{{ .lcl.cl_err_order }}</div>
+                    <div class="ct-limnote d-none" id="clStageNote"><i class="fa-solid fa-circle-info me-1"></i>{{ .lcl.cl_vpd_note }}</div>
+                    <div class="ct-limnote key"><i class="fa-solid fa-circle-info me-1"></i>{{ .lcl.cl_guide_note }}</div>
+                    <div class="ct-limnote"><i class="fa-solid fa-circle-info me-1"></i>{{ .lcl.cl_many_note }}</div>
                     <div class="ct-pv" id="clPv"></div>
                     <div class="ct-zs" id="clZs"><div class="ct-zs-h">{{ .lcl.cl_zs_title }} <small>{{ .lcl.cl_zs_sub }}</small></div></div>
                     <div class="ct-al" id="clAlerts">
                         <i class="fa-solid fa-bell"></i>
-                        <div><b>{{ .alerts.Box.Title }}</b>
-                            <ul class="ct-lv">
-                                <li><b>{{ .lcl.cl_al_safety_b }}</b> {{ .alerts.Box.Safety }}</li>
-                                <li><b>{{ .lcl.cl_al_stage_b }}:</b> {{ .alerts.Box.Stage }}</li>
-                                <li><b>{{ .alerts.Box.DriftName }}:</b> {{ .lcl.cl_al_drift }}</li>
-                            </ul>
-                            <small>{{ .alerts.Box.Pause }}</small>
-                            {{ if eq .alerts.Climate.Mode "dry" }}<small class="ct-dry"><i class="fa-solid fa-flask me-1"></i><b>{{ .lcl.cl_al_dry_b }}</b> {{ .lcl.cl_al_dry }}</small>{{ end }}</div>
+                        <div><b id="clAlTitle"></b>
+                            <ul class="ct-lv"><li>{{ .lcl.cl_al_line }}</li></ul>
+                            <small>{{ .lcl.cl_al_pause }}</small></div>
                         <a class="st-btn light sm" href="#alerts" data-goto="alerts">{{ .lcl.cl_al_link }} <i class="fa-solid fa-arrow-right ms-1"></i></a>
                     </div>
                     <script type="application/json" id="clData">{{ .climate }}</script>
@@ -393,12 +390,53 @@
             <section class="st-sec" data-sec="alerts" data-title="{{ .lcl.st_sec_alerts }}" data-desc="{{ .lcl.st_sec_alerts_desc }}">
                 <h2 class="st-sec-h"><i class="fa-solid fa-bell"></i>{{ .lcl.st_sec_alerts }}<a href="#alerts" data-goto="alerts">{{ .lcl.st_go_to_section }} <i class="fa-solid fa-arrow-right"></i></a></h2>
 
-                <div class="st-card" id="alCard">
-                    <div class="st-card-h"><i class="fa-solid fa-envelope"></i><div><h3>{{ .lcl.al_email_title }}</h3><p>{{ .lcl.al_email_desc }}</p></div></div>
-                    <label class="st-row st-switch">
-                        <div class="st-row-l"><span class="st-label">{{ .lcl.al_email_on }}</span></div>
-                        <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="alOn" data-al {{ if .alerts.Email.On }}checked{{ end }}></div>
-                    </label>
+                <div class="st-beta-note" id="alBetaNote">
+                    <em class="st-beta">{{ .lcl.al_beta }}</em>
+                    <div>{{ .lcl.al_beta_note }} {{ .lcl.al_beta_feedback }} <a href="mailto:budminder.app@gmail.com?subject=BudMinder%20alerts%20feedback">budminder.app@gmail.com</a></div>
+                </div>
+
+                {{/* What sends an alert notification: the page's plain explanation. */}}
+                <div class="st-card" id="alWhat">
+                    <div class="st-card-h"><i class="fa-solid fa-bell"></i><div><h3>{{ .lcl.al_what_title }}</h3></div></div>
+                    <div class="ax-state" id="alState"></div>
+                    <ul class="ax-what">
+                        <li><i class="fa-solid fa-temperature-half"></i><b>{{ .lcl.al_what_climate }}</b><div><span>{{ .lcl.al_what_climate_line }}</span><small>{{ .lcl.al_what_climate_sub }}</small></div><a href="#grow" data-goto="grow" data-goto-card="climateCard">{{ .lcl.cl_title }}<i class="fa-solid fa-arrow-right"></i></a></li>
+                        <li><i class="fa-solid fa-lightbulb"></i><b>{{ .lcl.al_what_lights }}</b><div><span>{{ .lcl.al_what_lights_line }}</span><small>{{ .lcl.al_what_lights_sub }}</small></div><a href="#grow" data-goto="grow">{{ .lcl.edit_zone }}<i class="fa-solid fa-arrow-right"></i></a></li>
+                        <li><i class="fa-solid fa-gauge-high"></i><b>{{ .lcl.al_rules_title }}</b><div><span>{{ .lcl.al_what_rules_line }}</span><small>{{ .lcl.al_what_rules_sub }}</small></div><a href="#alRulesCard" data-al-jump="alRulesCard">{{ .lcl.al_rules_title }}<i class="fa-solid fa-arrow-right"></i></a></li>
+                        <li><i class="ax-ic"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><g transform="rotate(45 12 12)"><rect x="7.6" y="1" width="2.8" height="7" rx="1.4"/><rect x="13.6" y="1" width="2.8" height="7" rx="1.4"/><path d="M4.5 7h15v3.5a7.5 7.5 0 0 1-15 0z"/><rect x="10.6" y="16" width="2.8" height="7" rx="1.4"/></g><path d="M2.5 2.5 21.5 21.5" stroke="var(--sx-card)" stroke-width="4"/><path d="M2.5 2.5 21.5 21.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></i><b>{{ .lcl.al_what_offline }}</b><div><span>{{ .lcl.al_what_offline_line }}</span><small>{{ .lcl.al_what_offline_sub }}</small></div></li>
+                    </ul>
+                    <div class="ax-foot">{{ .lcl.al_what_foot }}</div>
+                </div>
+
+                <div class="st-card" id="alOften">
+                    <div class="st-card-h"><i class="fa-regular fa-clock"></i><div><h3>{{ .lcl.al_often_title }}</h3><p>{{ .lcl.al_often_desc }}</p></div></div>
+                    <ol class="ax-tl">
+                        <li><span class="t">{{ .lcl.al_often_t1 }}</span><span class="d wait"><i class="fa-solid fa-hourglass-half"></i></span><b>{{ .lcl.al_often_b1 }}</b><small>{{ .lcl.al_often_s1 }}</small></li>
+                        <li><span class="t">{{ .lcl.al_often_t2 }}</span><span class="d first"><i class="fa-solid fa-envelope"></i></span><b>{{ .lcl.al_often_b2 }}</b><small>{{ .lcl.al_often_s2 }}</small></li>
+                        <li><span class="t">{{ .lcl.al_often_t3 }}</span><span class="d again"><svg class="ax-rem" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 9.2A9 9 0 0 1 19.4 6.8"/><path d="M20.6 2.6v4.8h-4.8"/><path d="M20.4 14.8A9 9 0 0 1 4.6 17.2"/><path d="M3.4 21.4v-4.8h4.8"/><rect x="7.4" y="8.6" width="9.2" height="6.8" rx="1.2" fill="currentColor" stroke="none"/><path d="M7.8 9.6 12 12.6l4.2-3" stroke="#ea580c" stroke-width="1.2"/></svg></span><b>{{ .lcl.al_often_b3 }}</b><small>{{ .lcl.al_often_s3 }}</small></li>
+                        <li><span class="t">{{ .lcl.al_often_t4 }}</span><span class="d clear"><i class="fa-solid fa-circle-check"></i></span><b>{{ .lcl.al_often_b4 }}</b><small>{{ .lcl.al_often_s4 }}</small></li>
+                    </ol>
+                </div>
+
+                {{/* Zone status: read-only, drawn by settings-climate.js from the Climate targets and limits model. */}}
+                <div class="st-card" id="alZoneCard">
+                    <div class="st-card-h"><i class="fa-solid fa-tent"></i><div><h3>{{ .lcl.al_zone_title }}</h3><p>{{ .lcl.al_zone_desc }}</p></div></div>
+                    <div class="ax-legend" id="alLegend"></div>
+                    <div id="alZones"></div>
+                    <div class="ax-znote" id="alZNote"></div>
+                </div>
+
+                {{/* Notification methods: Email is the only one so far. It starts closed; click the row to open its fields. */}}
+                <div class="st-card" id="alMethods">
+                    <div class="st-card-h"><i class="fa-solid fa-paper-plane"></i><div><h3>{{ .lcl.al_meth_title }}</h3><p>{{ .lcl.al_meth_desc }}</p></div></div>
+                    <div class="ax-meths" id="alCard">
+                        <div class="ax-refuse" id="alRefuse" role="alert" hidden><i class="fa-solid fa-triangle-exclamation"></i><span id="alRefuseText"></span></div>
+                        <section class="ax-meth" data-m="email">
+                            <div class="ax-meth-h">
+                                <button type="button" class="ax-meth-t" aria-expanded="false"><i class="fa-solid fa-chevron-right ax-chev"></i><i class="fa-solid fa-envelope ax-mi"></i><span><b>{{ .lcl.al_email_title }}</b><small id="alMailSt"></small></span></button>
+                                <div class="form-check form-switch m-0 st-switch"><input class="form-check-input" type="checkbox" role="switch" aria-label="{{ .lcl.al_email_on }}" title="{{ .lcl.al_email_on }}" id="alOn" data-al {{ if .alerts.Email.On }}checked{{ end }}></div>
+                            </div>
+                            <div class="ax-meth-b">
                     <div class="st-row">
                         <div class="st-row-l"><label for="alProvider">{{ .lcl.al_provider }}</label><small>{{ .lcl.al_provider_desc }}</small></div>
                         <div class="st-row-r">
@@ -463,46 +501,11 @@
                         <div class="st-row-l"><small>{{ .lcl.al_help }}</small><small class="st-ha-result" id="alResult" role="status" aria-live="polite"></small></div>
                         <div class="st-row-r"><button type="button" class="st-btn light" id="alTest"><i class="fa-solid fa-paper-plane me-1"></i>{{ .lcl.al_test }}</button></div>
                     </div>
-                </div>
-
-                {{/* Climate alerts: mode and times (POST /settings/alerts/climate). */}}
-                <div class="st-card" id="alClimateCard" data-email-ready="{{ .alerts.EmailReady }}">
-                    <div class="st-card-h"><i class="fa-solid fa-temperature-half"></i><div><h3>{{ .lcl.al_climate_title }}</h3><p>{{ .lcl.al_climate_desc }}</p></div></div>
-                    <div class="st-row">
-                        <div class="st-row-l"><label for="alMode">{{ .lcl.al_mode }}</label><small>{{ .lcl.al_mode_desc }}</small></div>
-                        <div class="st-row-r">
-                            <select class="form-select form-select-sm" id="alMode" data-alc>
-                                <option value="off"{{ if eq .alerts.Climate.Mode "off" }} selected{{ end }}>{{ .lcl.al_mode_off }}</option>
-                                <option value="dry"{{ if eq .alerts.Climate.Mode "dry" }} selected{{ end }}>{{ .lcl.al_mode_dry }}</option>
-                                <option value="email"{{ if eq .alerts.Climate.Mode "email" }} selected{{ end }}>{{ .lcl.al_mode_email }}</option>
-                            </select>
-                        </div>
+                            </div>
+                        </section>
                     </div>
-                    <div class="al-tip warn" id="alModeWarn" role="note" hidden><i class="fa-solid fa-triangle-exclamation"></i><span>{{ .lcl.al_mode_email_off }}</span></div>
-                    <div class="st-row">
-                        <div class="st-row-l"><label for="alSafety">{{ .lcl.al_safety_readings }}</label><small>{{ .lcl.al_safety_readings_desc }}</small></div>
-                        <div class="st-row-r"><input type="number" class="form-control form-control-sm al-port" id="alSafety" min="{{ index .alerts.Ranges.Safety 0 }}" max="{{ index .alerts.Ranges.Safety 1 }}" value="{{ .alerts.Climate.SafetyReadings }}" data-alc></div>
-                    </div>
-                    <div class="st-row">
-                        <div class="st-row-l"><label for="alWindow">{{ .lcl.al_window }}</label><small>{{ .lcl.al_window_desc }}</small></div>
-                        <div class="st-row-r d-flex align-items-center gap-2"><input type="number" class="form-control form-control-sm al-port" id="alWindow" min="{{ index .alerts.Ranges.Window 0 }}" max="{{ index .alerts.Ranges.Window 1 }}" value="{{ .alerts.Climate.WindowMinutes }}" data-alc><span>{{ .lcl.al_unit_minutes }}</span></div>
-                    </div>
-                    <div class="st-row">
-                        <div class="st-row-l"><label for="alDrift">{{ .lcl.al_drift }}</label><small>{{ .lcl.al_drift_desc }}</small></div>
-                        <div class="st-row-r d-flex align-items-center gap-2"><input type="number" class="form-control form-control-sm al-port" id="alDrift" min="{{ index .alerts.Ranges.Drift 0 }}" max="{{ index .alerts.Ranges.Drift 1 }}" value="{{ .alerts.Climate.DriftHours }}" data-alc><span>{{ .lcl.al_unit_hours }}</span></div>
-                    </div>
-                    <div class="st-row">
-                        <div class="st-row-l"><label for="alPause">{{ .lcl.al_pause }}</label><small>{{ .lcl.al_pause_desc }}</small></div>
-                        <div class="st-row-r d-flex align-items-center gap-2"><input type="number" class="form-control form-control-sm al-port" id="alPause" min="{{ index .alerts.Ranges.Pause 0 }}" max="{{ index .alerts.Ranges.Pause 1 }}" value="{{ .alerts.Climate.PauseMinutes }}" data-alc><span>{{ .lcl.al_unit_minutes }}</span></div>
-                    </div>
-                    <div class="st-row">
-                        <div class="st-row-l"><label for="alRepeatCrit">{{ .lcl.al_repeat_critical }}</label><small>{{ .lcl.al_repeat_desc }}</small></div>
-                        <div class="st-row-r d-flex align-items-center gap-2"><input type="number" class="form-control form-control-sm al-port" id="alRepeatCrit" min="{{ index .alerts.Ranges.RepeatCritical 0 }}" max="{{ index .alerts.Ranges.RepeatCritical 1 }}" value="{{ .alerts.Climate.RepeatCritical }}" data-alc><span>{{ .lcl.al_unit_minutes }}</span></div>
-                    </div>
-                    <div class="st-row">
-                        <div class="st-row-l"><label for="alRepeatWarn">{{ .lcl.al_repeat_warning }}</label><small>{{ .lcl.al_repeat_desc }}</small><small class="st-ha-result" id="alClimateResult" role="status" aria-live="polite"></small></div>
-                        <div class="st-row-r d-flex align-items-center gap-2"><input type="number" class="form-control form-control-sm al-port" id="alRepeatWarn" min="{{ index .alerts.Ranges.RepeatWarning 0 }}" max="{{ index .alerts.Ranges.RepeatWarning 1 }}" value="{{ .alerts.Climate.RepeatWarning }}" data-alc><span>{{ .lcl.al_unit_hours }}</span></div>
-                    </div>
+                    <div class="ax-planned"><span>{{ .lcl.al_meth_planned }}</span><span class="ax-pl"><i class="fa-solid fa-bell"></i>ntfy</span><span class="ax-pl"><i class="fa-solid fa-mobile-screen"></i>Pushover</span><span class="ax-pl"><i class="fa-brands fa-discord"></i>Discord</span><span class="ax-pl"><i class="fa-solid fa-house-signal"></i>Home Assistant</span><span>{{ .lcl.al_meth_others }}</span></div>
+                    <div class="ax-foot" id="alMethFoot">{{ .lcl.al_meth_foot }}</div>
                 </div>
 
                 {{/* Sensor alerts (alert_rule, handlers/alert_rules.go; list and form in settings-alerts.js). */}}
@@ -520,7 +523,7 @@
                         <div class="modal-body">
                             <div class="mb-3"><label class="form-label" for="alRuleSensor">{{ .lcl.al_rule_sensor }}</label>
                                 <select class="form-select form-select-sm" id="alRuleSensor"></select></div>
-                            <div class="mb-3"><label class="form-label" for="alRuleSide">{{ .lcl.al_rule_when }}</label>
+                            <div class="mb-1"><label class="form-label" for="alRuleSide">{{ .lcl.al_rule_when }}</label>
                                 <div class="d-flex align-items-center gap-2">
                                     <select class="form-select form-select-sm" id="alRuleSide">
                                         <option value="high">{{ .lcl.al_rule_side_high }}</option>
@@ -529,11 +532,7 @@
                                     <input type="number" step="any" class="form-control form-control-sm al-rule-num" id="alRuleLimit" aria-label="{{ .lcl.al_rule_value }}" title="{{ .lcl.al_rule_value }}">
                                     <span id="alRuleUnit"></span>
                                 </div></div>
-                            <div class="mb-1"><label class="form-label" for="alRuleHold">{{ .lcl.al_rule_hold }}</label>
-                                <div class="d-flex align-items-center gap-2">
-                                    <input type="number" class="form-control form-control-sm al-rule-num" id="alRuleHold" min="{{ index .alerts.Rules.Hold 0 }}" max="{{ index .alerts.Rules.Hold 1 }}" value="10"><span>{{ .lcl.al_unit_minutes }}</span>
-                                </div>
-                                <small class="text-muted">{{ .lcl.al_rule_hold_desc }}</small></div>
+                            <small class="text-muted">{{ .lcl.al_rule_note }}</small>
                             <small class="st-ha-result bad" id="alRuleErr" role="alert"></small>
                         </div>
                         <div class="modal-footer">
@@ -543,31 +542,28 @@
                     </div></div>
                 </div>
 
-                {{/* Recent alerts (alert_event, handlers/alert_engine.go). */}}
+                {{/* Recent alerts (alert_event, handlers/alert_engine.go; list drawn by settings-alerts.js). */}}
                 <div class="st-card" id="alRecent">
                     <div class="st-card-h"><i class="fa-solid fa-clock-rotate-left"></i><div><h3>{{ .lcl.al_recent_title }}</h3><p>{{ .lcl.al_recent_desc }}</p></div></div>
-                    {{ if .alerts.Recent }}
-                    <ul class="al-ev">
-                        {{ range .alerts.Recent }}
-                        <li class="al-ev-{{ .Severity }}{{ if not .Active }} ended{{ end }}">
-                            <div class="al-ev-main"><b>{{ .Title }}</b>{{ if .Line }}<span>{{ .Line }}</span>{{ end }}
-                                {{ if .Error }}<small class="al-detail">{{ .Error }}</small>{{ end }}</div>
-                            <div class="al-ev-meta"><small>{{ .When }}</small>
-                                <span class="badge {{ if .Active }}bg-danger{{ else }}bg-secondary{{ end }}">{{ .State }}</span>
-                                {{ if .Delivery }}<span class="badge al-ev-del al-ev-del-{{ .DeliveryKey }}">{{ .Delivery }}</span>{{ end }}</div>
-                        </li>
-                        {{ end }}
-                    </ul>
-                    {{ else }}
-                    <div class="st-row"><div class="st-row-l"><small>{{ .lcl.al_recent_empty }}</small></div></div>
-                    {{ end }}
+                    <div class="ax-ev-bar">
+                        <div class="sx-seg" id="alEvTabs" role="group" aria-label="{{ .lcl.al_recent_title }}"><button type="button" data-t="recent" class="on">{{ .lcl.al_recent_tab }} <span id="alEvRecentN"></span></button><button type="button" data-t="cleared">{{ .lcl.al_cleared_tab }} <span id="alEvClearedN"></span></button></div>
+                        <button type="button" class="st-btn light sm" id="alClearAll"><i class="fa-solid fa-check-double me-1"></i><span>{{ .lcl.al_clear_all }}</span></button>
+                    </div>
+                    <ul class="al-ev" id="alEv"></ul>
+                    <small class="st-ha-result" id="alEvResult" role="status" aria-live="polite"></small>
+                    <script type="application/json" id="alEvData">{{ .alerts.Events }}</script>
                 </div>
-                <script type="application/json" id="alText">{"sending": {{ .lcl.al_test_sending }}, "saved": {{ .lcl.al_password_saved }}, "none": {{ .lcl.al_password_none }}, "failed": {{ .lcl.failed_to_save_settings }},
+                <script type="application/json" id="alText" data-set-up="{{ .alerts.EmailSetUp }}">{"sending": {{ .lcl.al_test_sending }}, "saved": {{ .lcl.al_password_saved }}, "none": {{ .lcl.al_password_none }}, "failed": {{ .lcl.failed_to_save_settings }},
                     "tips": {"gmail": {{ .lcl.al_tip_gmail }}, "outlook": {{ .lcl.al_tip_outlook }}, "yahoo": {{ .lcl.al_tip_yahoo }}, "aol": {{ .lcl.al_tip_aol }}, "icloud": {{ .lcl.al_tip_icloud }},
                              "fastmail": {{ .lcl.al_tip_fastmail }}, "zoho": {{ .lcl.al_tip_zoho }}, "service": {{ .lcl.al_tip_service }}, "other": {{ .lcl.al_tip_other }}},
                     "tipLink": {{ .lcl.al_tip_link }},
                     "ruleAdd": {{ .lcl.al_rule_add }}, "ruleEdit": {{ .lcl.al_rule_edit }}, "ruleDelete": {{ .lcl.al_rule_delete }}, "ruleConfirm": {{ .lcl.al_rule_delete_confirm }},
                     "ruleOn": {{ .lcl.al_rule_on }}, "ruleLineHigh": {{ .lcl.al_rule_line_high }}, "ruleLineLow": {{ .lcl.al_rule_line_low }},
+                    "stOn": {{ .lcl.al_st_on }}, "stNoLimit": {{ .lcl.al_st_no_limit }}, "stOff": {{ .lcl.al_st_off }}, "stSetUp": {{ .lcl.al_st_set_up }},
+                    "stPaused": {{ .lcl.al_st_paused }}, "stTurnOn": {{ .lcl.al_st_turn_on }}, "stOffNoLimit": {{ .lcl.al_st_off_no_limit }},
+                    "refuse": {{ .lcl.al_refuse }}, "climateCard": {{ .lcl.cl_title }}, "sendingTo": {{ .lcl.al_sending_to }}, "mailOff": {{ .lcl.al_mail_off }},
+                    "boxOn": {{ .lcl.cl_al_title_on }}, "boxOff": {{ .lcl.cl_al_title_off }},
+                    "evClear": {{ .lcl.al_clear }}, "evRestore": {{ .lcl.al_restore }}, "evNoRecent": {{ .lcl.al_recent_empty }}, "evNoCleared": {{ .lcl.al_cleared_empty }},
                     "ruleBadValue": {{ .lcl.al_rule_bad_value }}, "ruleNoSensors": {{ .lcl.al_rule_no_sensors }}}</script>
             </section>
 
@@ -1154,7 +1150,7 @@
                     </div>
 
                     <div class="dz-sec" id="dzCheckSec">
-                        <h4><i class="fa-solid fa-lightbulb"></i>{{ .lcl.cl_light_check }}</h4>
+                        <h4><i class="fa-solid fa-lightbulb"></i>{{ .lcl.cl_light_check }}<em class="st-beta">{{ .lcl.al_beta }}</em></h4>
                         <p>{{ .lcl.cl_light_check_desc }}</p>
                         <div class="dz-f"><label for="dzLight">{{ .lcl.cl_light_sensor }}<small>{{ .lcl.cl_light_sensor_hint }}</small></label>
                             <select class="form-select form-select-sm" id="dzLight"></select></div>
@@ -1200,20 +1196,25 @@
     </div>
 </div>
 <script type="application/json" id="clText">{"low": {{ .lcl.cl_low }}, "target": {{ .lcl.cl_target }}, "high": {{ .lcl.cl_high }},
-    "alertLimit": {{ .lcl.cl_alert_limit }}, "alertLimits": {{ .lcl.cl_alert_limits }}, "stageTargets": {{ .lcl.cl_stage_targets }},
+    "notifies": {{ .lcl.cl_notifies }}, "stageHead": {{ .lcl.cl_stage_head }}, "key": {{ .lcl.cl_key }},
     "lightsOn": {{ .lcl.cl_lights_on }}, "lightsOff": {{ .lcl.cl_lights_off }}, "lightsOnOff": {{ .lcl.cl_lights_on_off }},
-    "on": {{ .lcl.cl_on }}, "off": {{ .lcl.cl_off }}, "safety": {{ .lcl.cl_safety }}, "safetyAll": {{ .lcl.cl_safety_all }},
-    "safetyAlert": {{ .lcl.cl_safety_alert }}, "leaveEmpty": {{ .lcl.cl_leave_empty }},
+    "on": {{ .lcl.cl_on }}, "off": {{ .lcl.cl_off }}, "limits": {{ .lcl.cl_limits }}, "limitsAll": {{ .lcl.cl_limits_all }},
+    "limitsKey": {{ .lcl.cl_limits_key }}, "leaveEmpty": {{ .lcl.cl_leave_empty }},
+    "errBetween": {{ .lcl.cl_err_between }}, "errBelow": {{ .lcl.cl_err_below }}, "errAbove": {{ .lcl.cl_err_above }}, "errLoHi": {{ .lcl.cl_err_lohi }},
+    "legTarget": {{ .lcl.al_leg_target }}, "legCaution": {{ .lcl.al_leg_caution }}, "legNone": {{ .lcl.al_leg_none }}, "legAlert": {{ .lcl.al_leg_alert }}, "legReading": {{ .lcl.al_leg_reading }}, "legTick": {{ .lcl.al_leg_tick }},
+    "pvNoneSet": {{ .lcl.cl_pv_none_set }}, "pvAlert": {{ .lcl.cl_pv_alert }}, "pvTarget": {{ .lcl.cl_pv_target }}, "pvNoTarget": {{ .lcl.cl_pv_no_target }}, "pvCaution": {{ .lcl.cl_pv_caution }}, "pvFar": {{ .lcl.cl_pv_far }},
+    "pillOk": {{ .lcl.al_pill_ok }}, "pillNone": {{ .lcl.al_pill_none }}, "rowNone": {{ .lcl.al_row_none }}, "cardName": {{ .lcl.cl_title }},
+    "zNoteVpd": {{ .lcl.al_znote_vpd }}, "zNoteSet": {{ .lcl.al_znote_set }}, "zNoPlants": {{ .lcl.al_zone_no_plants }}, "zNoSensors": {{ .lcl.al_zone_no_sensors }},
+    "zLights": {{ .lcl.al_zone_lights }}, "zSensors": {{ .lcl.al_zone_sensors }}, "zLightOn": {{ .lcl.al_zone_light_on }}, "zLightOff": {{ .lcl.al_zone_light_off }},
+    "zNoLight": {{ .lcl.al_zone_no_light }}, "zLightStale": {{ .lcl.al_zone_light_stale }}, "zLastAgo": {{ .lcl.al_zone_last_ago }}, "zLastAt": {{ .lcl.al_zone_last_at }}, "zNoReadings": {{ .lcl.al_zone_no_readings }},
+    "zLow": {{ .lcl.al_zone_low }}, "zHigh": {{ .lcl.al_zone_high }}, "zOffline": {{ .lcl.al_zone_offline }}, "zOfflineFrom": {{ .lcl.al_line_offline }},"zLightBad": {{ .lcl.al_zone_light_bad }}, "zClock": {{ .lcl.al_zone_clock }},
+    "zSent": {{ .lcl.al_zone_sent }}, "zSentOnce": {{ .lcl.al_zone_sent_once }}, "zNotSent": {{ .lcl.al_zone_not_sent }}, "zNotSentPaused": {{ .lcl.al_zone_not_sent_paused }}, "zSending": {{ .lcl.al_zone_sending }}, "zFailed": {{ .lcl.al_zone_failed }},
     "vpd": {{ .lcl.cl_vpd }}, "temp": {{ .lcl.cl_temperature }}, "rh": {{ .lcl.cl_humidity }},
     "germinating": {{ .lcl.germinating_label }}, "planted": {{ .lcl.planted_label }}, "curing": {{ .lcl.curing_label }},
     "seedling": {{ .lcl.seedling_label }}, "veg": {{ .lcl.veg_label }}, "flower": {{ .lcl.flower_label }}, "drying": {{ .lcl.drying_label }},
     "stretch": {{ .lcl.cl_stretch }}, "bloom": {{ .lcl.cl_bloom }}, "ripen": {{ .lcl.cl_ripen }},
     "weeksFrom": {{ .lcl.cl_weeks_from }}, "weekOn": {{ .lcl.cl_week_on }}, "inStage": {{ .lcl.cl_in_stage_now }},
     "zoneNow": {{ .lcl.cl_zone_now }}, "week": {{ .lcl.cl_week_n }}, "flowerPhase": {{ .lcl.cl_flower_phase }},
-    "near": {{ .lcl.cl_near }}, "towardLow": {{ .lcl.cl_toward_low }}, "towardHigh": {{ .lcl.cl_toward_high }},
-    "reachedLow": {{ .lcl.cl_reached_low }}, "reachedHigh": {{ .lcl.cl_reached_high }},
-    "legToward": {{ .lcl.cl_leg_toward }}, "legReached": {{ .lcl.cl_leg_reached }},
-    "withinLimits": {{ .lcl.cl_within_limits }}, "notChecked": {{ .lcl.cl_not_checked }}, "legWithin": {{ .lcl.cl_leg_within }}, "legLimit": {{ .lcl.cl_leg_limit }},
     "pvNone": {{ .lcl.cl_pv_none }}, "zsNone": {{ .lcl.cl_zs_none }}, "calcVpd": {{ .lcl.cl_calc_vpd }}, "editZone": {{ .lcl.edit_zone }},
     "noSchedule": {{ .lcl.cl_no_schedule }}, "lightChecked": {{ .lcl.cl_light_checked }}, "schedShort": {{ .lcl.cl_sched_short }}, "hours": {{ .lcl.cl_hours }},
     "clock": {{ .lcl.cl_clock }}, "none": {{ .lcl.cl_none }},

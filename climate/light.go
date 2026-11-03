@@ -91,6 +91,29 @@ func CheckLights(readings []Reading, above float64, s Schedule, stage string, no
 	return &LightMismatch{SeenOn: !want, Since: since}, false
 }
 
+// LightsAgreed says the sensor has matched the schedule for the last d. A hold
+// after each scheduled switch doesn't count, since lights can lag behind it.
+// False with too few readings to tell.
+func LightsAgreed(readings []Reading, above float64, s Schedule, stage string, now time.Time, loc *time.Location, d, hold time.Duration) bool {
+	var first, last time.Time
+	for _, r := range readings {
+		if r.At.Before(now.Add(-d)) || r.At.After(now) {
+			continue
+		}
+		if first.IsZero() {
+			first = r.At
+		}
+		last = r.At
+		if sw, ok := LastSwitch(s, stage, r.At, loc); ok && r.At.Sub(sw) < hold {
+			continue
+		}
+		if want, scheduled := LightsOn(s, stage, r.At, loc); !scheduled || (r.Value > above) != want {
+			return false
+		}
+	}
+	return !first.IsZero() && last.Sub(first) >= d/2
+}
+
 // The clock-offset check: three days of switches, each about an hour off.
 const (
 	clockOffsetDays     = 3
