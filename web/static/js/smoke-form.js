@@ -161,7 +161,7 @@
         // Same order as allPhotos(), so the main photo shows first.
         const list = allPhotos().map(a => a.saved ? { ...a.saved, kind: "saved" } : { ...a.pend, kind: "new" });
         const items = list.map((p, i) => `<div class="sr-pitem${i === 0 ? " main" : ""}">
-            <img src="${esc(p.preview || p.url)}" alt="">${i === 0 ? `<span class="sr-pmain">${esc(tr("sr_main"))}</span>` : ""}
+            <img src="${esc(p.preview || bmThumb(p.url))}" alt="">${i === 0 ? `<span class="sr-pmain">${esc(tr("sr_main"))}</span>` : ""}
             <div class="sr-pacts">${i ? `<button type="button" data-pmain="${i}" title="${esc(tr("sr_make_main"))}" aria-label="${esc(tr("sr_make_main"))}"><i class="fa-solid fa-star"></i></button>` : ""}
               <button type="button" data-premove="${i}" title="${esc(tr("sr_remove"))}" aria-label="${esc(tr("sr_remove"))}"><i class="fa-solid fa-xmark"></i></button></div></div>`).join("");
         const tab = (k, l) => `<button type="button" data-tab="${k}" class="${S.tab === k ? "on" : ""}">${esc(tr(l))}</button>`;
@@ -169,7 +169,7 @@
         if (S.tab === "upload") body = `<label class="sr-drop d-block" for="srFiles"><i class="fa-solid fa-cloud-arrow-up fa-lg me-1"></i>${esc(tr("sr_choose_files"))}</label><input type="file" id="srFiles" accept="image/*" multiple class="d-none">`;
         if (S.tab === "url") body = `<div class="input-group"><input class="form-control" id="srURL" type="url" placeholder="${esc(tr("sr_url_ph"))}"><button type="button" class="btn btn-success" id="srURLAdd">${esc(tr("sr_add"))}</button></div><p class="small sd-muted mt-2 mb-0">${esc(tr("sr_url_note"))}</p>`;
         if (S.tab === "journal") body = !S.plant_id ? `<p class="sd-muted small mb-0">${esc(tr("sr_pick_plant_first"))}</p>` : !S.journal.length ? `<p class="sd-muted small mb-0">${esc(tr("sr_no_journal"))}</p>`
-            : `<div class="sr-jgrid">${S.journal.map(j => `<img src="${esc(j.url)}" data-journal="${j.id}" class="${pending.some(p => p.journal === j.id) ? "on" : ""}" alt="" tabindex="0">`).join("")}</div>`;
+            : `<div class="sr-jgrid">${S.journal.map(j => `<img src="${esc(bmThumb(j.url))}" data-journal="${j.id}" class="${pending.some(p => p.journal === j.id) ? "on" : ""}" alt="" tabindex="0">`).join("")}</div>`;
         return `<div class="sd-card sr-c sr-c-photos"><h2 class="sd-h"><span class="sr-ic"><i class="fa-solid fa-image"></i></span>${esc(tr("sr_photos"))}<span class="sd-h-r">${esc(tr("sr_photos_hint"))}</span></h2>
             ${items ? `<div class="sr-plist mb-3">${items}</div>` : ""}
             <div class="sr-tabs">${tab("upload", "sr_upload")}${tab("url", "sr_image_url")}${S.source === "grown" ? tab("journal", "sr_from_journal") : ""}</div>${body}</div>`;

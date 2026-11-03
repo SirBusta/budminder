@@ -107,3 +107,45 @@ func TestCompressJPEG_AlreadySmallIsKept(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, ShouldReplace(len(low), len(again)))
 }
+
+func TestPhotoThumbnail_ScalesTheLongestSideKeepsLook(t *testing.T) {
+	t.Parallel()
+	small, err := PhotoThumbnail(detailedJPEG(t), 160)
+	require.NoError(t, err)
+	cfg, err := jpeg.DecodeConfig(bytes.NewReader(small))
+	require.NoError(t, err)
+	assert.Equal(t, 160, cfg.Width)
+	assert.Equal(t, 120, cfg.Height)
+	icc, orientation := jpegLook(small)
+	assert.Equal(t, 6, orientation, "a sideways phone photo still shows upright")
+	assert.Equal(t, jpegSegment(0xE2, fakeICC), icc, "color profile kept")
+
+	var tall bytes.Buffer
+	require.NoError(t, jpeg.Encode(&tall, image.NewRGBA(image.Rect(0, 0, 200, 400)), nil))
+	small, err = PhotoThumbnail(tall.Bytes(), 100)
+	require.NoError(t, err)
+	cfg, err = jpeg.DecodeConfig(bytes.NewReader(small))
+	require.NoError(t, err)
+	assert.Equal(t, 50, cfg.Width)
+	assert.Equal(t, 100, cfg.Height)
+}
+
+func TestPhotoThumbnail_PNGTurnsTransparentPartsWhite(t *testing.T) {
+	t.Parallel()
+	var src bytes.Buffer
+	require.NoError(t, png.Encode(&src, image.NewNRGBA(image.Rect(0, 0, 40, 40))))
+	small, err := PhotoThumbnail(src.Bytes(), 20)
+	require.NoError(t, err)
+	img, err := jpeg.Decode(bytes.NewReader(small))
+	require.NoError(t, err)
+	r, g, b, _ := img.At(10, 10).RGBA()
+	assert.Greater(t, r>>8, uint32(250))
+	assert.Greater(t, g>>8, uint32(250))
+	assert.Greater(t, b>>8, uint32(250))
+}
+
+func TestPhotoThumbnail_RefusesOtherFiles(t *testing.T) {
+	t.Parallel()
+	_, err := PhotoThumbnail([]byte("not a photo"), 100)
+	assert.ErrorIs(t, err, ErrNotCompressible)
+}

@@ -501,6 +501,7 @@ func buildFuncMap(store *config.Store) template.FuncMap {
 		// 2025"), in the page's language.
 		"longDate":  utils.LongDate,
 		"shortDate": utils.ShortDate,
+		"thumb":     handlers.PhotoThumbURL,
 		// dict builds a map from key/value pairs so a shared sub-template
 		// can take several arguments: {{ template "x" (dict "k" v ...) }}.
 		"dict": func(pairs ...any) (map[string]any, error) {

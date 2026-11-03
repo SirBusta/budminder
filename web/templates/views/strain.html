@@ -94,7 +94,7 @@
     {{ if .smoke.Cards }}
     <div class="sr-more">
         {{ range .smoke.Cards }}
-        <a href="/smoke/{{ .ID }}">{{ if .Photo }}<img src="{{ .Photo }}" alt="">{{ else }}<span class="d-inline-flex align-items-center justify-content-center bg-body-tertiary rounded" style="width:46px;height:46px"><i class="fa-solid fa-cannabis text-body-tertiary"></i></span>{{ end }}
+        <a href="/smoke/{{ .ID }}">{{ if .Photo }}<img src="{{ thumb .Photo }}" alt="">{{ else }}<span class="d-inline-flex align-items-center justify-content-center bg-body-tertiary rounded" style="width:46px;height:46px"><i class="fa-solid fa-cannabis text-body-tertiary"></i></span>{{ end }}
             <div><b>{{ .Title }}</b> {{ if .OverallText }}<span class="sr-score {{ .OverallClass }}">{{ .OverallText }}</span>{{ end }}<small class="sd-date" data-date="{{ .Date }}">{{ .Date }}</small></div></a>
         {{ end }}
     </div>
@@ -118,7 +118,7 @@
     </div>
     {{ range $h.Grows }}
     <div class="sd-grow">
-        <a class="sd-grow-ph" href="/plant/{{ .ID }}" tabindex="-1" aria-hidden="true">{{ if .Photo }}<img src="{{ .Photo }}" alt="" loading="lazy">{{ else }}<span class="sd-noph"><i class="fa-solid fa-cannabis"></i></span>{{ end }}</a>
+        <a class="sd-grow-ph" href="/plant/{{ .ID }}" tabindex="-1" aria-hidden="true">{{ if .Photo }}<img src="{{ thumb .Photo }}" alt="" loading="lazy">{{ else }}<span class="sd-noph"><i class="fa-solid fa-cannabis"></i></span>{{ end }}</a>
         <div class="min-w-0">
             <a class="sd-grow-nm" href="/plant/{{ .ID }}">{{ .Name }}</a>
             <div class="sd-grow-mt">
@@ -176,7 +176,7 @@
 <div class="sd-card">
     <h2 class="sd-h"><i class="fa-solid fa-images"></i>{{ .lcl.sd_photos }}<span class="sd-h-r">{{ printf .lcl.sd_n_photos .history.PhotoCount }}</span></h2>
     <div class="sd-strip">
-        {{ range .history.Photos }}<a href="/plant/{{ .PlantID }}" title="{{ .Plant }} · {{ shortDate .Date $.lcl }}"><img src="{{ .Path }}" alt="{{ .Plant }}" loading="lazy"></a>{{ end }}
+        {{ range .history.Photos }}<a href="/plant/{{ .PlantID }}" title="{{ .Plant }} · {{ shortDate .Date $.lcl }}"><img src="{{ thumb .Path }}" alt="{{ .Plant }}" loading="lazy"></a>{{ end }}
     </div>
 </div>
 {{ end }}

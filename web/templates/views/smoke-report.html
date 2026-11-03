@@ -24,7 +24,7 @@
             </div>
             {{ if gt (len $r.Photos) 1 }}
             <div class="sr-thumbs" id="srThumbs">
-                {{ range $i, $p := $r.Photos }}<img src="{{ $p.URL }}" class="{{ if eq $i 0 }}on{{ end }}" alt="" data-full="{{ $p.URL }}" tabindex="0">{{ end }}
+                {{ range $i, $p := $r.Photos }}<img src="{{ thumb $p.URL }}" class="{{ if eq $i 0 }}on{{ end }}" alt="" data-full="{{ $p.URL }}" tabindex="0">{{ end }}
             </div>
             {{ end }}
         </div>
@@ -165,7 +165,7 @@
             <div class="sd-card"><h2 class="sd-h"><i class="fa-solid fa-layer-group"></i>{{ fill .lcl.sr_more_of "name" $r.StrainName }}</h2>
                 <div class="sr-more">
                     {{ range .v.More }}
-                    <a href="/smoke/{{ .ID }}">{{ if .Photo }}<img src="{{ .Photo }}" alt="">{{ else }}<span class="d-inline-flex align-items-center justify-content-center bg-body-tertiary rounded" style="width:46px;height:46px"><i class="fa-solid fa-cannabis text-body-tertiary"></i></span>{{ end }}
+                    <a href="/smoke/{{ .ID }}">{{ if .Photo }}<img src="{{ thumb .Photo }}" alt="">{{ else }}<span class="d-inline-flex align-items-center justify-content-center bg-body-tertiary rounded" style="width:46px;height:46px"><i class="fa-solid fa-cannabis text-body-tertiary"></i></span>{{ end }}
                         <div><b>{{ .Title }}</b> {{ if .OverallText }}<span class="sr-score {{ .OverallClass }}">{{ .OverallText }}</span>{{ end }}<small data-date="{{ .Date }}">{{ .Date }}</small></div></a>
                     {{ end }}
                 </div>

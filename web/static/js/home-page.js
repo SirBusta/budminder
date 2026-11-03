@@ -164,7 +164,7 @@
                 ${canLive ? `<button type="button" class="play" data-live="${cam.id}"><i class="fa-solid fa-play me-1"></i>${esc(t("hm_live"))}</button>` : ""}</div></div>`;
     }
     function plantCard(p) {
-        const ph = p.photo ? `<div class="ph" style="background-image:url('${esc(p.photo)}')">` : `<div class="ph none"><span><i class="fa-regular fa-image me-1"></i>${esc(t("hm_no_photos"))}</span>`;
+        const ph = p.photo ? `<div class="ph" style="background-image:url('${esc(bmThumb(p.photo))}')">` : `<div class="ph none"><span><i class="fa-regular fa-image me-1"></i>${esc(t("hm_no_photos"))}</span>`;
         const water = waterType(), feed = feedType();
         return `<div class="hm-card">
             ${ph}${p.day ? `<span class="day">${esc(t("hm_day", { n: p.day }))}</span>` : ""}

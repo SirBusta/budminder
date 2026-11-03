@@ -14,6 +14,7 @@ import (
 )
 
 func AddBasicRoutes(r *gin.RouterGroup, version string) {
+	r.GET("/thumbs/*filepath", handlers.PhotoThumbHandler)
 	r.GET("/", func(c *gin.Context) {
 		lang := utils.GetLanguage(c)
 		translations := utils.TranslationService.GetTranslations(lang)

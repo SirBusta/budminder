@@ -117,6 +117,8 @@ type PhotoCompressService struct {
 
 	compare *photoComparer // the compare page's cache
 
+	thumbSlots chan struct{} // limits small copies made at once (photo_thumbs.go)
+
 	estMu    sync.Mutex
 	estKey   string
 	estCache map[int]PhotoEstimate
@@ -131,7 +133,7 @@ func NewPhotoCompressService(db *sql.DB, dataDir, uploadDir string) *PhotoCompre
 	if uploadDir == "" {
 		uploadDir = DefaultUploadDir
 	}
-	s := &PhotoCompressService{db: db, dataDir: dataDir, uploadDir: uploadDir, now: time.Now, compare: newPhotoComparer()}
+	s := &PhotoCompressService{db: db, dataDir: dataDir, uploadDir: uploadDir, now: time.Now, compare: newPhotoComparer(), thumbSlots: make(chan struct{}, photoThumbWorkers)}
 	if b, err := os.ReadFile(s.jobPath()); err == nil {
 		var j PhotoJob
 		if json.Unmarshal(b, &j) == nil && j.State != "" {
@@ -746,10 +748,11 @@ func (s *PhotoCompressService) CleanupBackups() {
 	}
 }
 
-// RunCleanup deletes expired backup folders now and then hourly until ctx
-// ends (started from main, like the update checker).
+// RunCleanup deletes expired backup folders and old small photo copies now and
+// then hourly until ctx ends (started from main, like the update checker).
 func (s *PhotoCompressService) RunCleanup(done <-chan struct{}) {
 	s.CleanupBackups()
+	s.CleanupPhotoThumbs()
 	t := time.NewTicker(time.Hour)
 	defer t.Stop()
 	for {
@@ -758,6 +761,7 @@ func (s *PhotoCompressService) RunCleanup(done <-chan struct{}) {
 			return
 		case <-t.C:
 			s.CleanupBackups()
+			s.CleanupPhotoThumbs()
 		}
 	}
 }

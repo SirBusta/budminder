@@ -31,7 +31,7 @@
             no: ["no", "fa-xmark", bought ? "sr_buy_again_no" : "sr_again_no"] }[r.again];
         return `<span class="sr-again ${c}"><i class="fa-solid ${i}"></i>${esc(tr(k))}</span>`;
     }
-    const photo = r => r.photos.length ? `<img src="${esc(r.photos[0].url)}" alt="" loading="lazy">`
+    const photo = r => r.photos.length ? `<img src="${esc(bmThumb(r.photos[0].url))}" alt="" loading="lazy">`
         : `<div class="d-flex h-100 align-items-center justify-content-center text-body-tertiary"><i class="fa-solid fa-cannabis fa-3x"></i></div>`;
     const from = r => r.source === "bought" ? [r.dispensary, ppg(r)].filter(Boolean).join(" · ") : [r.plant_name, r.breeder_name].filter(Boolean).join(" · ");
     const n = v => v == null ? "–" : v;
@@ -96,7 +96,7 @@
         const th = (k, l, cl = "") => `<th class="${S.sort === k ? "on" : ""} ${cl}" data-sort="${k}" scope="col">${esc(l)} <i class="fa-solid fa-sort${S.sort === k ? (S.desc ? "-down" : "-up") : ""} small"></i></th>`;
         return `<div class="table-responsive"><table class="sr-tbl"><thead><tr><th></th>${th("strain", tr("sr_col_strain"))}${th("from", tr("sr_col_from"))}${th("newest", tr("sr_col_smoked"))}${th("overall", tr("sr_col_overall"))}
             ${th("bud", tr("sr_bud"))}${th("taste", tr("sr_taste"))}${th("smell", tr("sr_smell"))}${th("effects", tr("sr_effects"))}${th("ppg", tr("sr_col_ppg"))}${th("again", tr("sr_col_again"))}</tr></thead><tbody>
-            ${list.map(r => `<tr><td>${r.photos.length ? `<img class="thumb" src="${esc(r.photos[0].url)}" alt="" loading="lazy">` : `<div class="thumb d-flex align-items-center justify-content-center bg-body-tertiary"><i class="fa-solid fa-cannabis text-body-tertiary"></i></div>`}</td>
+            ${list.map(r => `<tr><td>${r.photos.length ? `<img class="thumb" src="${esc(bmThumb(r.photos[0].url))}" alt="" loading="lazy">` : `<div class="thumb d-flex align-items-center justify-content-center bg-body-tertiary"><i class="fa-solid fa-cannabis text-body-tertiary"></i></div>`}</td>
               <td><a href="/smoke/${r.id}">${esc(r.strain_name)}</a><div class="small sd-muted">${esc(r.breeder_name)}</div></td>
               <td>${srcBadge(r)}<div class="small sd-muted mt-1">${esc(r.source === "bought" ? r.dispensary : r.plant_name)}</div></td>
               <td class="text-nowrap">${esc(fmtDate(r.smoked_on))}</td><td class="n">${scoreHTML(r.overall)}</td>

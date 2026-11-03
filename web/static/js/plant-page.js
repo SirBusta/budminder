@@ -436,7 +436,7 @@
         const n = day.photos.length;
         const tab = [fmt(day.date, { weekday: "short", month: "short", day: "numeric" }), dg != null ? `${tr("pp_day")} ${dg}` : "", s ? `${s.label} ${tr("pp_wk")} ${s.week}` : "", n > 1 ? tr("pp_n_photos", { n }) : ""].filter(Boolean).join(" · ");
         el.innerHTML = `<div class="pp-ptab"><i class="fa-regular fa-calendar"></i>${esc(tab)}</div>
-            <div class="pp-pbody">${n ? day.photos.map((p, i) => `<img src="${esc(p.path)}" data-open-photo="${i}" data-day="${day.date}" alt="${esc(p.description)}" loading="lazy">`).join("")
+            <div class="pp-pbody">${n ? day.photos.map((p, i) => `<img src="${esc(bmThumb(p.path))}" data-open-photo="${i}" data-day="${day.date}" alt="${esc(p.description)}" loading="lazy">`).join("")
                 : `<div class="pp-pempty"><div><i class="fa-regular fa-image big"></i>${esc(tr("pp_no_photos_day"))}${LOGGED_IN ? `<div class="mt-2"><button class="pp-b" data-upload><i class="fa-solid fa-camera me-1"></i>${esc(tr("pp_add_photo"))}</button></div>` : ""}</div></div>`}</div>`;
     }
 
@@ -500,7 +500,7 @@
         $("ppVImg").alt = p.description || "";
         const who = p.plant && allMode ? esc((metaOf(p.plant) || {}).name || "") + " · " : "";
         $("ppVCap").innerHTML = `<strong>${who}${esc(fmt(p.date, { weekday: "short", month: "short", day: "numeric", year: "numeric" }))}</strong>${p.description ? " · " + esc(p.description) : ""} <span class="ms-2 opacity-75">${vIdx + 1} / ${vList.length}</span>`;
-        $("ppVStrip").innerHTML = vList.map((q, i) => `<img src="${esc(q.path)}" class="${i === vIdx ? "active" : ""}" data-vi="${i}" alt="" loading="lazy">`).join("");
+        $("ppVStrip").innerHTML = vList.map((q, i) => `<img src="${esc(bmThumb(q.path))}" class="${i === vIdx ? "active" : ""}" data-vi="${i}" alt="" loading="lazy">`).join("");
         $("ppVStrip").querySelectorAll("img").forEach(img => img.addEventListener("click", () => { vIdx = +img.dataset.vi; showViewer(); }));
         $("ppVPrev").style.visibility = $("ppVNext").style.visibility = vList.length > 1 ? "" : "hidden";
     }
@@ -518,7 +518,7 @@
         let idx = 0;
         $("ppGalBody").innerHTML = days.length ? days.map(d => `<div class="pp-gal-day">
             <div class="pp-gal-date">${esc(fmt(d.date, { weekday: "short", month: "short", day: "numeric", year: "numeric" }))}${!allMode && dayOfGrow(d.date) != null ? ` <span class="text-muted">· ${esc(tr("pp_day"))} ${dayOfGrow(d.date)}</span>` : ""}</div>
-            <div class="pp-gal-grid">${d.photos.map(p => `<div class="pp-gal-item"><img src="${esc(p.path)}" data-gi="${idx++}" alt="${esc(p.description)}" loading="lazy">
+            <div class="pp-gal-grid">${d.photos.map(p => `<div class="pp-gal-item"><img src="${esc(bmThumb(p.path))}" data-gi="${idx++}" alt="${esc(p.description)}" loading="lazy">
                 ${d.types.length ? `<button class="pp-gal-jump" data-jump="${esc(allMode ? d.key : d.date)}" title="${esc(tr("pp_go_to_day"))}" aria-label="${esc(tr("pp_go_to_day"))}"><i class="fa-solid fa-book-open"></i></button>` : ""}</div>`).join("")}</div></div>`).join("")
             : `<div class="pp-empty"><i class="fa-regular fa-image"></i>${esc(tr("pp_no_photos_yet"))}</div>`;
         $("ppGalBody").querySelectorAll("[data-gi]").forEach(img => img.addEventListener("click", () => openViewer(all, +img.dataset.gi)));
@@ -803,7 +803,7 @@
         let k = 0;
         const i = AROWS.indexOf(r);
         const photos = r.items.filter(d => d.photos.length).map(d => (r.plants.length > 1 ? `<div class="pp-pcap"><i class="fa-solid fa-camera me-1"></i>${esc((metaOf(d.plant_id) || {}).name || "")}</div>` : "") +
-            d.photos.map(p => `<img src="${esc(p.path)}" data-aphoto="${i}:${k++}" alt="${esc(p.description)}" loading="lazy">`).join("")).join("");
+            d.photos.map(p => `<img src="${esc(bmThumb(p.path))}" data-aphoto="${i}:${k++}" alt="${esc(p.description)}" loading="lazy">`).join("")).join("");
         el.innerHTML = `<div class="pp-ptab"><i class="fa-regular fa-calendar"></i>${esc(fmt(r.date, { weekday: "short", month: "short", day: "numeric" }))}${n > 1 ? " · " + esc(tr("pp_n_photos", { n })) : ""}</div>
             <div class="pp-pbody"><div class="pp-pplants">${r.plants.map(p => { const s = aStage(p, r.date); return `<div class="pp-pplant"><span class="pp-stgt" style="--c:${s.color}"></span>${plantLink(p)}<small>${esc(s.txt)}</small></div>`; }).join("")}</div>
                 ${n ? photos : `<div class="pp-pempty" style="height:auto"><div><i class="fa-regular fa-image big"></i>${esc(tr("pp_no_photos_day"))}</div></div>`}

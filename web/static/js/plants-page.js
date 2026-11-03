@@ -105,7 +105,7 @@
         if (Math.max(0, a) === b) return t("pl_harvest_in_one", { n: b });
         return t("pl_harvest_in", { a: Math.max(0, a), b });
     }
-    const photo = p => p.photo ? `<img src="${esc(p.photo)}" alt="" loading="lazy">` : `<div class="pl-noph"><i class="fa-solid fa-cannabis"></i></div>`;
+    const photo = p => p.photo ? `<img src="${esc(bmThumb(p.photo))}" alt="" loading="lazy">` : `<div class="pl-noph"><i class="fa-solid fa-cannabis"></i></div>`;
     const url = p => "/plant/" + p.id;
     function actions(p) {
         if (!LOGGED_IN || p.group !== "living") return "";

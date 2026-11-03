@@ -12,6 +12,7 @@ import (
 	"errors"
 	"image"
 	"image/jpeg"
+	"image/png"
 
 	"golang.org/x/image/draw"
 )
@@ -126,13 +127,58 @@ func ThumbnailJPEG(b []byte, width int) ([]byte, error) {
 	if err := jpeg.Encode(&out, img, &jpeg.Options{Quality: 80}); err != nil {
 		return nil, err
 	}
-	icc, orientation := jpegLook(b)
-	enc := out.Bytes()
+	return withLookOf(out.Bytes(), b), nil
+}
+
+// PhotoThumbnail scales a JPEG or PNG photo so its longest side is longEdge
+// pixels and returns a JPEG. A JPEG keeps its orientation tag and color profile;
+// a PNG's transparent parts turn white. Anything else returns ErrNotCompressible.
+func PhotoThumbnail(b []byte, longEdge int) ([]byte, error) {
+	var img image.Image
+	var err error
+	if IsJPEG(b) {
+		img, err = jpeg.Decode(bytes.NewReader(b))
+		if err == nil {
+			switch img.(type) {
+			case *image.YCbCr, *image.Gray:
+			default: // CMYK and the like: Go would write them back as different colors
+				err = ErrNotCompressible
+			}
+		}
+	} else {
+		img, err = png.Decode(bytes.NewReader(b))
+	}
+	if err != nil {
+		return nil, ErrNotCompressible
+	}
+	r := img.Bounds()
+	w, h := r.Dx(), r.Dy()
+	if w >= h && w > longEdge {
+		w, h = longEdge, max(1, h*longEdge/w)
+	} else if h > w && h > longEdge {
+		w, h = max(1, w*longEdge/h), longEdge
+	}
+	dst := image.NewRGBA(image.Rect(0, 0, w, h))
+	draw.Draw(dst, dst.Bounds(), image.White, image.Point{}, draw.Src)
+	draw.BiLinear.Scale(dst, dst.Bounds(), img, r, draw.Over, nil)
+	var out bytes.Buffer
+	if err := jpeg.Encode(&out, dst, &jpeg.Options{Quality: 80}); err != nil {
+		return nil, err
+	}
+	if !IsJPEG(b) {
+		return out.Bytes(), nil
+	}
+	return withLookOf(out.Bytes(), b), nil
+}
+
+// withLookOf puts the original JPEG's color profile and orientation tag on enc.
+func withLookOf(enc, original []byte) []byte {
+	icc, orientation := jpegLook(original)
 	if len(icc) > 0 {
 		enc = append(append(append([]byte{}, enc[:2]...), icc...), enc[2:]...)
 	}
 	if orientation > 1 {
 		enc = withOrientation(enc, orientation)
 	}
-	return enc, nil
+	return enc
 }
