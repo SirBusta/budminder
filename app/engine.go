@@ -516,6 +516,10 @@ func buildFuncMap(store *config.Store) template.FuncMap {
 		// 2025"), in the page's language.
 		"longDate":  utils.LongDate,
 		"shortDate": utils.ShortDate,
+		// shortDateYear: "Nov 3, 2026", the year always shown.
+		"shortDateYear": utils.ShortDateYear,
+		// money shows a price in cents in the page's language ("$12.50").
+		"money": utils.Money,
 		"thumb":     handlers.PhotoThumbURL,
 		// dict builds a map from key/value pairs so a shared sub-template
 		// can take several arguments: {{ template "x" (dict "k" v ...) }}.

@@ -197,6 +197,13 @@
     <ul class="sd-facts">
         <li><span><i class="fa-solid fa-calendar-plus"></i>{{ .lcl.seeds_added_on }}</span><span>{{ with .strain.SeedsAddedOn }}{{ longDate . $.lcl }}{{ with seedAge . }}{{ if .OK }} <span class="sd-faint">({{ template "common/seed-age" (dict "a" . "lcl" $.lcl) }})</span>{{ end }}{{ end }}{{ else }}<span class="sd-faint">{{ $.lcl.seeds_added_on_unknown }}</span>{{ end }}</span></li>
         {{ with .strain.SeedLocation }}<li><span><i class="fa-solid fa-box-archive"></i>{{ $.lcl.seed_location }}</span><span>{{ . }}</span></li>{{ end }}
+        {{/* One tag per pack with a price or Freebie, like the Strains cards; then Cost and Value of the seeds left once a pack has a price. */}}
+        {{ $tagged := false }}{{ range .strain.Packs }}{{ if .Tagged }}{{ $tagged = true }}{{ end }}{{ end }}
+        {{ if $tagged }}<li><span><i class="fa-solid fa-tags"></i>{{ .lcl.sd_packs }}</span><span class="sd-packs">{{ range .strain.Packs }}{{ if .Tagged }}{{ $date := shortDateYear .AddedOn $.lcl }}{{ $seeds := fill $.lcl.sp_n_seeds "n" .Seeds }}{{ if eq .Seeds 1 }}{{ $seeds = $.lcl.sp_one_seed }}{{ end }}<span class="sd-b {{ if .Free }}free{{ else }}cost{{ end }}" title="{{ fill $.lcl.sp_pack_title "date" $date "seeds" $seeds }}"><i class="fa-solid fa-{{ if .Free }}gift{{ else }}tag{{ end }}"></i>{{ if .Free }}{{ $.lcl.sp_freebie }} · {{ end }}{{ with .PriceCents }}{{ money . $.currentLanguage }} · {{ end }}{{ $date }}</span>{{ end }}{{ end }}</span></li>{{ end }}
+        {{ with .strain.PackTotals }}{{ if .Priced }}
+        <li title="{{ $.lcl.sp_cost_title }}"><span><i class="fa-solid fa-receipt"></i>{{ $.lcl.sd_cost }}</span><span>{{ money .Cost $.currentLanguage }}</span></li>
+        <li title="{{ $.lcl.sp_value_title }}"><span><i class="fa-solid fa-coins"></i>{{ $.lcl.sd_value }}</span><span>{{ money .Value $.currentLanguage }}</span></li>
+        {{ end }}{{ end }}
     </ul>
     {{ else }}
     <div class="sd-vault-n">

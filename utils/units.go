@@ -209,6 +209,48 @@ func ShortDate(date string, lcl map[string]string) string {
 	return shortDateAt(date, lcl, time.Now())
 }
 
+// Money shows a price in cents as dollars for the page's language, like
+// the Strains page's money() (toLocaleString): "$2,300" / "$12.50" in
+// English, "$2.300" / "$12,50" in German, "$2300" / "$12.345" in Spanish
+// (groups from five digits), "$2 300" in French (narrow no-break space).
+// Cents show only when there are some.
+func Money(cents int, lang string) string {
+	sign := ""
+	if cents < 0 {
+		sign, cents = "-", -cents
+	}
+	group, dec, minGroup := ",", ".", 4
+	switch lang {
+	case "de":
+		group, dec = ".", ","
+	case "es":
+		group, dec, minGroup = ".", ",", 5
+	case "fr":
+		group, dec = " ", ","
+	}
+	whole := strconv.Itoa(cents / 100)
+	if len(whole) >= minGroup {
+		var b strings.Builder
+		for i, r := range whole {
+			if i > 0 && (len(whole)-i)%3 == 0 {
+				b.WriteString(group)
+			}
+			b.WriteRune(r)
+		}
+		whole = b.String()
+	}
+	if c := cents % 100; c != 0 {
+		whole += dec + strconv.Itoa(c/10) + strconv.Itoa(c%10)
+	}
+	return sign + "$" + whole
+}
+
+// ShortDateYear is ShortDate with the year always shown ("Nov 3, 2026"),
+// like the Seed Vault pack tags on the Strains page.
+func ShortDateYear(date string, lcl map[string]string) string {
+	return shortDateAt(date, lcl, time.Time{})
+}
+
 func shortDateAt(date string, lcl map[string]string, now time.Time) string {
 	if len(date) > 10 {
 		date = date[:10]
@@ -222,7 +264,7 @@ func shortDateAt(date string, lcl map[string]string, now time.Time) string {
 		name = t.Month().String()[:3]
 	}
 	key, def := "date_short", "{month} {day}"
-	if t.Year() != now.Year() {
+	if now.IsZero() || t.Year() != now.Year() {
 		key, def = "date_short_year", "{month} {day}, {year}"
 	}
 	layout := lcl[key]

@@ -1,6 +1,9 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 // StrainPack is one pack of seeds added to a strain (the first one or a
 // restock): how many seeds, what it cost in cents (nil = not entered), and
@@ -47,4 +50,45 @@ func (s Strain) PackPriceInput() string {
 func (s Strain) PackFree() bool {
 	p := s.LatestPack()
 	return p != nil && p.Free
+}
+
+// Tagged reports whether the pack gets a tag (a price or Freebie).
+func (p StrainPack) Tagged() bool { return p.Free || p.PriceCents != nil }
+
+// PackTotals is what the seeds on hand cost and are worth, in cents
+// (rounded): each pack's price scaled by the share of the packs' seeds
+// still on hand (at most all of it). Cost leaves freebies out. Priced is
+// false when no pack has a price; the totals are then not shown. Same
+// rules as packTotals in strains-page.js.
+type PackTotals struct {
+	Priced bool
+	Cost   int
+	Value  int
+}
+
+// PackTotals works out Cost and Value for the strain's seeds on hand.
+func (s Strain) PackTotals() PackTotals {
+	var t PackTotals
+	if s.SeedCount <= 0 {
+		return t
+	}
+	bought, cost, value := 0, 0, 0
+	for _, p := range s.Packs {
+		bought += p.Seeds
+		if p.PriceCents == nil {
+			continue
+		}
+		t.Priced = true
+		value += *p.PriceCents
+		if !p.Free {
+			cost += *p.PriceCents
+		}
+	}
+	if bought <= 0 {
+		return PackTotals{}
+	}
+	left := math.Min(1, float64(s.SeedCount)/float64(bought))
+	t.Cost = int(math.Round(left * float64(cost)))
+	t.Value = int(math.Round(left * float64(value)))
+	return t
 }

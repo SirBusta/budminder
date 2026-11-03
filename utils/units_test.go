@@ -93,4 +93,32 @@ func TestShortDate(t *testing.T) {
 	if got := shortDateAt("soon", nil, now); got != "soon" {
 		t.Errorf("unreadable = %q", got)
 	}
+	if got := ShortDateYear("2026-11-03", nil); got != "Nov 3, 2026" {
+		t.Errorf("ShortDateYear = %q", got)
+	}
+}
+
+func TestMoney(t *testing.T) {
+	t.Parallel()
+	for _, c := range []struct {
+		cents int
+		lang  string
+		want  string
+	}{
+		{18000, "en", "$180"},
+		{1250, "en", "$12.50"},
+		{1205, "en", "$12.05"},
+		{230000, "en", "$2,300"},
+		{123456789, "en", "$1,234,567.89"},
+		{230000, "de", "$2.300"},
+		{1250, "de", "$12,50"},
+		{230000, "es", "$2300"},
+		{1234500, "es", "$12.345"},
+		{230050, "fr", "$2 300,50"},
+		{0, "en", "$0"},
+	} {
+		if got := Money(c.cents, c.lang); got != c.want {
+			t.Errorf("Money(%d, %s) = %q, want %q", c.cents, c.lang, got, c.want)
+		}
+	}
 }

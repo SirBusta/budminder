@@ -117,6 +117,34 @@ func TestStrainPage_Layouts(t *testing.T) {
 	assert.Contains(t, body, `id="sdWanted"`, "out of stock: the wish-list button")
 }
 
+// The Seed Vault card shows one tag per pack with a price or Freebie, then
+// Cost and Value of the seeds left (here 8 of the packs' 10 seeds).
+func TestStrainPage_PackPrices(t *testing.T) {
+	t.Parallel()
+	e := newSensorEnv(t)
+	breeder := testutil.SeedBreeder(t, e.db, "Pack Breeder")
+	priced := testutil.SeedStrain(t, e.db, breeder, "Priced Strain")
+	e.exec(t, `UPDATE strain SET seed_count = 8, seeds_added_on = '2026-10-02' WHERE id = $1`, priced)
+	e.exec(t, `INSERT INTO strain_pack (strain_id, seeds, price_cents, free, added_on) VALUES ($1, 5, 15000, 1, '2024-08-24')`, priced)
+	e.exec(t, `INSERT INTO strain_pack (strain_id, seeds, price_cents, free, added_on) VALUES ($1, 5, 18000, 0, '2026-10-02')`, priced)
+	e.exec(t, `INSERT INTO strain_pack (strain_id, seeds, price_cents, free, added_on, used_up) VALUES ($1, 5, 99900, 0, '2023-01-01', 1)`, priced)
+	plain := testutil.SeedStrain(t, e.db, breeder, "Plain Strain")
+	e.exec(t, `UPDATE strain SET seed_count = 4 WHERE id = $1`, plain)
+	e.exec(t, `INSERT INTO strain_pack (strain_id, seeds, added_on) VALUES ($1, 4, '2026-10-02')`, plain)
+
+	body := e.page(t, "/strain/"+strconv.Itoa(priced))
+	assert.Contains(t, body, `class="sd-b free" title="Pack of 5 seeds, added Aug 24, 2024"`)
+	assert.Contains(t, body, `Freebie · $150 · Aug 24, 2024</span>`)
+	assert.Contains(t, body, `$180 · Oct 2, 2026</span>`)
+	assert.NotContains(t, body, "$999", "used-up packs are left out")
+	assert.Contains(t, body, `Cost</span><span>$144</span>`, "8/10 of $180; the freebie is left out")
+	assert.Contains(t, body, `Value</span><span>$264</span>`, "8/10 of $330")
+
+	body = e.page(t, "/strain/"+strconv.Itoa(plain))
+	assert.NotContains(t, body, "sd-packs", "no price or Freebie: no tags")
+	assert.NotContains(t, body, "fa-receipt", "and no Cost")
+}
+
 func TestUseStrainSeeds(t *testing.T) {
 	t.Parallel()
 	e := newSensorEnv(t)
