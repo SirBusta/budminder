@@ -500,6 +500,7 @@ func runSQLiteFileRestore(svc *BackupService, db *sql.DB, data []byte, store *co
 	}
 
 	keepPassword := keepMailPassword(db)
+	keepSeen := keepWhatsNewSeen(db)
 	if err := restoreSQLiteFrom(db, tmpPath); err != nil {
 		fieldLogger.WithError(err).Error("Failed to restore the database file")
 		runErr = fmt.Errorf("Failed to restore database file: %v", err)
@@ -515,6 +516,7 @@ func runSQLiteFileRestore(svc *BackupService, db *sql.DB, data []byte, store *co
 	}
 
 	keepPassword()
+	keepSeen()
 	LoadSettings(db, store)
 	repairRestoredLineage(db)
 	fieldLogger.Info("SQLite file restore complete")
@@ -693,6 +695,7 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 	}
 
 	keepPassword := keepMailPassword(db)
+	keepSeen := keepWhatsNewSeen(db)
 
 	// Tables in deletion order (children first) to satisfy FK constraints.
 	truncateOrder := []string{
@@ -1078,6 +1081,7 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 
 	// Reload in-memory config from the newly restored DB.
 	keepPassword()
+	keepSeen()
 	LoadSettings(db, store)
 	repairRestoredLineage(db)
 }

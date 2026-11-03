@@ -81,6 +81,33 @@ func TestBackupHTTP_FailedRestoreKeepsSensorIndexes(t *testing.T) {
 	}
 }
 
+// A restore keeps the install's What's new record, so an older backup, with an
+// older record or none, doesn't bring the card back.
+func TestBackupHTTP_RestoreKeepsWhatsNewSeen(t *testing.T) {
+	for name, inBackup := range map[string]string{"older record": "1.9.0", "no record": ""} {
+		t.Run(name, func(t *testing.T) {
+			src := testutil.NewTestDB(t)
+			seedSampleData(t, src)
+			if inBackup != "" {
+				require.NoError(t, handlers.UpdateSetting(src, nil, "whatsnew.seen", inBackup))
+			}
+			archive, _, err := handlers.BuildBackupArchive(src, handlers.BuildArchiveOptions{})
+			require.NoError(t, err)
+			payload, err := handlers.ParseBackupArchive(archive)
+			require.NoError(t, err)
+
+			dst := testutil.NewTestDB(t)
+			require.NoError(t, handlers.UpdateSetting(dst, nil, "whatsnew.seen", "2.0"))
+			status := restoreViaHTTP(t, dst, payload)
+			require.Empty(t, status.Error)
+
+			seen, err := handlers.GetSetting(dst, "whatsnew.seen")
+			require.NoError(t, err)
+			assert.Equal(t, "2.0", seen)
+		})
+	}
+}
+
 // Restored reading times keep SQLite's own format, so they sort with the
 // readings that arrive after the restore (M06-04).
 func TestBackupHTTP_RestoreKeepsSQLiteReadingTimeFormat(t *testing.T) {

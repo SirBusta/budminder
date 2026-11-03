@@ -320,6 +320,7 @@ func main() {
 		DB:                    db,
 		Assets:                embeddedFiles,
 		Version:               version,
+		ReleaseVersion:        getVersion(),
 		SessionSecret:         sessionSecret,
 		SecureCookies:         handlers.SecureCookies,
 		HSTSMaxAge:            hstsMaxAge,

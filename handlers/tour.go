@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -35,6 +36,11 @@ func tourShouldAsk(c *gin.Context) bool {
 	if err != nil || answered != "" {
 		return false
 	}
+	return hasNoStrainsOrPlants(db)
+}
+
+// hasNoStrainsOrPlants is how a new install looks: nothing added yet.
+func hasNoStrainsOrPlants(db *sql.DB) bool {
 	var strains, plants int
 	if err := db.QueryRow("SELECT COUNT(*) FROM strain").Scan(&strains); err != nil {
 		return false

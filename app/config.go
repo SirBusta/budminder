@@ -31,6 +31,10 @@ type Config struct {
 	// (e.g. "Isley 0.1.43-sqlite").
 	Version string
 
+	// ReleaseVersion is the plain version ("2.0") for the What's new card
+	// (handlers/whats_new.go). Empty: no card, as in tests and the demo.
+	ReleaseVersion string
+
 	// SessionSecret keys the gorilla/sessions cookie store.
 	// Required and must be at least 32 bytes for production; tests can
 	// use a short fixed value.

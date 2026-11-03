@@ -97,6 +97,7 @@ type serverOptions struct {
 	rateLimiterService *handlers.RateLimiterService
 	sensorCacheService *handlers.SensorCacheService
 	updates            *handlers.Updates
+	releaseVersion     string
 }
 
 // WithGuestMode boots the engine with guest-mode semantics
@@ -108,6 +109,12 @@ func WithGuestMode() ServerOption {
 // WithUpdates gives the engine a release checker (handlers/updates.go).
 func WithUpdates(u *handlers.Updates) ServerOption {
 	return func(o *serverOptions) { o.updates = u }
+}
+
+// WithReleaseVersion gives the engine a release version, which the What's new
+// card needs (handlers/whats_new.go); tests otherwise run with none.
+func WithReleaseVersion(v string) ServerOption {
+	return func(o *serverOptions) { o.releaseVersion = v }
 }
 
 // WithDemo boots the engine in demo mode (handlers/demo.go).
@@ -266,6 +273,7 @@ func NewTestServer(t *testing.T, db *sql.DB, opts ...ServerOption) *TestServer {
 		DB:                 db,
 		Assets:             os.DirFS(root),
 		Version:            "isley-test",
+		ReleaseVersion:     options.releaseVersion,
 		SessionSecret:      options.sessionSecret,
 		SecureCookies:      false,
 		GuestMode:          options.guestMode,

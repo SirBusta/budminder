@@ -121,6 +121,11 @@
 <script type="application/json" id="bmUpdateText">{"heading": {{ $.lcl.upd_heading }}, "current": {{ $.lcl.upd_current }}, "latest": {{ $.lcl.upd_latest }}, "whatsNew": {{ $.lcl.upd_whats_new }}, "onGitHub": {{ $.lcl.upd_on_github }}, "later": {{ $.lcl.upd_later }}, "now": {{ $.lcl.upd_now }}, "safety": {{ $.lcl.upd_safety }}, "downloading": {{ $.lcl.upd_downloading }}, "restarting": {{ $.lcl.upd_restarting }}, "done": {{ $.lcl.upd_done }}, "slow": {{ $.lcl.upd_slow }}, "failed": {{ $.lcl.upd_failed }}, "docker": {{ $.lcl.upd_docker }}, "manual": {{ $.lcl.upd_manual }}, "close": {{ $.lcl.title_close }}}</script>
 <script src="/static/js/update.js" defer></script>
 {{ end }}{{ end }}
+{{ if .loggedIn }}{{ with whatsNew .lcl }}
+<!-- What's new after an upgrade (handlers/whats_new.go). -->
+<script type="application/json" id="bmWhatsNew">{"data": {{ . }}, "lang": {{ $.currentLanguage }}}</script>
+<script src="/static/js/whats-new.js" defer></script>
+{{ end }}{{ end }}
 
 <main id="main-content">
 {{ end }}

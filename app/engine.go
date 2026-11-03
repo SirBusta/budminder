@@ -109,7 +109,12 @@ func NewEngine(cfg Config) (*gin.Engine, error) {
 		photoSvc = handlers.NewPhotoCompressService(cfg.DB, cfg.DataDir, cfg.UploadDir)
 	}
 
-	templ, err := parseTemplates(cfg.Assets, configStore, cfg.Demo, cfg.Updates, photoSvc)
+	whatsNew := &handlers.WhatsNew{DB: cfg.DB, Version: cfg.ReleaseVersion}
+	if cfg.Demo {
+		whatsNew.Version = ""
+	}
+
+	templ, err := parseTemplates(cfg.Assets, configStore, cfg.Demo, cfg.Updates, photoSvc, whatsNew)
 	if err != nil {
 		return nil, fmt.Errorf("parse templates: %w", err)
 	}
@@ -135,6 +140,7 @@ func NewEngine(cfg Config) (*gin.Engine, error) {
 	if cfg.Updates != nil {
 		r.Use(updatesMiddleware(cfg.Updates))
 	}
+	r.Use(whatsNewMiddleware(whatsNew))
 	r.Use(configStoreMiddleware(configStore))
 	r.Use(pathDirsMiddleware(cfg.UploadDir, cfg.StreamDir, cfg.LogsDir))
 
@@ -297,6 +303,13 @@ func dbMiddleware(db *sql.DB) gin.HandlerFunc {
 }
 
 // updatesMiddleware injects the release checker for /updates/*.
+func whatsNewMiddleware(w *handlers.WhatsNew) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		handlers.SetWhatsNewOnContext(c, w)
+		c.Next()
+	}
+}
+
 func updatesMiddleware(u *handlers.Updates) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		handlers.SetUpdatesOnContext(c, u)
@@ -400,7 +413,7 @@ func pathDirsMiddleware(uploadDir, streamDir, logsDir string) gin.HandlerFunc {
 // Templates and static assets
 // ---------------------------------------------------------------------------
 
-func parseTemplates(assets fs.FS, store *config.Store, demo bool, up *handlers.Updates, photos *handlers.PhotoCompressService) (*template.Template, error) {
+func parseTemplates(assets fs.FS, store *config.Store, demo bool, up *handlers.Updates, photos *handlers.PhotoCompressService, whatsNew *handlers.WhatsNew) (*template.Template, error) {
 	funcMap := buildFuncMap(store)
 	// photoJob: the compress-existing-photos run, for the line under the top
 	// menu (header2.html).
@@ -423,6 +436,8 @@ func parseTemplates(assets fs.FS, store *config.Store, demo bool, up *handlers.U
 		}
 		return ""
 	}
+	// whatsNew: the cards to show after an upgrade, or nil (header2.html).
+	funcMap["whatsNew"] = whatsNew.Page
 	return template.New("").Funcs(funcMap).ParseFS(assets, "web/templates/**/*.html")
 }
 

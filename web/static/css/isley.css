@@ -4702,6 +4702,29 @@ body.bm-tour-open { overflow: hidden; }
 #alRuleResult:empty { display: none; }
 #alRuleResult { display: block; padding: 0 .7rem .5rem; }
 
+/* ===== What's new card (web/static/js/whats-new.js), on the tour's card ===== */
+.wn-card { width: min(600px, 100%); }
+.wn-date { text-align: center; color: var(--bt-muted); font-size: 13px; margin: -8px 0 12px; }
+.wn-h { margin: 14px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--bt-muted); }
+.wn-feats { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.wn-feats li { display: flex; gap: 12px; align-items: flex-start; }
+.wn-ic { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px; font-size: 15px; color: var(--bt-green); background: rgba(22, 163, 74, .12); }
+.wn-feats b { display: block; font-size: 14.5px; }
+.wn-feats p { margin: 1px 0 0; font-size: 13.5px; line-height: 1.4; }
+.wn-feats a, .wn-more a { color: var(--bt-green); font-weight: 600; text-decoration: none; }
+.wn-feats a { white-space: nowrap; }
+.wn-feats .wn-points { margin: 3px 0 4px; padding-left: 18px; font-size: 13.5px; line-height: 1.4; }
+.wn-feats .wn-points li { display: list-item; margin: 2px 0; }
+.wn-feats .wn-beta { margin-top: 6px; color: var(--bt-muted); }
+.wn-feats .wn-link { margin-top: 6px; }
+.wn-list { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.45; }
+.wn-list li { margin: 2px 0; }
+.wn-more { margin: 8px 0 4px; font-size: 13px; color: var(--bt-muted); }
+.wn-dots { display: inline-flex; gap: 6px; align-items: center; }
+.wn-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--bt-line); }
+.wn-dots i.on { background: var(--bt-green); }
+.wn-foot-l { display: flex; align-items: center; gap: 10px; margin-right: auto; }
+
 /* Beta tag and note (Settings > Alerts) */
 .st-beta { display: inline-block; margin-left: .4rem; padding: 0 .4rem; border-radius: 999px; background: rgba(124, 58, 237, .12); color: #6d28d9; font-size: .68rem; font-style: normal; font-weight: 700; line-height: 1.35rem; vertical-align: middle; white-space: nowrap; }
 [data-bs-theme="dark"] .st-beta { background: rgba(167, 139, 250, .18); color: #c4b5fd; }
