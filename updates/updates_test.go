@@ -21,11 +21,42 @@ func TestNewer(t *testing.T) {
 	}{
 		{"1.5.4", "1.5.3", true}, {"1.10.0", "1.9.9", true}, {"v2.0.0", "1.99.99", true},
 		{"1.5.3", "1.5.3", false}, {"1.5.2", "1.5.3", false}, {"dev", "1.5.3", false}, {"1.5.4", "dev", false},
-		{"1.5", "1.4.9", false},
+		{"2.0", "1.5.10", true}, {"2.1", "2.0", true}, {"2.10", "2.9", true}, {"2.1", "2.0.9", true},
+		{"2.0", "2.0.0", false}, {"2.0.0", "2.0", false}, {"1.5.10", "2.0", false}, {"2", "1.5.10", false},
 	} {
 		if got := Newer(c.a, c.b); got != c.want {
 			t.Errorf("Newer(%q, %q) = %v, want %v", c.a, c.b, got, c.want)
 		}
+	}
+}
+
+func TestTag(t *testing.T) {
+	t.Parallel()
+	for version, want := range map[string]string{"2.0": "v2.0.0", "2.1": "v2.1.0", "2.10": "v2.10.0", "1.5.10": "v1.5.10"} {
+		if got := Tag(version); got != want {
+			t.Errorf("Tag(%q) = %q, want %q", version, got, want)
+		}
+	}
+}
+
+// A release's three-part tag is offered under its two-part version, and the
+// version it stands for doesn't count as newer than itself.
+func TestCheck_TagShownAsTwoPartVersion(t *testing.T) {
+	t.Parallel()
+	srv := fakeGitHub(t, "v2.1.0", []byte("x"), sha([]byte("x")))
+	c := New("2.0", srv.URL+"/latest", nil)
+	if err := c.Check(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if rel := c.Available(); rel == nil || rel.Version != "2.1" {
+		t.Fatalf("want 2.1, got %+v", rel)
+	}
+	same := New("2.1", srv.URL+"/latest", nil)
+	if err := same.Check(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if rel := same.Available(); rel != nil {
+		t.Errorf("offered the version already running: %+v", rel)
 	}
 }
 

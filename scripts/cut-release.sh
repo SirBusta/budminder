@@ -4,8 +4,8 @@
 # Usage:
 #   scripts/cut-release.sh <version>
 #
-# Given a target version (strict SemVer, e.g. 0.1.42 or 1.0.0-rc.1), this
-# script:
+# Given a target version (two parts, e.g. 2.1; its tag will be v2.1.0, see
+# updates.Tag), this script:
 #   1. Validates the version string.
 #   2. Confirms the working tree is clean and we're on `dev`.
 #   3. Creates a release/v<version> branch off the current HEAD.
@@ -30,10 +30,10 @@ die() {
 [ "$#" -eq 1 ] || die "usage: $(basename "$0") <version>"
 
 VERSION="$1"
-SEMVER_RE='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'
+VERSION_RE='^[0-9]+\.[0-9]+$'
 
-[[ "$VERSION" =~ $SEMVER_RE ]] \
-  || die "version '$VERSION' is not strict SemVer (MAJOR.MINOR.PATCH[-prerelease][+build])"
+[[ "$VERSION" =~ $VERSION_RE ]] \
+  || die "version '$VERSION' is not MAJOR.MINOR (e.g. 2.1)"
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
@@ -53,7 +53,7 @@ if [ "$CURRENT_BRANCH" != "dev" ]; then
 fi
 
 # Refuse if the tag already exists locally or on any remote.
-TAG="v$VERSION"
+TAG="v$VERSION.0"
 if git rev-parse "$TAG" >/dev/null 2>&1; then
   die "tag $TAG already exists locally — pick a new version"
 fi

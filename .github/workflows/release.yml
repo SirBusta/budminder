@@ -243,7 +243,7 @@ jobs:
 
   # BudMinder images go to the GitHub Container Registry under this
   # account, pushed with the workflow's own GITHUB_TOKEN (no secrets).
-  # Push to main: :edge and :sha-<short>. Tag vX.Y.Z: :X.Y.Z and :latest.
+  # Push to main: :edge and :sha-<short>. Tag vX.Y.0: :X.Y and :latest.
   image:
     name: Docker image
     needs: [test, test-postgres]
@@ -263,8 +263,10 @@ jobs:
         run: |
           VERSION=$(cat VERSION)
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            if [ "${GITHUB_REF_NAME}" != "v${VERSION}" ]; then
-              echo "::error::Tag ${GITHUB_REF_NAME} does not match VERSION file (${VERSION})."
+            # VERSION has two parts (2.1); the tag has three (v2.1.0) because
+            # programs before 2.0 only read three-part tags (updates.Tag).
+            if [ "${GITHUB_REF_NAME}" != "v${VERSION}.0" ]; then
+              echo "::error::Tag ${GITHUB_REF_NAME} does not match VERSION file (${VERSION}): expected v${VERSION}.0."
               exit 1
             fi
             echo "tags=${IMAGE}:${VERSION},${IMAGE}:latest" >> "$GITHUB_OUTPUT"
@@ -311,7 +313,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Tag vX.Y.Z only: a GitHub Release with the CHANGELOG section for that
+  # Tag vX.Y.0 only: a GitHub Release with the CHANGELOG section for that
   # version as its notes, plus ready-to-run programs for each system.
   release:
     name: GitHub Release
@@ -330,11 +332,13 @@ jobs:
           go-version: '1.25.8'
 
       - name: Release notes from CHANGELOG
+        id: notes
         run: |
           VERSION=$(cat VERSION)
-          # The section under '## [X.Y.Z] ...', up to the next '## ' heading.
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          # The section under '## [X.Y] ...', up to the next '## ' heading.
           # A plain text match: a regex built from the version would treat
-          # "[1.0.0]" as a character class and pick the wrong section.
+          # "[1.0]" as a character class and pick the wrong section.
           awk -v h="## [$VERSION]" '
             index($0, h) == 1 { found=1; next }
             found && /^## / { exit }
@@ -375,6 +379,6 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v3
         with:
-          name: BudMinder ${{ github.ref_name }}
+          name: BudMinder v${{ steps.notes.outputs.version }}
           body_path: release_notes.md
           files: dist/*

@@ -29,7 +29,7 @@ const DefaultAPI = "https://api.github.com/repos/SirBusta/budminder/releases/lat
 
 // Release is the newest release GitHub lists.
 type Release struct {
-	Version string  `json:"version"` // "1.5.4"
+	Version string  `json:"version"` // "2.1"
 	URL     string  `json:"url"`     // its release page
 	Notes   string  `json:"notes"`   // its release notes (Markdown)
 	Assets  []Asset `json:"-"`
@@ -116,7 +116,7 @@ func (c *Checker) Check(ctx context.Context) error {
 	if gh.Draft || gh.Pre || gh.Tag == "" {
 		return nil
 	}
-	rel := &Release{Version: strings.TrimPrefix(gh.Tag, "v"), URL: gh.URL, Notes: gh.Body}
+	rel := &Release{Version: shortVersion(gh.Tag), URL: gh.URL, Notes: gh.Body}
 	for _, a := range gh.Assets {
 		rel.Assets = append(rel.Assets, Asset{Name: a.Name, URL: a.URL, Size: a.Size})
 	}
@@ -140,8 +140,29 @@ func (c *Checker) Available() *Release {
 	return &r
 }
 
-// Newer reports whether version a is newer than b ("1.10.0" > "1.9.2").
-// Anything that isn't a plain version number never counts as newer.
+// Tag is the GitHub tag of a release: "2.1" is v2.1.0. Versions have two parts
+// since 2.0, but programs before 2.0 only read three-part tags, so a two-part
+// tag would never show them an update. People see "2.1" (shortVersion).
+func Tag(version string) string {
+	if strings.Count(version, ".") == 1 {
+		version += ".0"
+	}
+	return "v" + version
+}
+
+// shortVersion is the version a tag stands for: "v2.1.0" is 2.1. Older tags
+// keep their last part unless it's 0, which no version shown to people needs.
+func shortVersion(tag string) string {
+	v := strings.TrimPrefix(tag, "v")
+	if strings.Count(v, ".") == 2 {
+		v = strings.TrimSuffix(v, ".0")
+	}
+	return v
+}
+
+// Newer reports whether version a is newer than b ("1.10.0" > "1.9.2",
+// "2.0" > "1.5.10"). A missing last part counts as 0, so "2.0" and "2.0.0" are
+// the same. Anything that isn't a plain version number never counts as newer.
 func Newer(a, b string) bool {
 	pa, okA := parse(a)
 	pb, okB := parse(b)
@@ -163,7 +184,7 @@ func parse(v string) ([3]int, bool) {
 		v = v[:i]
 	}
 	parts := strings.Split(v, ".")
-	if len(parts) != 3 {
+	if len(parts) != 2 && len(parts) != 3 {
 		return out, false
 	}
 	for i, p := range parts {

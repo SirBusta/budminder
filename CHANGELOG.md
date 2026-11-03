@@ -5,16 +5,19 @@ All notable changes to BudMinder are documented in this file. Versions before
 BudMinder is based on.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and releases are numbered MAJOR.MINOR (2.0, 2.1) from 2.0 on; earlier releases
+used three parts.
 
 ## Maintainer notes
 
 - Edit the `[Unreleased]` section as part of each dev-branch commit that lands
   a user-visible change. One-liners are fine; the idea is "describe it while
   the context is fresh," not "write perfect prose."
-- When cutting a release, run `scripts/cut-release.sh X.Y.Z` on a
-  `release/vX.Y.Z` branch. The script renames `[Unreleased]` to
-  `[X.Y.Z] - YYYY-MM-DD` and seeds a fresh empty `[Unreleased]` block.
+- When cutting a release, run `scripts/cut-release.sh X.Y` on a
+  `release/vX.Y` branch. The script renames `[Unreleased]` to
+  `[X.Y] - YYYY-MM-DD` and seeds a fresh empty `[Unreleased]` block. The
+  release's Git tag is `vX.Y.0`, because programs before 2.0 only read
+  three-part tags.
 - The GitHub release workflow extracts the matching version's section from
   this file and uses it as the release body. Keep the headings exact.
 - Historical releases prior to `0.1.42` are catalogued on GitHub Releases;
@@ -36,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Settings > Grow setup: Climate targets sit right under Zones, and replace the "VPD targets by stage" card.
+- Version numbers now have two parts: this release is 2.0 and the next is 2.1. The Docker image tag is `2.0`; `latest` works as before.
 - Time zones chosen in Settings > General now work on Windows PCs without Go's time zone files (they were ignored before, so times followed the PC's own zone).
 - Sign in and setup: a sprout divider at the top of the card replaces the green tile, matching the "Open on your phone" window; the title and welcome line are centered.
 
