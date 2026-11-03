@@ -11,7 +11,9 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -619,6 +621,25 @@ func buildFuncMap(store *config.Store) template.FuncMap {
 	}
 }
 
+// inStreamsFolder reports whether a cleaned /uploads path leads into the camera
+// snapshot folder. Comparing names isn't enough: Windows and macOS also open it
+// as "Streams", and Windows as "streams." or by its short name.
+func inStreamsFolder(root, p string) bool {
+	first, _, _ := strings.Cut(strings.TrimPrefix(p, "/"), "/")
+	if first == "" {
+		return false
+	}
+	if strings.EqualFold(first, "streams") || strings.Contains(first, `\`) {
+		return true
+	}
+	asked, err := os.Stat(filepath.Join(root, first))
+	if err != nil {
+		return false
+	}
+	streams, err := os.Stat(filepath.Join(root, "streams"))
+	return err == nil && os.SameFile(asked, streams)
+}
+
 // registerStaticRoutes wires up /static/, /fonts/, /uploads, and /favicon.ico.
 // Uploads remain on the live filesystem (./uploads); everything else comes
 // from cfg.Assets.
@@ -628,8 +649,7 @@ func registerStaticRoutes(r *gin.Engine, assets fs.FS) {
 	// serves them after a sign-in (or guest-visibility) check.
 	uploads := http.StripPrefix("/uploads", http.FileServer(gin.Dir("./uploads", false)))
 	serveUploads := func(c *gin.Context) {
-		p := path.Clean("/" + c.Param("filepath"))
-		if p == "/streams" || strings.HasPrefix(p, "/streams/") {
+		if inStreamsFolder("./uploads", path.Clean("/"+c.Param("filepath"))) {
 			c.Status(http.StatusNotFound)
 			return
 		}

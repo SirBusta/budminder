@@ -91,7 +91,12 @@ func TestUploads_StreamsFolderIsClosed(t *testing.T) {
 	}
 
 	c := server.NewClient(t)
-	for _, p := range []string{"/uploads/streams/" + name, "/uploads/plants/../streams/" + name, "/uploads//streams/" + name} {
+	for _, p := range []string{
+		"/uploads/streams/" + name, "/uploads/plants/../streams/" + name, "/uploads//streams/" + name,
+		// Windows and macOS open the same folder under other spellings.
+		"/uploads/Streams/" + name, "/uploads/STREAMS/" + name, "/uploads/streams./" + name, "/uploads/streams%20/" + name,
+		"/uploads/plants%5C..%5Cstreams%5C" + name, "/uploads/STREAM~1/" + name,
+	} {
 		resp := c.Get(p)
 		testutil.DrainAndClose(resp)
 		assert.NotEqual(t, http.StatusOK, resp.StatusCode, p)
