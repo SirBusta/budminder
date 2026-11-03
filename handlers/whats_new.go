@@ -51,6 +51,7 @@ type whatsNewFeatureDef struct {
 var whatsNewReleases = []whatsNewRelease{
 	{
 		Version: "2.0",
+		Date:    "2026-11-02",
 		Features: []whatsNewFeatureDef{
 			{Icon: "fa-bell", Link: "/settings#alerts", Points: 4, Beta: true},
 		},

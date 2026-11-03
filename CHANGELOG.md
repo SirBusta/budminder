@@ -27,6 +27,14 @@ used three parts.
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [2.0] - 2026-11-02
+
+### Added
+
 - **Alert notifications** (Beta) by email, in Settings > Alerts. BudMinder sends an alert notification when a climate reading reaches a Low or High limit for 15 consecutive minutes, when lights turn on or off outside the scheduled time, when a sensor reaches a value you choose, or when sensors send no readings for 15 minutes. A reminder is sent every 6 hours until the problem ends, followed by one all-clear. Alerts that start together arrive in one email. Email is off until you turn it on. Alerts are always listed under Recent alerts, where you can clear ended alerts and restore them.
 - **Sensor alerts** (Beta) in Settings > Alerts: BudMinder sends an alert notification when any sensor, such as CO2 or a water tank level, stays at or past a value you choose for 15 consecutive minutes. You set the value in the sensor's own unit. Each Sensor alert has its own on/off switch and is included in backups.
 - **Light check** (Beta) in Edit Zone: BudMinder sends an alert notification when lights turn on or off outside the scheduled time for 15 consecutive minutes. If lights switch about an hour off schedule three days in a row, BudMinder sends one notification. The usual cause is a controller's clock. Edit Zone shows these problems and the times the light sensor saw.
@@ -45,7 +53,6 @@ used three parts.
 - Settings > Grow setup: the Climate targets and limits card replaces the "VPD targets by stage" card and sits directly below Zones.
 - Time zones chosen in Settings > General now work on Windows PCs without Go's time zone files (they were ignored before, so times followed the PC's own zone).
 - Sign in and setup: a sprout divider at the top of the card replaces the green tile, matching the "Open on your phone" window; the title and welcome line are centered.
-
 - New look for the sign-in, setup, Account, Add/Edit plant and Add/Edit strain pages (including the import review page): grouped cards, an "On this page" menu on the strain pages, Seed/Clone and Photoperiod/Autoflower choices, a seed stepper, Write/Preview for the description, and Help, language and theme links under the sign-in card. Settings > Account now sits inside the Settings frame.
 - Plant page timeline: the stage a growing plant is in shows its day number, counting the day it entered the stage as Day 1 (e.g. "Flower Day 13"), matching the week shown above it. Finished stages still show how many days they lasted.
 - Add plant shows a live summary and how many seeds the strain has left after adding the plant.
