@@ -9,6 +9,9 @@
     const T = JSON.parse(data.textContent || "{}");
     const esc = s => String(s).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
     const fill = (s, v) => String(s || "").split("{v}").join(v);
+    // "2.1" and "2.1.0" are the same version (/updates/status sends "current" in the long form for older pages).
+    const shortVersion = v => String(v || "").replace(/^v/, "").replace(/^(\d+\.\d+)\.0$/, "$1");
+    const sameVersion = (a, b) => shortVersion(a) === shortVersion(b);
     let modal = null;
 
     function open() {
@@ -31,12 +34,12 @@
     function show(s) {
         const body = document.getElementById("bmUpdateBody"), foot = document.getElementById("bmUpdateFoot");
         if (!s.available) {
-            body.innerHTML = `<dl class="bm-upd-vers"><dt>${esc(T.current)}</dt><dd>${esc(s.current || "")}</dd></dl>`;
+            body.innerHTML = `<dl class="bm-upd-vers"><dt>${esc(T.current)}</dt><dd>${esc(s.version || s.current || "")}</dd></dl>`;
             foot.innerHTML = `<button type="button" class="btn btn-light" data-bs-dismiss="modal">${esc(T.close)}</button>`;
             return;
         }
         const how = s.can_install ? `<p class="small text-muted mb-0">${esc(T.safety)}</p>` : `<p class="mb-0">${esc(s.docker ? T.docker : T.manual)}</p>`;
-        body.innerHTML = `<dl class="bm-upd-vers"><dt>${esc(T.current)}</dt><dd>${esc(s.current)}</dd><dt>${esc(T.latest)}</dt><dd>${esc(s.latest)}</dd></dl>
+        body.innerHTML = `<dl class="bm-upd-vers"><dt>${esc(T.current)}</dt><dd>${esc(s.version || s.current)}</dd><dt>${esc(T.latest)}</dt><dd>${esc(s.latest)}</dd></dl>
             ${s.notes_html ? `<h6>${esc(T.whatsNew)}</h6><div class="bm-upd-notes">${s.notes_html}</div>` : ""}
             <div class="bm-upd-msg">${how}</div>`;
         foot.innerHTML = `${s.url ? `<a class="btn btn-link me-auto" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(T.onGitHub)} <i class="fa-solid fa-arrow-up-right-from-square ms-1"></i></a>` : ""}
@@ -71,7 +74,7 @@
             await new Promise(z => setTimeout(z, 1500));
             try {
                 const s = await fetch("/updates/status", { cache: "no-store", headers: { Accept: "application/json" } }).then(r => r.json());
-                if (s.current === version) {
+                if (sameVersion(s.current, version)) {
                     message(fill(T.done, version), "success");
                     setTimeout(() => location.reload(), 1200);
                     return;

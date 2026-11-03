@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -61,7 +62,11 @@ func UpdateStatusHandler(c *gin.Context) {
 		return
 	}
 	rel := u.Checker.Available()
-	out := gin.H{"available": rel != nil, "current": u.Checker.Current(), "docker": launcher.InDocker()}
+	// A page from before 2.0 waits after Update now until "current" equals the
+	// version its program offered, the tag without "v" ("2.1.0"), so "current"
+	// keeps that form; "version" is the one people see ("2.1").
+	cur := u.Checker.Current()
+	out := gin.H{"available": rel != nil, "current": strings.TrimPrefix(updates.Tag(cur), "v"), "version": cur, "docker": launcher.InDocker()}
 	if rel != nil {
 		notes := bluemonday.UGCPolicy().SanitizeBytes(blackfriday.Run([]byte(rel.Notes)))
 		out["latest"] = rel.Version

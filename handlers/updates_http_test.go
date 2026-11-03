@@ -62,9 +62,15 @@ type updateEnv struct {
 
 func newUpdateEnv(t *testing.T, tag string, prog []byte) *updateEnv {
 	t.Helper()
+	return newUpdateEnvFrom(t, "1.5.3", tag, prog)
+}
+
+// newUpdateEnvFrom is newUpdateEnv with this program at version current.
+func newUpdateEnvFrom(t *testing.T, current, tag string, prog []byte) *updateEnv {
+	t.Helper()
 	db := testutil.NewTestDB(t)
 	testutil.SeedAdmin(t, db, updatesPassword)
-	checker := updates.New("1.5.3", fakeReleases(t, tag, prog), func() bool {
+	checker := updates.New(current, fakeReleases(t, tag, prog), func() bool {
 		v, _ := handlers.GetSetting(db, handlers.UpdateCheckDisabledSetting)
 		return v == "1"
 	})
@@ -143,6 +149,25 @@ func TestUpdates_StatusAndInstall(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("BudMinder wasn't asked to restart")
 	}
+}
+
+// A page from before 2.0 waits after Update now until "current" equals the
+// version it offered, which it took from the tag ("2.1.0" for v2.1.0). With
+// "2.1" it never matched and said BudMinder hadn't restarted.
+func TestUpdates_StatusCurrentMatchesOlderPages(t *testing.T) {
+	t.Parallel()
+	e := newUpdateEnvFrom(t, "2.1", "v2.2.0", []byte("x"))
+	resp := e.client.Get("/updates/status")
+	var st struct {
+		Current string `json:"current"`
+		Version string `json:"version"`
+		Latest  string `json:"latest"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&st))
+	testutil.DrainAndClose(resp)
+	assert.Equal(t, "2.1.0", st.Current, "the form a 1.5.x page compares with")
+	assert.Equal(t, "2.1", st.Version, "the form people see")
+	assert.Equal(t, "2.2", st.Latest)
 }
 
 func TestUpdates_InstallNeedsSignIn(t *testing.T) {

@@ -2061,7 +2061,7 @@ upd_safety: "Primero se hace una copia de tu base de datos, y la versión actual
 upd_downloading: "Descargando y comprobando BudMinder {v}. Puede tardar un minuto."
 upd_restarting: "Instalado. BudMinder se está reiniciando…"
 upd_done: "BudMinder {v} está funcionando. Recargando…"
-upd_slow: "BudMinder aún no ha vuelto. Espera un poco y recarga esta página; si no vuelve, inicia BudMinder de nuevo."
+upd_slow: "La actualización está instalada. BudMinder está tardando más de lo habitual en reiniciarse. Espera un momento y recarga esta página. Si la página sigue sin cargar, inicia BudMinder de nuevo."
 upd_failed: "La actualización no funcionó y no se cambió nada. Sigues con tu versión actual."
 upd_docker: "Aquí BudMinder funciona en Docker, así que actualiza el contenedor: descarga la imagen nueva y vuelve a crearlo (por ejemplo docker compose pull y luego docker compose up -d). En Unraid, usa Check for Updates en la página de Docker."
 upd_manual: "Para actualizar, detén BudMinder, descarga la nueva versión desde la página de la versión y ponla en lugar del archivo del programa anterior."
