@@ -20,8 +20,8 @@ If CannaDB is enabled under **Settings → Integrations**, BudMinder automatical
 
 For custom crosses, personal breeding projects or unlisted clone-only cuts:
 
-1. Click **Enter manually**.
-2. Enter the **Strain name** and **Breeder**. As you type the breeder, BudMinder suggests matching names; choose an existing breeder or continue typing to add a new one.
+1. Click **Enter manually**. If a StrainCompass search finds no matches, click the **Enter manually** link after **No matches**. The window opens with the name you searched already filled in.
+2. Enter the **Strain name** and **Breeder**. BudMinder capitalizes each word of the strain name (for example, *hazy donkey* becomes *Hazy Donkey*) and writes common abbreviations such as OG in capital letters. Words you typed with a capital letter stay as they are. As you type the breeder, BudMinder suggests matching names; choose an existing breeder or continue typing to add a new one.
 3. Select photoperiod or autoflower, and enter the expected flowering duration in weeks (for example, 8 to 9).
 4. Select your destination category under **Add it to**, then click **Add strain**.
 
@@ -35,7 +35,7 @@ Click **Edit** on any strain profile to update its information:
 - photoperiod type, indica/sativa ratio and flowering duration;
 - THC and CBD ranges, aroma notes, dominant terpenes and therapeutic benefits;
 - indoor and outdoor height and yield;
-- parental lineage, selected from your library or entered manually;
+- parental lineage: pick one of your strains to link it, pick a name StrainCompass suggests as you type (when StrainCompass is enabled), or type any name;
 - seed inventory: total count, seed type, acquisition date, storage location and Wanted status;
 - the newest pack's price and Freebie setting;
 - seed pack or cultivar artwork.

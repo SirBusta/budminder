@@ -25,6 +25,14 @@
  *       noMatch:     null,   // optional: function(query) => HTML for a note shown instead of
  *                            // results (not selectable; links in it work)
  *       typoSuggest: false,  // offer "Did you mean X?" for names one or two letters off
+ *
+ *       // Names typed by the user (newFromText): how "Use ..." shows and saves them.
+ *       formatNew:   null,   // optional: function(name) => name, e.g. IsleyAutocomplete.capitalizeName
+ *
+ *       // A second, slower source searched as you type (e.g. StrainCompass), shown in its
+ *       // own group under the options; picking one counts as a new name.
+ *       remote: null,        // { fetch: q => Promise<[{label, sublabel}]>, minChars: 2, delay: 300,
+ *                            //   labels: { mine, title, searching, none, failed } }
  *   });
  *
  *   An <option data-name="Grape OG">Grape OG (Cali Connection)</option> is also found by
@@ -40,6 +48,12 @@
  */
 
 let _isleyAcUid = 0;
+
+// Short forms in strain names that are written in capitals ("sfv og" -> "SFV OG").
+const ISLEY_AC_SHORT_FORMS = new Set([
+    "og", "gsc", "gg", "gdp", "gmo", "ak", "sfv", "cbd", "thc", "cbg", "bx", "ibl",
+    "xl", "xxl", "uk", "usa", "la", "ny", "nyc", "mac", "dj",
+]);
 
 // Words that don't distinguish one breeder from another ("Sensi Seeds" vs
 // "Sensi Seed Co.") when looking for near-duplicates.
@@ -70,6 +84,8 @@ class IsleyAutocomplete {
             referenceSource: null,
             noMatch: null,
             typoSuggest: false,
+            formatNew: null,
+            remote: null,
         }, opts);
         this.labels = Object.assign({
             newText: 'Add "{name}"',
@@ -84,6 +100,10 @@ class IsleyAutocomplete {
         this._refState = "idle"; // idle | loading | loaded
         this._newLabel = "";
         this._newName = "";
+        // Remote search: the query it belongs to, idle | wait | done | failed, its items.
+        this._remote = { q: "", state: "idle", items: [] };
+        this._remoteSeq = 0;
+        this._remoteTimer = null;
         this._built = false;
         this._activeIdx = -1;
         this._build();
@@ -120,6 +140,20 @@ class IsleyAutocomplete {
             maxResults: 12,
             labels,
         }, opts));
+    }
+
+    /**
+     * A typed strain name with a capital at the start of each word: "hazy donkey" ->
+     * "Hazy Donkey". Words with a capital already stay as typed (McFly); short forms
+     * become capitals (OG, SFV, BX1, S1); a word after an apostrophe ('n') and
+     * numbers (#33) stay as they are.
+     */
+    static capitalizeName(str) {
+        return String(str || "").trim().replace(/\s+/g, " ").replace(/[^\s-]+/g, w => {
+            if (/[A-Z]/.test(w) || /^['’]/.test(w)) return w;
+            if (ISLEY_AC_SHORT_FORMS.has(w) || /^(bx|s|f|r|v)\d+$/.test(w)) return w.toUpperCase();
+            return w.charAt(0).toUpperCase() + w.slice(1);
+        });
     }
 
     /** Lowercased, punctuation- and noise-word-free key for near-duplicate checks. */
@@ -264,6 +298,7 @@ class IsleyAutocomplete {
             clearTimeout(debounceTimer);
             this._loadReferences();
             const query = this.input.value.trim();
+            this._searchRemote(query);
 
             if (query.length < this.opts.minChars) {
                 this._hideDropdown();
@@ -281,6 +316,7 @@ class IsleyAutocomplete {
         this.input.addEventListener("focus", () => {
             this._loadReferences();
             const query = this.input.value.trim();
+            if (this._remote.q !== query) this._searchRemote(query);
             if (query.length >= this.opts.minChars) {
                 this._showFor(query);
             } else if (query.length === 0) {
@@ -383,6 +419,49 @@ class IsleyAutocomplete {
 
     _showFor(query) {
         this._renderDropdown(this._search(query), query);
+    }
+
+    /** Start the remote search for query after a pause in typing; a newer query cancels it. */
+    _searchRemote(query) {
+        const r = this.opts.remote;
+        if (!r) return;
+        clearTimeout(this._remoteTimer);
+        const seq = ++this._remoteSeq;
+        if (query.length < (r.minChars || 2)) {
+            this._remote = { q: query, state: "idle", items: [] };
+            return;
+        }
+        this._remote = { q: query, state: "wait", items: [] };
+        this._remoteTimer = setTimeout(() => {
+            Promise.resolve()
+                .then(() => r.fetch(query))
+                .then(items => ({ state: "done", items: Array.isArray(items) ? items : [] }))
+                .catch(() => ({ state: "failed", items: [] }))
+                .then(res => {
+                    if (seq !== this._remoteSeq) return;
+                    this._remote = { q: query, state: res.state, items: res.items };
+                    if (this.dropdown.style.display === "block" && document.activeElement === this.input &&
+                        this.input.value.trim() === query) {
+                        this._showFor(query);
+                    }
+                });
+        }, r.delay == null ? 300 : r.delay);
+    }
+
+    /** The remote results for query, minus names that are already options. */
+    _remoteItems(query) {
+        if (!this.opts.remote || this._remote.q !== query || this._remote.state !== "done") return [];
+        const own = new Set(this._items.map(i => i.label.toLowerCase()));
+        return this._remote.items
+            .filter(i => i && i.label && !own.has(String(i.label).toLowerCase()))
+            .map(i => ({ value: null, label: String(i.label), sublabel: i.sublabel || "", remote: true }));
+    }
+
+    /** How a typed name is shown and saved: a remote result's spelling if it matches, else formatNew. */
+    _typedName(text) {
+        const remote = this._findExact(this._remoteItems(text), text);
+        if (remote) return remote.label;
+        return this.opts.formatNew ? this.opts.formatNew(text) : text;
     }
 
     _matches(item, lower, norm) {
@@ -512,19 +591,37 @@ class IsleyAutocomplete {
             return;
         }
 
+        // The remote group (e.g. StrainCompass) shows once the query is long enough.
+        const remote = this.opts.remote;
+        const showRemote = !!remote && query !== "" && query.length >= (remote.minChars || 2);
+        const remoteItems = showRemote ? this._remoteItems(query) : [];
+        const remoteState = !showRemote ? "idle" : (this._remote.q === query ? this._remote.state : "wait");
+        const rl = (remote && remote.labels) || {};
+
         const showTextNew = this.opts.allowNew && this.opts.newFromText && query !== "" &&
-            !this._findExact(this._items, query) && !this._findExact(this._refItems, query);
+            !this._findExact(this._items, query) && !this._findExact(this._refItems, query) &&
+            !this._findExact(remoteItems, query);
         const showFixedNew = this.opts.allowNew && !this.opts.newFromText && this._newLabel;
 
-        if (matches.length === 0 && !showTextNew && !showFixedNew) {
+        if (matches.length === 0 && !showTextNew && !showFixedNew && !showRemote) {
             this._hideDropdown();
             return;
         }
+        this.dropdown.classList.toggle("isley-ac-grouped", !!remote);
 
-        matches.forEach((item, i) => {
+        const addGroup = (icon, title, status) => {
+            const g = document.createElement("div");
+            g.className = "isley-ac-group";
+            g.setAttribute("role", "presentation");
+            g.innerHTML = `<i class="fa-solid ${icon}" aria-hidden="true"></i>${this._escapeHtml(title || "")}` +
+                (status ? `<span class="isley-ac-group-status">${status}</span>` : "");
+            g.addEventListener("mousedown", (e) => e.preventDefault());
+            this.dropdown.appendChild(g);
+        };
+        const addItem = (item, id) => {
             const div = document.createElement("div");
             div.className = "isley-ac-item";
-            div.id = `isley-ac-opt-${this._uid}-${i}`;
+            div.id = `isley-ac-opt-${this._uid}-${id}`;
             div.setAttribute("role", "option");
             div.setAttribute("aria-selected", "false");
             div.innerHTML = this._highlightMatch(item.label, query) +
@@ -532,17 +629,36 @@ class IsleyAutocomplete {
                 (item.ref ? ` <small class="text-muted isley-ac-ref-tag">${this._escapeHtml(this.labels.suggested)}</small>` : "");
             div.addEventListener("mousedown", (e) => {
                 e.preventDefault();
-                if (item.ref) {
+                if (item.ref || item.remote) {
                     this._chooseNew(item.label, false);
                 } else {
                     this._selectItem(item, false);
                 }
             });
             this.dropdown.appendChild(div);
-        });
+        };
+
+        if (showRemote && matches.length > 0) addGroup("fa-seedling", rl.mine);
+        matches.forEach((item, i) => addItem(item, i));
+
+        if (showRemote) {
+            const spin = `<i class="fa-solid fa-spinner fa-spin me-1" aria-hidden="true"></i>${this._escapeHtml(rl.searching || "")}`;
+            addGroup("fa-flask", rl.title, remoteState === "wait" ? spin : "");
+            if (remoteState === "done" && remoteItems.length) {
+                remoteItems.forEach((item, i) => addItem(item, `r${i}`));
+            } else if (remoteState === "done" || remoteState === "failed") {
+                const note = document.createElement("div");
+                note.className = "isley-ac-status";
+                note.innerHTML = remoteState === "failed"
+                    ? `<i class="fa-solid fa-triangle-exclamation me-1 text-warning" aria-hidden="true"></i>${this._escapeHtml(rl.failed || "")}`
+                    : this._escapeHtml(rl.none || "");
+                note.addEventListener("mousedown", (e) => e.preventDefault());
+                this.dropdown.appendChild(note);
+            }
+        }
 
         if (showTextNew || showFixedNew) {
-            if (matches.length > 0) {
+            if (matches.length > 0 || showRemote) {
                 const sep = document.createElement("div");
                 sep.className = "isley-ac-separator";
                 sep.setAttribute("role", "separator");
@@ -554,7 +670,8 @@ class IsleyAutocomplete {
             addNew.id = `isley-ac-opt-${this._uid}-new`;
             addNew.setAttribute("role", "option");
             addNew.setAttribute("aria-selected", "false");
-            const text = showTextNew ? this.labels.newText.replace("{name}", query) : this._newLabel;
+            const typed = showTextNew ? this._typedName(query) : "";
+            const text = showTextNew ? this.labels.newText.replace("{name}", typed) : this._newLabel;
             let html = `<i class="fa-solid fa-plus me-1"></i> ${this._escapeHtml(text)}`;
             if (showTextNew) {
                 const near = this._nearDuplicate(query);
@@ -566,7 +683,7 @@ class IsleyAutocomplete {
             addNew.addEventListener("mousedown", (e) => {
                 e.preventDefault();
                 if (showTextNew) {
-                    this._chooseNew(query, false);
+                    this._chooseNew(typed, false);
                 } else {
                     this._selectFixedNew();
                 }
@@ -658,7 +775,7 @@ class IsleyAutocomplete {
         if (currentVal === this.opts.newValue && this._newName === text) return;
 
         const ref = this._findExact(this._refItems, text);
-        this._chooseNew(ref ? ref.label : text, false);
+        this._chooseNew(ref ? ref.label : this._typedName(text), false);
     }
 
     _hideDropdown() {
@@ -713,3 +830,15 @@ class IsleyAutocomplete {
         return div.innerHTML;
     }
 }
+
+// A strain name typed into a field marked data-capitalize gets capitals when the
+// user changes it ("hazy donkey" -> "Hazy Donkey"); opening a page never changes it.
+document.addEventListener("change", (e) => {
+    const el = e.target;
+    if (!el || !el.matches || !el.matches("input[data-capitalize]")) return;
+    const name = IsleyAutocomplete.capitalizeName(el.value);
+    if (name && name !== el.value) {
+        el.value = name;
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+});

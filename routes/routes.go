@@ -471,21 +471,23 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 		store := handlers.ConfigStoreFromContext(c)
 		review := handlers.PrepareImportReview(c)
 		c.HTML(http.StatusOK, "views/strain-edit.html", gin.H{
-			"title":           "Review Strain Info",
-			"currentPath":     currentPath,
-			"version":         version,
-			"strain":          review.Strain,
-			"reviewMode":      true,
-			"review":          review,
-			"breeders":        store.Breeders(),
-			"plants":          handlers.GetLivingPlants(handlers.DBFromContext(c)),
-			"activities":      store.Activities(),
-			"loggedIn":        sessions.Default(c).Get("logged_in"),
-			"lcl":             translations,
-			"languages":       utils.AvailableLanguages,
-			"currentLanguage": lang,
-			"csrfToken":       c.GetString("csrf_token"),
-			"cspNonce":        c.GetString("cspNonce"),
+			"title":       "Review Strain Info",
+			"currentPath": currentPath,
+			"version":     version,
+			"strain":      review.Strain,
+			"reviewMode":  true,
+			"review":      review,
+			// Lineage parents are also searched on StrainCompass when it's on.
+			"straincompassEnabled": store.StraincompassEnabled() == 1,
+			"breeders":             store.Breeders(),
+			"plants":               handlers.GetLivingPlants(handlers.DBFromContext(c)),
+			"activities":           store.Activities(),
+			"loggedIn":             sessions.Default(c).Get("logged_in"),
+			"lcl":                  translations,
+			"languages":            utils.AvailableLanguages,
+			"currentLanguage":      lang,
+			"csrfToken":            c.GetString("csrf_token"),
+			"cspNonce":             c.GetString("cspNonce"),
 		})
 	})
 
@@ -495,20 +497,22 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 		currentPath, _ := c.Get("currentPath")
 		store := handlers.ConfigStoreFromContext(c)
 		c.HTML(http.StatusOK, "views/strain-edit.html", gin.H{
-			"title":           "Edit Strain",
-			"currentPath":     currentPath,
-			"version":         version,
-			"strain":          handlers.GetStrain(handlers.DBFromContext(c), c.Param("id")),
-			"packagingOffer":  handlers.PendingPackagingURL(c),
-			"breeders":        store.Breeders(),
-			"plants":          handlers.GetLivingPlants(handlers.DBFromContext(c)),
-			"activities":      store.Activities(),
-			"loggedIn":        sessions.Default(c).Get("logged_in"),
-			"lcl":             translations,
-			"languages":       utils.AvailableLanguages,
-			"currentLanguage": lang,
-			"csrfToken":       c.GetString("csrf_token"),
-			"cspNonce":        c.GetString("cspNonce"),
+			"title":          "Edit Strain",
+			"currentPath":    currentPath,
+			"version":        version,
+			"strain":         handlers.GetStrain(handlers.DBFromContext(c), c.Param("id")),
+			"packagingOffer": handlers.PendingPackagingURL(c),
+			// Lineage parents are also searched on StrainCompass when it's on.
+			"straincompassEnabled": store.StraincompassEnabled() == 1,
+			"breeders":             store.Breeders(),
+			"plants":               handlers.GetLivingPlants(handlers.DBFromContext(c)),
+			"activities":           store.Activities(),
+			"loggedIn":             sessions.Default(c).Get("logged_in"),
+			"lcl":                  translations,
+			"languages":            utils.AvailableLanguages,
+			"currentLanguage":      lang,
+			"csrfToken":            c.GetString("csrf_token"),
+			"cspNonce":             c.GetString("cspNonce"),
 		})
 	})
 

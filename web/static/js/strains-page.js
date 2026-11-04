@@ -438,12 +438,13 @@
         el.querySelector("#spManualDest").innerHTML = destPicker();
         wireDest(el);
         el.querySelectorAll(".sp-err").forEach(x => x.classList.add("d-none"));
-        el.querySelector("#spManualName").value = name;
+        // A searched name arrives with capitals, as a typed one gets them ("hazy donkey" -> "Hazy Donkey").
+        el.querySelector("#spManualName").value = name && typeof IsleyAutocomplete !== "undefined" ? IsleyAutocomplete.capitalizeName(name) : name;
         el.querySelector("#spManualFrom").value = "";
         el.querySelector("#spManualTo").value = "";
         el.querySelector("#spManualType").value = "";
         el.querySelector(".sp-dup").classList.add("d-none");
-        if (!breederAc && window.IsleyAutocomplete) breederAc = IsleyAutocomplete.breederPicker($("spManualBreeder"), $("spManualNewBreeder"));
+        if (!breederAc && typeof IsleyAutocomplete !== "undefined") breederAc = IsleyAutocomplete.breederPicker($("spManualBreeder"), $("spManualNewBreeder"));
         if (breederAc) breederAc.reset();
         if (name) manualDupCheck();
         focusWhenShown(el, () => name && breederAc && breederAc.input ? breederAc.input : $("spManualName"));

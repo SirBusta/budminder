@@ -115,6 +115,8 @@ document.addEventListener("DOMContentLoaded", () => {
             newNameInput: newName,
             sublabel: opt => opt.dataset.breeder || "",
             maxResults: 8,
+            formatNew: IsleyAutocomplete.capitalizeName,
+            remote: lbl.straincompass === "1" ? straincompassSource : null,
             labels: { newText: lbl.useText || 'Use "{name}"', results: lbl.results || "{count} results available" },
         });
         ac.input.classList.add("form-control-sm", "lineage-parent-name");
@@ -140,6 +142,38 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         return entry;
+    }
+
+    // StrainCompass names, searched as you type. StrainCompass lists each seed
+    // company's version separately; a parent is a name, so one row per name with
+    // its breeders after it. Picking one fills in the name only (not linked).
+    const straincompassSource = {
+        minChars: 2,
+        delay: 300,
+        labels: {
+            mine: lbl.groupMine || "", title: lbl.groupSc || "StrainCompass",
+            searching: lbl.scSearching || "", none: lbl.scNone || "", failed: lbl.scFailed || "",
+        },
+        fetch: q => fetch("/strains/straincompass/search?q=" + encodeURIComponent(q), { cache: "no-store" })
+            .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+            .then(data => {
+                const byName = new Map();
+                (data.results || []).forEach(r => {
+                    const name = String(r.name || "").trim();
+                    if (!name) return;
+                    const key = name.toLowerCase();
+                    if (!byName.has(key)) byName.set(key, { label: name, breeders: [] });
+                    const b = String(r.breeder || "").trim();
+                    const list = byName.get(key).breeders;
+                    if (b && !list.some(x => x.toLowerCase() === b.toLowerCase())) list.push(b);
+                });
+                return [...byName.values()].slice(0, 6).map(r => ({ label: r.label, sublabel: breederLine(r.breeders) }));
+            }),
+    };
+
+    function breederLine(list) {
+        if (list.length <= 2) return list.join(", ");
+        return `${list[0]}, ${list[1]} ` + (lbl.scMore || "+{count} more").replace("{count}", list.length - 2);
     }
 
     function updateMatchBadge(badge, linked) {

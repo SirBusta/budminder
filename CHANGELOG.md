@@ -28,6 +28,8 @@ used three parts.
 ### Added
 
 - Seed Vault pack prices: enter a **Pack price** and mark a pack as a **Freebie** when you add seeds, restock or edit a strain. Each pack shows on the strain's card with its price and the date it was added, and the list view adds a Pack price column and sort options. A line of totals above the strains on the Seed Vault tab shows the cost and value of the seeds you have left, so both go down as you use seeds. Freebies count toward value only. On each strain's page, the Seed Vault card lists the strain's packs and the cost and value of the seeds you have left.
+- Lineage: when StrainCompass is turned on, the parent strain list on Edit strain also shows StrainCompass names as you type, after your own strains and with the breeders that offer them. Picking one fills in the name only and imports nothing.
+- Strain names you type get a capital letter at the start of each word (*hazy donkey* becomes *Hazy Donkey*), with common abbreviations such as OG in capitals. This applies to lineage parents, **Enter manually** on the Strains page, and the Add strain and Edit strain pages. Words you typed with a capital letter stay as they are, and names you have already saved are not changed.
 
 ### Changed
 
@@ -38,6 +40,7 @@ used three parts.
 ### Fixed
 
 - Strain descriptions: lines that start with spaces (common in pasted text) showed as a gray code box with a scroll bar. They now show as normal text, as in Preview. The Heading button now always starts the heading at the beginning of the line.
+- Strains: in **Enter manually**, the Breeder field showed a plain list of your breeders. It now suggests matching breeders as you type, and you can type a new one.
 
 ## [2.1] - 2026-11-02
 

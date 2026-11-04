@@ -1555,6 +1555,48 @@ th, td {
 .isley-ac-note a {
     text-decoration: none;
 }
+/* Grouped lists (your strains, then StrainCompass): headings, a status row, and
+   "Use ..." kept in view at the bottom of a long list. */
+.isley-ac-dropdown.isley-ac-grouped {
+    max-height: 320px;
+}
+.isley-ac-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem 0.2rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-muted, #6b7280);
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+    cursor: default;
+}
+.isley-ac-group-status {
+    margin-left: auto;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+}
+.isley-ac-status {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.85rem;
+    color: var(--color-muted, #6b7280);
+    border-bottom: 1px solid var(--color-border);
+    cursor: default;
+}
+.isley-ac-grouped .isley-ac-new-item {
+    position: sticky;
+    bottom: 0;
+    background: var(--color-card);
+    border-top: 1px solid var(--color-border);
+}
+.isley-ac-grouped .isley-ac-new-item:hover,
+.isley-ac-grouped .isley-ac-new-item.active {
+    background: var(--color-row-hover);
+}
 
 /* The bar on a strain's page that leads back to Add Plant / Edit plant. */
 .sf-back {

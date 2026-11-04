@@ -58,7 +58,7 @@
                 <div class="fm-grid">
                     <div class="fm-f">
                         <label for="editStrainName">{{ .lcl.fm_strain_name }} <span class="req">*</span></label>
-                        <input type="text" class="form-control" id="editStrainName" value="{{ .strain.Name }}" required>
+                        <input type="text" class="form-control" id="editStrainName" value="{{ .strain.Name }}" required data-capitalize>
                     </div>
                     <div class="fm-f">
                         <label for="editBreederSelect">{{ .lcl.fm_breeder }} <span class="req">*</span></label>
@@ -227,6 +227,13 @@
                      data-linked="{{ .lcl.lineage_linked }}"
                      data-unlinked="{{ .lcl.lineage_unlinked }}"
                      data-remove="{{ .lcl.lineage_remove_parent }}"
+                     data-straincompass="{{ if .straincompassEnabled }}1{{ end }}"
+                     data-group-mine="{{ .lcl.lineage_group_mine }}"
+                     data-group-sc="{{ .lcl.lineage_group_sc }}"
+                     data-sc-searching="{{ .lcl.lineage_sc_searching }}"
+                     data-sc-none="{{ .lcl.lineage_sc_none }}"
+                     data-sc-failed="{{ .lcl.lineage_sc_failed }}"
+                     data-sc-more="{{ .lcl.lineage_sc_more }}"
                      {{ if .reviewMode }}data-initial-parents="{{ json .review.Draft.Parents }}"{{ end }}>
                     <div id="lineageEntries"></div>
                     <button type="button" class="fm-btn light sm mt-1" id="addParentBtn">
