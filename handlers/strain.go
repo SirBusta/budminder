@@ -469,12 +469,27 @@ func AddStrainHandler(c *gin.Context) {
 		SeedsAddedOn     string             `json:"seeds_added_on"`
 		Pack             *strainPack        `json:"pack"`
 		Growing          *strainGrowingInfo `json:"growing"`
+		// Optional: the Cannabinoids and effects card.
+		Cannabinoids *strainCannabinoids   `json:"cannabinoids"`
+		Attributes   *strainAttributeLists `json:"attributes"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil || !req.Pack.valid() {
 		fieldLogger.WithError(err).Error("Failed to bind JSON")
 		apiBadRequest(c, "api_invalid_request_payload")
 		return
+	}
+	if req.Cannabinoids != nil {
+		if key := req.Cannabinoids.validate(); key != "" {
+			apiBadRequest(c, key)
+			return
+		}
+	}
+	if req.Attributes != nil {
+		if err := req.Attributes.validate(); err != nil {
+			apiBadRequest(c, err.Error())
+			return
+		}
 	}
 	req.SeedLocation = strings.TrimSpace(req.SeedLocation)
 	if err := utils.ValidateStringLength("seed_location", req.SeedLocation, utils.MaxNameLength); err != nil {
@@ -557,6 +572,14 @@ func AddStrainHandler(c *gin.Context) {
 	if err == nil {
 		err = saveFormPack(tx, id, req.Pack, newStrainStock.Count, req.SeedCount, stock.AddedOn, stockToday(c))
 	}
+	if err == nil && req.Cannabinoids != nil {
+		cb := req.Cannabinoids
+		_, err = tx.Exec(`UPDATE strain SET thc_min = $1, thc_max = $2, cbd_min = $3, cbd_max = $4, cbn_max = $5, cbg_max = $6 WHERE id = $7`,
+			cb.ThcMin, cb.ThcMax, cb.CbdMin, cb.CbdMax, cb.CbnMax, cb.CbgMax, id)
+	}
+	if err == nil && req.Attributes != nil {
+		err = replaceStrainAttributes(tx, id, req.Attributes.set())
+	}
 	if err == nil {
 		err = tx.Commit()
 	}
@@ -635,12 +658,7 @@ func UpdateStrainHandler(c *gin.Context) {
 		CycleTimeMin *int                `json:"cycle_time_min"`
 		Growing      *strainGrowingInfo  `json:"growing"`
 		Cannabinoids *strainCannabinoids `json:"cannabinoids"`
-		Attributes   *struct {
-			Effects     []types.StrainAttribute `json:"effects"`
-			Flavors     []types.StrainAttribute `json:"flavors"`
-			Terpenes    []types.StrainAttribute `json:"terpenes"`
-			MedicalUses []types.StrainAttribute `json:"medical_uses"`
-		} `json:"attributes"`
+		Attributes   *strainAttributeLists `json:"attributes"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil || !req.Pack.valid() {
@@ -686,19 +704,9 @@ func UpdateStrainHandler(c *gin.Context) {
 		req.SeedType = &normalized
 	}
 	if req.Attributes != nil {
-		for _, g := range []struct {
-			field string
-			attrs []types.StrainAttribute
-		}{
-			{"effect", req.Attributes.Effects},
-			{"flavor", req.Attributes.Flavors},
-			{"terpene", req.Attributes.Terpenes},
-			{"medical_use", req.Attributes.MedicalUses},
-		} {
-			if err := validateStrainAttributeGroup(g.field, g.attrs); err != nil {
-				apiBadRequest(c, err.Error())
-				return
-			}
+		if err := req.Attributes.validate(); err != nil {
+			apiBadRequest(c, err.Error())
+			return
 		}
 	}
 
@@ -794,10 +802,7 @@ func UpdateStrainHandler(c *gin.Context) {
 			nullableStr(g.HeightIndoor), nullableStr(g.HeightOutdoor), nullableStr(g.YieldIndoor), nullableStr(g.YieldOutdoor), id)
 	}
 	if err == nil && req.Attributes != nil {
-		a := req.Attributes
-		err = replaceStrainAttributes(tx, id, strainAttributeSet{
-			Effects: &a.Effects, Flavors: &a.Flavors, Terpenes: &a.Terpenes, MedicalUses: &a.MedicalUses,
-		})
+		err = replaceStrainAttributes(tx, id, req.Attributes.set())
 	}
 	if err == nil {
 		err = tx.Commit()

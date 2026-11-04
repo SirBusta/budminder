@@ -247,11 +247,11 @@
 </div>
 {{ end }}
 
-{{/* ---------- Effects & terpenes (StrainCompass) ---------- */}}
+{{/* ---------- Effects & terpenes (picked on Add/Edit strain or from StrainCompass) ---------- */}}
 {{ define "sd/profile" }}
 {{ if or .strain.Effects .strain.Flavors .strain.Terpenes .strain.MedicalUses }}
 <div class="sd-card">
-    <h2 class="sd-h"><i class="fa-solid fa-flask"></i>{{ .lcl.sd_effects_title }}<span class="sd-h-r sd-faint">{{ .lcl.sd_from_sc }}</span></h2>
+    <h2 class="sd-h"><i class="fa-solid fa-flask"></i>{{ .lcl.sd_effects_title }}{{ if .strain.StraincompassSlug }}<span class="sd-h-r sd-faint">{{ .lcl.sd_from_sc }}</span>{{ end }}</h2>
     {{ if .effects }}
     <div class="sd-sub">{{ .lcl.straincompass_effects }}</div>
     <div class="sd-eff">{{ range .effects }}<span>{{ .Name }}</span><span class="tr">{{ if .Pct }}<span style="width: {{ .Pct }}%"></span>{{ end }}</span>{{ end }}</div>
@@ -260,13 +260,13 @@
     <div class="sd-sub">{{ .lcl.straincompass_terpenes }}</div>
     <div class="sd-terp">{{ range .terpenes }}<span>{{ .Name }}</span><span>{{ if .Dots }}<span class="dots" aria-hidden="true"><i class="{{ if ge .Dots 1 }}on{{ end }}"></i><i class="{{ if ge .Dots 2 }}on{{ end }}"></i><i class="{{ if ge .Dots 3 }}on{{ end }}"></i></span> <span class="lv">{{ if eq .Dots 1 }}{{ $.lcl.sd_level_low }}{{ else if eq .Dots 2 }}{{ $.lcl.sd_level_medium }}{{ else }}{{ $.lcl.sd_level_high }}{{ end }}</span>{{ end }}</span>{{ end }}</div>
     {{ end }}
-    {{ if .strain.Flavors }}
+    {{ if .flavors }}
     <div class="sd-sub">{{ .lcl.straincompass_flavors }}</div>
-    <div class="sd-chips">{{ range .strain.Flavors }}<span class="sd-chip fl">{{ .Name }}</span>{{ end }}</div>
+    <div class="sd-chips">{{ range .flavors }}<span class="sd-chip fl">{{ . }}</span>{{ end }}</div>
     {{ end }}
-    {{ if .strain.MedicalUses }}
+    {{ if .medicalUses }}
     <div class="sd-sub">{{ .lcl.straincompass_medical_uses }}</div>
-    <div class="sd-chips">{{ range .strain.MedicalUses }}<span class="sd-chip md">{{ .Name }}</span>{{ end }}</div>
+    <div class="sd-chips">{{ range .medicalUses }}<span class="sd-chip md">{{ . }}</span>{{ end }}</div>
     {{ end }}
 </div>
 {{ end }}

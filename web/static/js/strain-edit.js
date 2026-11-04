@@ -83,71 +83,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- Cannabinoids + effects/flavors/terpenes/medical-uses lists ---
     const profileCard = document.getElementById("strainProfileCard");
-    const removeLabel = profileCard ? profileCard.dataset.remove : "";
-
-    function addChip(editor, raw) {
-        const name = raw.trim();
-        if (!name) return;
-        const chips = editor.querySelector(".strain-attr-chips");
-        const exists = [...chips.querySelectorAll(".strain-attr-chip")]
-            .some(c => c.dataset.name.toLowerCase() === name.toLowerCase());
-        if (exists) return;
-        const chip = document.createElement("span");
-        chip.className = "badge strain-attr-chip g-" + editor.dataset.group;
-        chip.dataset.name = name;
-        chip.textContent = name;
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "btn-close ms-1 strain-attr-remove";
-        btn.style.fontSize = ".55em";
-        btn.setAttribute("aria-label", removeLabel);
-        chip.appendChild(btn);
-        chips.appendChild(chip);
-    }
-
-    document.querySelectorAll(".strain-attr-editor").forEach(editor => {
-        const input = editor.querySelector(".strain-attr-input");
-        editor.querySelectorAll(".strain-attr-remove").forEach(b => b.setAttribute("aria-label", removeLabel));
-        input.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" || e.key === ",") {
-                e.preventDefault();
-                addChip(editor, input.value);
-                input.value = "";
-            }
-        });
-        // Text left in the box when the user clicks away (or on Save) still counts.
-        input.addEventListener("blur", () => {
-            addChip(editor, input.value);
-            input.value = "";
-        });
-    });
-
-    if (profileCard) {
-        profileCard.addEventListener("click", (e) => {
-            const btn = e.target.closest(".strain-attr-remove");
-            if (btn) btn.closest(".strain-attr-chip").remove();
-        });
-    }
 
     function collectProfile() {
         const num = (id) => {
             const v = document.getElementById(id).value.trim();
             return v === "" ? null : parseFloat(v);
         };
-        document.querySelectorAll(".strain-attr-editor").forEach(editor => {
-            const input = editor.querySelector(".strain-attr-input");
-            addChip(editor, input.value);
-            input.value = "";
-        });
-        const attributes = {};
-        document.querySelectorAll(".strain-attr-editor").forEach(editor => {
-            attributes[editor.dataset.group] = [...editor.querySelectorAll(".strain-attr-chip")].map(c => {
-                const a = { name: c.dataset.name };
-                if (c.dataset.intensity) a.intensity = parseFloat(c.dataset.intensity);
-                if (c.dataset.level) a.level = c.dataset.level;
-                return a;
-            });
-        });
+        const attributes = window.strainAttrPick ? window.strainAttrPick.collect() : undefined;
         return {
             cannabinoids: {
                 thc_min: num("editThcMin"), thc_max: num("editThcMax"),

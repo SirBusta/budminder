@@ -1,0 +1,51 @@
+{{ define "common/strain-profile.html" }}
+{{/* Cannabinoids and effects card on Add strain, Edit strain and the import
+     review. Takes a dict: lcl, strain (nil on Add strain), picker
+     (handlers.StrainAttrPicker), lang. The name lists are drawn by
+     strain-attr-pick.js; strain-add.js / strain-edit.js read the boxes. */}}
+<div class="fm-card" id="s-profile">
+    <div id="strainProfileCard">
+        <div class="fm-card-h"><i class="fa-solid fa-flask" aria-hidden="true"></i><div><h2>{{ .lcl.fm_cannabinoids_effects }} <span class="opt">{{ .lcl.fm_optional }}</span></h2><p>{{ .lcl.strain_edit_cannabinoids_help }}</p></div></div>
+        <div class="fm-cann">
+            <div class="fm-f">
+                <label for="editThcMin">THC</label>
+                <div class="fm-rng">
+                    <input type="number" class="form-control" id="editThcMin" min="0" max="100" step="any" placeholder="{{ .lcl.cannabinoid_min }}" value="{{ with .strain }}{{ with .ThcMin }}{{ . }}{{ end }}{{ end }}">
+                    <span>{{ .lcl.cycle_time_to }}</span>
+                    <input type="number" class="form-control" id="editThcMax" min="0" max="100" step="any" placeholder="{{ .lcl.cannabinoid_max }}" value="{{ with .strain }}{{ with .ThcMax }}{{ . }}{{ end }}{{ end }}" aria-label="THC {{ .lcl.cannabinoid_max }}">
+                    <span>%</span>
+                </div>
+            </div>
+            <div class="fm-f">
+                <label for="editCbdMin">CBD</label>
+                <div class="fm-rng">
+                    <input type="number" class="form-control" id="editCbdMin" min="0" max="100" step="any" placeholder="{{ .lcl.cannabinoid_min }}" value="{{ with .strain }}{{ with .CbdMin }}{{ . }}{{ end }}{{ end }}">
+                    <span>{{ .lcl.cycle_time_to }}</span>
+                    <input type="number" class="form-control" id="editCbdMax" min="0" max="100" step="any" placeholder="{{ .lcl.cannabinoid_max }}" value="{{ with .strain }}{{ with .CbdMax }}{{ . }}{{ end }}{{ end }}" aria-label="CBD {{ .lcl.cannabinoid_max }}">
+                    <span>%</span>
+                </div>
+            </div>
+            <div class="fm-f">
+                <label for="editCbnMax">{{ .lcl.fm_cbn_up_to }}</label>
+                <div class="fm-rng"><input type="number" class="form-control" id="editCbnMax" min="0" max="100" step="any" value="{{ with .strain }}{{ with .CbnMax }}{{ . }}{{ end }}{{ end }}"><span>%</span></div>
+            </div>
+            <div class="fm-f">
+                <label for="editCbgMax">{{ .lcl.fm_cbg_up_to }}</label>
+                <div class="fm-rng"><input type="number" class="form-control" id="editCbgMax" min="0" max="100" step="any" value="{{ with .strain }}{{ with .CbgMax }}{{ . }}{{ end }}{{ end }}"><span>%</span></div>
+            </div>
+        </div>
+        <hr class="fm-sep">
+        <div id="strainAttrPick"
+             data-lang="{{ .lang }}"
+             data-groups="{{ json .picker }}"
+             data-other="{{ .lcl.sr_other }}"
+             data-other-ph="{{ .lcl.sr_other_ph }}"
+             data-remove="{{ .lcl.strain_attr_remove }}"
+             data-level="{{ .lcl.strain_attr_level_from }}"
+             data-level-low="{{ .lcl.sd_level_low }}"
+             data-level-medium="{{ .lcl.sd_level_medium }}"
+             data-level-high="{{ .lcl.sd_level_high }}"></div>
+        <small class="fm-help d-block">{{ .lcl.strain_edit_attributes_help }}</small>
+    </div>
+</div>
+{{ end }}

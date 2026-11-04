@@ -86,6 +86,32 @@ func validateStrainAttributeGroup(field string, attrs []types.StrainAttribute) e
 	return nil
 }
 
+// strainAttributeLists is the attributes block Add and Edit strain send.
+type strainAttributeLists struct {
+	Effects     []types.StrainAttribute `json:"effects"`
+	Flavors     []types.StrainAttribute `json:"flavors"`
+	Terpenes    []types.StrainAttribute `json:"terpenes"`
+	MedicalUses []types.StrainAttribute `json:"medical_uses"`
+}
+
+// validate checks every group (see validateStrainAttributeGroup).
+func (a *strainAttributeLists) validate() error {
+	for _, g := range []struct {
+		field string
+		attrs []types.StrainAttribute
+	}{{"effect", a.Effects}, {"flavor", a.Flavors}, {"terpene", a.Terpenes}, {"medical_use", a.MedicalUses}} {
+		if err := validateStrainAttributeGroup(g.field, g.attrs); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// set replaces all four groups (a group not sent is cleared).
+func (a *strainAttributeLists) set() strainAttributeSet {
+	return strainAttributeSet{Effects: &a.Effects, Flavors: &a.Flavors, Terpenes: &a.Terpenes, MedicalUses: &a.MedicalUses}
+}
+
 // strainGrowingInfo is the editable height/yield block; empty strings are
 // stored as NULL.
 type strainGrowingInfo struct {

@@ -200,6 +200,7 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 			"currentPath":     currentPath,
 			"version":         version,
 			"prefillName":     c.Query("name"),
+			"attrPicker":      handlers.StrainAttrPicker(nil, translations),
 			"scEnabled":       store.StraincompassEnabled() == 1,
 			"breeders":        store.Breeders(),
 			"plants":          handlers.GetLivingPlants(handlers.DBFromContext(c)),
@@ -234,8 +235,10 @@ func AddBasicRoutes(r *gin.RouterGroup, version string) {
 			"growURL":          handlers.StrainGrowURL(handlers.StrainGrowTarget{ID: strain.ID, Name: strain.Name, SeedCount: strain.SeedCount}, len(history.Grows)),
 			"canGrow":          strain.SeedCount > 0 || strain.SeedType == "clone",
 			"potency":          handlers.StrainPotency(strain),
-			"effects":          handlers.StrainEffectRows(strain),
-			"terpenes":         handlers.StrainTerpeneRows(strain),
+			"effects":          handlers.StrainEffectRows(strain, translations),
+			"terpenes":         handlers.StrainTerpeneRows(strain, translations),
+			"flavors":          handlers.StrainAttrNames("flavors", strain.Flavors, translations),
+			"medicalUses":      handlers.StrainAttrNames("medical_uses", strain.MedicalUses, translations),
 			"today":            handlers.StockToday(c),
 			"currentPath":      currentPath,
 			"version":          version,
@@ -475,6 +478,7 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 			"currentPath": currentPath,
 			"version":     version,
 			"strain":      review.Strain,
+			"attrPicker":  handlers.StrainAttrPicker(&review.Strain, translations),
 			"reviewMode":  true,
 			"review":      review,
 			// Lineage parents are also searched on StrainCompass when it's on.
@@ -493,6 +497,7 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 
 	r.GET("/strain/:id/edit", func(c *gin.Context) {
 		lang := utils.GetLanguage(c)
+		strain := handlers.GetStrain(handlers.DBFromContext(c), c.Param("id"))
 		translations := utils.TranslationService.GetTranslations(lang)
 		currentPath, _ := c.Get("currentPath")
 		store := handlers.ConfigStoreFromContext(c)
@@ -500,7 +505,8 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 			"title":          "Edit Strain",
 			"currentPath":    currentPath,
 			"version":        version,
-			"strain":         handlers.GetStrain(handlers.DBFromContext(c), c.Param("id")),
+			"strain":         strain,
+			"attrPicker":     handlers.StrainAttrPicker(&strain, translations),
 			"packagingOffer": handlers.PendingPackagingURL(c),
 			// Lineage parents are also searched on StrainCompass when it's on.
 			"straincompassEnabled": store.StraincompassEnabled() == 1,

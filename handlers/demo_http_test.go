@@ -325,6 +325,38 @@ func TestDemo_StrainEditKeepsTheText(t *testing.T) {
 	assertRefused(t, code, out, "indica over 100")
 }
 
+func TestDemo_StrainEditPicksListedNames(t *testing.T) {
+	t.Parallel()
+	e := newDemo(t)
+	put := func(attrs map[string]any) (int, map[string]any) {
+		return e.json(t, "PUT", "/strains/"+itoa(e.strain), map[string]any{
+			"indica": 50, "sativa": 50, "autoflower": false, "seed_count": 4, "cycle_time": 63, "attributes": attrs,
+		})
+	}
+	code, _ := put(map[string]any{
+		"effects":  []map[string]any{{"name": "Relaxed"}, {"name": "Happy", "intensity": 70}},
+		"terpenes": []map[string]any{{"name": "Myrcene", "level": "high"}},
+	})
+	require.Equal(t, http.StatusOK, code)
+	resp := e.client.Get("/strain/" + itoa(e.strain))
+	body, err := io.ReadAll(resp.Body)
+	testutil.DrainAndClose(resp)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), "<span>Relaxed</span>", "listed names save in the visitor's copy")
+	assert.Contains(t, string(body), "<span>Myrcene</span>")
+
+	for why, attrs := range map[string]map[string]any{
+		"a typed name":  {"flavors": []map[string]any{{"name": "<b>Anything</b>"}}},
+		"a bad level":   {"terpenes": []map[string]any{{"name": "Myrcene", "level": "huge"}}},
+		"an odd field":  {"effects": []map[string]any{{"name": "Happy", "note": "x"}}},
+		"an odd group":  {"smells": []map[string]any{{"name": "Pine"}}},
+		"strength >100": {"effects": []map[string]any{{"name": "Happy", "intensity": 900}}},
+	} {
+		code, out := put(attrs)
+		assertRefused(t, code, out, why)
+	}
+}
+
 func TestDemo_StrainLookupUsesTheRecording(t *testing.T) {
 	t.Parallel()
 	e := newDemo(t)

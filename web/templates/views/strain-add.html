@@ -18,6 +18,7 @@
             <a href="#s-genetics"><i class="fa-solid fa-dna" aria-hidden="true"></i>{{ .lcl.fm_genetics }}</a>
             <a href="#s-seeds"><i class="fa-solid fa-box-archive" aria-hidden="true"></i>{{ .lcl.fm_seeds }}</a>
             <a href="#s-growth"><i class="fa-solid fa-ruler-vertical" aria-hidden="true"></i>{{ .lcl.fm_height_yield }}</a>
+            <a href="#s-profile"><i class="fa-solid fa-flask" aria-hidden="true"></i>{{ .lcl.fm_cannabinoids_effects }}</a>
             <a href="#s-desc"><i class="fa-solid fa-file-lines" aria-hidden="true"></i>{{ .lcl.fm_description }}</a>
         </nav>
 
@@ -150,6 +151,8 @@
                 </div>
             </div>
 
+            {{ template "common/strain-profile.html" (dict "lcl" .lcl "strain" nil "picker" .attrPicker "lang" .currentLanguage) }}
+
             {{ template "strain-desc-card" (dict "lcl" .lcl "text" "" "html" "") }}
 
             <div class="fm-save">
@@ -166,6 +169,7 @@
 
 <script src="/static/js/form-look.js"></script>
 <script src="/static/js/strain-stock-fields.js"></script>
+<script src="/static/js/strain-attr-pick.js"></script>
 <script src="/static/js/strain-add.js"></script>
 {{ template "common/footer.html" .}}
 

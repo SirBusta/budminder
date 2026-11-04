@@ -591,6 +591,7 @@ var demoRules = map[string]demoRule{
 				"thc_min": demoPercent, "thc_max": demoPercent, "cbd_min": demoPercent,
 				"cbd_max": demoPercent, "cbn_max": demoPercent, "cbg_max": demoPercent,
 			})),
+			"attributes": dOpt(demoStrainAttributes),
 		},
 		dropUnknown: true,
 		fix:         demoKeepStrainText,
@@ -692,6 +693,37 @@ func demoNamePlant(c *gin.Context, body map[string]any) error {
 	body["name"] = fmt.Sprintf("%s #%d", name, n+1)
 	return nil
 }
+
+// demoStrainAttributes is Edit strain's effects, flavors, terpenes and
+// may-help-with: names from the click lists, or ones the strain already has
+// in that group (StrainCompass names that aren't listed); no typed names.
+var demoStrainAttributes = func() demoCheck {
+	tables := map[string]string{"effects": "strain_effect", "flavors": "strain_flavor", "terpenes": "strain_terpene", "medical_uses": "strain_medical_use"}
+	groups := map[string]demoCheck{}
+	for group, table := range tables {
+		name := func(c *gin.Context, v any) (any, error) {
+			s, ok := v.(string)
+			if !ok {
+				return nil, errDemo
+			}
+			for _, ch := range strainAttrChoices[group] {
+				if s == ch.Name {
+					return v, nil
+				}
+			}
+			var n int
+			err := DBFromContext(c).QueryRow("SELECT COUNT(*) FROM "+table+" WHERE strain_id = $1 AND name = $2", c.Param("id"), s).Scan(&n) //nolint:gosec // table names are constants above
+			if err != nil || n == 0 {
+				return nil, errDemo
+			}
+			return v, nil
+		}
+		groups[group] = dList(maxStrainAttributesPerGroup, map[string]demoCheck{
+			"name": name, "intensity": dOpt(dNum(0, 100)), "level": dOpt(dOneOf("low", "medium", "high")),
+		})
+	}
+	return dObject(groups)
+}()
 
 // demoKeepStrainText puts a strain's stored name, breeder and text back into
 // an edit, so only its numbers and choices can change.

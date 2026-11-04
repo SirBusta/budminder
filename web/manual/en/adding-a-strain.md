@@ -33,7 +33,7 @@ Click **Edit** on any strain profile to update its information:
 
 - cultivar name, breeder, external links and descriptive notes;
 - photoperiod type, indica/sativa ratio and flowering duration;
-- THC and CBD ranges, aroma notes, dominant terpenes and therapeutic benefits;
+- THC, CBD, CBN and CBG ranges, and the strain's effects, flavors, terpenes and what it may help with;
 - indoor and outdoor height and yield;
 - parental lineage: pick one of your strains to link it, pick a name StrainCompass suggests as you type (when StrainCompass is enabled), or type any name;
 - seed inventory: total count, seed type, acquisition date, storage location and Wanted status;
@@ -41,3 +41,7 @@ Click **Edit** on any strain profile to update its information:
 - seed pack or cultivar artwork.
 
 Click **Save Changes** to apply your updates.
+
+## Effects, flavors and terpenes
+
+The **Cannabinoids and effects** card on Add strain and Edit strain lists common effects, flavors, terpenes and what the strain may help with. Click a name to select it, and click it again to clear it. To add a name that is not listed, type it in the **Other** box and press Enter. Names imported from StrainCompass are already selected. Dots on a terpene show its level from StrainCompass.

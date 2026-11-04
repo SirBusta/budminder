@@ -4299,18 +4299,38 @@ body.bm-tour-open { overflow: hidden; }
 .bm-upd-notes h2, .bm-upd-notes h3 { font-size: 1rem; margin: .6rem 0 .3rem; }
 .bm-upd-msg { margin: .8rem 0 0; }
 
-/* Strain edit/review form: the effects, flavors, terpenes and may-help-with
-   chips use the strain page's colors (effects blue, flavors pink, terpenes
-   amber, may help with teal), so each group looks the same everywhere. */
-.strain-attr-chip { border: 1px solid; font-weight: 600; }
-.strain-attr-chip.g-effects { background: #e0f2fe; border-color: #7dd3fc; color: #075985; }
-.strain-attr-chip.g-flavors { background: #fdf2f8; border-color: #fbcfe8; color: #9d174d; }
-.strain-attr-chip.g-terpenes { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
-.strain-attr-chip.g-medical_uses { background: #f0fdfa; border-color: #99f6e4; color: #115e59; }
-[data-bs-theme="dark"] .strain-attr-chip.g-effects { background: rgba(56, 189, 248, .12); border-color: rgba(56, 189, 248, .35); color: #7dd3fc; }
-[data-bs-theme="dark"] .strain-attr-chip.g-flavors { background: rgba(236, 72, 153, .12); border-color: rgba(236, 72, 153, .3); color: #f9a8d4; }
-[data-bs-theme="dark"] .strain-attr-chip.g-terpenes { background: rgba(245, 158, 11, .12); border-color: rgba(245, 158, 11, .35); color: #fcd34d; }
-[data-bs-theme="dark"] .strain-attr-chip.g-medical_uses { background: rgba(45, 212, 191, .1); border-color: rgba(45, 212, 191, .3); color: #5eead4; }
+/* Add/Edit strain and the import review (common/strain-profile.html,
+   strain-attr-pick.js): THC/CBD/CBN/CBG in small boxes on one line, and
+   effects, flavors, terpenes and may-help-with as names to click, in the
+   strain page's colors (effects blue, flavors pink, terpenes amber, may
+   help with teal), so each group looks the same everywhere. */
+.fm-cann { display: flex; flex-wrap: wrap; gap: .8rem 2rem; }
+.fm-cann .fm-f { margin: 0; }
+.fm-rng { display: flex; align-items: center; gap: .4rem; }
+.fm-rng .form-control { width: 5.2rem; text-align: right; }
+.fm-rng span { color: var(--sx-faint); font-size: .82rem; }
+.fm-pick-group { margin-bottom: 1rem; --g: #0369a1; }
+.fm-pick-group .fm-lbl { margin-bottom: .35rem; }
+.fm-pick-group[data-group="flavors"] { --g: #be185d; }
+.fm-pick-group[data-group="terpenes"] { --g: #b45309; }
+.fm-pick-group[data-group="medical_uses"] { --g: #0f766e; }
+[data-bs-theme="dark"] .fm-pick-group { --g: #38bdf8; }
+[data-bs-theme="dark"] .fm-pick-group[data-group="flavors"] { --g: #f472b6; }
+[data-bs-theme="dark"] .fm-pick-group[data-group="terpenes"] { --g: #fbbf24; }
+[data-bs-theme="dark"] .fm-pick-group[data-group="medical_uses"] { --g: #2dd4bf; }
+.fm-pick { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
+.fm-pick button { border: 1.5px solid color-mix(in srgb, var(--g) 55%, transparent); background: var(--sx-card); color: var(--g); border-radius: 99px; padding: .26rem .7rem; font-size: .84rem; font-weight: 600; line-height: 1.3; display: inline-flex; align-items: center; gap: .3rem; }
+.fm-pick button:hover { border-color: var(--g); }
+.fm-pick button.on { background: var(--g); border-color: var(--g); color: #fff; }
+[data-bs-theme="dark"] .fm-pick button.on { color: #111827; }
+.fm-pick button .fa-xmark { font-size: .75em; opacity: .85; }
+.fm-pick button.flash { animation: fm-pick-flash .7s; }
+@keyframes fm-pick-flash { 0%, 100% { box-shadow: none; } 40% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--g) 35%, transparent); } }
+.fm-pick-other { border: 1.5px dashed color-mix(in srgb, var(--g) 60%, transparent); border-radius: 99px; padding: .22rem .7rem; font-size: .84rem; width: 12rem; max-width: 100%; background: var(--sx-card); color: var(--sx-ink); }
+.fm-pick-other:focus { outline: none; border-color: var(--g); }
+.fm-pick-dots { display: inline-flex; gap: 2px; }
+.fm-pick-dots i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .3; }
+.fm-pick-dots i.on { opacity: 1; }
 
 /* Compress existing photos: the line under the top menu (header2.html, photo-job.js). */
 .bm-job { position: relative; height: 4px; background: #dcfce7; margin-top: -0.5rem; margin-bottom: 0.5rem; }

@@ -240,3 +240,106 @@ func TestStrainEdit_RejectsTooManyAttributes(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, e.put(t, map[string]any{"attributes": map[string]any{"effects": many}}))
 	assert.Empty(t, e.names(t, "strain_effect"))
 }
+
+func TestStrainAdd_SavesCannabinoidsAndAttributes(t *testing.T) {
+	t.Parallel()
+	e := newStrainEditEnv(t)
+	add := func(extra map[string]any) (int, int) {
+		body := map[string]any{"name": "Picked", "breeder_id": e.breeder, "indica": 50, "sativa": 50, "cycle_time": 56, "short_desc": "x"}
+		for k, v := range extra {
+			body[k] = v
+		}
+		resp := e.client.SessionPostJSON(t, "/strains", e.token, body)
+		defer testutil.DrainAndClose(resp)
+		var out struct {
+			ID int `json:"id"`
+		}
+		_ = json.NewDecoder(resp.Body).Decode(&out)
+		return resp.StatusCode, out.ID
+	}
+
+	status, id := add(map[string]any{
+		"cannabinoids": map[string]any{"thc_min": 20, "thc_max": 25, "cbg_max": 1.5},
+		"attributes": map[string]any{
+			"effects":      []map[string]any{{"name": "Relaxed"}, {"name": "Happy"}},
+			"flavors":      []map[string]any{{"name": "Gas"}, {"name": "Blue Cheese"}},
+			"terpenes":     []map[string]any{},
+			"medical_uses": []map[string]any{{"name": "Stress"}},
+		},
+	})
+	require.Equal(t, http.StatusCreated, status)
+	var thcMin, thcMax, cbgMax sql.NullFloat64
+	require.NoError(t, e.db.QueryRow("SELECT thc_min, thc_max, cbg_max FROM strain WHERE id = $1", id).Scan(&thcMin, &thcMax, &cbgMax))
+	assert.Equal(t, 20.0, thcMin.Float64)
+	assert.Equal(t, 25.0, thcMax.Float64)
+	assert.Equal(t, 1.5, cbgMax.Float64)
+	e.strainID = id
+	assert.Equal(t, []string{"Relaxed", "Happy"}, e.names(t, "strain_effect"))
+	assert.Equal(t, []string{"Gas", "Blue Cheese"}, e.names(t, "strain_flavor"))
+	assert.Empty(t, e.names(t, "strain_terpene"))
+	assert.Equal(t, []string{"Stress"}, e.names(t, "strain_medical_use"))
+
+	// Without the card's blocks (an older page) the strain is still added.
+	status, _ = add(map[string]any{"name": "Plain"})
+	assert.Equal(t, http.StatusCreated, status)
+
+	// A bad block adds nothing.
+	var before, after int
+	require.NoError(t, e.db.QueryRow("SELECT COUNT(*) FROM strain").Scan(&before))
+	status, _ = add(map[string]any{"name": "Bad THC", "cannabinoids": map[string]any{"thc_min": 30, "thc_max": 20}})
+	assert.Equal(t, http.StatusBadRequest, status)
+	many := make([]map[string]any, 51)
+	for i := range many {
+		many[i] = map[string]any{"name": "Flavor " + strconv.Itoa(i)}
+	}
+	status, _ = add(map[string]any{"name": "Too many", "attributes": map[string]any{"flavors": many}})
+	assert.Equal(t, http.StatusBadRequest, status)
+	require.NoError(t, e.db.QueryRow("SELECT COUNT(*) FROM strain").Scan(&after))
+	assert.Equal(t, before, after)
+}
+
+func TestStrainForms_ShowPickLists(t *testing.T) {
+	t.Parallel()
+	e := newStrainEditEnv(t)
+	testutil.MustExec(t, e.db, "INSERT INTO strain_flavor (strain_id, name) VALUES ($1, 'Blueberry')", e.strainID)
+	page := func(path string) string {
+		resp := e.client.Get(path)
+		defer testutil.DrainAndClose(resp)
+		require.Equal(t, http.StatusOK, resp.StatusCode, path)
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		return string(body)
+	}
+
+	edit := page("/strain/" + strconv.Itoa(e.strainID) + "/edit")
+	assert.Contains(t, edit, `id="strainAttrPick"`)
+	assert.Contains(t, edit, "Myrcene", "the terpene list is in the page data")
+	assert.Contains(t, edit, "Blueberry", "the strain's own names too")
+	assert.Contains(t, edit, `class="fm-rng"`, "small cannabinoid boxes")
+
+	add := page("/strain/new")
+	assert.Contains(t, add, `id="s-profile"`)
+	assert.Contains(t, add, `href="#s-profile"`, "in the On this page menu")
+	assert.Contains(t, add, `id="strainAttrPick"`)
+	assert.Contains(t, add, `id="editThcMin"`)
+}
+
+func TestStrainPage_FromStrainCompassOnlyWhenImported(t *testing.T) {
+	t.Parallel()
+	e := newStrainEditEnv(t)
+	testutil.MustExec(t, e.db, "INSERT INTO strain_flavor (strain_id, name) VALUES ($1, 'Gas')", e.strainID)
+	page := func() string {
+		resp := e.client.Get("/strain/" + strconv.Itoa(e.strainID))
+		defer testutil.DrainAndClose(resp)
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		return string(body)
+	}
+
+	body := page()
+	assert.Contains(t, body, `<span class="sd-chip fl">Gas</span>`)
+	assert.NotContains(t, body, "from StrainCompass", "picked by hand")
+
+	testutil.MustExec(t, e.db, "UPDATE strain SET straincompass_slug = 'edit-me' WHERE id = $1", e.strainID)
+	assert.Contains(t, page(), "from StrainCompass")
+}

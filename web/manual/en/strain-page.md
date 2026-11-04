@@ -33,5 +33,5 @@ When stock reaches zero, the panel provides shortcuts to **Add seeds** or **Add 
 
 - **About**: the strain's description.
 - **Strain facts**: expected flowering window (or seed-to-harvest duration for autoflowers), indica/sativa ratio, and expected indoor and outdoor height and yield.
-- **Effects & terpenes**: reported physiological effects, flavor profiles, dominant terpenes and medicinal applications imported from StrainCompass. Individual terpenes are marked low, medium or high.
+- **Effects & terpenes**: the strain's effects, flavors, terpenes and what it may help with, picked on Add strain or Edit strain, or imported from StrainCompass. Effects from StrainCompass show a strength bar, and terpenes from StrainCompass show low, medium or high.
 - **Photos from your grows**: a consolidated gallery of all photos taken across every run of this strain.

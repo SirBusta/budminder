@@ -75,6 +75,22 @@ document.addEventListener("DOMContentLoaded", () => {
         markdownPreview.innerHTML = html;
     }
 
+    // --- Cannabinoids + effects/flavors/terpenes/medical uses ---
+    function collectProfile() {
+        const num = (id) => {
+            const v = document.getElementById(id).value.trim();
+            return v === "" ? null : parseFloat(v);
+        };
+        return {
+            cannabinoids: {
+                thc_min: num("editThcMin"), thc_max: num("editThcMax"),
+                cbd_min: num("editCbdMin"), cbd_max: num("editCbdMax"),
+                cbn_max: num("editCbnMax"), cbg_max: num("editCbgMax"),
+            },
+            attributes: window.strainAttrPick ? window.strainAttrPick.collect() : undefined,
+        };
+    }
+
     // --- Form submission (POST to create new strain) ---
     if (form) {
         form.addEventListener("submit", (e) => {
@@ -110,6 +126,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     yield_outdoor: document.getElementById("editYieldOutdoor").value,
                 },
             };
+
+            if (document.getElementById("strainProfileCard")) Object.assign(payload, collectProfile());
 
             fetch("/strains", {
                 method: "POST",

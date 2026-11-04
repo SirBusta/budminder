@@ -322,11 +322,12 @@ type AttrRow struct {
 	Dots  int
 }
 
-// StrainEffectRows are the strain's effects with their 0–100 intensity.
-func StrainEffectRows(s types.Strain) []AttrRow {
+// StrainEffectRows are the strain's effects with their 0–100 intensity,
+// named in the user's language (StrainAttrLabel).
+func StrainEffectRows(s types.Strain, translations map[string]string) []AttrRow {
 	out := []AttrRow{}
 	for _, a := range s.Effects {
-		r := AttrRow{Name: a.Name}
+		r := AttrRow{Name: StrainAttrLabel("effects", a.Name, translations)}
 		if a.Intensity != nil {
 			r.Pct = clampPercent(int(math.Round(*a.Intensity)))
 		}
@@ -336,15 +337,25 @@ func StrainEffectRows(s types.Strain) []AttrRow {
 }
 
 // StrainTerpeneRows are the strain's terpenes with their low/medium/high level.
-func StrainTerpeneRows(s types.Strain) []AttrRow {
+func StrainTerpeneRows(s types.Strain, translations map[string]string) []AttrRow {
 	out := []AttrRow{}
 	for _, a := range s.Terpenes {
-		r := AttrRow{Name: a.Name}
+		r := AttrRow{Name: StrainAttrLabel("terpenes", a.Name, translations)}
 		if a.Level != nil {
 			r.Level = strings.ToLower(*a.Level)
 			r.Dots = map[string]int{"low": 1, "medium": 2, "high": 3}[r.Level]
 		}
 		out = append(out, r)
+	}
+	return out
+}
+
+// StrainAttrNames are one group's names (flavors, medical_uses) in the
+// user's language.
+func StrainAttrNames(group string, attrs []types.StrainAttribute, translations map[string]string) []string {
+	out := make([]string, 0, len(attrs))
+	for _, a := range attrs {
+		out = append(out, StrainAttrLabel(group, a.Name, translations))
 	}
 	return out
 }

@@ -21,6 +21,10 @@
     const shown = f => !HIDDEN[f];
     const fmtDate = d => d ? new Date(d + "T12:00:00").toLocaleDateString(D.lang || undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
     const toast = (m, l) => window.uiMessages && uiMessages.showToast(m, l || "danger");
+    // Choice lists show A to Z in the user's language.
+    let collator;
+    try { collator = new Intl.Collator(D.lang || undefined, { sensitivity: "base" }); } catch (e) { collator = new Intl.Collator(); }
+    const az = (list, prefix) => list.slice().sort((a, b) => collator.compare(tr(prefix + a), tr(prefix + b)));
 
     // ---------- state ----------
     const R = D.report || null;
@@ -69,7 +73,7 @@
     function chips(kind, list, cls) {
         const on = S.tags[kind];
         const isOn = k => on.some(t => !t.custom && t.name === k);
-        return `<div class="sr-pick" data-kind="${kind}">${list.map(k => `<button type="button" data-tag="${k}" class="${isOn(k) ? "on " + cls : ""}" aria-pressed="${isOn(k)}">${esc(tr("sr_w_" + k))}</button>`).join("")}
+        return `<div class="sr-pick" data-kind="${kind}">${az(list, "sr_w_").map(k => `<button type="button" data-tag="${k}" class="${isOn(k) ? "on " + cls : ""}" aria-pressed="${isOn(k)}">${esc(tr("sr_w_" + k))}</button>`).join("")}
             ${on.filter(t => t.custom).map(t => `<button type="button" data-custom="${esc(t.name)}" class="on ${cls}" title="${esc(tr("sr_remove"))}">${esc(t.name)} <i class="fa-solid fa-xmark ms-1"></i></button>`).join("")}
             <input class="otherin" data-other="${kind}" placeholder="${esc(tr("sr_other"))}: ${esc(tr("sr_other_ph"))}" aria-label="${esc(tr("sr_other"))}"></div>`;
     }
@@ -122,7 +126,7 @@
         if (shown("method")) {
             const custom = S.method && !(D.vocab.method || []).includes(S.method) ? S.method : "";
             h += `<label class="f mt-3">${esc(tr("sr_how_smoked"))}</label><div class="sr-pick" data-method>
-                ${(D.vocab.method || []).map(k => `<button type="button" data-m="${k}" class="${S.method === k ? "on" : ""}" aria-pressed="${S.method === k}">${esc(tr("sr_m_" + k))}</button>`).join("")}
+                ${az(D.vocab.method || [], "sr_m_").map(k => `<button type="button" data-m="${k}" class="${S.method === k ? "on" : ""}" aria-pressed="${S.method === k}">${esc(tr("sr_m_" + k))}</button>`).join("")}
                 <input class="otherin" id="srMethodOther" value="${esc(custom)}" placeholder="${esc(tr("sr_other"))}" aria-label="${esc(tr("sr_other"))}"></div>`;
         }
         return h;

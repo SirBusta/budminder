@@ -30,12 +30,16 @@ used three parts.
 - Seed Vault pack prices: enter a **Pack price** and mark a pack as a **Freebie** when you add seeds, restock or edit a strain. Each pack shows on the strain's card with its price and the date it was added, and the list view adds a Pack price column and sort options. A line of totals above the strains on the Seed Vault tab shows the cost and value of the seeds you have left, so both go down as you use seeds. Freebies count toward value only. On each strain's page, the Seed Vault card lists the strain's packs and the cost and value of the seeds you have left.
 - Lineage: when StrainCompass is turned on, the parent strain list on Edit strain also shows StrainCompass names as you type, after your own strains and with the breeders that offer them. Picking one fills in the name only and imports nothing.
 - Strain names you type get a capital letter at the start of each word (*hazy donkey* becomes *Hazy Donkey*), with common abbreviations such as OG in capitals. This applies to lineage parents, **Enter manually** on the Strains page, and the Add strain and Edit strain pages. Words you typed with a capital letter stay as they are, and names you have already saved are not changed.
+- Add strain now has the **Cannabinoids and effects** card. On Add strain and Edit strain, you pick effects, flavors, terpenes and what the strain may help with from lists of common names, sorted A to Z in your language. Type any name that is not listed in the **Other** box.
 
 ### Changed
 
 - Sensor alert emails now explain how to change the alert's value if the reading is normal, like climate alert emails already do for their limits.
 - Help for Alerts: a note under the Beta note says the default Targets and limits are a starting point, and the examples section is now **Example scenarios**, with clearer wording.
 - Strains: **Enter manually** after a StrainCompass search with no results starts with the name you searched for, and **Find on StrainCompass** opens with the cursor in the search box.
+- Add strain and Edit strain: the THC, CBD, CBN and CBG boxes are smaller and share one line.
+- Strain page: on the **Effects & terpenes** card, names from the lists show in your language. The card says *from StrainCompass* only for strains imported from StrainCompass.
+- Smoke reports: the lists of choices on the report form are sorted A to Z in your language.
 
 ### Fixed
 
