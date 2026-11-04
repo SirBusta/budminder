@@ -120,7 +120,7 @@ func TestHomeData(t *testing.T) {
 	testutil.DrainAndClose(resp)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
-	// One seed batch over two years old, one recent, one out of stock.
+	// One strain with seeds over two years old, one recent, one out of stock.
 	breeder := testutil.SeedBreeder(t, db, "Seeds B")
 	old := testutil.SeedStrain(t, db, breeder, "Old")
 	e.exec(t, `UPDATE strain SET seed_count = 5, seeds_added_on = '2020-01-01' WHERE id = $1`, old)
