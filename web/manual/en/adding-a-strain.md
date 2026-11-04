@@ -5,7 +5,7 @@ You can add cultivars in two ways: search and import via StrainCompass, or enter
 1. Click **Find on StrainCompass** and enter the strain name (for example, *Blue Dream*). Enter at least 2 letters, then click **Search**.
 2. Locate the correct entry in the results. Breeder names appear beneath each cultivar to help differentiate identically named strains from multiple breeders. Type additional letters to narrow broad search results.
 3. Click **Add**, then designate the catalog destination under **Add it to**:
-   - **I have seeds** places the strain into the Seed Vault. Enter your seed count, type, date received and storage spot.
+   - **I have seeds** places the strain into the Seed Vault. Enter your seed count, type, date received and storage spot, and optionally the pack price and Freebie setting.
    - **I want seeds** adds the cultivar to your Wanted list.
    - **Just for reference** saves the profile under All strains for record-keeping.
 4. Click **Continue to review**.
@@ -37,6 +37,7 @@ Click **Edit** on any strain profile to update its information:
 - indoor and outdoor height and yield;
 - parental lineage, selected from your library or entered manually;
 - seed inventory: total count, seed type, acquisition date, storage location and Wanted status;
+- the newest pack's price and Freebie setting;
 - seed pack or cultivar artwork.
 
 Click **Save Changes** to apply your updates.

@@ -22,8 +22,10 @@ Displays an interactive pedigree tree showing the strain's parents along with an
 
 - {1} **Active inventory:** total seeds currently on hand.
 - {2} **Quantity adjustments:** click **−** when germinating a seed and **+** when restocking.
-- {3} **Batch details:** acquisition date, batch age and physical storage spot.
+- {3} **Seed age and location:** the **Seeds Added** date, the age of the seeds and the **Seed Location**.
 - {4} **Restock:** logs newly acquired packs. See [Seeds](/manual/strains-and-seed-vault#seeds).
+
+When a pack has a price, the card also shows each pack's price and date under **Packs**, and the **Cost** and **Value** of the seeds you have left. See [Pack prices](/manual/strains-and-seed-vault#pack-prices).
 
 When stock reaches zero, the panel provides shortcuts to **Add seeds** or **Add to Wanted** to place the cultivar on your wishlist. Saved seed pack artwork is also displayed here.
 
