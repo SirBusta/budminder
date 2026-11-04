@@ -91,9 +91,9 @@ Brief spikes are ignored. The first email is sent after 15 minutes out of range,
 
 ### Seed Vault
 
-Track the seeds you have on hand, how old they are and where you keep them, with a warning when a batch passes two years. Use one, restock, or start a grow straight from the list, and keep a wish list of strains you want.
+Track the seeds you have on hand, how old they are and where you keep them, with a warning when seeds pass two years old. Use one, restock, or start a grow straight from the list, and keep a wish list of strains you want.
 
-<img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/strains.webp" alt="The Seed Vault in list view, oldest seeds first, showing each strain's lineage, type, flowering time, seed count, seed age and grows">
+<img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/strains.webp" alt="The Seed Vault in list view, oldest seeds first. A bar at the top totals seeds, strains, cost and value. Each strain shows its lineage, type, flowering time, seed count, pack price, seed age and grows.">
 
 ### Strain pages
 
