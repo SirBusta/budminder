@@ -79,6 +79,16 @@ Every sensor in a tent on one timeline, from the last hour to the last week or a
 
 <img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/environment.webp" alt="The Environment page for a tent: current readings, then temperature, humidity and VPD charts for the last 24 hours with a marker line showing the readings at 3:25 AM">
 
+### Alerts (Beta)
+
+Get an email when a temperature, humidity or VPD reading reaches a Low or High limit, the lights turn on or off outside their schedule, any sensor reaches a value you set, or sensors go offline. Limits can differ for each growth stage and for lights on and lights off.
+
+Brief spikes are ignored. The first email is sent after 15 minutes out of range, then a reminder every 6 hours if the problem continues, and one all-clear after 30 minutes back in range. Every alert is also listed under Recent alerts in Settings > Alerts, even with email turned off. Other ways to receive alerts, such as ntfy, Pushover, Discord and Home Assistant, are planned for a future release.
+
+<sub>Alerts are still being tested. Do not rely on them as your only safety check. Feedback is appreciated: [budminder.app@gmail.com](mailto:budminder.app@gmail.com)</sub>
+
+<img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/alerts.webp" alt="The Settings &gt; Alerts page, showing the four kinds of alert (climate, lights, sensor alerts and sensors offline) and how often notifications are sent: after 15 minutes, every 6 hours, and an all-clear after 30 minutes in range.">
+
 ### Seed Vault
 
 Track the seeds you have on hand, how old they are and where you keep them, with a warning when a batch passes two years. Use one, restock, or start a grow straight from the list, and keep a wish list of strains you want.
@@ -128,7 +138,6 @@ A complete evaluation suite for home harvests and dispensary pickups. Rate appea
 
 ### And also
 
-- Email alerts (beta) for climate, sensors and grow lights. They're still being tested, so don't rely on them as your only safety check. Feedback is appreciated: [budminder.app@gmail.com](mailto:budminder.app@gmail.com)
 - A short guided tour for new users, with animated tips, which you can take again any time from Help
 - One-click strain import from public strain databases, with THC and CBD ranges, effects, terpenes and lineage
 - Hide the smoke report fields you never use, and choose how much each score counts
