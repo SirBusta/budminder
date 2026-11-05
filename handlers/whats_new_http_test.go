@@ -138,8 +138,33 @@ func TestWhatsNew_SkippedReleaseShowsWithTheRealFromVersion(t *testing.T) {
 	require.NotNil(t, got)
 	assert.Equal(t, "1.9.0", got.From)
 	assert.Equal(t, "2.3", got.To)
+	require.Len(t, got.Cards, 2)
+	assert.Equal(t, "2.2", got.Cards[0].Version, "newest first")
+	assert.Equal(t, "2.0", got.Cards[1].Version)
+}
+
+// 2.1 to 2.2: only the 2.2 card, with both features and their links.
+func TestWhatsNew_From21ShowsOnlyThe22Card(t *testing.T) {
+	t.Parallel()
+	_, c, _ := whatsNewServer(t, "2.2", "2.1", true)
+
+	got := readWhatsNew(t, c, "/")
+	require.NotNil(t, got)
+	assert.Equal(t, "2.1", got.From)
 	require.Len(t, got.Cards, 1)
-	assert.Equal(t, "2.0", got.Cards[0].Version)
+	card := got.Cards[0]
+	assert.Equal(t, "2.2", card.Version)
+	assert.Equal(t, "https://github.com/SirBusta/budminder/releases/tag/v2.2.0", card.URL)
+	require.Len(t, card.Features, 2)
+	assert.Equal(t, "Seed Vault pack prices", card.Features[0].Title)
+	assert.Equal(t, "/strains#vault", card.Features[0].Link)
+	assert.Len(t, card.Features[0].Points, 3)
+	assert.Contains(t, card.Features[0].After, "including freebies.")
+	assert.False(t, card.Features[0].Beta)
+	assert.Equal(t, "/strain/new", card.Features[1].Link)
+	assert.Empty(t, card.Features[1].Points)
+	assert.Empty(t, card.Other)
+	assert.Empty(t, card.Fixes)
 }
 
 func TestWhatsNew_SignedOutPageHasNoCard(t *testing.T) {

@@ -50,6 +50,13 @@ type whatsNewFeatureDef struct {
 // whatsNewReleases is newest first.
 var whatsNewReleases = []whatsNewRelease{
 	{
+		Version: "2.2",
+		Features: []whatsNewFeatureDef{
+			{Icon: "fa-tag", Link: "/strains#vault", Points: 3},
+			{Icon: "fa-flask", Link: "/strain/new"},
+		},
+	},
+	{
 		Version: "2.0",
 		Date:    "2026-11-02",
 		Features: []whatsNewFeatureDef{
