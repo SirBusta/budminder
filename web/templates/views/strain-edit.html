@@ -158,7 +158,7 @@
                         <small>{{ .lcl.fm_pack_help }}</small>
                         {{ with .strain.EarlierPacks }}<small id="editPackEarlier" data-packs="{{ json . }}" data-text="{{ $.lcl.fm_pack_earlier }}" data-free="{{ $.lcl.fm_freebie }}"></small>{{ end }}
                     </div>
-                    <label class="fm-sw form-switch" for="editPackFree">
+                    <label class="fm-sw form-switch boxh" for="editPackFree">
                         <span><b>{{ .lcl.fm_freebie }}</b><small>{{ .lcl.fm_freebie_desc }}</small></span>
                         <input type="checkbox" class="form-check-input" role="switch" id="editPackFree"{{ if .strain.PackFree }} checked{{ end }}>
                     </label>

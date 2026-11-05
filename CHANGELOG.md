@@ -25,6 +25,10 @@ used three parts.
 
 ## [Unreleased]
 
+### Changed
+
+- The **Freebie** switch on Add strain and Edit strain lines up with the **Pack price** box next to it. Switches have the same border as text boxes, and price boxes no longer have up and down arrows.
+
 ## [2.2] - 2026-11-04
 
 ### Added

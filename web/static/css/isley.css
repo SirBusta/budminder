@@ -4444,6 +4444,9 @@ body.bm-tour-open { overflow: hidden; }
 .fm-money { position: relative; }
 .fm-money > span { position: absolute; left: .75rem; top: 50%; transform: translateY(-50%); color: var(--sx-muted, #6b7280); pointer-events: none; }
 .fm-money input, .fm .fm-money .form-control { padding-left: 1.6rem; }
+/* No up/down arrows on a price: nobody steps a price by a cent. */
+.fm-money input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+.fm-money input[type=number]::-webkit-inner-spin-button, .fm-money input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .fm-sep { border: 0; border-top: 1px solid var(--sx-line, rgba(0,0,0,.1)); margin: 1.1rem 0; opacity: 1; }
 .fm .form-control, .fm .form-select, .fm-auth .form-control { border-radius: 9px; border-color: var(--color-input-border); font-size: .92rem; padding: .45rem .7rem; }
 .fm .isley-ac-input { background-color: var(--bs-body-bg); }
@@ -4459,11 +4462,16 @@ body.bm-tour-open { overflow: hidden; }
 .fm-pair .fm-unit { flex: 1; }
 
 /* switch row: label + note left, switch right */
-.fm-sw { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .6rem .75rem; border: 1px solid var(--sx-line); border-radius: 10px; cursor: pointer; margin: 0; }
+.fm-sw { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .6rem .75rem; border: 1px solid var(--color-input-border); border-radius: 9px; cursor: pointer; margin: 0; }
 .fm-sw b { display: block; font-size: .88rem; }
 .fm-sw small { color: var(--sx-muted); font-size: .76rem; }
 .fm-sw .form-check-input { width: 2.4em; height: 1.3em; margin: 0; float: none; flex: none; cursor: pointer; }
 .fm-sw:hover { border-color: #bbf7d0; }
+/* .fm-sw.boxh sits beside a text box (Freebie beside Pack price): as tall as the
+   box and level with it, the name and note on one line. */
+.fm-grid > .fm-sw.boxh { align-self: start; margin-top: calc(.84rem * 1.5 + .3rem); min-height: calc(.92rem * 1.5 + .9rem + 2px); padding-top: .25rem; padding-bottom: .25rem; }
+.fm-sw.boxh > span { display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+.fm-sw.boxh b { display: inline; }
 
 /* segmented choice (Photoperiod / Autoflower, Seed / Clone) */
 .fm-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: .4rem; }
@@ -4610,6 +4618,7 @@ body.bm-tour-open { overflow: hidden; }
 }
 @media (max-width: 767px) {
     .fm-grid, .fm-grid.three { grid-template-columns: minmax(0, 1fr); }
+    .fm-grid > .fm-sw.boxh { margin-top: 0; }
     .fm-top-r { width: 100%; }
     .fm-seg { grid-auto-flow: row; }
 }
