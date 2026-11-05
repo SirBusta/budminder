@@ -51,6 +51,7 @@ type whatsNewFeatureDef struct {
 var whatsNewReleases = []whatsNewRelease{
 	{
 		Version: "2.2",
+		Date:    "2026-11-04",
 		Features: []whatsNewFeatureDef{
 			{Icon: "fa-tag", Link: "/strains#vault", Points: 3},
 			{Icon: "fa-flask", Link: "/strain/new"},
