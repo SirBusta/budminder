@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>ESPN-Fantasy-Football-Waivers</Name>
+  <Repository>ghcr.io/sirbusta/espn-fantasy-football-waivers:latest</Repository>
+  <Registry>https://github.com/SirBusta/espn-fantasy-football-waivers/pkgs/container/espn-fantasy-football-waivers</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://forums.unraid.net/topic/201197-support-sirbusta-espn-fantasy-football-waivers-email/</Support>
+  <Project>https://github.com/SirBusta/espn-fantasy-football-waivers</Project>
+  <ReadMe>https://github.com/SirBusta/espn-fantasy-football-waivers#readme</ReadMe>
+  <Overview>Emails you your ESPN fantasy football league's waiver results: who claimed whom, what they dropped, and the FAAB bid. ESPN doesn't send these itself.
+
+Set your league ID and email (SMTP) settings below. Private leagues also need two cookies from espn.com, espn_s2 and SWID; each field below says where to find them, and the README has the full steps.
+
+It reads your league's waiver schedule from ESPN and checks 5 minutes after each waiver run (then once a minute until ESPN has processed it), so there's nothing to look up. When no claims went through you get a short "No waiver claims today" email, so you know it's working. Those stop by themselves when the season ends and start again after next season's draft. You can also include free-agent pickups, drops and trades.
+
+The first time it starts, it records your league's existing activity without emailing, so you only hear about new moves. If ESPN can't be reached for a while (for example, expired cookies), it emails you once.
+
+Unofficial tool; not affiliated with or endorsed by ESPN.</Overview>
+  <Category>Tools:Utilities</Category>
+  <WebUI/>
+  <TemplateURL>https://raw.githubusercontent.com/SirBusta/budminder/main/templates/espn-fantasy-football-waivers.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/SirBusta/espn-fantasy-football-waivers/main/assets/icon.png</Icon>
+  <ExtraSearchTerms>espn fantasy football waivers waiver results waiver wire faab email notification transactions league</ExtraSearchTerms>
+  <License>MIT</License>
+  <Changes>### 1.1.0&#xD;
+- Checks 5 minutes after each of your league's waiver runs automatically, then every minute until ESPN has processed it (Check times: auto, the new default).&#xD;
+- "No waiver claims today" emails stop when the season ends and resume after next season's draft.&#xD;
+- No false "can't reach your league" alerts in the off-season before the league is renewed.&#xD;
+### 1.0.0&#xD;
+- First release.</Changes>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="Data" Target="/data" Default="/mnt/user/appdata/espn-fantasy-football-waivers" Mode="rw" Description="Remembers which moves you've already been emailed about." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/espn-fantasy-football-waivers</Config>
+  <Config Name="League ID" Target="LEAGUE_ID" Default="" Mode="" Description="Open your league on fantasy.espn.com: it's the number after leagueId= in the address bar, e.g. 123456." Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="ESPN espn_s2 cookie" Target="ESPN_S2" Default="" Mode="" Description="Private leagues only (most are). Log in at espn.com in Chrome or Edge, press F12, open Application &gt; Cookies &gt; https://fantasy.espn.com, type espn_s2 in the Filter box and click the row. Copy the whole value from the panel below the list (the table cuts it off), with 'Show URL-decoded' unticked. Don't click Log out on espn.com in that browser afterward, or the cookie stops working." Type="Variable" Display="always" Required="false" Mask="true"/>
+  <Config Name="ESPN SWID cookie" Target="SWID" Default="" Mode="" Description="Private leagues only. Same place as espn_s2: filter for SWID and copy its value, including the curly braces, e.g. {1A2B3C4D-...}." Type="Variable" Display="always" Required="false" Mask="true"/>
+  <Config Name="Email to" Target="EMAIL_TO" Default="" Mode="" Description="Who gets the emails. Separate several addresses with commas, no spaces." Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="SMTP server" Target="SMTP_HOST" Default="smtp.gmail.com" Mode="" Description="Mail server to send through. Gmail: smtp.gmail.com (port 587, starttls). Outlook/Hotmail: smtp-mail.outlook.com (587, starttls). iCloud: smtp.mail.me.com (587, starttls). Yahoo: smtp.mail.yahoo.com (465, ssl)." Type="Variable" Display="always" Required="true" Mask="false">smtp.gmail.com</Config>
+  <Config Name="SMTP port" Target="SMTP_PORT" Default="587" Mode="" Description="587 for starttls, 465 for ssl." Type="Variable" Display="always" Required="true" Mask="false">587</Config>
+  <Config Name="SMTP security" Target="SMTP_SECURITY" Default="starttls|ssl|none" Mode="" Description="starttls (port 587), ssl (port 465) or none." Type="Variable" Display="always" Required="true" Mask="false">starttls</Config>
+  <Config Name="SMTP username" Target="SMTP_USER" Default="" Mode="" Description="Login for the account the emails are sent from, usually its full email address." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="SMTP password" Target="SMTP_PASSWORD" Default="" Mode="" Description="Most providers need an app password here, not your normal password. Gmail: turn on 2-Step Verification, then create one at myaccount.google.com/apppasswords and type it without spaces. iCloud and Yahoo have app passwords in their account security settings too." Type="Variable" Display="always" Required="false" Mask="true"/>
+  <Config Name="Email from" Target="EMAIL_FROM" Default="" Mode="" Description="Sender address. Leave blank to use the SMTP username." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="Check times" Target="CHECK_TIMES" Default="auto" Mode="" Description="auto (recommended): check 5 minutes after each of your league's waiver runs, using the schedule ESPN reports, then every minute until ESPN has processed the run. Or fixed 24-hour HH:MM times in your server's time zone, e.g. 09:15 or 09:15,13:00 (with Check days). Or interval to check every 15 minutes all week." Type="Variable" Display="always" Required="false" Mask="false">auto</Config>
+  <Config Name="Check days" Target="CHECK_DAYS" Default="" Mode="" Description="Only for fixed Check times: days to check, comma separated, no spaces, e.g. Wed,Thu,Fri,Sat,Sun. Blank means every day. Not needed with auto." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Notify about" Target="NOTIFY_TYPES" Default="WAIVER" Mode="" Description="Any of WAIVER (waiver claims), FA (free-agent pickups), TRADE (trades) and DROP (players dropped without a pickup), comma separated, no spaces, e.g. WAIVER,DROP or WAIVER,FA,TRADE,DROP. With Check times set to auto, pickups, drops and trades made between waiver runs come in the next waiver run's email; set Check times to interval to get them within 15 minutes." Type="Variable" Display="always" Required="false" Mask="false">WAIVER</Config>
+  <Config Name="Send test email on start" Target="SEND_TEST_EMAIL" Default="false|true" Mode="" Description="Set to true, apply, and check your inbox to confirm the email settings work. Set back to false afterward. To check the league ID and cookies, open the container's Logs: 'Connected to' followed by your league's name means they work." Type="Variable" Display="always" Required="false" Mask="false">false</Config>
+  <Config Name="Email when nothing is new" Target="NOTIFY_WHEN_EMPTY" Default="true|false" Mode="" Description="Send a short 'No waiver claims today' email after a waiver run with no claims, so you know it's working. Paused automatically between seasons. Not sent with Check times set to interval." Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
+  <Config Name="Check every (minutes)" Target="POLL_MINUTES" Default="15" Mode="" Description="How often to check with Check times set to interval (or in a league without waivers)." Type="Variable" Display="advanced" Required="false" Mask="false">15</Config>
+  <Config Name="Season" Target="SEASON" Default="" Mode="" Description="Blank follows your league's latest season automatically, including before it's renewed for the new year." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Minutes after waiver run" Target="AUTO_DELAY_MINUTES" Default="5" Mode="" Description="With Check times set to auto: how long after each scheduled waiver run to check. ESPN usually starts within a couple of minutes; if it hasn't processed the run yet, the app checks once a minute until it has." Type="Variable" Display="advanced" Required="false" Mask="false">5</Config>
+  <Config Name="Email existing activity on first start" Target="SEND_ON_FIRST_RUN" Default="false|true" Mode="" Description="true emails the league's recent activity the first time it starts, instead of only new moves." Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="Retries" Target="RETRIES" Default="3" Mode="" Description="If a scheduled check can't reach ESPN, how many times to try again." Type="Variable" Display="advanced" Required="false" Mask="false">3</Config>
+  <Config Name="Minutes between retries" Target="RETRY_MINUTES" Default="15" Mode="" Description="Wait between retries." Type="Variable" Display="advanced" Required="false" Mask="false">15</Config>
+  <Config Name="Alert after failures" Target="ALERT_AFTER_FAILURES" Default="" Mode="" Description="Failed checks in a row before the one-time 'can't reach your league' email. Blank: after a fixed-time check's retries, or 8 checks (2 hours) otherwise." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID that owns the Data folder. 99 (nobody) is the Unraid default." Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID that owns the Data folder. 100 (users) is the Unraid default." Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+</Container>
