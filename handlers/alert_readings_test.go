@@ -200,10 +200,29 @@ func TestAlertChart(t *testing.T) {
 	assert.Equal(t, ms("2026-11-05T04:57:00Z"), ch["end"])
 	assert.Equal(t, ms("2026-11-05T01:54:00Z"), ch["from"], "an hour before the 15 minutes that started it")
 	assert.Equal(t, ms("2026-11-05T05:57:00Z"), ch["to"], "an hour after it ended")
-	assert.Len(t, ch["limits"], 2)
+	lims := ch["limits"].([]any)
+	require.Len(t, lims, 2)
+	assert.Equal(t, "", lims[0].(map[string]any)["why"], "the value before an edit gets no reason")
+	assert.Equal(t, "edit", lims[1].(map[string]any)["why"])
 	others := ch["others"].([]any)
 	require.Len(t, others, 1, "the next temperature alert, not the humidity one")
 	assert.Equal(t, ms("2026-11-05T05:16:00Z"), others[0].(map[string]any)["start"])
+
+	// A limit changed by a new stage, then by lights off: each named beside its line.
+	staged := `[{"v":1.2,"at":"2026-11-05T05:00:00Z","lights":"on","stage":"veg"},` +
+		`{"v":1.4,"at":"2026-11-05T05:30:00Z","lights":"on","stage":"flower","phase":"stretch"},` +
+		`{"v":1.3,"at":"2026-11-05T06:00:00Z","lights":"off","stage":"flower","phase":"stretch"}]`
+	var vpd int
+	require.NoError(t, db.QueryRow(ins, "stage", sensor, "vpd", "2026-11-05 05:00:00", "2026-11-05 06:30:00", staged).Scan(&vpd))
+	code, ch = r.chart(t, vpd)
+	require.Equal(t, http.StatusOK, code)
+	lims = ch["limits"].([]any)
+	require.Len(t, lims, 3)
+	got := func(i int, k string) any { return lims[i].(map[string]any)[k] }
+	assert.Equal(t, []any{"stage", "Veg"}, []any{got(0, "why"), got(0, "stage")})
+	assert.Equal(t, []any{"stage", "Stretch"}, []any{got(1, "why"), got(1, "stage")})
+	assert.Equal(t, "lights_off", got(2, "why"))
+	assert.Nil(t, got(2, "stage"))
 
 	code, _ = r.chart(t, clock)
 	assert.Equal(t, http.StatusNotFound, code, "clock notices have no chart")

@@ -28,7 +28,7 @@ used three parts.
 ### Added
 
 - **Recent alerts** in **Settings > Alerts** now shows the reading when each alert started, the highest or lowest reading while it was active, and the limit. If the limit changed during the alert, for example when the lights turned off, each limit is listed. **Zone** and **Type** filters appear when the list has more than one zone or type.
-- Click an alert in **Recent alerts** to open the **Sensors** page at the time of the alert. On the sensor's chart, shading marks when the alert was active, labels say when and why it started and ended, and a dashed line shows the limit.
+- Click an alert in **Recent alerts** to open the **Sensors** page at the time of the alert. On the sensor's chart, shading marks when the alert was active, labels say when and why it started and ended, and a dashed line shows the limit. If the limit changed during the alert, each value has a label that says why, for example **High limit 72 °F with lights off**.
 
 ### Changed
 

@@ -186,14 +186,7 @@ func (w Words) limitsText(e Event) string {
 	}
 	why := ""
 	for i := 1; i < len(list); i++ {
-		a, b := list[i-1], list[i]
-		r := "edit"
-		switch {
-		case a.Stage != b.Stage || a.Phase != b.Phase:
-			r = "stage"
-		case a.Lights != b.Lights:
-			r = "lights"
-		}
+		r := changeReason(list[i-1], list[i])
 		if why != "" && why != r {
 			why = "mixed"
 			break
@@ -220,11 +213,7 @@ func (w Words) limitsText(e Event) string {
 		return strings.Join(parts, ", ")
 	case why == "stage":
 		for _, l := range list {
-			name := w.T(l.Stage + "_label")
-			if l.Phase != "" {
-				name = w.T("cl_" + l.Phase)
-			}
-			add(w.fill("al_row_in_stage", map[string]string{"limit": amt(l.V), "stage": name}))
+			add(w.fill("al_row_in_stage", map[string]string{"limit": amt(l.V), "stage": w.StageName(l)}))
 		}
 		return strings.Join(parts, ", ")
 	case why == "edit" && len(list) == 2:
@@ -235,4 +224,59 @@ func (w Words) limitsText(e Event) string {
 		lo, hi = math.Min(lo, l.V), math.Max(hi, l.V)
 	}
 	return w.fill("al_row_changed_range", map[string]string{"low": amt(lo), "high": amt(hi)})
+}
+
+// changeReason says what changed the limit from a to b: "stage" (a new stage
+// or Flower phase, which wins over lights), "lights" or "edit".
+func changeReason(a, b LimitUsed) string {
+	switch {
+	case a.Stage != b.Stage || a.Phase != b.Phase:
+		return "stage"
+	case a.Lights != b.Lights:
+		return "lights"
+	}
+	return "edit"
+}
+
+// StageName is the translated stage, or Flower phase, a limit was used in.
+func (w Words) StageName(l LimitUsed) string {
+	if l.Phase != "" {
+		return w.T("cl_" + l.Phase)
+	}
+	if l.Stage == "" {
+		return ""
+	}
+	return w.T(l.Stage + "_label")
+}
+
+// LimitReasons gives each limit in the list the reason the Sensors page names
+// beside it: "lights_on" or "lights_off", "stage" (see StageName), "edit"
+// (changed to this value) or "" (nothing to say). The first limit takes the
+// reason of the change that ended it, except an edit (it is the value before
+// the edit); the others take the reason of the change that started them. A
+// lights change to a limit with no lights recorded (the schedule was removed)
+// gets "".
+func LimitReasons(list []LimitUsed) []string {
+	out := make([]string, len(list))
+	if len(list) < 2 {
+		return out
+	}
+	for i, l := range list {
+		var r string
+		if i == 0 {
+			if r = changeReason(l, list[1]); r == "edit" {
+				r = ""
+			}
+		} else {
+			r = changeReason(list[i-1], l)
+		}
+		if r == "lights" {
+			r = ""
+			if l.Lights != "" {
+				r = "lights_" + l.Lights
+			}
+		}
+		out[i] = r
+	}
+	return out
 }

@@ -208,7 +208,8 @@
         light: { start: ["en_al_started", "en_al_start_light"], end: ["en_al_ended", "en_al_end_light"] },
     };
     const isDark = () => document.documentElement.getAttribute("data-bs-theme") === "dark";
-    const alRed = () => isDark() ? "#fca5a5" : "#b91c1c";
+    // Labels are in the page's text color; the shading and dashed limit line stay red.
+    const alInk = () => cssVar("--sx-ink", "#172322");
     const FONT = "system-ui, -apple-system, Segoe UI, sans-serif";
     // Whether a chart (one sensor, or the device lane) shows the alert.
     function alertOn(o) {
@@ -226,29 +227,68 @@
         return v;
     }
     const limitFmt = (v, dp) => Number(v).toLocaleString(locale, { maximumFractionDigits: dp });
-    // A label on a soft box at the top or foot of the chart; align "right" ends it at x.
-    function alertLabel(ctx, lines, x, area, side, align) {
+    const overlaps = (a, b) => a.left < b.left + b.w && a.left + a.w > b.left && a.top < b.top + b.h && a.top + a.h > b.top;
+    // Where a label on a soft box goes, at the top or foot of the chart (align
+    // "right" ends it at x), clear of the boxes in avoid: its usual spot, then
+    // the other sides in order, then the nearest spot beside whatever is in the way.
+    function placeLabel(ctx, lines, x, area, sides, align, avoid) {
         ctx.font = "700 10px " + FONT;
         const w1 = ctx.measureText(lines[0]).width;
         ctx.font = "500 10px " + FONT;
         const w2 = lines[1] ? ctx.measureText(lines[1]).width : 0;
         const w = Math.max(w1, w2) + 8, h = lines[1] ? 27 : 15;
-        let left = align === "right" ? x - w : x;
-        left = Math.max(area.left + 2, Math.min(area.right - w - 2, left));
-        const top = side === "bottom" ? area.bottom - h - 3 : area.top + 3;
+        const clamp = l => Math.max(area.left + 2, Math.min(area.right - w - 2, l));
+        const want = clamp(align === "right" ? x - w : x);
+        const topOf = side => side === "bottom" ? area.bottom - h - 3 : area.top + 3;
+        const lefts = [want, ...avoid.flatMap(o => [o.left + o.w + 4, o.left - 4 - w])].map(clamp)
+            .filter((l, i, all) => all.indexOf(l) === i).sort((a, b) => Math.abs(a - want) - Math.abs(b - want));
+        for (const left of lefts) for (const side of sides) {
+            const b = { left, w, top: topOf(side), h, lines };
+            if (!avoid.some(o => overlaps(b, o))) return b;
+        }
+        return { left: want, w, top: topOf(sides[0]), h, lines };
+    }
+    function drawLabel(ctx, b) {
         ctx.save();
-        ctx.globalAlpha = .88; ctx.fillStyle = cssVar("--sx-card", "#fff");
-        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(left, top, w, h, 3) : ctx.rect(left, top, w, h); ctx.fill();
+        ctx.globalAlpha *= .88; ctx.fillStyle = cssVar("--sx-card", "#fff");
+        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(b.left, b.top, b.w, b.h, 3) : ctx.rect(b.left, b.top, b.w, b.h); ctx.fill();
         ctx.restore();
-        ctx.fillStyle = alRed(); ctx.textBaseline = "top";
-        ctx.font = "700 10px " + FONT; ctx.fillText(lines[0], left + 4, top + 2);
-        if (lines[1]) { ctx.font = "500 10px " + FONT; ctx.fillText(lines[1], left + 4, top + 14); }
-        return { left, w, top, h };
+        ctx.fillStyle = alInk(); ctx.textBaseline = "top";
+        ctx.font = "700 10px " + FONT; ctx.fillText(b.lines[0], b.left + 4, b.top + 2);
+        if (b.lines[1]) { ctx.font = "500 10px " + FONT; ctx.fillText(b.lines[1], b.left + 4, b.top + 14); }
+        return b;
+    }
+    // The green line and its reading boxes, where marker.afterDraw puts them.
+    function pillBoxes(chart) {
+        const o = chart.$sx, area = chart.chartArea, ctx = chart.ctx;
+        if (markX == null) return [];
+        const mx = chart.scales.x.getPixelForValue(markX);
+        if (mx < area.left || mx > area.right) return [];
+        const out = [{ left: mx - 2, w: 4, top: area.top, h: area.bottom - area.top }];
+        const p = markPill(chart);
+        if (p) out.push(tagBox(ctx, p.text, mx, p.y, area));
+        if (o && o.devices) o.devices.forEach((d, i) => {
+            const v = valueAt(data[d.id], markX);
+            if (v != null) out.push(tagBox(ctx, v > 0 ? Math.round(v) + "%" : t("en_off"), mx, chart.scales.y.getPixelForValue(o.devices.length - 1 - i + 0.4), area));
+        });
+        return out;
+    }
+    // The label beside one stretch of limit line. With more than one stretch in
+    // view, it says why that value applied (handlers/alert_chart.go).
+    function limitText(a, lim, inView, amount) {
+        const side = a.side === "low" ? "low" : "high";
+        if (a.rule) return t("en_al_limit_rule", { limit: amount });
+        if (inView > 1) {
+            if (lim.why === "lights_on" || lim.why === "lights_off") return t(`en_al_limit_${side}_${lim.why.slice(7)}`, { limit: amount });
+            if (lim.why === "stage" && lim.stage) return t(`en_al_limit_${side}_in`, { limit: amount, stage: lim.stage });
+            if (lim.why === "edit") return t(`en_al_limit_${side}_changed`, { limit: amount });
+        }
+        return t(`en_al_limit_${side}`, { limit: amount });
     }
     // Each limit in use while the chart's time runs: [from, to, value in the chart's unit].
     function limitSegs(chart) {
         const a = alertView, s = chart.$sx.series, x = chart.scales.x;
-        return a.limits.map((lim, i) => [Math.max(x.min, lim.at), a.limits[i + 1] ? a.limits[i + 1].at : x.max, alertLimit(s, lim.v)])
+        return a.limits.map((lim, i) => [Math.max(x.min, lim.at), a.limits[i + 1] ? a.limits[i + 1].at : x.max, alertLimit(s, lim.v), lim])
             .filter(sg => sg[1] > sg[0] && sg[0] < x.max);
     }
     const alertMark = {
@@ -287,30 +327,32 @@
             const area = chart.chartArea, x = chart.scales.x, ctx = chart.ctx, now = Date.now();
             // High alerts have their readings near the top, so their labels go at the foot.
             const side = a.kind === "limit" && a.side === "high" ? "bottom" : "top", away = side === "bottom" ? "top" : "bottom";
-            const boxes = [];
+            // Labels are placed clear of the green line and its reading boxes,
+            // then of each label already drawn (they re-place on every draw, so
+            // they move out of the way while the line is dragged).
+            const boxes = pillBoxes(chart);
             ctx.save();
             a.others.forEach(ev => {
                 const l = x.getPixelForValue(ev.start), rt = x.getPixelForValue(ev.end ?? now);
                 if (rt <= area.left || l >= area.right) return;
-                ctx.globalAlpha = .75;
+                const lines = [t(ev.start < a.start ? "en_al_earlier" : "en_al_later")];
                 // At its start, or at its end when it started before the chart (the limit's label is at the left).
-                if (l > area.left + 4) boxes.push(alertLabel(ctx, [t("en_al_other")], l + 4, area, away, "left"));
-                else boxes.push(alertLabel(ctx, [t("en_al_other")], Math.min(area.right, rt) - 4, area, away, "right"));
-                ctx.globalAlpha = 1;
+                const b = l > area.left + 4 ? placeLabel(ctx, lines, l + 4, area, [away, side], "left", boxes)
+                    : placeLabel(ctx, lines, Math.min(area.right, rt) - 4, area, [away, side], "right", boxes);
+                ctx.globalAlpha = .75; boxes.push(drawLabel(ctx, b)); ctx.globalAlpha = 1;
             });
             // Sensors offline shades every chart; its labels go on the first one only.
             if (a.kind !== "offline" || o.first) {
                 const TX = AL_TEXT[a.kind] || AL_TEXT.limit, l = x.getPixelForValue(a.start), rt = x.getPixelForValue(a.end ?? now);
                 if (l >= area.left - 1 && l < area.right) {
-                    const st = alertLabel(ctx, [t(TX.start[0]), t(TX.start[1])], l + 5, area, side, "left");
-                    boxes.push(st);
+                    boxes.push(drawLabel(ctx, placeLabel(ctx, [t(TX.start[0]), t(TX.start[1])], l + 5, area, [side, away], "left", boxes)));
                     if (a.end != null && rt < area.right) {
                         const lines = [t(TX.end[0]), t(TX.end[1])];
                         ctx.font = "700 10px " + FONT;
                         const w = Math.max(ctx.measureText(lines[0]).width, ctx.measureText(lines[1]).width) + 10;
                         // After the end when there is room, otherwise just inside it.
-                        const out = rt + 5 + w <= area.right - 2, left = out ? rt + 5 : rt - 5 - w;
-                        boxes.push(alertLabel(ctx, lines, out ? rt + 5 : rt - 5, area, left < st.left + st.w + 6 ? away : side, out ? "left" : "right"));
+                        const out = rt + 5 + w <= area.right - 2;
+                        boxes.push(drawLabel(ctx, placeLabel(ctx, lines, out ? rt + 5 : rt - 5, area, [side, away], out ? "left" : "right", boxes)));
                     }
                 }
             }
@@ -318,15 +360,12 @@
             // (above a high limit, below a low one), else across the line, else
             // after the label in the way.
             if (o.series && a.limits.length) {
-                // The marker's reading is drawn later, over these: keep clear of it too.
-                const p = markPill(chart), mx = markX == null ? 0 : x.getPixelForValue(markX);
-                if (p && mx >= area.left && mx <= area.right) boxes.push(tagBox(ctx, p.text, mx, p.y, area));
                 const s = o.series, y = chart.scales.y, h = 12;
-                const key = a.rule ? "en_al_limit_rule" : a.side === "low" ? "en_al_limit_low" : "en_al_limit_high";
                 const hits = (cx, cy, w) => boxes.some(b => cx < b.left + b.w && cx + w > b.left && cy < b.top + b.h && cy + h > b.top);
-                ctx.font = "600 10px " + FONT; ctx.fillStyle = alRed(); ctx.textBaseline = "top";
-                limitSegs(chart).forEach(([f, to, v]) => {
-                    const py = y.getPixelForValue(v), text = t(key, { limit: `${limitFmt(v, s.dp)} ${s.unit}` });
+                ctx.font = "600 10px " + FONT; ctx.fillStyle = alInk(); ctx.textBaseline = "top";
+                const segs = limitSegs(chart);
+                segs.forEach(([f, to, v, lim]) => {
+                    const py = y.getPixelForValue(v), text = limitText(a, lim, segs.length, `${limitFmt(v, s.dp)} ${s.unit}`);
                     const w = ctx.measureText(text).width, fx = x.getPixelForValue(f) + 4, end = x.getPixelForValue(to);
                     const near = a.side === "low" ? py + 3 : py - 3 - h, across = a.side === "low" ? py - 3 - h : py + 3;
                     const tries = [[fx, near], [fx, across], ...boxes.map(b => [b.left + b.w + 4, near]), ...boxes.map(b => [b.left + b.w + 4, across])];

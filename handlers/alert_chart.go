@@ -22,9 +22,14 @@ import (
 // alert: from this long before the hold that started it to this long after it ended.
 const alertChartAround = time.Hour
 
+// alertChartLimit is one limit in use. Why is what the chart names beside it
+// when more than one limit is in view (alerts.LimitReasons); Stage is the
+// translated stage or Flower phase for Why "stage".
 type alertChartLimit struct {
-	V  float64 `json:"v"`
-	At int64   `json:"at"`
+	V     float64 `json:"v"`
+	At    int64   `json:"at"`
+	Why   string  `json:"why"`
+	Stage string  `json:"stage,omitempty"`
 }
 
 type alertChartSpan struct {
@@ -58,7 +63,7 @@ func chartSpan(ev alerts.Event) alertChartSpan {
 }
 
 // buildAlertChart reads one alert and what goes with it.
-func buildAlertChart(db *sql.DB, id int, now time.Time) (*alertChart, error) {
+func buildAlertChart(db *sql.DB, id int, now time.Time, w alerts.Words) (*alertChart, error) {
 	rows, err := db.Query("SELECT "+alertEventColumns+" FROM alert_event WHERE id = $1", id)
 	if err != nil {
 		return nil, err
@@ -93,8 +98,20 @@ func buildAlertChart(db *sql.DB, id int, now time.Time) (*alertChart, error) {
 		ch.Sensors = append(ch.Sensors, *ev.SensorID)
 	}
 	if alerts.HasReadings(ev.Kind) {
-		for _, l := range ev.Limits {
-			ch.Limits = append(ch.Limits, alertChartLimit{V: l.V, At: chartMs(l.At)})
+		// A sensor alert's limit changes only by an edit, and the chart calls it "Your limit" throughout.
+		var why []string
+		if ev.Kind != alerts.KindSensor {
+			why = alerts.LimitReasons(ev.Limits)
+		}
+		for i, l := range ev.Limits {
+			lim := alertChartLimit{V: l.V, At: chartMs(l.At)}
+			if why != nil {
+				lim.Why = why[i]
+			}
+			if lim.Why == "stage" {
+				lim.Stage = w.StageName(l)
+			}
+			ch.Limits = append(ch.Limits, lim)
 		}
 		if len(ch.Limits) == 0 && ev.Limit != nil {
 			ch.Limits = append(ch.Limits, alertChartLimit{V: *ev.Limit, At: chartMs(ev.Started)})
@@ -130,7 +147,7 @@ func AlertChartHandler(c *gin.Context) {
 		apiBadRequest(c, "api_invalid_request_payload")
 		return
 	}
-	ch, err := buildAlertChart(DBFromContext(c), id, time.Now())
+	ch, err := buildAlertChart(DBFromContext(c), id, time.Now(), alertWordsFor(c))
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		apiNotFound(c, "api_alert_not_found")

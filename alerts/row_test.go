@@ -116,6 +116,47 @@ func TestLimitsList(t *testing.T) {
 	}
 }
 
+func TestLimitReasons(t *testing.T) {
+	t.Parallel()
+	l := func(v float64, lights, stage, phase string) LimitUsed {
+		return LimitUsed{V: v, Lights: lights, Stage: stage, Phase: phase}
+	}
+	cases := []struct {
+		name string
+		list []LimitUsed
+		want []string
+	}{
+		{"none", nil, []string{}},
+		{"one", []LimitUsed{l(30, "on", "veg", "")}, []string{""}},
+		{"lights off", []LimitUsed{l(30, "on", "veg", ""), l(28, "off", "veg", "")}, []string{"lights_on", "lights_off"}},
+		{"edit", []LimitUsed{l(30, "on", "veg", ""), l(32, "on", "veg", "")}, []string{"", "edit"}},
+		{"stage wins over lights", []LimitUsed{l(30, "on", "veg", ""), l(29, "off", "flower", "stretch")}, []string{"stage", "stage"}},
+		{"phase", []LimitUsed{l(30, "", "flower", "stretch"), l(29, "", "flower", "bloom")}, []string{"stage", "stage"}},
+		{"schedule removed", []LimitUsed{l(30, "on", "veg", ""), l(28, "", "veg", "")}, []string{"lights_on", ""}},
+		{"edit then lights", []LimitUsed{l(30, "on", "veg", ""), l(32, "on", "veg", ""), l(29, "off", "veg", "")}, []string{"", "edit", "lights_off"}},
+	}
+	for _, c := range cases {
+		got := LimitReasons(c.list)
+		if len(got) != len(c.want) {
+			t.Errorf("%s: %v, want %v", c.name, got, c.want)
+			continue
+		}
+		for i := range got {
+			if got[i] != c.want[i] {
+				t.Errorf("%s: %v, want %v", c.name, got, c.want)
+				break
+			}
+		}
+	}
+	w := rowWords("imperial")
+	if got := w.StageName(l(1, "", "flower", "stretch")); got != "Stretch" {
+		t.Errorf("phase name: %q", got)
+	}
+	if got := w.StageName(l(1, "", "veg", "")); got != "Veg" {
+		t.Errorf("stage name: %q", got)
+	}
+}
+
 func TestPeak(t *testing.T) {
 	t.Parallel()
 	at := time.Date(2026, 11, 4, 12, 0, 0, 0, time.UTC)
