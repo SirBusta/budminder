@@ -406,6 +406,7 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.POST("/settings/alerts/email/test", handlers.TestAlertEmailHandler)
 	r.POST("/settings/alerts/events/:id/clear", handlers.ClearAlertHandler)
 	r.POST("/settings/alerts/events/:id/restore", handlers.RestoreAlertHandler)
+	r.GET("/settings/alerts/events/:id/chart", handlers.AlertChartHandler)
 	r.POST("/settings/alerts/clear-ended", handlers.ClearEndedAlertsHandler)
 	r.POST("/settings/alerts/rules", handlers.AddAlertRuleHandler)
 	r.PUT("/settings/alerts/rules/:id", handlers.UpdateAlertRuleHandler)

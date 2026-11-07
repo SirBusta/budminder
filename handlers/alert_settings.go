@@ -41,7 +41,11 @@ type alertRow struct {
 	ID          int    `json:"id"`
 	Severity    string `json:"severity"`
 	Title       string `json:"title"`
+	Value       string `json:"value,omitempty"` // the reading when it started (limit and sensor alerts)
 	Line        string `json:"line"`
+	Zone        string `json:"zone"`  // for the Zone filter
+	Type        string `json:"type"`  // for the Type filter: a measure, "rule", "light" or "offline"
+	Chart       bool   `json:"chart"` // opens the Sensors page at this alert
 	Error       string `json:"error"`
 	When        string `json:"when"`
 	Active      bool   `json:"active"`
@@ -91,14 +95,19 @@ func alertRows(c *gin.Context, cleared bool) []alertRow {
 	w := alertWordsFor(c)
 	loc := requestLocation(c)
 	for _, ev := range events {
-		r := alertRow{ID: ev.ID, Severity: alerts.Severity(ev.Kind), Title: w.Title(ev, false), Active: ev.Resolved == nil, DeliveryKey: ev.Delivery}
-		if r.Active {
+		r := alertRow{ID: ev.ID, Severity: alerts.Severity(ev.Kind), Title: w.Title(ev, false), Active: ev.Resolved == nil, DeliveryKey: ev.Delivery,
+			Zone: ev.Zone, Type: alertType(ev), Chart: ev.Kind != alerts.KindClock}
+		switch {
+		case alerts.HasReadings(ev.Kind):
+			r.Value = w.RowValue(ev)
+			r.Line = w.RowLine(ev, r.Active)
+		case r.Active:
 			r.Line = w.Line(ev, false)
+		}
+		r.When = alertWhen(ev, loc)
+		r.State = T(c, "al_state_ended")
+		if r.Active {
 			r.State = T(c, "al_state_active")
-			r.When = ev.Started.In(loc).Format("Jan 2, 3:04 PM")
-		} else {
-			r.State = T(c, "al_state_ended")
-			r.When = ev.Started.In(loc).Format("Jan 2, 3:04 PM") + " – " + ev.Resolved.In(loc).Format("3:04 PM")
 		}
 		if ev.Delivery != "" {
 			r.Delivery = T(c, "al_delivery_"+ev.Delivery)
@@ -109,6 +118,34 @@ func alertRows(c *gin.Context, cleared bool) []alertRow {
 		out = append(out, r)
 	}
 	return out
+}
+
+// alertType is what the Type filter of Recent alerts groups an alert under.
+func alertType(ev alerts.Event) string {
+	switch ev.Kind {
+	case alerts.KindStage:
+		return ev.Measure
+	case alerts.KindSensor:
+		return "rule"
+	case alerts.KindLight, alerts.KindClock:
+		return "light"
+	}
+	return ev.Kind
+}
+
+// alertWhen is when an alert started, and ended: the end's date shows only
+// when it's another day.
+func alertWhen(ev alerts.Event, loc *time.Location) string {
+	start := ev.Started.In(loc)
+	out := start.Format("Jan 2, 3:04 PM")
+	if ev.Resolved == nil {
+		return out
+	}
+	end := ev.Resolved.In(loc)
+	if end.YearDay() == start.YearDay() && end.Year() == start.Year() {
+		return out + " – " + end.Format("3:04 PM")
+	}
+	return out + " – " + end.Format("Jan 2, 3:04 PM")
 }
 
 // setAlertCleared moves one ended alert to the Cleared tab or back.
@@ -132,11 +169,36 @@ func ClearAlertHandler(c *gin.Context) { setAlertCleared(c, true) }
 // RestoreAlertHandler: POST /settings/alerts/events/:id/restore.
 func RestoreAlertHandler(c *gin.Context) { setAlertCleared(c, false) }
 
-// ClearEndedAlertsHandler: POST /settings/alerts/clear-ended.
+// ClearEndedAlertsHandler: POST /settings/alerts/clear-ended. With ids (the
+// alerts a Zone or Type filter shows), only those; without, every ended alert.
 func ClearEndedAlertsHandler(c *gin.Context) {
-	if _, err := DBFromContext(c).Exec(`UPDATE alert_event SET cleared = 1 WHERE resolved_at IS NOT NULL`); err != nil {
-		apiInternalError(c, "api_database_error")
+	var body struct {
+		IDs *[]int `json:"ids"`
+	}
+	if c.Request.ContentLength != 0 {
+		if err := c.ShouldBindJSON(&body); err != nil {
+			apiBadRequest(c, "api_invalid_request_payload")
+			return
+		}
+	}
+	db := DBFromContext(c)
+	if body.IDs == nil {
+		if _, err := db.Exec(`UPDATE alert_event SET cleared = 1 WHERE resolved_at IS NOT NULL`); err != nil {
+			apiInternalError(c, "api_database_error")
+			return
+		}
+		apiOK(c, "api_settings_saved")
 		return
+	}
+	if len(*body.IDs) > recentAlertsShown {
+		apiBadRequest(c, "api_invalid_request_payload")
+		return
+	}
+	for _, id := range *body.IDs {
+		if _, err := db.Exec(`UPDATE alert_event SET cleared = 1 WHERE id = $1 AND resolved_at IS NOT NULL`, id); err != nil {
+			apiInternalError(c, "api_database_error")
+			return
+		}
 	}
 	apiOK(c, "api_settings_saved")
 }

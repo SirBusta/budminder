@@ -3142,6 +3142,17 @@ th, td {
 .al-ev-del-off { background: #fffbeb; color: #92400e; }
 [data-bs-theme="dark"] .al-ev-del-failed { background: rgba(220, 38, 38, .15); color: #fca5a5; }
 [data-bs-theme="dark"] .al-ev-del-off { background: rgba(217, 119, 6, .14); color: #fcd34d; }
+/* Recent alerts rows open the Sensors page at that alert (sensors-page.js); the reading when it started is red. */
+.al-ev li.al-ev-go { cursor: pointer; }
+.al-ev li.al-ev-go:hover, .al-ev li.al-ev-go:focus-visible { background: var(--sx-soft); outline: none; }
+.al-ev-main b .al-ev-val { display: inline; font-size: inherit; color: #dc2626; font-weight: 800; }
+[data-bs-theme="dark"] .al-ev-main b .al-ev-val { color: #f87171; }
+.al-ev-chart { width: 26px; height: 26px; border-radius: 6px; display: inline-grid; place-items: center; color: var(--sx-muted); }
+.al-ev li.al-ev-go:hover .al-ev-chart { background: var(--sx-seg); color: var(--sx-ink); }
+.ax-ev-bar .ax-ev-l { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .8rem; }
+.ax-evf { display: inline-flex; align-items: center; gap: .4rem; font-size: .82rem; font-weight: 600; color: var(--sx-muted); margin: 0; }
+.ax-evf select { width: auto; min-width: 9rem; }
+.ax-evf[hidden] { display: none; }
 .sm-ic-b { min-width: 0; }
 .sm-ic h3 { font-size: .98rem; font-weight: 800; margin: 0; }
 .sm-ic .meta { font-size: .8rem; color: var(--sx-muted); }

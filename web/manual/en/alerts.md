@@ -64,7 +64,11 @@ Use the switch to turn a Sensor alert off without deleting it. Editing a Sensor 
 
 Lists the last 50 alerts, active ones first, with how each was delivered: **Sending**, **Emailed**, **Email failed** or **Not sent: notifications are off**.
 
-Click **Clear** to move an ended alert to the **Cleared** tab, or **Clear All Ended** to move every ended alert. Click **Restore** to move one back. Active alerts cannot be cleared. Ended alerts are kept for 90 days, cleared or not. The list is not part of backups.
+Each alert shows the reading when it started, the highest or lowest reading while it was active, and the limit. If the limit changed during the alert, for example between lights on and lights off, each limit is listed. When alerts come from more than one zone or of more than one type, use **Zone** and **Type** to filter the list.
+
+Click an alert to see its readings on the Sensors page, with a green line at the moment the alert started. The time the alert was active is shaded on its chart, and a dashed line shows the limit. The shading starts after 15 minutes at the limit and ends after 30 minutes back in range, so it begins and ends later than the points where the readings cross the limit.
+
+Click **Clear** to move an ended alert to the **Cleared** tab, or **Clear All Ended** to move every ended alert shown. Click **Restore** to move one back. Active alerts cannot be cleared. Ended alerts are kept for 90 days, cleared or not. The list is not part of backups.
 
 ## Example scenarios
 

@@ -634,7 +634,7 @@ var demoRules = map[string]demoRule{
 	// stay refused. Recent alerts' Clear, Restore and Clear All Ended send nothing.
 	"POST /settings/alerts/events/:id/clear":   {fields: map[string]demoCheck{}},
 	"POST /settings/alerts/events/:id/restore": {fields: map[string]demoCheck{}},
-	"POST /settings/alerts/clear-ended":        {fields: map[string]demoCheck{}},
+	"POST /settings/alerts/clear-ended":        {fields: map[string]demoCheck{"ids": dOpt(dIntList(recentAlertsShown))}},
 
 	// Sensor alerts: numbers and fixed choices only.
 	"POST /settings/alerts/rules":       {fields: demoAlertRuleFields},

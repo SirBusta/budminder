@@ -48,6 +48,14 @@ type Event struct {
 	Pending       string
 	Emailed       bool
 	Cleared       bool // moved to Recent alerts' Cleared tab
+
+	// Limit and sensor alerts since 2.3 (row.go): the reading when the alert
+	// started, the highest (high side) or lowest (low side) reading while it was
+	// active, counting the hold before it started, and each limit in use.
+	// Alerts from before have none of them.
+	StartValue *float64
+	Peak       *float64
+	Limits     []LimitUsed
 }
 
 // Words builds an event's text: T translates a key, Units is the Settings
@@ -131,14 +139,18 @@ func sensorWhere(e Event) string {
 func (w Words) Title(e Event, resolved bool) string {
 	vals := map[string]string{"measure": w.measure(e.Measure), "zone": e.Zone}
 	if e.Kind == KindSensor {
-		vals = map[string]string{"sensor": sensorWhere(e)}
-		switch {
-		case resolved:
-			return w.fill("al_ev_sensor_ok", vals)
-		case e.Side == SideLow:
-			return w.fill("al_ev_sensor_low", vals)
+		if resolved {
+			return w.fill("al_ev_sensor_ok", map[string]string{"sensor": sensorWhere(e)})
 		}
-		return w.fill("al_ev_sensor_high", vals)
+		vals = map[string]string{"sensor": e.Sensor, "zone": e.Zone}
+		key := "al_ev_sensor_high"
+		if e.Side == SideLow {
+			key = "al_ev_sensor_low"
+		}
+		if e.Zone == "" {
+			key += "_nozone"
+		}
+		return w.fill(key, vals)
 	}
 	switch {
 	case e.Kind == KindOffline && resolved && e.Zone == "":

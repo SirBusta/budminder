@@ -25,7 +25,14 @@ used three parts.
 
 ## [Unreleased]
 
+### Added
+
+- **Recent alerts** in **Settings > Alerts** now shows the reading when each alert started, the highest or lowest reading while it was active, and the limit. If the limit changed during the alert, for example when the lights turned off, each limit is listed. **Zone** and **Type** filters appear when the list has more than one zone or type.
+- Click an alert in **Recent alerts** to open the **Sensors** page at the time of the alert. On the sensor's chart, shading marks when the alert was active, labels say when and why it started and ended, and a dashed line shows the limit.
+
 ### Changed
+
+- Sensor alert titles name the zone, for example **CO2 high in 3x3 ACI Tent** instead of **CO2 at or above your limit**. Alert emails use the new titles as their subject.
 
 - The **Freebie** switch on Add strain and Edit strain lines up with the **Pack price** box next to it. Switches have the same border as text boxes, and price boxes no longer have up and down arrows.
 

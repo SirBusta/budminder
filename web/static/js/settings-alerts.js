@@ -270,34 +270,57 @@
         if (b) b.setAttribute("aria-expanded", b.closest(".ax-meth").classList.toggle("open"));
     });
 
-    // Recent alerts: two tabs. Clear and Restore apply to ended alerts only.
+    // Recent alerts: two tabs, and Zone and Type filters when the list has two
+    // or more of either. Clear and Restore apply to ended alerts only. A row
+    // opens the Sensors page at that alert (sensors-page.js, #alert=<id>).
     const evs = JSON.parse($("alEvData").textContent || "{}");
     evs.recent = evs.recent || [];
     evs.cleared = evs.cleared || [];
-    let evTab = "recent";
+    let evTab = "recent", zoneF = "", typeF = "";
     const evOut = $("alEvResult");
+    const TYPES = ["temp", "rh", "vpd", "rule", "light", "offline"];
+    const shown = list => list.filter(ev => (!zoneF || ev.zone === zoneF) && (!typeF || ev.type === typeF));
+    function drawFilters() {
+        const all = [...evs.recent, ...evs.cleared];
+        const zones = [...new Set(all.map(ev => ev.zone).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+        const types = TYPES.filter(k => all.some(ev => ev.type === k));
+        if (zones.length < 2 || !zones.includes(zoneF)) zoneF = "";
+        if (types.length < 2 || !types.includes(typeF)) typeF = "";
+        $("alZoneW").hidden = zones.length < 2;
+        $("alTypeW").hidden = types.length < 2;
+        $("alZone").innerHTML = `<option value="">${esc(T.allZones)}</option>` + zones.map(z => `<option value="${esc(z)}"${z === zoneF ? " selected" : ""}>${esc(z)}</option>`).join("");
+        $("alType").innerHTML = `<option value="">${esc(T.allTypes)}</option>` + types.map(k => `<option value="${k}"${k === typeF ? " selected" : ""}>${esc(T.types[k])}</option>`).join("");
+    }
     function drawEvents() {
-        const ul = $("alEv"), list = evs[evTab];
+        drawFilters();
+        const ul = $("alEv"), list = shown(evs[evTab]);
         ul.replaceChildren();
         for (const ev of list) {
             const li = document.createElement("li");
-            li.className = "al-ev-" + ev.severity + (ev.active ? "" : " ended");
-            li.innerHTML = `<div class="al-ev-main"><b>${esc(ev.title)}</b>` + (ev.line ? `<span>${esc(ev.line)}</span>` : "") +
+            li.className = "al-ev-" + ev.severity + (ev.active ? "" : " ended") + (ev.chart ? " al-ev-go" : "");
+            if (ev.chart) {
+                li.dataset.go = ev.id;
+                li.tabIndex = 0;
+                li.setAttribute("role", "link");
+            }
+            li.innerHTML = `<div class="al-ev-main"><b>${esc(ev.title)}${ev.value ? `: <span class="al-ev-val">${esc(ev.value)}</span>` : ""}</b>` + (ev.line ? `<span>${esc(ev.line)}</span>` : "") +
                 (ev.error ? `<small class="al-detail">${esc(ev.error)}</small>` : "") + `</div>` +
                 `<div class="al-ev-meta"><small>${esc(ev.when)}</small><span class="badge ${ev.active ? "bg-danger" : "bg-secondary"}">${esc(ev.state)}</span>` +
                 (ev.delivery ? `<span class="badge al-ev-del al-ev-del-${esc(ev.delivery_key)}">${esc(ev.delivery)}</span>` : "") +
-                (ev.active ? "" : `<button type="button" class="st-btn light sm" data-ev="${ev.id}"><i class="fa-solid ${evTab === "recent" ? "fa-check" : "fa-rotate-left"} me-1"></i>${esc(evTab === "recent" ? T.evClear : T.evRestore)}</button>`) + `</div>`;
+                (ev.active ? "" : `<button type="button" class="st-btn light sm" data-ev="${ev.id}"><i class="fa-solid ${evTab === "recent" ? "fa-check" : "fa-rotate-left"} me-1"></i>${esc(evTab === "recent" ? T.evClear : T.evRestore)}</button>`) +
+                (ev.chart ? `<span class="al-ev-chart" title="${esc(T.evView)}" aria-hidden="true"><i class="fa-solid fa-chart-line"></i></span>` : "") + `</div>`;
             ul.append(li);
         }
         if (!list.length) {
             const li = document.createElement("li");
             li.className = "ended";
-            li.innerHTML = `<div class="al-ev-main">${esc(evTab === "recent" ? T.evNoRecent : T.evNoCleared)}</div>`;
+            const filtered = zoneF || typeF;
+            li.innerHTML = `<div class="al-ev-main">${esc(evTab === "recent" ? (filtered ? T.evNoMatchRecent : T.evNoRecent) : (filtered ? T.evNoMatchCleared : T.evNoCleared))}</div>`;
             ul.append(li);
         }
-        $("alEvRecentN").textContent = evs.recent.length;
-        $("alEvClearedN").textContent = evs.cleared.length;
-        $("alClearAll").style.display = evTab === "recent" && evs.recent.some(e => !e.active) ? "" : "none";
+        $("alEvRecentN").textContent = shown(evs.recent).length;
+        $("alEvClearedN").textContent = shown(evs.cleared).length;
+        $("alClearAll").style.display = evTab === "recent" && list.some(e => !e.active) ? "" : "none";
         $("alEvTabs").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.t === evTab));
     }
     function evFail(e) {
@@ -312,9 +335,16 @@
         const b = e.target.closest("button");
         if (b) { evTab = b.dataset.t; drawEvents(); }
     });
+    $("alZone").addEventListener("change", e => { zoneF = e.target.value; drawEvents(); });
+    $("alType").addEventListener("change", e => { typeF = e.target.value; drawEvents(); });
+    const openChart = li => { location.href = "/sensors#alert=" + li.dataset.go; };
     $("alEv").addEventListener("click", async e => {
         const b = e.target.closest("[data-ev]");
-        if (!b) return;
+        if (!b) {
+            const li = e.target.closest("[data-go]");
+            if (li) openChart(li);
+            return;
+        }
         const id = +b.dataset.ev, from = evs[evTab], to = evTab === "recent" ? evs.cleared : evs.recent;
         try {
             await post(`/settings/alerts/events/${id}/${evTab === "recent" ? "clear" : "restore"}`, {});
@@ -326,12 +356,18 @@
             evFail(err);
         }
     });
+    $("alEv").addEventListener("keydown", e => {
+        const li = e.target.closest("[data-go]");
+        if (li && e.target === li && e.key === "Enter") openChart(li);
+    });
+    // Clear All Ended clears what the filters show; with no filter, every ended alert.
     $("alClearAll").addEventListener("click", async () => {
+        const gone = shown(evs.recent).filter(x => !x.active);
         try {
-            await post("/settings/alerts/clear-ended", {});
-            evs.cleared.push(...evs.recent.filter(x => !x.active));
+            await post("/settings/alerts/clear-ended", zoneF || typeF ? { ids: gone.map(x => x.id) } : {});
+            evs.cleared.push(...gone);
             evs.cleared.sort(newestFirst);
-            evs.recent = evs.recent.filter(x => x.active);
+            evs.recent = evs.recent.filter(x => !gone.includes(x));
             evOut.textContent = "";
             drawEvents();
         } catch (err) {

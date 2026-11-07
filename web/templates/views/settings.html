@@ -546,7 +546,12 @@
                 <div class="st-card" id="alRecent">
                     <div class="st-card-h"><i class="fa-solid fa-clock-rotate-left"></i><div><h3>{{ .lcl.al_recent_title }}</h3><p>{{ .lcl.al_recent_desc }}</p></div></div>
                     <div class="ax-ev-bar">
-                        <div class="sx-seg" id="alEvTabs" role="group" aria-label="{{ .lcl.al_recent_title }}"><button type="button" data-t="recent" class="on">{{ .lcl.al_recent_tab }} <span id="alEvRecentN"></span></button><button type="button" data-t="cleared">{{ .lcl.al_cleared_tab }} <span id="alEvClearedN"></span></button></div>
+                        <div class="ax-ev-l">
+                            <div class="sx-seg" id="alEvTabs" role="group" aria-label="{{ .lcl.al_recent_title }}"><button type="button" data-t="recent" class="on">{{ .lcl.al_recent_tab }} <span id="alEvRecentN"></span></button><button type="button" data-t="cleared">{{ .lcl.al_cleared_tab }} <span id="alEvClearedN"></span></button></div>
+                            {{/* Filters show only when the list has two or more zones or types. */}}
+                            <label class="ax-evf" id="alZoneW" hidden>{{ .lcl.al_filter_zone }} <select class="form-select form-select-sm" id="alZone"></select></label>
+                            <label class="ax-evf" id="alTypeW" hidden>{{ .lcl.al_filter_type }} <select class="form-select form-select-sm" id="alType"></select></label>
+                        </div>
                         <button type="button" class="st-btn light sm" id="alClearAll"><i class="fa-solid fa-check-double me-1"></i><span>{{ .lcl.al_clear_all }}</span></button>
                     </div>
                     <ul class="al-ev" id="alEv"></ul>
@@ -564,6 +569,9 @@
                     "refuse": {{ .lcl.al_refuse }}, "climateCard": {{ .lcl.cl_title }}, "sendingTo": {{ .lcl.al_sending_to }}, "mailOff": {{ .lcl.al_mail_off }},
                     "boxOn": {{ .lcl.cl_al_title_on }}, "boxOff": {{ .lcl.cl_al_title_off }},
                     "evClear": {{ .lcl.al_clear }}, "evRestore": {{ .lcl.al_restore }}, "evNoRecent": {{ .lcl.al_recent_empty }}, "evNoCleared": {{ .lcl.al_cleared_empty }},
+                    "evNoMatchRecent": {{ .lcl.al_recent_no_match }}, "evNoMatchCleared": {{ .lcl.al_cleared_no_match }}, "evView": {{ .lcl.al_ev_view }},
+                    "allZones": {{ .lcl.al_filter_all_zones }}, "allTypes": {{ .lcl.al_filter_all_types }},
+                    "types": {"temp": {{ .lcl.al_measure_temp }}, "rh": {{ .lcl.al_measure_rh }}, "vpd": {{ .lcl.al_measure_vpd }}, "rule": {{ .lcl.al_rules_title }}, "light": {{ .lcl.al_type_light }}, "offline": {{ .lcl.al_type_offline }}},
                     "ruleBadValue": {{ .lcl.al_rule_bad_value }}, "ruleNoSensors": {{ .lcl.al_rule_no_sensors }}}</script>
             </section>
 

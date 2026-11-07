@@ -68,7 +68,7 @@ func TestAlertsPage_RecentAlerts(t *testing.T) {
 	assert.Contains(t, page, "Not sent: notifications are paused")
 	assert.NotContains(t, page, "Tent <1>", "names are escaped")
 	assert.Contains(t, page, "Temperature high in Tent")
-	assert.Contains(t, page, "at or above the High limit (90 °F)")
+	assert.Contains(t, page, "High limit: 90 °F.")
 	assert.Contains(t, page, "mail server said no")
 	assert.Contains(t, page, "Email failed")
 	assert.Contains(t, page, "VPD low in Tent")

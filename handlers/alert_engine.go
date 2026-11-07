@@ -62,7 +62,7 @@ func settingsLocation(store *config.Store) *time.Location {
 func dbTime(t time.Time) string { return t.UTC().Format(utils.LayoutDB) }
 
 const alertEventColumns = `id, kind, zone_id, zone_name, sensor_id, sensor_name, measure, side, value, limit_value, detail,
-	started_at, notified_at, resolved_at, delivery, delivery_error, pending, emailed, cleared`
+	started_at, notified_at, resolved_at, delivery, delivery_error, pending, emailed, cleared, start_value, peak_value, limits`
 
 func scanAlertEvents(rows *sql.Rows) ([]alerts.Event, error) {
 	defer rows.Close()
@@ -70,14 +70,16 @@ func scanAlertEvents(rows *sql.Rows) ([]alerts.Event, error) {
 	for rows.Next() {
 		var e alerts.Event
 		var sensor sql.NullInt64
-		var value, limit sql.NullFloat64
+		var value, limit, start, peak sql.NullFloat64
 		var resolved sql.NullTime
 		var emailed, cleared int
+		var limits string
 		if err := rows.Scan(&e.ID, &e.Kind, &e.ZoneID, &e.Zone, &sensor, &e.Sensor, &e.Measure, &e.Side, &value, &limit, &e.Detail,
-			&e.Started, &e.Notified, &resolved, &e.Delivery, &e.DeliveryError, &e.Pending, &emailed, &cleared); err != nil {
+			&e.Started, &e.Notified, &resolved, &e.Delivery, &e.DeliveryError, &e.Pending, &emailed, &cleared, &start, &peak, &limits); err != nil {
 			return nil, err
 		}
 		e.SensorID, e.Value, e.Limit = sqlIntPtr(sensor), nullPtr(value), nullPtr(limit)
+		e.StartValue, e.Peak, e.Limits = nullPtr(start), nullPtr(peak), alerts.DecodeLimits(limits)
 		if resolved.Valid {
 			t := resolved.Time
 			e.Resolved = &t
@@ -277,9 +279,15 @@ func (r *alertRun) rules() error {
 		in := alerts.RuleInput{Rule: rule, Readings: readings, Now: r.now, MinWindow: minWindow, StaleAfter: stale,
 			Open: r.markLive(0, measure, alerts.KindSensor)}
 		r.noteLatest(alerts.KindSensor, 0, measure, readings)
+		hold := max(alerts.Hold, minWindow)
 		for _, c := range alerts.EvaluateRule(in) {
-			r.apply(0, s.Zone, s.ID, s.Name, c, &alertStart{detail: s.Unit})
+			st := &alertStart{detail: s.Unit}
+			if c.Action == alerts.Start {
+				st.reading(c, readings, r.now.Add(-hold), alerts.LimitUsed{V: rule.Limit, At: r.now})
+			}
+			r.apply(0, s.Zone, s.ID, s.Name, c, st)
 		}
+		r.track(alerts.KindSensor, 0, measure, readings, hold, func(string) *alerts.LimitUsed { return nil })
 	}
 	return nil
 }
@@ -407,8 +415,66 @@ func (r *alertRun) measure(cs ClimateSettings, zc ZoneClimate, z ZoneSetup, s Ma
 	r.noteLatest(alerts.KindStage, zc.ZoneID, measure, readings)
 	in := alerts.Input{Measure: measure, Readings: readings, Range: cs.rangeNow(measure, zc.Stage.Stage, zc.Phase, zc.LightsOn),
 		LastSwitch: sw, Now: r.now, MinWindow: minWindow, StaleAfter: stale, Open: open}
+	// The limit in use on a side, with what it depends on, for Recent alerts.
+	limitNow := func(side string) *alerts.LimitUsed {
+		v := in.Range.High
+		if side == alerts.SideLow {
+			v = in.Range.Low
+		}
+		if v == nil {
+			return nil
+		}
+		l := alerts.LimitUsed{V: *v, At: r.now, Stage: zc.Stage.Stage, Phase: zc.Phase}
+		if zc.Scheduled {
+			l.Lights = "off"
+			if zc.LightsOn {
+				l.Lights = "on"
+			}
+		}
+		return &l
+	}
+	hold := max(alerts.Hold, minWindow)
 	for _, c := range alerts.Evaluate(in) {
-		r.apply(zc.ZoneID, z.Name, s.ID, s.Name, c, nil)
+		var st *alertStart
+		if c.Action == alerts.Start {
+			if l := limitNow(c.Side); l != nil {
+				st = &alertStart{}
+				st.reading(c, readings, r.now.Add(-hold), *l)
+			}
+		}
+		r.apply(zc.ZoneID, z.Name, s.ID, s.Name, c, st)
+	}
+	r.track(alerts.KindStage, zc.ZoneID, measure, readings, hold, limitNow)
+}
+
+// track keeps an open limit or sensor alert's highest (or lowest) reading and
+// its list of limits up to date. Alerts from before these were saved are left
+// alone: their highest reading would miss the start.
+func (r *alertRun) track(kind string, zone int, measure string, readings []climate.Reading, hold time.Duration, limitNow func(side string) *alerts.LimitUsed) {
+	for _, o := range r.open {
+		if o.Kind != kind || o.ZoneID != zone || o.Measure != measure || o.StartValue == nil {
+			continue
+		}
+		peak, changed := o.Peak, false
+		if p := alerts.Peak(readings, o.Side, o.Started.Add(-hold)); p != nil && alerts.Further(*p, peak, o.Side) {
+			peak, changed = p, true
+		}
+		limits := o.Limits
+		if l := limitNow(o.Side); l != nil && len(limits) > 0 {
+			var added bool
+			limits, added = alerts.AddLimit(limits, *l)
+			changed = changed || added
+		}
+		if !changed {
+			continue
+		}
+		var pv any
+		if peak != nil {
+			pv = *peak
+		}
+		if _, err := r.e.DB.Exec(`UPDATE alert_event SET peak_value = $1, limits = $2 WHERE id = $3`, pv, alerts.EncodeLimits(limits), o.ID); err != nil {
+			logger.Log.WithError(err).WithField("kind", kind).Error("Failed to save an alert's readings")
+		}
 	}
 }
 
@@ -509,10 +575,26 @@ func (r *alertRun) lights(zc ZoneClimate, z ZoneSetup, byID map[int]ManagedSenso
 	}
 }
 
-// alertStart carries what a light or clock alert adds when it starts.
+// alertStart carries what an alert adds when it starts: light and clock
+// alerts their detail and start time, limit and sensor alerts their readings.
 type alertStart struct {
 	detail string
 	since  time.Time
+	start  *float64
+	peak   *float64
+	limits []alerts.LimitUsed
+}
+
+// reading fills in a starting limit or sensor alert's reading, its highest or
+// lowest reading since from (the hold), and its limit.
+func (st *alertStart) reading(c alerts.Change, readings []climate.Reading, from time.Time, l alerts.LimitUsed) {
+	v := c.Value
+	st.start = &v
+	st.peak = alerts.Peak(readings, c.Side, from)
+	if st.peak == nil || alerts.Further(v, st.peak, c.Side) {
+		st.peak = &v
+	}
+	st.limits = []alerts.LimitUsed{l}
 }
 
 // forget takes an alert out of r.open once it has ended in this run.
@@ -579,19 +661,30 @@ func (r *alertRun) apply(zone int, zoneName string, sensorID int, sensorName str
 		}
 		started := r.now
 		detail := ""
+		var startValue, peak any
+		limits := ""
 		if start != nil {
 			detail = start.detail
 			if !start.since.IsZero() {
 				started = start.since
 			}
+			if start.start != nil {
+				startValue = *start.start
+			}
+			if start.peak != nil {
+				peak = *start.peak
+			}
+			limits = alerts.EncodeLimits(start.limits)
 		}
 		var sid any
 		if sensorID != 0 {
 			sid = sensorID
 		}
 		_, err = db.Exec(`INSERT INTO alert_event (kind, zone_id, zone_name, sensor_id, sensor_name, measure, side, value, limit_value, detail,
-			started_at, notified_at, delivery, pending) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) ON CONFLICT DO NOTHING`,
-			c.Kind, zone, zoneName, sid, sensorName, c.Measure, c.Side, value, limit, detail, dbTime(started), dbTime(r.now), delivery, pending)
+			started_at, notified_at, delivery, pending, start_value, peak_value, limits)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) ON CONFLICT DO NOTHING`,
+			c.Kind, zone, zoneName, sid, sensorName, c.Measure, c.Side, value, limit, detail, dbTime(started), dbTime(r.now), delivery, pending,
+			startValue, peak, limits)
 	case alerts.End:
 		r.forget(c, zone)
 		// The all clear only follows an alert that was really emailed; one that

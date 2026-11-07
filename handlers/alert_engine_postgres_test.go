@@ -256,3 +256,40 @@ func TestAlertEvent_OneOpenRowPerAlert_Postgres(t *testing.T) {
 	require.Len(t, got, 2)
 	assert.Nil(t, got[0].Resolved, "the open one first")
 }
+
+// The readings Recent alerts shows (2.3): DOUBLE PRECISION columns, the limits
+// text, NULL peaks in the UPDATE, the filtered Clear All Ended and the chart query.
+func TestAlertReadings_Postgres(t *testing.T) {
+	t.Parallel()
+	a := newAlertEnvOn(t, testutil.NewTestPostgresDB(t))
+	vals := repeated(92, 16)
+	vals[10] = 97
+	a.readings(t, a.temp, vals...)
+	a.check()
+	a.exec(t, `UPDATE climate_target SET high = 33 WHERE measure = 'temp'`)
+	a.fresh(t, a.temp)
+	a.readings(t, a.temp, repeated(99, 10)...)
+	a.check()
+
+	ev := a.events(t)
+	require.Len(t, ev, 1)
+	require.NotNil(t, ev[0].StartValue)
+	require.NotNil(t, ev[0].Peak)
+	assert.InDelta(t, fToC(99), *ev[0].Peak, 0.01)
+	require.Len(t, ev[0].Limits, 2)
+	assert.Equal(t, "veg", ev[0].Limits[0].Stage)
+
+	resp := a.client.Get("/settings/alerts/events/" + strconv.Itoa(ev[0].ID) + "/chart")
+	testutil.DrainAndClose(resp)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	a.settled(t, a.temp, 80)
+	a.exec(t, `UPDATE climate_target SET high = 32.22 WHERE measure = 'temp'`)
+	a.check()
+	resp = a.client.SessionPostJSON(t, "/settings/alerts/clear-ended", a.token, map[string]any{"ids": []int{ev[0].ID}})
+	testutil.DrainAndClose(resp)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	got, err := handlers.RecentAlerts(a.db, true, 10)
+	require.NoError(t, err)
+	assert.Len(t, got, 1)
+}

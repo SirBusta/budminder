@@ -144,17 +144,29 @@
     // The marked moment (click a chart; drag the line to move it). Mouse
     // movement alone never moves it, like the AC Infinity app.
     let markX = null;
-    function tag(ctx, text, x, y, color, area) {
+    // Where tag() puts its pill.
+    function tagBox(ctx, text, x, y, area) {
         ctx.font = "600 11px system-ui, -apple-system, Segoe UI, sans-serif";
         const w = ctx.measureText(text).width + 12, h = 18;
         let left = x + 7;
         if (left + w > area.right) left = x - 7 - w;
-        const top = Math.max(area.top, Math.min(area.bottom - h, y - h / 2));
+        return { left, w, top: Math.max(area.top, Math.min(area.bottom - h, y - h / 2)), h };
+    }
+    function tag(ctx, text, x, y, color, area) {
+        const { left, w, top, h } = tagBox(ctx, text, x, y, area);
         ctx.fillStyle = cssVar("--sx-card", "#fff");
         ctx.strokeStyle = color; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.roundRect ? ctx.roundRect(left, top, w, h, 4) : ctx.rect(left, top, w, h); ctx.fill(); ctx.stroke();
         ctx.fillStyle = cssVar("--sx-ink", "#172322"); ctx.textBaseline = "middle";
         ctx.fillText(text, left + 6, top + h / 2 + 0.5);
+    }
+    // The marker's reading on a sensor chart: its text and height, or null.
+    function markPill(chart) {
+        const o = chart.$sx;
+        if (markX == null || !o || !o.series) return null;
+        const s = o.series, v = valueAt(data[s.id], markX);
+        if (v == null) return null;
+        return { text: `${fmt(v, s.dp)} ${s.unit}`, y: chart.scales.y.getPixelForValue(v) };
     }
     const marker = {
         id: "sxMarker",
@@ -167,13 +179,10 @@
             ctx.save();
             ctx.strokeStyle = "#16a34a"; ctx.lineWidth = 1.5;
             ctx.beginPath(); ctx.moveTo(x, area.top); ctx.lineTo(x, area.bottom); ctx.stroke();
-            if (o && o.series) {
-                const s = o.series, v = valueAt(data[s.id], markX);
-                if (v != null) {
-                    const y = chart.scales.y.getPixelForValue(v);
-                    ctx.fillStyle = s.color; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
-                    tag(ctx, `${fmt(v, s.dp)} ${s.unit}`, x, y, s.color, area);
-                }
+            const p = markPill(chart);
+            if (p) {
+                ctx.fillStyle = o.series.color; ctx.beginPath(); ctx.arc(x, p.y, 3.5, 0, Math.PI * 2); ctx.fill();
+                tag(ctx, p.text, x, p.y, o.series.color, area);
             }
             if (o && o.devices) {
                 o.devices.forEach((d, i) => {
@@ -186,6 +195,176 @@
             ctx.restore();
         },
     };
+    // ---------- An alert opened from Settings > Alerts > Recent alerts ----------
+    // GET /settings/alerts/events/:id/chart (handlers/alert_chart.go). Its time is
+    // shaded on the charts it belongs to, with labels at the edges that say why
+    // it starts and ends where it does, and the limit is drawn on the chart;
+    // other alerts of the same kind in view are shaded more lightly.
+    let alertView = null, alertID = null;
+    const hashAlert = () => { const m = /alert=(\d+)/.exec(location.hash); return m ? +m[1] : null; };
+    const AL_TEXT = {
+        limit: { start: ["en_al_started", "en_al_start_limit"], end: ["en_al_ended", "en_al_end_limit"] },
+        offline: { start: ["en_al_started", "en_al_start_offline"], end: ["en_al_ended", "en_al_end_offline"] },
+        light: { start: ["en_al_started", "en_al_start_light"], end: ["en_al_ended", "en_al_end_light"] },
+    };
+    const isDark = () => document.documentElement.getAttribute("data-bs-theme") === "dark";
+    const alRed = () => isDark() ? "#fca5a5" : "#b91c1c";
+    const FONT = "system-ui, -apple-system, Segoe UI, sans-serif";
+    // Whether a chart (one sensor, or the device lane) shows the alert.
+    function alertOn(o) {
+        const a = alertView;
+        if (!a || !o) return false;
+        if (a.kind === "offline") return true;
+        if (o.series) return a.sensors.includes(o.series.id);
+        return !!(o.devices && o.devices.some(d => a.sensors.includes(d.id)));
+    }
+    // A limit in the chart's unit.
+    function alertLimit(s, v) {
+        const a = alertView;
+        if (a.limit_in === "sensor") return s.conv ? s.conv(v) : v;
+        if (a.limit_in === "c" && s.unit === "°F") return v * 9 / 5 + 32;
+        return v;
+    }
+    const limitFmt = (v, dp) => Number(v).toLocaleString(locale, { maximumFractionDigits: dp });
+    // A label on a soft box at the top or foot of the chart; align "right" ends it at x.
+    function alertLabel(ctx, lines, x, area, side, align) {
+        ctx.font = "700 10px " + FONT;
+        const w1 = ctx.measureText(lines[0]).width;
+        ctx.font = "500 10px " + FONT;
+        const w2 = lines[1] ? ctx.measureText(lines[1]).width : 0;
+        const w = Math.max(w1, w2) + 8, h = lines[1] ? 27 : 15;
+        let left = align === "right" ? x - w : x;
+        left = Math.max(area.left + 2, Math.min(area.right - w - 2, left));
+        const top = side === "bottom" ? area.bottom - h - 3 : area.top + 3;
+        ctx.save();
+        ctx.globalAlpha = .88; ctx.fillStyle = cssVar("--sx-card", "#fff");
+        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(left, top, w, h, 3) : ctx.rect(left, top, w, h); ctx.fill();
+        ctx.restore();
+        ctx.fillStyle = alRed(); ctx.textBaseline = "top";
+        ctx.font = "700 10px " + FONT; ctx.fillText(lines[0], left + 4, top + 2);
+        if (lines[1]) { ctx.font = "500 10px " + FONT; ctx.fillText(lines[1], left + 4, top + 14); }
+        return { left, w, top, h };
+    }
+    // Each limit in use while the chart's time runs: [from, to, value in the chart's unit].
+    function limitSegs(chart) {
+        const a = alertView, s = chart.$sx.series, x = chart.scales.x;
+        return a.limits.map((lim, i) => [Math.max(x.min, lim.at), a.limits[i + 1] ? a.limits[i + 1].at : x.max, alertLimit(s, lim.v)])
+            .filter(sg => sg[1] > sg[0] && sg[0] < x.max);
+    }
+    const alertMark = {
+        id: "sxAlert",
+        beforeDatasetsDraw(chart) {
+            const a = alertView, o = chart.$sx;
+            if (!alertOn(o)) return;
+            const area = chart.chartArea, x = chart.scales.x, ctx = chart.ctx, now = Date.now();
+            ctx.save();
+            a.others.forEach(ev => {
+                const l = Math.max(area.left, x.getPixelForValue(ev.start)), rt = Math.min(area.right, x.getPixelForValue(ev.end ?? now));
+                if (rt <= l) return;
+                ctx.fillStyle = isDark() ? "rgba(248,113,113,.06)" : "rgba(220,38,38,.035)";
+                ctx.fillRect(l, area.top, rt - l, area.bottom - area.top);
+                ctx.strokeStyle = isDark() ? "rgba(248,113,113,.3)" : "rgba(220,38,38,.22)"; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+                [l, rt].forEach(px => { if (px > area.left && px < area.right) { ctx.beginPath(); ctx.moveTo(px, area.top); ctx.lineTo(px, area.bottom); ctx.stroke(); } });
+                ctx.setLineDash([]);
+            });
+            const l = Math.max(area.left, x.getPixelForValue(a.start)), rt = Math.min(area.right, x.getPixelForValue(a.end ?? now));
+            if (rt > l) {
+                ctx.fillStyle = isDark() ? "rgba(248,113,113,.12)" : "rgba(220,38,38,.07)";
+                ctx.fillRect(l, area.top, rt - l, area.bottom - area.top);
+            }
+            // The limit: a dashed line for each limit in use (it can change during the alert).
+            if (o.series && a.limits.length) {
+                const y = chart.scales.y;
+                ctx.strokeStyle = "#dc2626"; ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]);
+                limitSegs(chart).forEach(([f, to, v]) => { const py = y.getPixelForValue(v); ctx.beginPath(); ctx.moveTo(x.getPixelForValue(f), py); ctx.lineTo(x.getPixelForValue(to), py); ctx.stroke(); });
+                ctx.setLineDash([]);
+            }
+            ctx.restore();
+        },
+        afterDatasetsDraw(chart) {
+            const a = alertView, o = chart.$sx;
+            if (!alertOn(o)) return;
+            const area = chart.chartArea, x = chart.scales.x, ctx = chart.ctx, now = Date.now();
+            // High alerts have their readings near the top, so their labels go at the foot.
+            const side = a.kind === "limit" && a.side === "high" ? "bottom" : "top", away = side === "bottom" ? "top" : "bottom";
+            const boxes = [];
+            ctx.save();
+            a.others.forEach(ev => {
+                const l = x.getPixelForValue(ev.start), rt = x.getPixelForValue(ev.end ?? now);
+                if (rt <= area.left || l >= area.right) return;
+                ctx.globalAlpha = .75;
+                // At its start, or at its end when it started before the chart (the limit's label is at the left).
+                if (l > area.left + 4) boxes.push(alertLabel(ctx, [t("en_al_other")], l + 4, area, away, "left"));
+                else boxes.push(alertLabel(ctx, [t("en_al_other")], Math.min(area.right, rt) - 4, area, away, "right"));
+                ctx.globalAlpha = 1;
+            });
+            // Sensors offline shades every chart; its labels go on the first one only.
+            if (a.kind !== "offline" || o.first) {
+                const TX = AL_TEXT[a.kind] || AL_TEXT.limit, l = x.getPixelForValue(a.start), rt = x.getPixelForValue(a.end ?? now);
+                if (l >= area.left - 1 && l < area.right) {
+                    const st = alertLabel(ctx, [t(TX.start[0]), t(TX.start[1])], l + 5, area, side, "left");
+                    boxes.push(st);
+                    if (a.end != null && rt < area.right) {
+                        const lines = [t(TX.end[0]), t(TX.end[1])];
+                        ctx.font = "700 10px " + FONT;
+                        const w = Math.max(ctx.measureText(lines[0]).width, ctx.measureText(lines[1]).width) + 10;
+                        // After the end when there is room, otherwise just inside it.
+                        const out = rt + 5 + w <= area.right - 2, left = out ? rt + 5 : rt - 5 - w;
+                        boxes.push(alertLabel(ctx, lines, out ? rt + 5 : rt - 5, area, left < st.left + st.w + 6 ? away : side, out ? "left" : "right"));
+                    }
+                }
+            }
+            // The limit's labels last, clear of the labels above: beside its line
+            // (above a high limit, below a low one), else across the line, else
+            // after the label in the way.
+            if (o.series && a.limits.length) {
+                // The marker's reading is drawn later, over these: keep clear of it too.
+                const p = markPill(chart), mx = markX == null ? 0 : x.getPixelForValue(markX);
+                if (p && mx >= area.left && mx <= area.right) boxes.push(tagBox(ctx, p.text, mx, p.y, area));
+                const s = o.series, y = chart.scales.y, h = 12;
+                const key = a.rule ? "en_al_limit_rule" : a.side === "low" ? "en_al_limit_low" : "en_al_limit_high";
+                const hits = (cx, cy, w) => boxes.some(b => cx < b.left + b.w && cx + w > b.left && cy < b.top + b.h && cy + h > b.top);
+                ctx.font = "600 10px " + FONT; ctx.fillStyle = alRed(); ctx.textBaseline = "top";
+                limitSegs(chart).forEach(([f, to, v]) => {
+                    const py = y.getPixelForValue(v), text = t(key, { limit: `${limitFmt(v, s.dp)} ${s.unit}` });
+                    const w = ctx.measureText(text).width, fx = x.getPixelForValue(f) + 4, end = x.getPixelForValue(to);
+                    const near = a.side === "low" ? py + 3 : py - 3 - h, across = a.side === "low" ? py - 3 - h : py + 3;
+                    const tries = [[fx, near], [fx, across], ...boxes.map(b => [b.left + b.w + 4, near]), ...boxes.map(b => [b.left + b.w + 4, across])];
+                    // Within its own stretch of line, so it can't be read as another limit's.
+                    const fits = ([cx, cy]) => cx >= fx && cx < end && cx + w <= area.right - 2 && cy >= area.top && cy + h <= area.bottom && !hits(cx, cy, w);
+                    const [cx, cy] = tries.find(fits) || tries[0];
+                    ctx.fillText(text, cx, cy);
+                    boxes.push({ left: cx, w, top: cy, h });
+                });
+            }
+            ctx.restore();
+        },
+    };
+    // Opens the Sensors page at an alert: its zone, the time around it, and the
+    // marker line at the moment it started. False when it can't be shown here.
+    async function openAlert(id) {
+        try {
+            const resp = await fetch(`/settings/alerts/events/${id}/chart`, { cache: "no-store" });
+            if (!resp.ok) throw new Error(resp.status);
+            const a = await resp.json();
+            if (!zones.some(z => z.id === a.zone_id)) return false;
+            alertView = a; alertID = id;
+            zoneId = a.zone_id;
+            store.set("isley.env.zone", String(zoneId));
+            loadHidden();
+            // Show the alert's charts even when they were hidden.
+            zoneSensors(zoneId).env.forEach(s => { if (a.kind === "offline" || a.sensors.includes(s.id)) hidden.delete(s.id); });
+            const now = Date.now();
+            r = { span: r.span, from: a.from, to: Math.min(a.to, now), live: a.to >= now - MIN, custom: true };
+            markX = a.start;
+            data = {};
+            load();
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
     // Tick spacing by range length, so the grid stays readable (charts
     // without labels would otherwise draw a line for every generated tick).
     function tickUnit(ms) {
@@ -305,12 +484,16 @@
                     <div class="sx-m-chart"><canvas id="sxc_${s.id}" role="img" aria-label="${esc(s.name)}"></canvas></div></div>`;
             }).join("");
             vis.forEach((s, i) => {
-                const pts = data[s.id] || [], st = stats(pts) || { min: 0, max: 1 };
+                const pts = data[s.id] || [], st = { ...(stats(pts) || { min: 0, max: 1 }) };
+                // Keep an opened alert's limit in view.
+                if (alertOn({ series: s }) && alertView.limits.length) {
+                    alertView.limits.forEach(l => { const v = alertLimit(s, l.v); st.min = Math.min(st.min, v); st.max = Math.max(st.max, v); });
+                }
                 const half = Math.max((st.max - st.min) / 2 * 1.2, s.span / 2, 1e-6), mid = (st.max + st.min) / 2;
                 const c = new Chart(document.getElementById("sxc_" + s.id), {
                     type: "line",
                     data: { datasets: [{ data: pts, borderColor: s.color, backgroundColor: s.color + "22", fill: true, borderWidth: 1.8, pointRadius: 0, tension: .3 }] },
-                    plugins: [marker],
+                    plugins: [alertMark, marker],
                     options: {
                         animation: false, maintainAspectRatio: false, parsing: false, normalized: true,
                         plugins: { legend: { display: false }, tooltip: { enabled: false } },
@@ -318,7 +501,7 @@
                         scales: { x: timeScale(r.from, r.to, i === vis.length - 1), y: { min: mid - half, max: mid + half, display: false } },
                     },
                 });
-                c.$sx = { series: s };
+                c.$sx = { series: s, first: i === 0 };
                 charts.push(c);
             });
         }
@@ -344,7 +527,7 @@
                         borderWidth: 1.5, pointRadius: 0,
                         data: (data[d.id] || []).map(p => ({ x: p.x, y: base + Math.max(0, Math.min(100, p.y)) / 100 * 0.78, raw: p.y })) };
                 }) },
-                plugins: [marker],
+                plugins: [alertMark, marker],
                 options: {
                     animation: false, maintainAspectRatio: false, parsing: false,
                     plugins: { legend: { display: false }, tooltip: { enabled: false } },
@@ -352,7 +535,7 @@
                     layout: { padding: { top: 2, bottom: 2 } },
                 },
             });
-            lane.$sx = { devices };
+            lane.$sx = { devices, first: !vis.length };
             root.querySelectorAll(".sx-dev").forEach((el, i) => el.style.setProperty("--c", colors[i % colors.length]));
         }
         if (markX != null) showMarker();
@@ -361,6 +544,7 @@
     // ---------- Events ----------
     function selectZone(id) {
         zoneId = id;
+        alertView = null; alertID = null;
         store.set("isley.env.zone", String(id));
         history.replaceState(null, "", "#zone=" + id);
         loadHidden();
@@ -428,17 +612,26 @@
     });
     document.addEventListener("keydown", e => { if (e.key === "Escape" && markX != null) { markX = null; showMarker(); } });
 
-    window.addEventListener("hashchange", () => { const h = hashZone(); if (h && h !== zoneId && zones.some(z => z.id === h)) selectZone(h); });
+    window.addEventListener("hashchange", () => {
+        const al = hashAlert();
+        if (al) { if (al !== alertID) openAlert(al); return; }
+        const h = hashZone(); if (h && h !== zoneId && zones.some(z => z.id === h)) selectZone(h);
+    });
 
     // Live: while the range ends now, follow new readings.
     const every = Math.max(30, P.poll || 60) * 1000;
     setInterval(() => {
         if (document.hidden || !zoneId || !r.live || loading) return;
-        r = { ...newRange(r.span), custom: false };
+        // An opened alert that's still active keeps its start and follows new readings.
+        r = alertView && r.custom ? { ...r, to: Date.now() } : { ...newRange(r.span), custom: false };
         load();
     }, every);
 
-    pickZone();
-    if (zoneId) { loadHidden(); history.replaceState(null, "", "#zone=" + zoneId); load(); }
-    else render();
+    (async () => {
+        const al = hashAlert();
+        if (al && await openAlert(al)) return;
+        pickZone();
+        if (zoneId) { loadHidden(); history.replaceState(null, "", "#zone=" + zoneId); load(); }
+        else render();
+    })();
 })();

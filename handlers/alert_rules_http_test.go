@@ -103,7 +103,7 @@ func TestAlertRules_EmailCycle(t *testing.T) {
 	a.check()
 	a.send()
 	require.Len(t, f.Mail(), 1)
-	assert.Contains(t, f.Mail()[0].Data, "CO2 (Tent) at or above your limit")
+	assert.Contains(t, f.Mail()[0].Data, "CO2 high in Tent")
 	assert.Contains(t, f.Mail()[0].Data, "1500 ppm")
 	assert.Contains(t, f.Mail()[0].Data, "1000 ppm")
 	ev := a.events(t)

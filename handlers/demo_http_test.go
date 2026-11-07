@@ -471,6 +471,13 @@ func TestDemo_RecentAlertsClear(t *testing.T) {
 		code, out := e.json(t, "POST", path, map[string]any{"note": "hi"})
 		assertRefused(t, code, out, path)
 	}
+	// Clear All Ended with a Zone or Type filter sends the ids it shows.
+	code, _ := e.json(t, "POST", "/settings/alerts/clear-ended", map[string]any{"ids": []int{1, 2}})
+	assert.Equal(t, http.StatusOK, code)
+	for what, ids := range map[string]any{"not a list": "1,2", "a word": []any{"x"}, "zero": []int{0}, "too many": make([]int, 51)} {
+		code, out := e.json(t, "POST", "/settings/alerts/clear-ended", map[string]any{"ids": ids})
+		assertRefused(t, code, out, what)
+	}
 	code, out := e.json(t, "POST", "/settings/alerts/climate", map[string]any{"mode": "email"})
 	assertRefused(t, code, out, "the old route")
 }

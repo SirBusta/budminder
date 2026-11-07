@@ -73,14 +73,15 @@ func TestSensorAlertText(t *testing.T) {
 	t.Parallel()
 	w := Words{T: func(k string) string {
 		return map[string]string{
-			"al_ev_sensor_high":   "{sensor} high",
-			"al_ev_sensor_ok":     "{sensor} ok",
-			"al_line_sensor_high": "{sensor} {value} limit {limit}",
+			"al_ev_sensor_high":        "{sensor} high in {zone}",
+			"al_ev_sensor_high_nozone": "{sensor} high",
+			"al_ev_sensor_ok":          "{sensor} ok",
+			"al_line_sensor_high":      "{sensor} {value} limit {limit}",
 		}[k]
 	}}
 	v, l := 1234.5678, 1000.0
 	e := Event{Kind: KindSensor, Sensor: "CO2", Zone: "Tent", Side: SideHigh, Value: &v, Limit: &l, Detail: "ppm"}
-	if got := w.Title(e, false); got != "CO2 (Tent) high" {
+	if got := w.Title(e, false); got != "CO2 high in Tent" {
 		t.Errorf("title: %q", got)
 	}
 	if got := w.Title(e, true); got != "CO2 (Tent) ok" {
