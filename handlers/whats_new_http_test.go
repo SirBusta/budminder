@@ -132,15 +132,55 @@ func TestWhatsNew_NoCard(t *testing.T) {
 // its own doesn't get in the way.
 func TestWhatsNew_SkippedReleaseShowsWithTheRealFromVersion(t *testing.T) {
 	t.Parallel()
-	_, c, _ := whatsNewServer(t, "2.3", "1.9.0", true)
+	_, c, _ := whatsNewServer(t, "2.4", "1.9.0", true)
 
 	got := readWhatsNew(t, c, "/")
 	require.NotNil(t, got)
 	assert.Equal(t, "1.9.0", got.From)
-	assert.Equal(t, "2.3", got.To)
-	require.Len(t, got.Cards, 2)
-	assert.Equal(t, "2.2", got.Cards[0].Version, "newest first")
-	assert.Equal(t, "2.0", got.Cards[1].Version)
+	assert.Equal(t, "2.4", got.To)
+	require.Len(t, got.Cards, 3)
+	assert.Equal(t, "2.3", got.Cards[0].Version, "newest first")
+	assert.Equal(t, "2.2", got.Cards[1].Version)
+	assert.Equal(t, "2.0", got.Cards[2].Version)
+}
+
+// 2.2 to 2.3: the Recent alerts card, with its picture's words and units.
+func TestWhatsNew_From22ShowsThe23CardWithItsPicture(t *testing.T) {
+	t.Parallel()
+	_, c, _ := whatsNewServer(t, "2.3", "2.2", true)
+
+	got := readWhatsNew(t, c, "/")
+	require.NotNil(t, got)
+	require.Len(t, got.Cards, 1)
+	card := got.Cards[0]
+	assert.Equal(t, "2.3", card.Version)
+	require.Len(t, card.Features, 1)
+	f := card.Features[0]
+	assert.Equal(t, "More details in Recent alerts", f.Title)
+	assert.Equal(t, "/settings#alerts", f.Link)
+	assert.True(t, f.Beta)
+	assert.Len(t, f.Points, 3)
+	assert.Equal(t, "alert_chart", f.Figure)
+	require.Len(t, card.Other, 1)
+	assert.Contains(t, card.Other[0], "CO2 high in 3x3 ACI Tent")
+	assert.Equal(t, "Recent alerts", got.T["al_recent_title"], "the picture's words come with it")
+	assert.Equal(t, "Temperature high: {value}", got.T["wn_2_3_fig_alert"])
+	assert.NotEmpty(t, got.T["wn_2_3_fig_alt"])
+	assert.False(t, got.Metric, "imperial by default")
+}
+
+func TestWhatsNew_PictureFollowsMetricUnits(t *testing.T) {
+	t.Parallel()
+	db := testutil.NewTestDB(t)
+	testutil.SeedAdmin(t, db, whatsNewPassword)
+	require.NoError(t, handlers.UpdateSetting(db, nil, "whatsnew.seen", "2.2"))
+	server := testutil.NewTestServer(t, db, testutil.WithReleaseVersion("2.3"))
+	server.ConfigStore.SetUnits("metric")
+	seedGrow(t, server)
+	c, _ := server.LoginAndFetchCSRF(t, whatsNewPassword, "/")
+	got := readWhatsNew(t, c, "/")
+	require.NotNil(t, got)
+	assert.True(t, got.Metric)
 }
 
 // 2.1 to 2.2: only the 2.2 card, with both features and their links.
@@ -199,6 +239,9 @@ func TestWhatsNew_TextInEveryLanguage(t *testing.T) {
 				assert.NotEmpty(t, f.LinkText, "%s %s", lang, card.Version)
 				for _, s := range f.Points {
 					assert.NotEmpty(t, s, "%s %s", lang, card.Version)
+				}
+				for _, k := range handlers.WhatsNewFigureKeys(f.Figure) {
+					assert.NotEmpty(t, lcl[k], "%s %s picture %s", lang, card.Version, k)
 				}
 			}
 			for _, s := range append(append([]string{}, card.Other...), card.Fixes...) {

@@ -44,11 +44,24 @@ type whatsNewFeatureDef struct {
 	Icon   string
 	Link   string
 	Points int
-	Beta   bool // adds the Beta tag and the note with the feedback address
+	Beta   bool   // adds the Beta tag and the note with the feedback address
+	Figure string // a drawn picture under the title (whats-new.js), with its words from figureKeys
+}
+
+// figureKeys are the translations each picture's words come from.
+var figureKeys = map[string][]string{
+	"alert_chart": {"wn_2_3_fig_alt", "wn_2_3_fig_alert", "al_recent_title", "al_state_active", "al_row_highest", "al_row_limit_high", "al_measure_temp", "en_al_limit_high", "en_al_started"},
 }
 
 // whatsNewReleases is newest first.
 var whatsNewReleases = []whatsNewRelease{
+	{
+		Version: "2.3",
+		Features: []whatsNewFeatureDef{
+			{Icon: "fa-chart-line", Link: "/settings#alerts", Points: 3, Beta: true, Figure: "alert_chart"},
+		},
+		Other: 1,
+	},
 	{
 		Version: "2.2",
 		Date:    "2026-11-04",
@@ -78,6 +91,7 @@ type WhatsNewFeature struct {
 	Link     string   `json:"link"`
 	LinkText string   `json:"link_text"`
 	Beta     bool     `json:"beta"`
+	Figure   string   `json:"figure,omitempty"`
 }
 
 // WhatsNewCard is one release's card, in the visitor's language.
@@ -91,19 +105,23 @@ type WhatsNewCard struct {
 }
 
 // WhatsNewData is what header2.html hands to whats-new.js. From is empty for
-// an install from before 2.0, whose earlier version wasn't recorded.
+// an install from before 2.0, whose earlier version wasn't recorded. Metric
+// says the pictures show °C.
 type WhatsNewData struct {
-	From  string            `json:"from"`
-	To    string            `json:"to"`
-	Cards []WhatsNewCard    `json:"cards"`
-	T     map[string]string `json:"t"`
+	From   string            `json:"from"`
+	To     string            `json:"to"`
+	Cards  []WhatsNewCard    `json:"cards"`
+	T      map[string]string `json:"t"`
+	Metric bool              `json:"metric"`
 }
 
 // WhatsNew answers for one engine. Version is the plain release version
 // ("2.0"); empty or anything else (test builds, the demo) never shows a card.
+// Units gives the Settings units ("metric" or not) for the pictures; nil: imperial.
 type WhatsNew struct {
 	DB      *sql.DB
 	Version string
+	Units   func() string
 }
 
 // SetWhatsNewOnContext makes w available to WhatsNewSeenHandler.
@@ -129,12 +147,17 @@ func (w *WhatsNew) Page(lcl map[string]string) *WhatsNewData {
 		_ = w.MarkSeen()
 		return nil
 	}
-	out := &WhatsNewData{From: seen, To: w.Version, T: map[string]string{}}
+	out := &WhatsNewData{From: seen, To: w.Version, T: map[string]string{}, Metric: w.Units != nil && w.Units() == "metric"}
 	for _, k := range []string{"wn_title", "wn_from", "wn_to", "wn_features", "wn_other", "wn_fixes", "wn_see_all", "wn_got_it", "title_close", "al_beta", "al_beta_note", "al_beta_feedback"} {
 		out.T[k] = lcl[k]
 	}
 	for _, r := range unseen {
 		out.Cards = append(out.Cards, r.card(lcl))
+		for _, f := range r.Features {
+			for _, k := range figureKeys[f.Figure] {
+				out.T[k] = lcl[k]
+			}
+		}
 	}
 	return out
 }
@@ -161,7 +184,7 @@ func (r whatsNewRelease) card(lcl map[string]string) WhatsNewCard {
 	card := WhatsNewCard{Version: r.Version, Date: r.Date, URL: releasePageURL + updates.Tag(r.Version)}
 	for i, f := range r.Features {
 		k := fmt.Sprintf("%s_f%d_", key, i+1)
-		feature := WhatsNewFeature{Icon: f.Icon, Title: lcl[k+"title"], Text: lcl[k+"text"], Link: f.Link, LinkText: lcl[k+"link"], Beta: f.Beta}
+		feature := WhatsNewFeature{Icon: f.Icon, Title: lcl[k+"title"], Text: lcl[k+"text"], Link: f.Link, LinkText: lcl[k+"link"], Beta: f.Beta, Figure: f.Figure}
 		for p := 1; p <= f.Points; p++ {
 			feature.Points = append(feature.Points, lcl[fmt.Sprintf("%sp%d", k, p)])
 		}
@@ -185,6 +208,9 @@ func WhatsNewAllCards(lcl map[string]string) []WhatsNewCard {
 	}
 	return out
 }
+
+// WhatsNewFigureKeys lists the translations a picture's words come from.
+func WhatsNewFigureKeys(figure string) []string { return figureKeys[figure] }
 
 // WhatsNewSeenHandler records that the card was closed (POST /whats-new/seen).
 func WhatsNewSeenHandler(c *gin.Context) {

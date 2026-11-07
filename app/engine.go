@@ -109,7 +109,7 @@ func NewEngine(cfg Config) (*gin.Engine, error) {
 		photoSvc = handlers.NewPhotoCompressService(cfg.DB, cfg.DataDir, cfg.UploadDir)
 	}
 
-	whatsNew := &handlers.WhatsNew{DB: cfg.DB, Version: cfg.ReleaseVersion}
+	whatsNew := &handlers.WhatsNew{DB: cfg.DB, Version: cfg.ReleaseVersion, Units: configStore.Units}
 	if cfg.Demo {
 		whatsNew.Version = ""
 	}

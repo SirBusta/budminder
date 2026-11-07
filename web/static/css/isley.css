@@ -4828,6 +4828,48 @@ body.bm-tour-open { overflow: hidden; }
 .wn-dots i.on { background: var(--bt-green); }
 .wn-foot-l { display: flex; align-items: center; gap: 10px; margin-right: auto; }
 
+/* A card's drawn picture (whats-new.js, mockup data/mockups/whatsnew/v3.html):
+   shapes in theme colors, played once when the card opens, still under reduced motion. */
+.wn-fig { display: block; width: 100%; height: auto; margin: 8px 0 10px; border-radius: 12px; font-family: inherit;
+    --wi-bg: #eaf2ec; --wi-dot: rgba(22,163,74,.16); --wi-panel: #fff; --wi-line: #e5e7eb; --wi-fg: #1f2937; --wi-muted: #6b7280;
+    --wi-bar: #d3d9df; --wi-bar2: #e6e9ed; --wi-red: #dc2626; --wi-area: rgba(220,38,38,.07); --wi-shade: rgba(220,38,38,.13);
+    --wi-hover: #f3f4f6; --wi-accent: #c2410c; --wi-green: #16a34a; --wi-ended: #6b7280; --wi-arrow: var(--bt-ring, #9333ea); --wi-sh: rgba(15,23,42,.14); }
+[data-bs-theme="dark"] .wn-fig {
+    --wi-bg: #17201b; --wi-dot: rgba(34,197,94,.14); --wi-panel: #222930; --wi-line: #353e47; --wi-fg: #e5e7eb; --wi-muted: #9ca3af;
+    --wi-bar: #414b55; --wi-bar2: #343c45; --wi-red: #f87171; --wi-area: rgba(248,113,113,.08); --wi-shade: rgba(248,113,113,.17);
+    --wi-hover: #2b333b; --wi-accent: #f59e0b; --wi-green: #22c55e; --wi-ended: #6b7280; --wi-sh: rgba(0,0,0,.45); }
+.wn-fig .bg { fill: var(--wi-bg); } .wn-fig .dot { fill: var(--wi-dot); }
+.wn-fig .panel { fill: var(--wi-panel); stroke: var(--wi-line); }
+.wn-fig .fg { fill: var(--wi-fg); } .wn-fig .mu { fill: var(--wi-muted); } .wn-fig .red { fill: var(--wi-red); } .wn-fig .grn { fill: var(--wi-green); }
+.wn-fig .bar { fill: var(--wi-bar); } .wn-fig .bar2 { fill: var(--wi-bar2); } .wn-fig .sep { stroke: var(--wi-line); }
+.wn-fig .hover { fill: var(--wi-hover); } .wn-fig .accent { fill: var(--wi-accent); }
+.wn-fig .pill-red { fill: var(--wi-red); } .wn-fig .pill-end { fill: var(--wi-ended); } .wn-fig .pill-t { fill: #fff; font-weight: 700; font-size: 8.5px; }
+.wn-fig .grid { stroke: var(--wi-line); stroke-width: 1; }
+.wn-fig .limit { stroke: var(--wi-red); stroke-width: 1.3; stroke-dasharray: 5 4; fill: none; }
+.wn-fig .line { stroke: var(--wi-red); stroke-width: 2.2; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.wn-fig .area { fill: var(--wi-area); } .wn-fig .shade { fill: var(--wi-shade); }
+.wn-fig .start { stroke: var(--wi-green); stroke-width: 1.8; }
+.wn-fig .dotr { fill: var(--wi-red); stroke: var(--wi-panel); stroke-width: 1.5; }
+.wn-fig .tag { fill: var(--wi-panel); stroke: var(--wi-red); stroke-width: 1.2; }
+.wn-fig .tag2 { fill: var(--wi-panel); stroke: var(--wi-line); }
+.wn-fig .arrow { stroke: var(--wi-arrow); stroke-width: 2.6; fill: none; stroke-linecap: round; }
+.wn-fig .head { fill: var(--wi-arrow); }
+.wn-fig .cur { fill: #fff; stroke: #111827; stroke-width: 1.2; stroke-linejoin: round; }
+.wn-fig .halo { fill: var(--wi-arrow); opacity: .18; }
+.wn-fig .p1 { filter: drop-shadow(0 4px 10px var(--wi-sh)); }
+.wn-fig .fa { font-family: "Font Awesome 6 Free"; font-weight: 900; }
+.wn-fig.play .a-cur   { animation: wiCur .7s cubic-bezier(.2,.8,.3,1) .2s both; }
+.wn-fig.play .a-hov   { animation: wiFade .25s ease .85s both; }
+.wn-fig.play .a-arrow { stroke-dasharray: 340; animation: wiDraw .75s ease-in-out 1.15s both; }
+.wn-fig.play .a-head  { animation: wiFade .15s ease 1.8s both; }
+.wn-fig.play .a-shade { transform-box: fill-box; transform-origin: left center; animation: wiGrow .6s ease-out 1.95s both; }
+.wn-fig.play .a-mark  { animation: wiFade .3s ease 2.15s both; }
+@keyframes wiCur  { from { opacity: 0; transform: translate(70px, 60px); } to { opacity: 1; transform: none; } }
+@keyframes wiFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes wiDraw { from { stroke-dashoffset: 340; } to { stroke-dashoffset: 0; } }
+@keyframes wiGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .wn-fig.play * { animation: none !important; } }
+
 /* Beta tag and note (Settings > Alerts) */
 .st-beta { display: inline-block; margin-left: .4rem; padding: 0 .4rem; border-radius: 999px; background: rgba(124, 58, 237, .12); color: #6d28d9; font-size: .68rem; font-style: normal; font-weight: 700; line-height: 1.35rem; vertical-align: middle; white-space: nowrap; }
 [data-bs-theme="dark"] .st-beta { background: rgba(167, 139, 250, .18); color: #c4b5fd; }
