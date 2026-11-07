@@ -15,6 +15,7 @@ Runs in **Docker** (preferred), for example on Unraid, a Synology NAS or a Raspb
 <a href="#linux-step-by-step"><img src="https://img.shields.io/badge/Linux-download-16a34a?logo=linux&logoColor=white" alt="Linux: download"></a>
 
 [![Latest release](https://img.shields.io/github/v/release/SirBusta/budminder?color=16a34a&label=release)](https://github.com/SirBusta/budminder/releases)
+[![Downloads](https://img.shields.io/github/downloads/SirBusta/budminder/total?color=16a34a)](https://github.com/SirBusta/budminder/releases)
 [![Docker image](https://img.shields.io/badge/docker-ghcr.io%2Fsirbusta%2Fbudminder-16a34a?logo=docker&logoColor=white)](https://github.com/SirBusta/budminder/pkgs/container/budminder)
 [![License: MIT](https://img.shields.io/badge/license-MIT-16a34a)](LICENSE)
 
