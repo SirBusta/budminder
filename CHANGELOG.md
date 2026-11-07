@@ -25,6 +25,8 @@ used three parts.
 
 ## [Unreleased]
 
+## [2.3] - 2026-11-07
+
 ### Added
 
 - **Recent alerts** in **Settings > Alerts** now shows the reading when each alert started, the highest or lowest reading while it was active, and the limit. If the limit changed during the alert, for example when the lights turned off, each limit is listed. **Zone** and **Type** filters appear when the list has more than one zone or type.
