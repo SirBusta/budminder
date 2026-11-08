@@ -17,6 +17,10 @@ Only switch networks you trust, such as your own home Wi-Fi, to Private.
 
 If the Today dashboard warns that **AC Infinity refused BudMinder's sign-in**, navigate to **Settings → Integrations → AC Infinity**, click **Retrieve Token** and re-enter your account credentials. Check **Stay signed in** so BudMinder can renew authentication tokens automatically in the future. See [AC Infinity](/manual/ac-infinity#stay-signed-in).
 
+## Vivosun readings stopped
+
+If the Vivosun card on [Manage sensors](/manual/manage-sensors) shows **Sign-in expired**, go to **Settings → Integrations → Vivosun** and click **Sign in again**. If it shows **No new readings**, check that the device is on and connected in the Vivosun app. See [Vivosun](/manual/vivosun#if-readings-stop).
+
 ## Ecowitt or Home Assistant readings stopped
 
 Inspect the connection status cards under [Manage sensors](/manual/manage-sensors). A status of **Not responding** indicates that BudMinder cannot reach the host: verify the device is powered on, connected to your network and that its IP address has not changed. A status of **Token refused** (Home Assistant) indicates an invalid or revoked access token; generate a fresh token in Home Assistant and paste it into BudMinder settings.

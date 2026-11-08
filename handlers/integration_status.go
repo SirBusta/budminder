@@ -12,6 +12,7 @@ import (
 
 	"isley/config"
 	"isley/homeassistant"
+	"isley/vivosun"
 )
 
 // IntegrationStatus is one integration's state for the pages:
@@ -30,7 +31,7 @@ type IntegrationStatus struct {
 }
 
 // integrationSources lists the integrations in display order.
-var integrationSources = []string{"acinfinity", "ecowitt", homeassistant.Source}
+var integrationSources = []string{"acinfinity", "ecowitt", homeassistant.Source, vivosun.Source}
 
 // IntegrationStatuses works out every integration's status.
 func IntegrationStatuses(db *sql.DB, store *config.Store) map[string]IntegrationStatus {
@@ -44,6 +45,9 @@ func IntegrationStatuses(db *sql.DB, store *config.Store) map[string]Integration
 			enabled, configured = store.ECEnabled() == 1, len(store.ECDevices()) > 0
 		case homeassistant.Source:
 			enabled, configured = store.HAEnabled() == 1, store.HAURL() != "" && store.HAToken() != ""
+		case vivosun.Source:
+			access, login := store.VSTokens()
+			enabled, configured = store.VSEnabled() == 1, access != "" && login != ""
 		}
 		newest, hasReadings := newestReading(db, src)
 		out[src] = integrationState(enabled, configured, store.IntegrationHealth(src), newest, hasReadings,

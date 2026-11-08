@@ -31,6 +31,7 @@
       {"slug": "environment", "title": "Environment page", "paths": ["/sensors", "/graph/*"]},
       {"slug": "manage-sensors", "title": "Manage sensors", "paths": ["/sensors/manage"]},
       {"slug": "ac-infinity", "title": "AC Infinity"},
+      {"slug": "vivosun", "title": "Vivosun"},
       {"slug": "ecowitt", "title": "Ecowitt"},
       {"slug": "home-assistant", "title": "Home Assistant"},
       {"slug": "your-own-sensors", "title": "Your own sensors"},

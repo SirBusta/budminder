@@ -3,6 +3,7 @@
 ## Sensors
 
 - **AC Infinity**: authenticate cloud controller accounts, configure data polling frequency and toggle **Stay signed in**. See [AC Infinity](/manual/ac-infinity).
+- **Vivosun** (Beta): sign in with your Vivosun app account. See [Vivosun](/manual/vivosun).
 - **EcoWitt**: enable direct local gateway polling. Network IP addresses are designated during sensor scanning. See [Ecowitt](/manual/ecowitt).
 - **Home Assistant**: configure your Home Assistant host address, port and long-lived access token. See [Home Assistant](/manual/home-assistant).
 

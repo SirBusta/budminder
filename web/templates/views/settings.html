@@ -111,6 +111,29 @@
                     </div>
                 </div>
 
+                <div class="st-card" id="vsCard">
+                    <div class="st-card-h"><i class="fa-solid fa-leaf"></i><div><h3>Vivosun<em class="st-beta">{{ .lcl.al_beta }}</em></h3><p>{{ .lcl.st_vs_desc }}</p></div></div>
+                    <div class="st-row">
+                        <div class="st-row-l">
+                            {{ $vs := index .integrations "vivosun" }}{{ $vsAuth := and .settings.Vivosun.SignedIn (eq $vs.State "auth") }}<span id="vsBadge" class="badge bg-{{ if and .settings.Vivosun.SignedIn (not $vsAuth) }}success{{ else }}danger{{ end }} align-self-start">{{ if $vsAuth }}{{ .lcl.aci_sign_in_expired }}{{ else if .settings.Vivosun.SignedIn }}{{ .lcl.st_vs_signed_in }}{{ else }}{{ .lcl.st_vs_not_signed_in }}{{ end }}</span>
+                            <small>{{ .lcl.st_vs_signin_desc }}</small>
+                            <small class="st-aci-stay{{ if not .settings.Vivosun.StaySignedIn }} d-none{{ end }}" id="vsStayNote"><i class="fa-solid fa-rotate me-1"></i>{{ .lcl.st_vs_auto_signin_on }} <a href="#" id="vsForget">{{ .lcl.aci_forget }}</a></small>
+                        </div>
+                        <div class="st-row-r"><button type="button" class="st-btn light" id="vsSignBtn" data-bs-toggle="modal" data-bs-target="#vsLoginModal"><i class="fa-solid fa-right-to-bracket me-1"></i><span id="vsSignLabel">{{ if $vsAuth }}{{ .lcl.st_vs_sign_in_again }}{{ else }}{{ .lcl.st_vs_sign_in }}{{ end }}</span></button></div>
+                    </div>
+                    <label class="st-row st-switch">
+                        <div class="st-row-l"><span class="st-label">{{ .lcl.st_vs_enabled_info }}</span></div>
+                        <div class="st-row-r form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch" id="vsEnabled" data-autosave {{ if .settings.Vivosun.Enabled }}checked{{ end }}></div>
+                    </label>
+                    <div class="st-row">
+                        <div class="st-row-l"><small>{{ .lcl.st_vs_manage_desc }}</small></div>
+                        <div class="st-row-r"><a class="st-btn light" href="/sensors/manage"><i class="fa-solid fa-temperature-half me-1"></i>{{ .lcl.st_sec_sensors }}</a></div>
+                    </div>
+                    <div class="st-row">
+                        <div class="st-row-l"><small><b>{{ .lcl.al_beta }}:</b> {{ .lcl.st_vs_beta_note }} <a href="mailto:budminder.app@gmail.com?subject=BudMinder%20Vivosun%20data">budminder.app@gmail.com</a>{{ .lcl.st_vs_beta_note_end }}</small></div>
+                    </div>
+                </div>
+
                 <div class="st-card">
                     <div class="st-card-h"><i class="fa-solid fa-satellite-dish"></i><div><h3>{{ .lcl.settings_ecowitt }}</h3><p>{{ .lcl.ecowitt_enabled_desc }}</p></div></div>
                     <label class="st-row st-switch">
@@ -976,6 +999,37 @@
     </div>
 </div>
 
+<!-- Vivosun sign-in -->
+<div class="modal fade" id="vsLoginModal" tabindex="-1" aria-labelledby="vsLoginModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="vsLoginModalLabel">{{ .lcl.st_vs_login_title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ .lcl.title_close }}"></button>
+            </div>
+            <div class="modal-body">
+                <form id="vsLoginForm">
+                    <p class="small">{{ .lcl.st_vs_login_intro }}</p>
+                    <div class="mb-3">
+                        <label for="vsEmail" class="form-label">{{ .lcl.title_email }}</label>
+                        <input type="email" class="form-control" id="vsEmail" autocomplete="username" maxlength="256" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="vsPassword" class="form-label">{{ .lcl.title_password }}</label>
+                        <input type="password" class="form-control" id="vsPassword" autocomplete="current-password" maxlength="256" required>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="vsStay" {{ if .settings.Vivosun.StaySignedIn }}checked{{ end }}>
+                        <label class="form-check-label" for="vsStay">{{ .lcl.aci_stay_signed_in }}</label>
+                        <div class="form-text">{{ .lcl.st_vs_stay_help }}</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="vsLoginBtn">{{ .lcl.st_vs_sign_in }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Add Zone Modal -->
 <div class="modal fade" id="addZoneModal" tabindex="-1" aria-labelledby="addZoneModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -1631,6 +1685,54 @@
                     console.error("{{ .lcl.error_fetching_token }}", error);
                     uiMessages.showToast(uiMessages.t('generic_error'), 'danger');
                 });
+        });
+    });
+
+    // Vivosun sign-in (Beta). The switch itself saves with the rest of the page.
+    document.addEventListener("DOMContentLoaded", () => {
+        const form = document.getElementById("vsLoginForm");
+        if (!form) return;
+        document.getElementById("vsForget").addEventListener("click", (e) => {
+            e.preventDefault();
+            fetch("/vivosun/forget", { method: "POST" })
+                .then((r) => { if (!r.ok) throw new Error(); })
+                .then(() => {
+                    document.getElementById("vsStayNote").classList.add("d-none");
+                    document.getElementById("vsStay").checked = false;
+                    uiMessages.showToast("{{ .lcl.st_vs_forgotten }}", "success");
+                })
+                .catch(() => uiMessages.showToast(uiMessages.t('generic_error'), 'danger'));
+        });
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const btn = document.getElementById("vsLoginBtn");
+            btn.disabled = true;
+            fetch("/vivosun/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email: document.getElementById("vsEmail").value,
+                    password: document.getElementById("vsPassword").value,
+                    stay_signed_in: document.getElementById("vsStay").checked,
+                }),
+            })
+                .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
+                .then(({ ok, data }) => {
+                    if (!ok || !data.success) throw new Error(data.error || uiMessages.t('generic_error'));
+                    bootstrap.Modal.getInstance(document.getElementById("vsLoginModal")).hide();
+                    document.getElementById("vsPassword").value = "";
+                    document.getElementById("vsStayNote").classList.toggle("d-none", !data.stay_signed_in);
+                    const badge = document.getElementById("vsBadge");
+                    badge.textContent = "{{ .lcl.st_vs_signed_in }}";
+                    badge.classList.remove("bg-danger");
+                    badge.classList.add("bg-success");
+                    document.getElementById("vsSignLabel").textContent = "{{ .lcl.st_vs_sign_in }}";
+                    // Signing in turns reading Vivosun on (saved by the server).
+                    document.getElementById("vsEnabled").checked = true;
+                    uiMessages.showToast("{{ .lcl.st_vs_signed_in_toast }}", "success");
+                })
+                .catch((err) => uiMessages.showToast(err.message || uiMessages.t('generic_error'), 'danger'))
+                .finally(() => { btn.disabled = false; });
         });
     });
 

@@ -25,10 +25,12 @@
     // Home Assistant scans can list dozens of sensors: a filter box, and
     // batteries / power / the like only with "Show all" (f.more).
     let foundQ = "", foundAll = false;
-    const SOURCE_NAMES = { acinfinity: "AC Infinity", ecowitt: "Ecowitt", homeassistant: "Home Assistant" };
+    const SOURCE_NAMES = { acinfinity: "AC Infinity", ecowitt: "Ecowitt", homeassistant: "Home Assistant", vivosun: "Vivosun" };
     const sourceName = s => SOURCE_NAMES[s] || s;
+    const V = P.vivosun || {};
     // Home Assistant sensors all share one "device"; their entity ID says which sensor it is.
-    const deviceText = s => s.source === "homeassistant" ? s.type : s.device;
+    // Vivosun devices are saved by id: show the name from the last poll.
+    const deviceText = s => s.source === "homeassistant" ? s.type : s.source === "vivosun" ? ((V.names || {})[s.device] || s.device) : s.device;
 
     // ---------- Formatting ----------
     function ago(ms) {
@@ -56,20 +58,21 @@
     // ---------- Integration cards ----------
     function renderInteg() {
         const aci = sensors.filter(s => s.source === "acinfinity"), eco = sensors.filter(s => s.source === "ecowitt"), has = sensors.filter(s => s.source === "homeassistant");
+        const vs = sensors.filter(s => s.source === "vivosun");
         const last = list => Math.max(0, ...list.map(s => s.last_at || 0));
-        const card = (cls, icon, title, status, statusCls, meta, problem) => `<div class="sm-ic">
+        const card = (cls, icon, title, status, statusCls, meta, problem, beta) => `<div class="sm-ic">
             <div class="logo ${cls}"><i class="fa-solid ${icon}"></i></div>
-            <div class="sm-ic-b"><h3>${esc(title)}</h3><div class="st ${statusCls}"><i class="fa-solid fa-circle"></i>${esc(status)}</div>${problem ? `<div class="sm-ic-problem">${problem}</div>` : ""}<div class="meta">${meta}</div></div>
+            <div class="sm-ic-b"><h3>${esc(title)}${beta ? `<em class="st-beta">${esc(t("sm_vs_beta"))}</em>` : ""}</h3><div class="st ${statusCls}"><i class="fa-solid fa-circle"></i>${esc(status)}</div>${problem ? `<div class="sm-ic-problem">${problem}</div>` : ""}<div class="meta">${meta}</div></div>
             <div class="acts"><a href="/settings#integrations">${esc(t("sm_settings_link"))}</a></div></div>`;
         const A = P.aci || {}, E = P.ecowitt || {}, H = P.homeassistant || {}, ST = P.status || {};
         // The status comes from how the last polls went and when readings
         // last arrived (handlers/integration_status.go), not just "on + token saved".
-        const SETUP = { acinfinity: "sm_status_no_token", ecowitt: "sm_status_on", homeassistant: "sm_ha_needs_setup" };
-        const AUTH = { acinfinity: "sm_state_auth_aci", homeassistant: "sm_state_auth_ha" };
+        const SETUP = { acinfinity: "sm_status_no_token", ecowitt: "sm_status_on", homeassistant: "sm_ha_needs_setup", vivosun: "sm_vs_not_signed_in" };
+        const AUTH = { acinfinity: "sm_state_auth_aci", homeassistant: "sm_state_auth_ha", vivosun: "sm_vs_state_auth" };
         function status(src) {
             const s = ST[src] || { state: "off" };
             const label = {
-                off: t("sm_status_off"), setup: t(SETUP[src]), waiting: t("sm_state_waiting"), ok: t(src === "acinfinity" ? "sm_status_connected" : "sm_status_on"),
+                off: t("sm_status_off"), setup: t(SETUP[src]), waiting: t("sm_state_waiting"), ok: t(src === "acinfinity" || src === "vivosun" ? "sm_status_connected" : "sm_status_on"),
                 auth: t(AUTH[src] || "sm_state_failing"), failing: t("sm_state_failing"), stale: t("sm_state_stale"),
             }[s.state] || s.state;
             const cls = { off: "off", setup: "warn", waiting: "warn", ok: "ok", auth: "bad", failing: "bad", stale: "bad" }[s.state] || "off";
@@ -85,8 +88,12 @@
         const haLast = last(has);
         const haMeta = [H.url ? t("sm_ha_server", { addr: H.url }) : "", t("sm_n_sensors", { n: has.length }), haLast ? t("sm_updated", { ago: ago(haLast) }) : ""].filter(Boolean).join(" · ");
         const [aL, aC, aP] = status("acinfinity"), [eL, eC, eP] = status("ecowitt"), [hL, hC, hP] = status("homeassistant");
+        const vsLast = last(vs);
+        const vsMeta = [V.devices ? t(V.devices === 1 ? "sm_vs_n_device_one" : "sm_vs_n_devices", { n: V.devices }) : "", t("sm_n_sensors", { n: vs.length }), vsLast ? t("sm_updated", { ago: ago(vsLast) }) : ""].filter(Boolean).join(" · ");
+        const [vL, vC, vP] = status("vivosun");
         document.getElementById("smInteg").innerHTML =
             card("aci", "fa-fan", "AC Infinity", aL, aC, esc(aciMeta), aP) +
+            (V.shown ? card("vs", "fa-leaf", "Vivosun", vL, vC, esc(vsMeta), vP, true) : "") +
             card("eco", "fa-satellite-dish", "Ecowitt", eL, eC, esc(ecoMeta), eP) +
             card("ha", "fa-house-signal", "Home Assistant", hL, hC, esc(haMeta), hP);
     }
@@ -116,7 +123,7 @@
         el.innerHTML = `<div class="sm-found"><h3><i class="fa-solid fa-circle-plus me-1"></i>${esc(t(found.length === 1 ? "sm_found_one" : "sm_found_n", { n: found.length }))}</h3>${tools}
             ${shown.length ? "" : `<div class="sm-found-none">${esc(t("sm_found_nothing_shown"))}</div>`}
             ${shown.map(([f, i]) => `<div class="sm-found-row">
-                <div class="nm"><b>${esc(f.name)}</b><small>${esc(sourceName(f.source))} · ${esc(deviceText(f))} · ${esc(typeLabel(f))}${esc(foundValue(f))}</small></div>
+                <div class="nm"><b>${esc(f.name)}</b><small>${esc(sourceName(f.source))} · ${esc(deviceText(f))} · ${esc(typeLabel(f))}${esc(foundValue(f))}</small>${f.note ? `<small class="vs-note"><i class="fa-solid fa-circle-info me-1"></i>${esc(t(f.note))}</small>` : ""}</div>
                 <select class="form-select form-select-sm" id="smFz${i}" aria-label="${esc(t("sm_tent"))}">${zoneOptions(guess(f))}</select>
                 <input class="form-control form-control-sm d-none" id="smFn${i}" placeholder="${esc(t("sm_new_tent_name"))}" maxlength="255" aria-label="${esc(t("sm_new_tent_name"))}">
                 <button type="button" class="sm-btn small" data-add="${i}">${esc(t("sm_add"))}</button>
@@ -148,7 +155,9 @@
     }
     // Within a tent: readings, then ports, then hidden; inside before outside.
     const KIND_ORDER = { temp: 0, hum: 1, vpd: 2, co2: 3, soil: 4, ec: 5, light: 6, other: 7, port: 8 };
-    const rowOrder = (a, b) => (a.hidden - b.hidden) || (K.isPort(a) - K.isPort(b)) || (K.isOutside(a) - K.isOutside(b)) ||
+    // Vivosun's electronics and cooling coil temperatures (not air) go last.
+    const notAir = s => /^VS\.(coreTemp|evapT)$/.test(s.type) ? 1 : 0;
+    const rowOrder = (a, b) => (a.hidden - b.hidden) || (K.isPort(a) - K.isPort(b)) || (notAir(a) - notAir(b)) || (K.isOutside(a) - K.isOutside(b)) ||
         (KIND_ORDER[K.kind(a)] - KIND_ORDER[K.kind(b)]) || a.type.localeCompare(b.type, undefined, { numeric: true }) || a.name.localeCompare(b.name);
     function renderList() {
         const q = document.getElementById("smQ").value.trim().toLowerCase();
@@ -203,6 +212,7 @@
     async function addFound(i) {
         const f = found[i], sel = document.getElementById("smFz" + i), nameIn = document.getElementById("smFn" + i);
         const body = { source: f.source, device: f.device, type: f.type, name: f.name, unit: f.unit };
+        if (f.home === false) body.home = false;
         if (sel.value === "new") {
             const nm = nameIn.value.trim();
             if (!nm) { nameIn.focus(); return false; }
@@ -215,7 +225,7 @@
         }
         if (!sensors.some(s => s.id === data.id)) {
             sensors.push({ id: data.id, name: f.name, source: f.source, device: f.device, type: f.type, unit: f.unit, zone_id: data.zone_id || 0,
-                zone: zoneName(data.zone_id), show_env: true, show_home: true, hidden: false, value: null, last_at: 0, stale: true, plant_ids: [] });
+                zone: zoneName(data.zone_id), show_env: true, show_home: f.home !== false, hidden: false, value: null, last_at: 0, stale: true, plant_ids: [] });
         }
         found.splice(i, 1);
         return f.name + " → " + zoneName(data.zone_id);
@@ -305,18 +315,48 @@
         }
     }
 
-    // ---------- Raw AC Infinity data (troubleshooting) ----------
+    // ---------- Troubleshooting: raw AC Infinity or Vivosun data ----------
+    // A row per cloud source that is turned on; no card when neither is.
+    function renderTrouble() {
+        const aciOn = !!(P.aci || {}).enabled, vsOn = !!V.enabled;
+        document.getElementById("smTrAci").hidden = !aciOn;
+        document.getElementById("smTrVs").hidden = !vsOn;
+        document.getElementById("smTrouble").hidden = !aciOn && !vsOn;
+    }
+    let dumpSrc = "aci";
     async function fetchDump() {
         const status = document.getElementById("smDumpStatus"), out = document.getElementById("smDumpContent");
         status.textContent = t("sm_fetching"); out.textContent = "";
+        // Vivosun's file always has personal details hidden.
+        const url = dumpSrc === "vs" ? "/sensors/dumpVivosun"
+            : "/sensors/dumpACI?redact=" + (document.getElementById("smDumpRedact").checked ? "true" : "false");
         try {
-            const resp = await fetch("/sensors/dumpACI?redact=" + (document.getElementById("smDumpRedact").checked ? "true" : "false"), { cache: "no-store" });
+            const resp = await fetch(url, { cache: "no-store" });
             if (!resp.ok) throw new Error();
             out.textContent = await resp.text();
             status.textContent = "";
         } catch (e) {
-            status.innerHTML = `<span class="text-danger">${esc(t("sm_dump_failed"))}</span>`;
+            status.innerHTML = `<span class="text-danger">${esc(t(dumpSrc === "vs" ? "sm_vs_dump_failed" : "sm_dump_failed"))}</span>`;
         }
+    }
+    function openDump(src) {
+        dumpSrc = src;
+        document.getElementById("smDumpTitle").textContent = t(src === "vs" ? "sm_vs_dump_title" : "sm_dump_title_aci");
+        document.getElementById("smDumpHelp").classList.toggle("d-none", src !== "vs");
+        document.getElementById("smDumpRedactWrap").classList.toggle("d-none", src === "vs");
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("smDump")).show();
+        return fetchDump();
+    }
+    function saveDump() {
+        const text = document.getElementById("smDumpContent").textContent;
+        if (!text) return;
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+        a.download = dumpSrc === "vs" ? "budminder-vivosun-data.json" : "budminder-ac-infinity-data.json";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     }
 
     // ---------- Events ----------
@@ -325,6 +365,7 @@
         if (!el) return;
         if (el.id === "smScanACI") return scan(el, "/sensors/scanACI", {});
         if (el.id === "smScanHA") return scan(el, "/sensors/scanHA", {});
+        if (el.id === "smScanVS") return scan(el, "/sensors/scanVivosun", {});
         if (el.id === "smScanEco") {
             const addr = document.getElementById("smEcoAddr");
             if (!addr.value) addr.value = ((P.ecowitt || {}).devices || [])[0] || "";
@@ -361,7 +402,9 @@
         if (el.id === "smDel") return renderDelete(true);
         if (el.id === "smDelNo") return renderDelete(false);
         if (el.id === "smDelYes") return deleteSensor();
-        if (el.id === "smDumpOpen") { bootstrap.Modal.getOrCreateInstance(document.getElementById("smDump")).show(); return fetchDump(); }
+        if (el.id === "smDumpOpen") return openDump("aci");
+        if (el.id === "smDumpVSOpen") return openDump("vs");
+        if (el.id === "smDumpSave") return saveDump();
         if (el.id === "smDumpRefresh") return fetchDump();
         if (el.id === "smDumpCopy") {
             const text = document.getElementById("smDumpContent").textContent;
@@ -388,5 +431,6 @@
     });
     document.getElementById("smEcoAddr").addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("smEcoGo").click(); });
 
+    renderTrouble();
     render();
 })();

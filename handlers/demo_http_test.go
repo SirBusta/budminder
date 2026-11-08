@@ -113,8 +113,8 @@ func TestDemo_RefusesEverythingNotOnTheList(t *testing.T) {
 		{"POST", "/login"}, {"POST", "/setup"}, {"POST", "/change-password"}, {"POST", "/settings"},
 		{"POST", "/settings/backup/create"}, {"POST", "/settings/backup/restore"}, {"POST", "/settings/backup/sqlite/upload"},
 		{"POST", "/settings/upload-logo"}, {"POST", "/settings/homeassistant/test"},
-		{"POST", "/sensors/scanACI"}, {"POST", "/sensors/scanEC"}, {"POST", "/sensors/scanHA"},
-		{"POST", "/streams"}, {"POST", "/aci/login"}, {"POST", "/zones"}, {"POST", "/activities"},
+		{"POST", "/sensors/scanACI"}, {"POST", "/sensors/scanEC"}, {"POST", "/sensors/scanHA"}, {"POST", "/sensors/scanVivosun"},
+		{"POST", "/streams"}, {"POST", "/aci/login"}, {"POST", "/vivosun/login"}, {"POST", "/vivosun/forget"}, {"POST", "/zones"}, {"POST", "/activities"},
 		{"POST", "/breeders"}, {"POST", "/breeders/reference/refresh"}, {"DELETE", "/strains/1"},
 		{"DELETE", "/plant/delete/1"}, {"POST", "/plant/1/images/upload"}, {"POST", "/decorateImage"},
 		{"POST", "/smoke/1/photos/url"}, {"POST", "/smoke/1/photos"}, {"DELETE", "/smoke/1"},
@@ -143,7 +143,7 @@ func TestDemo_NoExportsLogsOrBackups(t *testing.T) {
 	e := newDemo(t)
 	for _, p := range []string{"/activities/export/csv?plant_id=1", "/activities/export/xlsx?plant_id=1",
 		"/settings/logs", "/settings/logs/download", "/settings/backup/list", "/settings/backup/sqlite/download",
-		"/sensors/dumpACI", "/strains/cannadb/search?q=grape"} {
+		"/sensors/dumpACI", "/sensors/dumpVivosun", "/strains/cannadb/search?q=grape"} {
 		resp := e.client.Get(p)
 		testutil.DrainAndClose(resp)
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode, p)

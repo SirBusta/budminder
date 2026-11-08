@@ -10,7 +10,7 @@ Today is your main dashboard. It shows pending tasks, followed by each tent with
   - plants not watered in 3 days or more (marked red after 6 days)
   - plants not fed in 10 days or more (marked red after 18 days)
   - plants without a new photo in 14 days
-  - sensors that have stopped reporting, or integrations (AC Infinity, Ecowitt or Home Assistant) that have disconnected or require re-authentication
+  - sensors that have stopped reporting, or integrations (AC Infinity, Vivosun, Ecowitt or Home Assistant) that have disconnected or require re-authentication
   - strains with seeds older than 2 years
 - {4} **Action buttons let you resolve items quickly.** Clicking **Watered it** or **Fed it** opens the log window prefilled with the plant, the selected activity and today's date. Other lines provide direct shortcuts such as **Add photo**, **Check sensors**, **Sign in again** or **Open Seed Vault**.
 

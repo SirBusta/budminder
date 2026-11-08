@@ -301,6 +301,14 @@ func SaveSettings(c *gin.Context) {
 		}
 	}
 
+	if vs := settings.Vivosun; vs != nil {
+		if err := saveBool("vivosun.enabled", vs.Enabled, store.SetVSEnabled); err != nil {
+			fieldLogger.WithError(err).Error("Failed to save Vivosun setting")
+			apiInternalError(c, "api_failed_to_save_settings")
+			return
+		}
+	}
+
 	// Timezone setting — always persist (empty = system default)
 	err = UpdateSetting(db, store, "timezone", settings.Timezone)
 	if err != nil {
@@ -432,6 +440,12 @@ func GetSettings(db *sql.DB) types.SettingsData {
 			}
 		case "aci.password":
 			settingsData.ACI.StaySignedIn = value != ""
+		case "vivosun.enabled":
+			settingsData.Vivosun.Enabled = value == "1"
+		case "vivosun.access_token":
+			settingsData.Vivosun.SignedIn = value != ""
+		case "vivosun.password":
+			settingsData.Vivosun.StaySignedIn = value != ""
 		case "homeassistant.enabled":
 			settingsData.HomeAssistant.Enabled = value == "1"
 		case "homeassistant.url":
@@ -1581,6 +1595,16 @@ func LoadSettings(db *sql.DB, store *config.Store) {
 	if strHAToken, err := GetSetting(db, "homeassistant.token"); err == nil {
 		store.SetHAToken(strHAToken)
 	}
+
+	if v, err := GetSetting(db, "vivosun.enabled"); err == nil {
+		if i, err := strconv.Atoi(v); err == nil {
+			store.SetVSEnabled(i)
+		}
+	}
+	// Missing rows (never signed in) read as "": not signed in.
+	access, _ := GetSetting(db, "vivosun.access_token")
+	login, _ := GetSetting(db, "vivosun.login_token")
+	store.SetVSTokens(access, login)
 
 	// On first boot after the timezone migration, capture a baseline snapshot
 	// of the system timezone state even before the user touches settings.

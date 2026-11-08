@@ -5,7 +5,8 @@
 window.SensorKinds = (function () {
     "use strict";
     const isPort = s => /^ACIP\./.test(s.type);
-    const isOutside = s => /outside|outdoor/i.test(s.name) || /^ACI\.\d+\.[4-7]$/.test(s.type);
+    // Vivosun air outside the device (the VCure's room readings, controllers' outside ones) ends in ".out".
+    const isOutside = s => /outside|outdoor/i.test(s.name) || /^ACI\.\d+\.[4-7]$/.test(s.type) || /^VS\..+\.out$/.test(s.type);
     function kind(s) {
         if (isPort(s)) return "port";
         const u = (s.unit || "").toLowerCase(), ty = s.type + " " + s.name;

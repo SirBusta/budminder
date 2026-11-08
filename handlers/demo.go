@@ -151,6 +151,7 @@ var demoBlockedReads = map[string]bool{
 	"/settings/backup/restore/status":  true,
 	"/settings/backup/sqlite/download": true,
 	"/sensors/dumpACI":                 true,
+	"/sensors/dumpVivosun":             true,
 	"/strains/cannadb/search":          true,
 	"/api/overlay":                     true,
 }

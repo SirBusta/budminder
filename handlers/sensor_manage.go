@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"isley/config"
 	"isley/homeassistant"
 	"isley/logger"
 	"isley/model"
 	"isley/utils"
+	"isley/vivosun"
 	"net/http"
 	"sort"
 	"strconv"
@@ -34,6 +36,11 @@ type foundSensor struct {
 	// sensors that are only listed with "Show all" (batteries, power, …).
 	Value *float64 `json:"value,omitempty"`
 	More  bool     `json:"more,omitempty"`
+	// Vivosun scans: a translation key for a gray line saying what the
+	// reading measures, and Home false for readings that start off the Home
+	// page (room air, electronics, cooling coil).
+	Note string `json:"note,omitempty"`
+	Home *bool  `json:"home,omitempty"`
 }
 
 type sensorCollector []foundSensor
@@ -67,7 +74,7 @@ func newSensorsOnly(db *sql.DB, found []foundSensor) []foundSensor {
 
 // scannableSources are the integrations whose scan results can be added
 // one by one from the Manage sensors page.
-var scannableSources = map[string]bool{"acinfinity": true, "ecowitt": true, homeassistant.Source: true}
+var scannableSources = map[string]bool{"acinfinity": true, "ecowitt": true, homeassistant.Source: true, vivosun.Source: true}
 
 // AddScannedSensorHandler saves one sensor from a scan preview into a tent
 // (POST /sensors/add). Adding the same sensor twice is a no-op.
@@ -81,6 +88,9 @@ func AddScannedSensorHandler(c *gin.Context) {
 		Unit    string `json:"unit"`
 		ZoneID  *int   `json:"zone_id"`
 		NewZone string `json:"new_zone"`
+		// Home false: the new sensor starts off the Home page (the scan's
+		// suggestion for room air and the like). Missing = on.
+		Home *bool `json:"home"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		apiBadRequest(c, "api_invalid_input")
@@ -124,11 +134,19 @@ func AddScannedSensorHandler(c *gin.Context) {
 		input.ZoneID = &zoneID
 	}
 
+	var existing int
+	isNew := errors.Is(db.QueryRow(`SELECT id FROM sensors WHERE source = $1 AND device = $2 AND type = $3`,
+		input.Source, input.Device, input.Type).Scan(&existing), sql.ErrNoRows)
 	id, err := findOrCreateSensor(db, input.Name, input.Source, input.Device, input.Type, input.ZoneID, input.Unit)
 	if err != nil {
 		fieldLogger.WithError(err).Error("Failed to add sensor")
 		apiInternalError(c, "api_failed_to_update_sensor")
 		return
+	}
+	if isNew && input.Home != nil && !*input.Home {
+		if _, err := db.Exec(`UPDATE sensors SET visibility = $1 WHERE id = $2`, visibilityFor(false, false), id); err != nil {
+			fieldLogger.WithError(err).Error("Failed to set where the new sensor shows")
+		}
 	}
 	if input.Source == "ecowitt" {
 		// The watcher polls the gateways listed in the store.
@@ -665,6 +683,7 @@ func SensorsPageData(c *gin.Context, prefix string, lang string, translations ma
 		data["ecowitt"] = gin.H{"enabled": store.ECEnabled() == 1, "devices": devices}
 		// The address is shown on the card; the token itself never leaves the server.
 		data["homeassistant"] = gin.H{"enabled": store.HAEnabled() == 1, "url": store.HAURL(), "token_set": store.HAToken() != ""}
+		data["vivosun"] = vivosunPageData(store, data["sensors"].([]ManagedSensor))
 		data["status"] = IntegrationStatuses(db, store)
 	}
 	return data
@@ -705,4 +724,21 @@ func withClimate(db *sql.DB, sensors []ManagedSensor, loc *time.Location) []Mana
 		}
 	}
 	return sensors
+}
+
+// vivosunPageData is what Manage sensors needs about Vivosun: whether its
+// card and Scan button show (on, signed in, or sensors added), and the
+// device names from the last poll or scan, by device id.
+func vivosunPageData(store *config.Store, sensors []ManagedSensor) gin.H {
+	has := false
+	for _, s := range sensors {
+		if s.Source == vivosun.Source {
+			has = true
+			break
+		}
+	}
+	a, _ := store.VSTokens()
+	names := store.VSDeviceNames()
+	return gin.H{"shown": has || a != "" || store.VSEnabled() == 1, "enabled": store.VSEnabled() == 1,
+		"signed_in": a != "", "devices": len(names), "names": names}
 }

@@ -314,6 +314,7 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.POST("/sensors/scanACI", handlers.ScanACInfinitySensors)
 	r.POST("/sensors/scanEC", handlers.ScanEcoWittSensors)
 	r.POST("/sensors/scanHA", handlers.ScanHomeAssistantSensors)
+	r.POST("/sensors/scanVivosun", handlers.ScanVivosunSensors)
 	r.POST("/sensors/edit", handlers.EditSensor)
 	r.DELETE("/sensors/delete/:id", handlers.DeleteSensor)
 	r.PUT("/sensors/:id", handlers.UpdateSensorHandler)
@@ -322,6 +323,7 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 
 	// Debug endpoint to dump raw AC Infinity API response
 	r.GET("/sensors/dumpACI", handlers.DumpACInfinityJSON)
+	r.GET("/sensors/dumpVivosun", handlers.DumpVivosunJSON)
 
 	r.POST("/strains", handlers.AddStrainHandler)
 
@@ -359,6 +361,8 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 
 	r.POST("/aci/login", handlers.ACILoginHandler)
 	r.POST("/aci/forget", handlers.ACIForgetHandler)
+	r.POST("/vivosun/login", handlers.VivosunLoginHandler)
+	r.POST("/vivosun/forget", handlers.VivosunForgetHandler)
 
 	r.POST("/zones", handlers.AddZoneHandler)
 	r.PUT("/zones/:id", handlers.UpdateZoneHandler)

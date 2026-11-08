@@ -182,9 +182,14 @@ type Settings struct {
 	} `json:"straincompass"`
 	// HomeAssistant is a pointer so a settings save that doesn't include it
 	// (an older page, a script) leaves the Home Assistant settings alone.
-	HomeAssistant   *HomeAssistantSettingsInput `json:"homeassistant"`
-	PollingInterval string                      `json:"polling_interval"`
-	GuestMode       bool                        `json:"guest_mode"`
+	HomeAssistant *HomeAssistantSettingsInput `json:"homeassistant"`
+	// Vivosun: a pointer for the same reason; only the switch is saved here
+	// (signing in has its own window).
+	Vivosun *struct {
+		Enabled bool `json:"enabled"`
+	} `json:"vivosun"`
+	PollingInterval string `json:"polling_interval"`
+	GuestMode       bool   `json:"guest_mode"`
 	// DisableUpdateCheck turns off the daily check for new releases.
 	DisableUpdateCheck bool   `json:"disable_update_check"`
 	StreamGrabEnabled  bool   `json:"stream_grab_enabled"`
@@ -213,6 +218,14 @@ type HomeAssistantSettings struct {
 	Enabled  bool   `json:"enabled"`
 	URL      string `json:"url"`
 	TokenSet bool   `json:"token_set"`
+}
+
+// VivosunSettings is what the Settings page is told about Vivosun; the
+// tokens and the password are never sent back.
+type VivosunSettings struct {
+	Enabled      bool `json:"enabled"`
+	SignedIn     bool `json:"signed_in"`
+	StaySignedIn bool `json:"stay_signed_in"`
 }
 
 type ACInfinitySettings struct {
@@ -244,6 +257,7 @@ type SettingsData struct {
 	Cannadb         CannadbSettings       `json:"cannadb"`
 	Straincompass   StraincompassSettings `json:"straincompass"`
 	HomeAssistant   HomeAssistantSettings `json:"homeassistant"`
+	Vivosun         VivosunSettings       `json:"vivosun"`
 	PollingInterval int                   `json:"polling_interval"`
 	GuestMode       bool                  `json:"guest_mode"`
 	// UpdateCheck: the daily check for new releases is on (the default).

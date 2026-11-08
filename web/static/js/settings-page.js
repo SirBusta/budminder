@@ -131,6 +131,7 @@
                 url: val("haUrl").value.trim(),
                 token: val("haToken").value.trim(),
             },
+            vivosun: val("vsEnabled") ? { enabled: val("vsEnabled").checked } : undefined,
             polling_interval: val("pollingInterval").value,
             guest_mode: val("guestMode").checked,
             disable_update_check: !val("updateCheck").checked,

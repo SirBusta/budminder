@@ -227,6 +227,7 @@ func main() {
 
 	w := watcher.New(db, configStore)
 	w.ACIRelogin = handlers.NewACIRelogin(db, configStore, "data", "") // same data folder as the engine
+	w.VSRelogin = handlers.NewVivosunRelogin(db, configStore, "data")
 
 	if !demoMode {
 		// Environment alerts: checked after each poll, sent from their own goroutine.

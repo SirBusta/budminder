@@ -3103,6 +3103,7 @@ th, td {
 .sm-ic .logo.aci { background: #e0f2fe; color: #0369a1; }
 .sm-ic .logo.eco { background: #fef3c7; color: #a16207; }
 .sm-ic .logo.ha { background: #e0f2fe; color: #0284c7; }
+.sm-ic .logo.vs { background: #dcfce7; color: #15803d; }
 .sm-found-tools { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; margin: 0 0 .4rem; }
 .sm-found-tools .sm-search { flex: 1; min-width: 200px; max-width: 360px; }
 .sm-found-none { color: var(--sx-muted); font-size: .85rem; padding: .3rem 0; }
@@ -3177,6 +3178,7 @@ th, td {
 .sm-found-row:first-of-type { border-top: 0; }
 .sm-found-row .nm { flex: 1; min-width: 180px; }
 .sm-found-row .nm small { display: block; color: var(--sx-muted); font-size: .75rem; }
+.sm-found-row .nm .vs-note { margin-top: .1rem; }
 .sm-found-row select, .sm-found-row input { width: auto; max-width: 220px; font-size: .82rem; border-radius: 8px; }
 .sm-found-all { text-align: right; padding-top: .3rem; }
 
@@ -3218,8 +3220,14 @@ th, td {
 .sm-chip.plant { background: #f3e8ff; color: #7e22ce; }
 .sm-chip.hid { color: var(--sx-faint); }
 .sm-note { font-size: .78rem; color: var(--sx-muted); background: var(--sx-soft); border-radius: 10px; padding: .55rem .75rem; line-height: 1.9; }
-.sm-trouble { margin-top: .8rem; }
-.sm-trouble .sx-link { font-weight: 500; font-size: .8rem; color: var(--sx-muted); }
+/* Troubleshooting card under the tents: a row per cloud source */
+.sm-tr { margin-top: .9rem; }
+.sm-tr-intro { padding: .55rem .9rem .45rem; font-size: .82rem; color: var(--sx-muted); }
+.sm-tr-row { display: flex; align-items: center; gap: .8rem; padding: .5rem .9rem; border-top: 1px solid var(--sx-line); }
+.sm-tr-row .nm { flex: 1; min-width: 0; }
+.sm-tr-row .nm b { font-weight: 700; }
+.sm-tr-row .nm small { display: block; color: var(--sx-muted); font-size: .74rem; }
+.sm-tr-row .sm-ebtn { white-space: nowrap; }
 
 .sm-idbox { background: var(--color-row-hover); border-radius: 10px; padding: .55rem .7rem; font-size: .8rem; display: grid; grid-template-columns: auto 1fr; gap: .15rem .8rem; color: var(--color-muted); }
 .sm-idbox b { color: var(--color-fg); font-weight: 600; word-break: break-word; }
@@ -3651,6 +3659,7 @@ th, td {
 [data-bs-theme="dark"] .sm-ic .logo.aci { background: rgba(56, 189, 248, .14); color: #7dd3fc; }
 [data-bs-theme="dark"] .sm-ic .logo.eco { background: rgba(251, 191, 36, .14); color: #fcd34d; }
 [data-bs-theme="dark"] .sm-ic .logo.ha { background: rgba(14, 165, 233, .14); color: #7dd3fc; }
+[data-bs-theme="dark"] .sm-ic .logo.vs { background: rgba(34, 197, 94, .16); color: #4ade80; }
 [data-bs-theme="dark"] .sm-chip.env { background: rgba(74, 222, 128, .14); color: #86efac; }
 [data-bs-theme="dark"] .sm-chip.home { background: rgba(56, 189, 248, .14); color: #7dd3fc; }
 [data-bs-theme="dark"] .sm-chip.plant { background: rgba(192, 132, 252, .15); color: #d8b4fe; }

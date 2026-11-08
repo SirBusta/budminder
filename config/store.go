@@ -49,6 +49,10 @@ type Store struct {
 	haEnabled            int
 	haURL                string
 	haToken              string
+	vsEnabled            int
+	vsTokens             [2]string         // Vivosun access and login tokens
+	vsDevices            map[string]string // Vivosun device id -> name, from the last poll
+	vsBaseURL            string            // tests only: a stand-in for Vivosun's host ("" = Vivosun)
 	photoCompress        bool
 	photoQuality         int
 	health               map[string]IntegrationHealth
@@ -312,6 +316,69 @@ func (s *Store) SetHAToken(v string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.haToken = v
+}
+
+// Vivosun (vivosun.enabled / .access_token / .login_token settings).
+
+func (s *Store) VSEnabled() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.vsEnabled
+}
+
+func (s *Store) SetVSEnabled(v int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.vsEnabled = v
+}
+
+// VSTokens returns the Vivosun access and login tokens ("" when not signed in).
+func (s *Store) VSTokens() (access, login string) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.vsTokens[0], s.vsTokens[1]
+}
+
+func (s *Store) SetVSTokens(access, login string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.vsTokens = [2]string{access, login}
+}
+
+// VSBaseURL is Vivosun's API host for scans, sign-ins and downloads: ""
+// means Vivosun itself. Only tests set it.
+func (s *Store) VSBaseURL() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.vsBaseURL
+}
+
+func (s *Store) SetVSBaseURL(v string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.vsBaseURL = v
+}
+
+// VSDeviceNames returns a copy of the Vivosun device names seen by the last
+// poll or scan, by device id.
+func (s *Store) VSDeviceNames() map[string]string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make(map[string]string, len(s.vsDevices))
+	for k, v := range s.vsDevices {
+		out[k] = v
+	}
+	return out
+}
+
+func (s *Store) SetVSDeviceNames(names map[string]string) {
+	cp := make(map[string]string, len(names))
+	for k, v := range names {
+		cp[k] = v
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.vsDevices = cp
 }
 
 // Photo compression (Settings > Photos): whether new plant photos are

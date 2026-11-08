@@ -18,6 +18,7 @@
         </div>
         <div class="sx-top-r">
             <button type="button" class="sm-btn" id="smScanACI"><i class="fa-solid fa-magnifying-glass me-1"></i>{{ .lcl.sm_scan_aci }}</button>
+            <button type="button" class="sm-btn light" id="smScanVS"><i class="fa-solid fa-magnifying-glass me-1"></i>{{ .lcl.sm_scan_vs }}</button>
             <button type="button" class="sm-btn light" id="smScanEco"><i class="fa-solid fa-magnifying-glass me-1"></i>{{ .lcl.sm_scan_eco }}</button>
             <button type="button" class="sm-btn light" id="smScanHA"><i class="fa-solid fa-magnifying-glass me-1"></i>{{ .lcl.sm_scan_ha }}</button>
         </div>
@@ -37,7 +38,19 @@
         <span class="sm-chip home">{{ .lcl.sm_chip_home }}</span> {{ .lcl.sm_note_home }} ·
         <span class="sm-chip plant">{{ .lcl.sm_chip_plant }}</span> {{ .lcl.sm_note_plant }}
         {{ .lcl.sm_note_hidden }}</div>
-    <div class="sm-trouble"><button type="button" class="sx-link" id="smDumpOpen"><i class="fa-solid fa-code me-1"></i>{{ .lcl.sm_raw_aci }}</button></div>
+    <!-- Troubleshooting: a row per cloud source that is turned on (sensors-manage.js shows them) -->
+    <div class="sm-zone sm-tr" id="smTrouble" hidden>
+        <div class="sm-zone-h"><i class="fa-solid fa-screwdriver-wrench"></i><h2>{{ .lcl.sm_tr_title }}</h2></div>
+        <div class="sm-tr-intro">{{ .lcl.sm_tr_intro }}</div>
+        <div class="sm-tr-row" id="smTrAci" hidden>
+            <div class="nm"><b>AC Infinity</b><small>{{ .lcl.sm_tr_aci }}</small></div>
+            <button type="button" class="sm-ebtn" id="smDumpOpen"><i class="fa-solid fa-code me-1"></i>{{ .lcl.sm_tr_view }}</button>
+        </div>
+        <div class="sm-tr-row" id="smTrVs" hidden>
+            <div class="nm"><b>Vivosun</b><small>{{ .lcl.sm_tr_vs }}</small></div>
+            <button type="button" class="sm-ebtn" id="smDumpVSOpen"><i class="fa-solid fa-code me-1"></i>{{ .lcl.sm_tr_view }}</button>
+        </div>
+    </div>
     </main>
   </div>
 </div>
@@ -83,18 +96,20 @@
     </div>
 </div>
 
-<!-- Troubleshooting: the raw AC Infinity response -->
+<!-- Troubleshooting: the raw AC Infinity or Vivosun data -->
 <div class="modal fade" id="smDump" tabindex="-1" aria-labelledby="smDumpTitle" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="smDumpTitle">{{ .lcl.aci_dump_json }}</h5>
-                <button type="button" class="btn btn-sm btn-outline-secondary ms-auto me-1" id="smDumpRefresh" title="{{ .lcl.sm_refresh }}" aria-label="{{ .lcl.sm_refresh }}"><i class="fa-solid fa-arrows-rotate"></i></button>
+                <h5 class="modal-title" id="smDumpTitle">{{ .lcl.sm_dump_title_aci }}</h5>
+                <button type="button" class="btn btn-sm btn-outline-secondary ms-auto me-1" id="smDumpSave"><i class="fa-solid fa-download me-1"></i>{{ .lcl.sm_download }}</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary me-1" id="smDumpRefresh" title="{{ .lcl.sm_refresh }}" aria-label="{{ .lcl.sm_refresh }}"><i class="fa-solid fa-arrows-rotate"></i></button>
                 <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="smDumpCopy" title="{{ .lcl.sm_copy }}" aria-label="{{ .lcl.sm_copy }}"><i class="fa-regular fa-copy"></i></button>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ .lcl.title_close }}"></button>
             </div>
             <div class="modal-body">
-                <label class="form-check mb-2"><input class="form-check-input" type="checkbox" id="smDumpRedact" checked> <span class="form-check-label">{{ .lcl.sm_redact }}</span></label>
+                <p class="small d-none" id="smDumpHelp">{{ .lcl.sm_vs_dump_help }}</p>
+                <label class="form-check mb-2" id="smDumpRedactWrap"><input class="form-check-input" type="checkbox" id="smDumpRedact" checked> <span class="form-check-label">{{ .lcl.sm_redact }}</span></label>
                 <div id="smDumpStatus" class="small mb-2"></div>
                 <pre id="smDumpContent" class="sm-dump"></pre>
             </div>

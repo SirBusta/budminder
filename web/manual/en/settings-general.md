@@ -17,7 +17,7 @@ Click **Change username or password** to change what you sign in with. See [Firs
 
 ## Other sections
 
-- **Integrations**: configure AC Infinity, Ecowitt, Home Assistant, StrainCompass, CannaDB and custom REST API keys. See [Integrations and API key](/manual/integrations).
+- **Integrations**: configure AC Infinity, Vivosun, Ecowitt, Home Assistant, StrainCompass, CannaDB and custom REST API keys. See [Integrations and API key](/manual/integrations).
 - **Grow setup**: manage tent zones, logged activities, custom metrics, climate targets and limits, breeders and smoke report fields. See [Grow setup](/manual/grow-setup).
 - **Photos**: keep photos as uploaded or compress new plant photos, compare qualities and compress photos already in BudMinder. See [Photos](/manual/photos#photo-size-and-compression).
 - **Appearance**: upload a brand watermark or logo used by the **Decorate** tool on photos. See [Photos](/manual/photos#decorate).

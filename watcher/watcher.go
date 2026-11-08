@@ -29,6 +29,7 @@ import (
 	"isley/model"
 	"isley/model/types"
 	"isley/utils"
+	"isley/vivosun"
 )
 
 const (
@@ -94,7 +95,18 @@ type Watcher struct {
 	// saved. Optional; main wires the alert check (handlers.AlertEngine).
 	AfterPoll func(ctx context.Context)
 
+	// Vivosun: VSBaseURL "" means Vivosun's own host (tests set a fake).
+	// VSRelogin signs in again with the saved password (handlers.
+	// NewVivosunRelogin); VSDeviceNames receives the device names each time
+	// the device list is fetched. VSRelogin and VSDeviceNames are optional.
+	VSBaseURL     string
+	VSEnabled     func() bool
+	VSTokens      func() vivosun.Tokens
+	VSRelogin     func(ctx context.Context) (attempted bool, err error)
+	VSDeviceNames func(names map[string]string)
+
 	lastACIRelogin time.Time // Run's goroutine only
+	vs             vsState   // Run's goroutine only
 }
 
 // aciReloginEvery limits automatic AC Infinity sign-ins to one an hour, so a
@@ -191,7 +203,13 @@ func New(db *sql.DB, store *config.Store) *Watcher {
 		HAEnabled:         func() bool { return store.HAEnabled() == 1 },
 		HAURL:             store.HAURL,
 		HAToken:           store.HAToken,
-		SensorRetention:   store.SensorRetention,
+		VSEnabled:         func() bool { return store.VSEnabled() == 1 },
+		VSTokens: func() vivosun.Tokens {
+			a, l := store.VSTokens()
+			return vivosun.Tokens{Access: a, Login: l}
+		},
+		VSDeviceNames:   store.SetVSDeviceNames,
+		SensorRetention: store.SensorRetention,
 		ReportHealth: func(source, kind, detail string) {
 			store.ReportIntegration(source, kind, detail, time.Now())
 		},
@@ -245,6 +263,11 @@ func (w *Watcher) Run(ctx context.Context) {
 			if w.HAEnabled != nil && w.HAEnabled() {
 				if contacted, err := w.PollHomeAssistant(ctx); contacted {
 					w.report(homeassistant.Source, err)
+				}
+			}
+			if w.VSEnabled != nil && w.VSEnabled() {
+				if contacted, err := w.pollVivosunStayingSignedIn(ctx); contacted {
+					w.report(vivosun.Source, err)
 				}
 			}
 

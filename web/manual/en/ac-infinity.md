@@ -27,4 +27,4 @@ Controller device ports (inline fans, oscillating fans, grow lights and humidifi
 ## If readings stop
 
 - Check the AC Infinity status card under [Manage sensors](/manual/manage-sensors) to see if the session has expired or the server is unreachable.
-- Use **Troubleshooting: view the raw AC Infinity data** at the bottom of the Manage sensors page to inspect live API communication. Ensure **Hide personal details** remains checked if sharing diagnostic logs.
+- At the bottom of the Manage sensors page, under **Troubleshooting**, click **View raw data** next to AC Infinity to see what AC Infinity's servers send. To share the file, keep **Hide personal details** checked and click **Download**.
