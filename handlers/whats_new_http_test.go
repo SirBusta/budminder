@@ -132,16 +132,37 @@ func TestWhatsNew_NoCard(t *testing.T) {
 // its own doesn't get in the way.
 func TestWhatsNew_SkippedReleaseShowsWithTheRealFromVersion(t *testing.T) {
 	t.Parallel()
-	_, c, _ := whatsNewServer(t, "2.4", "1.9.0", true)
+	_, c, _ := whatsNewServer(t, "2.5", "1.9.0", true)
 
 	got := readWhatsNew(t, c, "/")
 	require.NotNil(t, got)
 	assert.Equal(t, "1.9.0", got.From)
-	assert.Equal(t, "2.4", got.To)
-	require.Len(t, got.Cards, 3)
-	assert.Equal(t, "2.3", got.Cards[0].Version, "newest first")
-	assert.Equal(t, "2.2", got.Cards[1].Version)
-	assert.Equal(t, "2.0", got.Cards[2].Version)
+	assert.Equal(t, "2.5", got.To)
+	require.Len(t, got.Cards, 4)
+	assert.Equal(t, "2.4", got.Cards[0].Version, "newest first")
+	assert.Equal(t, "2.3", got.Cards[1].Version)
+	assert.Equal(t, "2.2", got.Cards[2].Version)
+	assert.Equal(t, "2.0", got.Cards[3].Version)
+}
+
+// A Beta feature with its own note (Vivosun in 2.4) sends it; one without
+// (alerts) sends none, so the card shows the alerts note.
+func TestWhatsNew_BetaFeatureCarriesItsOwnNote(t *testing.T) {
+	t.Parallel()
+	_, c, _ := whatsNewServer(t, "2.4", "2.2", true)
+
+	got := readWhatsNew(t, c, "/")
+	require.NotNil(t, got)
+	require.Len(t, got.Cards, 2)
+	require.Equal(t, "2.4", got.Cards[0].Version)
+	vs := got.Cards[0].Features[0]
+	assert.True(t, vs.Beta)
+	assert.Contains(t, vs.BetaNote, "VCure C80")
+	assert.Equal(t, "Personal details are automatically removed from the file.", vs.BetaAfter, "the line after the address")
+	alerts := got.Cards[1].Features[0]
+	assert.True(t, alerts.Beta)
+	assert.Empty(t, alerts.BetaNote)
+	assert.Empty(t, alerts.BetaAfter)
 }
 
 // 2.2 to 2.3: the Recent alerts card, with its picture's words and units.

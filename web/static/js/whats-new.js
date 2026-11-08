@@ -102,7 +102,7 @@
         <p>${esc(f.text)}</p>
         ${f.points && f.points.length ? `<ul class="wn-points">${f.points.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
         ${f.after ? `<p>${esc(f.after)}</p>` : ""}
-        ${f.beta ? `<p class="wn-beta">${esc(t("al_beta_note"))} ${esc(t("al_beta_feedback"))} <a href="mailto:budminder.app@gmail.com?subject=BudMinder%20alerts%20feedback">budminder.app@gmail.com</a></p>` : ""}
+        ${f.beta ? `<p class="wn-beta">${f.beta_note ? esc(f.beta_note) : `${esc(t("al_beta_note"))} ${esc(t("al_beta_feedback"))}`} <a href="mailto:budminder.app@gmail.com?subject=BudMinder%20${f.beta_note ? "feedback" : "alerts%20feedback"}">budminder.app@gmail.com</a>${f.beta_after ? `. ${esc(f.beta_after)}` : ""}</p>` : ""}
         ${f.link ? `<p class="wn-link"><a href="${esc(f.link)}" data-wn="link">${esc(f.link_text)} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></p>` : ""}</div></li>`;
     const section = (title, items) => items && items.length ? `<div class="wn-h">${esc(title)}</div><ul class="wn-list">${items.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
 

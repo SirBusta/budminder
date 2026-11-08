@@ -56,6 +56,13 @@ var figureKeys = map[string][]string{
 // whatsNewReleases is newest first.
 var whatsNewReleases = []whatsNewRelease{
 	{
+		Version: "2.4",
+		Features: []whatsNewFeatureDef{
+			{Icon: "fa-leaf", Link: "/settings#integrations", Points: 2, Beta: true},
+		},
+		Other: 1,
+	},
+	{
 		Version: "2.3",
 		Date:    "2026-11-07",
 		Features: []whatsNewFeatureDef{
@@ -92,7 +99,10 @@ type WhatsNewFeature struct {
 	Link     string   `json:"link"`
 	LinkText string   `json:"link_text"`
 	Beta     bool     `json:"beta"`
-	Figure   string   `json:"figure,omitempty"`
+	BetaNote string   `json:"beta_note,omitempty"` // the feature's own Beta note (_f1_beta); none: the alerts note
+	// BetaAfter follows the feedback address (_f1_beta_after), e.g. that a file sent has no personal details.
+	BetaAfter string `json:"beta_after,omitempty"`
+	Figure    string `json:"figure,omitempty"`
 }
 
 // WhatsNewCard is one release's card, in the visitor's language.
@@ -190,6 +200,10 @@ func (r whatsNewRelease) card(lcl map[string]string) WhatsNewCard {
 			feature.Points = append(feature.Points, lcl[fmt.Sprintf("%sp%d", k, p)])
 		}
 		feature.After = lcl[k+"after"]
+		if f.Beta {
+			feature.BetaNote = lcl[k+"beta"]
+			feature.BetaAfter = lcl[k+"beta_after"]
+		}
 		card.Features = append(card.Features, feature)
 	}
 	for i := 1; i <= r.Other; i++ {

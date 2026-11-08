@@ -27,7 +27,7 @@ used three parts.
 
 ### Added
 
-- Vivosun sensors (Beta): sign in with your Vivosun app account in **Settings > Integrations > Vivosun**, then use **Scan Vivosun** on **Manage sensors** to add your devices' readings to a tent. BudMinder only reads; it never changes a device's settings. Tested with the VCure C80, whose inside air, room air, circuit board and cooling coil readings each come with a note saying what they measure.
+- Vivosun sensors (Beta): sign in with your Vivosun app account in **Settings > Integrations > Vivosun**, then use **Scan Vivosun** on **Manage sensors** to add your devices' sensors to a tent. BudMinder never changes a device's settings. A scan lists temperature, humidity and VPD, plus CO₂, root temperature, water temperature and water level on devices that measure them. To add equipment such as lights, fans, USB ports and outlets, or the VCure's compressor, humidifier and heater, check **Show equipment** in the scan. Equipment levels are charted on the **Environment** page like AC Infinity ports. Tested only with the VCure C80 so far.
 - A **Troubleshooting** card at the bottom of **Manage sensors** replaces the raw AC Infinity data link. **View raw data** next to AC Infinity or Vivosun shows what that service's servers send, and **Download** saves it as a file to email for support.
 
 ## [2.3] - 2026-11-07
