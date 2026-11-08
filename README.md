@@ -5,7 +5,7 @@
   <img src="web/static/img/brand/budminder-wordmark.svg" alt="BudMinder" width="340">
 </picture>
 
-**A self-hosted cannabis grow journal.** Daily notes and photos for every plant, live sensors from AC Infinity, Ecowitt or Home Assistant, and your seed vault, all on your own hardware.
+**A self-hosted cannabis grow journal.** Daily notes and photos for every plant, live sensors from AC Infinity, Vivosun, Ecowitt or Home Assistant, and your seed vault, all on your own hardware.
 
 Runs in **Docker** (preferred), for example on Unraid, a Synology NAS or a Raspberry Pi, or as a download for **Windows**, **macOS** and **Linux**.
 
@@ -41,7 +41,7 @@ Runs in **Docker** (preferred), for example on Unraid, a Synology NAS or a Raspb
 
 **Instant strain lookups.** Search large public strain databases and add a strain in one click. That brings in its breeder, lineage, THC and CBD, effects, terpenes and flowering time. You only fill in what's yours: how many seeds you have and where you keep them.
 
-**Use the hardware you already own.** BudMinder works with AC Infinity controllers and Ecowitt gateways, plus any sensor tracked by Home Assistant: Govee, SwitchBot, Inkbird, Zigbee, ESPHome and more. If Home Assistant sees it, BudMinder can plot it alongside your plant logs.
+**Use the hardware you already own.** BudMinder works with AC Infinity controllers, Vivosun devices and Ecowitt gateways, plus any sensor tracked by Home Assistant: Govee, SwitchBot, Inkbird, Zigbee, ESPHome and more. If Home Assistant sees it, BudMinder can plot it alongside your plant logs.
 
 **Everything in one place.** Live sensor readings, tent cameras, harvest yields and a seed vault sit alongside your daily grow journal. BudMinder replaces the fragmented mess of vendor apps, spreadsheets and paper notes with a single app built around your grow.
 
@@ -76,7 +76,7 @@ Open BudMinder and see what needs doing: plants you haven't watered or fed in a 
 
 ### Environment
 
-Every sensor in a tent on one timeline, from the last hour to the last week or any range you pick. Click anywhere on a chart and a marker line shows what every sensor read at that moment; drag it to scrub through the day. Works with AC Infinity controllers, Ecowitt gateways and any sensor in Home Assistant. If you build your own sensors, a simple API lets you send in their readings.
+Every sensor in a tent on one timeline, from the last hour to the last week or any range you pick. Click anywhere on a chart and a marker line shows what every sensor read at that moment; drag it to scrub through the day. Works with AC Infinity controllers, Vivosun devices, Ecowitt gateways and any sensor in Home Assistant. If you build your own sensors, a simple API lets you send in their readings.
 
 <img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/environment.webp" alt="The Environment page for a tent: current readings, then temperature, humidity and VPD charts for the last 24 hours with a marker line showing the readings at 3:25 AM">
 
@@ -110,9 +110,13 @@ A complete evaluation suite for home harvests and dispensary pickups. Rate appea
 
 ### Home Assistant
 
-**No sensor left behind.** Connect BudMinder to Home Assistant to pull climate readings from any device you run, from Zigbee and ESPHome probes to Govee and SwitchBot units. A quick scan shows your grow-relevant sensors so you can add them straight to your tents, right alongside your AC Infinity and Ecowitt data. It operates completely read-only, leaving your smart home configuration safe and unchanged.
+**No sensor left behind.** Connect BudMinder to Home Assistant to pull climate readings from any device you run, from Zigbee and ESPHome probes to Govee and SwitchBot units. A quick scan shows your grow-relevant sensors so you can add them straight to your tents, right alongside your AC Infinity, Vivosun and Ecowitt data. It operates completely read-only, leaving your smart home configuration safe and unchanged.
 
 <img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/ha-scan.webp" alt="Scan Home Assistant results: seven grow sensors such as tent temperature, humidity, CO2, VPD, light level and soil moisture, each with its current reading, a tent to put it in and an Add button, plus a filter box and a Show all switch for batteries and power">
+
+### Vivosun (Beta)
+
+**Your Vivosun readings, in your journal.** Sign in with your Vivosun app account, then add your devices' temperature, humidity and VPD readings to your tents, alongside your other sensors. Add a sensor alert to get an email when a reading reaches a value you set. BudMinder only reads your devices and never changes their settings. If a device is missing or a reading looks wrong, the setup steps below explain how to send a data file so the problem can be fixed.
 
 ### More
 
@@ -122,7 +126,7 @@ A complete evaluation suite for home harvests and dispensary pickups. Rate appea
 <td width="50%" valign="top"><b>Log activity</b><br>Water, feed, train or add a note for one plant or a whole tent at once.<br><br><img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/log-activity.webp" alt="The Log activity window with plants, date, activity types, water amount and a note"></td>
 </tr>
 <tr>
-<td valign="top"><b>Manage sensors</b><br>Scan AC Infinity, Ecowitt and Home Assistant for sensors, name them, put each in a tent and choose where it shows.<br><br><img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/manage-sensors.webp" alt="The Manage sensors page listing a tent's sensors with their current readings"></td>
+<td valign="top"><b>Manage sensors</b><br>Scan AC Infinity, Vivosun, Ecowitt and Home Assistant for sensors, name them, put each in a tent and choose where it shows.<br><br><img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/manage-sensors.webp" alt="The Manage sensors page listing a tent's sensors with their current readings"></td>
 <td valign="top"><b>Settings</b><br>Grouped and searchable, and every change saves as you go.<br><br><img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/settings.webp" alt="The Settings page with timezone, units, language, theme, guest view and password"></td>
 </tr>
 <tr>
@@ -409,7 +413,7 @@ Most settings live in the app under **Settings**. These few are startup settings
 </details>
 
 <details>
-<summary><b>Sensors: AC Infinity, Ecowitt, Home Assistant and your own</b></summary>
+<summary><b>Sensors: AC Infinity, Vivosun, Ecowitt, Home Assistant and your own</b></summary>
 
 <br>
 
@@ -420,6 +424,15 @@ Most settings live in the app under **Settings**. These few are startup settings
 3. Put each sensor in a tent and choose where it shows.
 
 AC Infinity's sign-in only uses the first 25 characters of a password.
+
+**Vivosun** (Beta). BudMinder reads your devices through Vivosun's cloud, so the device has to be online and on your Vivosun account. Readings arrive about a minute after the device sends them.
+
+1. In **Settings → Integrations → Vivosun**, click **Sign in** and enter your Vivosun app email and password. Check **Stay signed in**, and BudMinder keeps your password, encrypted, and signs in again by itself if Vivosun signs it out. The encryption key is kept in its own file in BudMinder's data folder (`/app/data` in Docker), not in the database or in backups.
+2. In **Sensors → Manage sensors**, click **Scan Vivosun**. Each reading is listed with its current value and a note saying what it measures. Add the ones you want and put each in a tent.
+
+If your device is missing from the scan or its readings look wrong, go to **Manage sensors**. Under **Troubleshooting** at the bottom of the page, click **View raw data** next to Vivosun, then click **Download**. Email the file to budminder.app@gmail.com with your device's model. Personal details are removed from the file.
+
+BudMinder's Vivosun support uses the request format worked out by the open-source [homeassistant-vivosun-growhub](https://github.com/lientry/homeassistant-vivosun-growhub) project (MIT License).
 
 **Ecowitt** gateways (GW1000, GW1100, GW2000 and similar) are read directly on your network, with no cloud account.
 
@@ -474,7 +487,7 @@ Create an API key in **Settings → Integrations** and send it as an `X-API-KEY`
 
 <br>
 
-**From the app:** **Settings → Backup & data**. Choose how much sensor history to include and whether to include photos, then create the backup. It runs in the background and appears in the list to download. Download it to keep it somewhere safe: backups stored only on the same computer are lost if that computer fails. A backup includes your saved connection details, such as the AC Infinity and Home Assistant tokens, so keep backup files private.
+**From the app:** **Settings → Backup & data**. Choose how much sensor history to include and whether to include photos, then create the backup. It runs in the background and appears in the list to download. Download it to keep it somewhere safe: backups stored only on the same computer are lost if that computer fails. A backup includes your saved connection details, such as the AC Infinity, Vivosun and Home Assistant tokens, so keep backup files private.
 
 **Restoring** replaces everything in the current BudMinder with the backup. On SQLite you can also download and upload the database file itself under **SQLite file transfer**, which is the quickest way to copy a SQLite setup.
 

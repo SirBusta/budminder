@@ -10,7 +10,7 @@
   <Support>https://forums.unraid.net/topic/201028-support-sirbusta-budminder-self-hosted-cannabis-grow-journal/</Support>
   <Project>https://github.com/SirBusta/budminder</Project>
   <ReadMe>https://github.com/SirBusta/budminder#readme</ReadMe>
-  <Overview>A self-hosted cannabis grow journal for home growers. Keep daily notes, measurements and photos for every plant from seed to harvest, see live temperature, humidity, VPD and CO2 from AC Infinity, Ecowitt or Home Assistant sensors, and track your strains and seed vault. Everything stays on your server: SQLite by default (PostgreSQL optional), with backups you can download and restore in Settings.
+  <Overview>A self-hosted cannabis grow journal for home growers. Keep daily notes, measurements and photos for every plant from seed to harvest, see live temperature, humidity, VPD and CO2 from AC Infinity, Vivosun, Ecowitt or Home Assistant sensors, and track your strains and seed vault. Everything stays on your server: SQLite by default (PostgreSQL optional), with backups you can download and restore in Settings.
 
 The first time you open it, BudMinder asks you to create a local account: choose your own username and password. It stays on your server; there is nothing to sign up for anywhere else.
 
@@ -19,7 +19,7 @@ Your database lives in the Data folder and your photos in the Uploads folder; bo
   <WebUI>http://[IP]:[PORT:8080]/</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/SirBusta/budminder/main/templates/budminder.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/SirBusta/budminder/main/web/static/img/brand/budminder-256.png</Icon>
-  <ExtraSearchTerms>grow journal growlog grow log plants garden cannabis seeds strains ac infinity ecowitt home assistant vpd isley</ExtraSearchTerms>
+  <ExtraSearchTerms>grow journal growlog grow log plants garden cannabis seeds strains ac infinity vivosun vcure ecowitt home assistant vpd isley</ExtraSearchTerms>
   <License>MIT</License>
   <Changes>Initial Community Applications template.</Changes>
   <Screenshot>https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/screenshots/plant.webp</Screenshot>
