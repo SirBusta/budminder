@@ -13,6 +13,16 @@ const (
 	KindClock   = "clock"   // lights steadily about an hour off the schedule
 	KindSensor  = "sensor"  // a sensor alert the grower set up (rule.go)
 	KindOffline = "offline" // sensors that stopped sending readings
+	// KindIntegration: a sensor integration refuses BudMinder's sign-in or
+	// token, or doesn't answer. Measure is the source ("acinfinity"), Detail
+	// "auth" or "failing".
+	KindIntegration = "integration"
+)
+
+// Integration problems, in an integration alert's Detail.
+const (
+	IntegrationAuth    = "auth"
+	IntegrationFailing = "failing"
 )
 
 // Severities.
@@ -36,7 +46,7 @@ const (
 // Severity returns a kind's severity.
 func Severity(kind string) string {
 	switch kind {
-	case KindOffline:
+	case KindOffline, KindIntegration:
 		return Critical
 	case KindStage, KindLight, KindSensor:
 		return Warning

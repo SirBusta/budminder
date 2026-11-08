@@ -90,6 +90,10 @@ func Further(v float64, peak *float64, side string) bool {
 	return v > *peak
 }
 
+// HasChart says a Recent alerts row of this kind opens the Sensors page at the
+// alert. Clock notices span days and integration alerts belong to no sensor.
+func HasChart(kind string) bool { return kind != KindClock && kind != KindIntegration }
+
 // HasReadings says Recent alerts shows a reading and limit for this kind.
 func HasReadings(kind string) bool { return kind == KindStage || kind == KindSensor }
 

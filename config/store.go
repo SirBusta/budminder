@@ -66,6 +66,9 @@ type IntegrationHealth struct {
 	LastErr   time.Time // last poll that failed
 	ErrKind   string    // "auth" (sign-in or token refused), "unreachable", "error"
 	ErrDetail string    // the service's own message, when it gave one
+	// FailingSince is the first failed poll of the current run of failures
+	// (zero while polls work): alerts wait until it has lasted a while.
+	FailingSince time.Time
 }
 
 // Failing reports whether the most recent poll failed.
@@ -613,8 +616,11 @@ func (s *Store) ReportIntegration(source, kind, detail string, at time.Time) {
 	}
 	h := s.health[source]
 	if kind == "" {
-		h.LastOK = at
+		h.LastOK, h.FailingSince = at, time.Time{}
 	} else {
+		if !h.Failing() {
+			h.FailingSince = at
+		}
 		h.LastErr, h.ErrKind, h.ErrDetail = at, kind, detail
 	}
 	s.health[source] = h
@@ -626,7 +632,7 @@ func (s *Store) ClearIntegrationError(source string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if h, ok := s.health[source]; ok {
-		h.LastErr, h.ErrKind, h.ErrDetail = time.Time{}, "", ""
+		h.LastErr, h.ErrKind, h.ErrDetail, h.FailingSince = time.Time{}, "", "", time.Time{}
 		s.health[source] = h
 	}
 }

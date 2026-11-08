@@ -44,7 +44,7 @@ type alertRow struct {
 	Value       string `json:"value,omitempty"` // the reading when it started (limit and sensor alerts)
 	Line        string `json:"line"`
 	Zone        string `json:"zone"`  // for the Zone filter
-	Type        string `json:"type"`  // for the Type filter: a measure, "rule", "light" or "offline"
+	Type        string `json:"type"`  // for the Type filter: a measure, "rule", "light", "offline" or "integration"
 	Chart       bool   `json:"chart"` // opens the Sensors page at this alert
 	Error       string `json:"error"`
 	When        string `json:"when"`
@@ -96,7 +96,7 @@ func alertRows(c *gin.Context, cleared bool) []alertRow {
 	loc := requestLocation(c)
 	for _, ev := range events {
 		r := alertRow{ID: ev.ID, Severity: alerts.Severity(ev.Kind), Title: w.Title(ev, false), Active: ev.Resolved == nil, DeliveryKey: ev.Delivery,
-			Zone: ev.Zone, Type: alertType(ev), Chart: ev.Kind != alerts.KindClock}
+			Zone: ev.Zone, Type: alertType(ev), Chart: alerts.HasChart(ev.Kind)}
 		switch {
 		case alerts.HasReadings(ev.Kind):
 			r.Value = w.RowValue(ev)

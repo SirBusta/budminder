@@ -13,6 +13,7 @@ BudMinder sends you an alert notification when a zone's climate, lights or senso
 | **Lights are off schedule** | Lights switch about 1 hour before or after the schedule on each of the last 3 days |
 | **Sensor alerts** | Sensor reaches a user defined value for 15 consecutive minutes |
 | **Sensors offline** | No readings received for 15 minutes from a climate sensor, a light sensor or a sensor with a Sensor alert turned on |
+| **Integration problem** | An integration refuses BudMinder's sign-in or access token, or does not respond, for 15 consecutive minutes |
 
 Set limits in [Climate targets and limits](/manual/grow-setup#climate-targets-and-limits), in **Settings → Grow setup**. Temperature and humidity start with wide limits for each stage. VPD starts with Targets and no limits, so BudMinder sends no VPD alert notification until you set a limit.
 
@@ -32,6 +33,7 @@ BudMinder checks climate and lights only in zones with plants, and only with the
 - **Reaching a value counts.** A High limit of 1.50 kPa is reached at exactly 1.50.
 - **BudMinder waits after lights turn on or off.** It ignores climate readings for the first 10 minutes, so a climate alert can start no sooner than 25 minutes after the change.
 - **A sensor that stops sending readings** does not start or end a climate alert. After 15 minutes, BudMinder sends a **Sensors offline** alert notification.
+- **When an integration stops working** for 15 minutes, BudMinder sends an **Integration problem** alert notification. The alert ends when the integration has worked normally for 30 minutes, or at once with no notification if you turn the integration off or sign out of it. If the integration's sensors are used for climate, Light check or Sensor alerts, the same email usually also includes a **Sensors offline** alert.
 - **Alerts that start together** arrive in one email. If an email fails, BudMinder tries again every 5 minutes, and **Recent alerts** shows the mail server's error.
 - **Alerts end without an email** if you remove the limit, if you remove the sensor in **Edit Zone**, or if the zone has no plants left.
 

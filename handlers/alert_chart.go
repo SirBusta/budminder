@@ -72,7 +72,7 @@ func buildAlertChart(db *sql.DB, id int, now time.Time, w alerts.Words) (*alertC
 	if err != nil {
 		return nil, err
 	}
-	if len(list) == 0 || list[0].Kind == alerts.KindClock {
+	if len(list) == 0 || !alerts.HasChart(list[0].Kind) {
 		return nil, sql.ErrNoRows
 	}
 	ev := list[0]

@@ -25,6 +25,10 @@ used three parts.
 
 ## [Unreleased]
 
+### Added
+
+- **Integration problem** alerts: when AC Infinity or Vivosun refuses BudMinder's sign-in, Home Assistant refuses its access token, or an integration does not respond for 15 minutes, BudMinder sends an alert notification. For a refused sign-in or token, it says where to fix it. A reminder is sent every 6 hours, and an all-clear once the integration has worked for 30 minutes. They are listed under **Recent alerts** with the other alerts.
+
 ## [2.4] - 2026-11-08
 
 ### Added

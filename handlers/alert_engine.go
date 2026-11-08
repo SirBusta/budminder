@@ -184,6 +184,7 @@ func (e *AlertEngine) Check(_ context.Context) {
 		return
 	}
 	run.offline()
+	run.integrations()
 	run.reminders()
 	// Whatever wasn't reached no longer applies: the sensor was unassigned, the
 	// zone deleted, its plants gone, or the limit removed.
@@ -350,6 +351,62 @@ func (r *alertRun) offline() {
 			r.apply(zone, names[zone], 0, "", alerts.Change{Key: k, Action: alerts.End}, nil)
 		}
 	}
+}
+
+// integrations opens one alert per sensor integration that has refused
+// BudMinder's sign-in or token, or not answered, for Hold, and ends it once
+// polls have worked for Settle. An integration that's switched off or signed
+// out, or that has no sensors added, isn't checked, so its open alert closes
+// quietly. What's known about polls starts empty at each start: an alert open
+// from before a restart waits for the first poll that works.
+func (r *alertRun) integrations() {
+	e := r.e
+	statuses := IntegrationStatuses(e.DB, e.Store)
+	for _, src := range integrationSources {
+		st := statuses[src]
+		if st.State == "off" || st.State == "setup" || !hasSensorsFrom(e.DB, src) {
+			continue
+		}
+		open := r.markLive(0, src, alerts.KindIntegration)
+		h := e.Store.IntegrationHealth(src)
+		problem := ""
+		switch st.State {
+		case "auth":
+			problem = alerts.IntegrationAuth
+		case "failing":
+			problem = alerts.IntegrationFailing
+		}
+		k := alerts.Key{Kind: alerts.KindIntegration, Measure: src}
+		if len(open) == 0 {
+			if problem != "" && !h.FailingSince.IsZero() && r.now.Sub(h.FailingSince) >= alerts.Hold {
+				r.apply(0, "", 0, "", alerts.Change{Key: k, Action: alerts.Start}, &alertStart{detail: problem, since: h.FailingSince})
+			}
+			continue
+		}
+		var started time.Time
+		for _, o := range r.open {
+			if o.Kind == alerts.KindIntegration && o.Measure == src {
+				started = o.Started
+			}
+		}
+		switch {
+		case problem != "":
+			// Refused now, not answering later (or the other way): the same alert.
+			if _, err := e.DB.Exec(`UPDATE alert_event SET detail = $1 WHERE kind = $2 AND measure = $3 AND resolved_at IS NULL AND detail <> $1`,
+				problem, alerts.KindIntegration, src); err != nil {
+				logger.Log.WithError(err).Error("Failed to update an integration alert")
+			}
+		case h.LastOK.After(started) && r.now.Sub(h.LastErr) >= alerts.Settle:
+			r.apply(0, "", 0, "", alerts.Change{Key: k, Action: alerts.End}, nil)
+		}
+	}
+}
+
+// hasSensorsFrom says sensors from this integration have been added.
+func hasSensorsFrom(db *sql.DB, source string) bool {
+	var n int
+	err := db.QueryRow(`SELECT COUNT(*) FROM sensors WHERE source = $1`, source).Scan(&n)
+	return err == nil && n > 0
 }
 
 // reportingSince says a sensor has sent readings for Hold since the offline
@@ -645,7 +702,7 @@ func (r *alertRun) apply(zone int, zoneName string, sensorID int, sensorName str
 	log := logger.Log.WithField("func", "AlertEngine.apply")
 	db := r.e.DB
 	value := any(nil)
-	if c.Action != alerts.Close && c.Kind != alerts.KindOffline {
+	if c.Action != alerts.Close && c.Kind != alerts.KindOffline && c.Kind != alerts.KindIntegration {
 		value = c.Value
 	}
 	var limit any

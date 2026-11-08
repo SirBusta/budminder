@@ -278,7 +278,7 @@
     evs.cleared = evs.cleared || [];
     let evTab = "recent", zoneF = "", typeF = "";
     const evOut = $("alEvResult");
-    const TYPES = ["temp", "rh", "vpd", "rule", "light", "offline"];
+    const TYPES = ["temp", "rh", "vpd", "rule", "light", "offline", "integration"];
     const shown = list => list.filter(ev => (!zoneF || ev.zone === zoneF) && (!typeF || ev.type === typeF));
     function drawFilters() {
         const all = [...evs.recent, ...evs.cleared];

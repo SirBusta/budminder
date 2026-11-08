@@ -39,7 +39,7 @@ type Event struct {
 	Side          string
 	Value         *float64
 	Limit         *float64
-	Detail        string // clock alerts: seen on|seen off|schedule on|schedule off, as HH:MM; sensor alerts: the unit; offline alerts: sensor names
+	Detail        string // clock alerts: seen on|seen off|schedule on|schedule off, as HH:MM; sensor alerts: the unit; offline alerts: sensor names; integration alerts: IntegrationAuth or IntegrationFailing
 	Started       time.Time
 	Notified      time.Time
 	Resolved      *time.Time
@@ -135,8 +135,40 @@ func sensorWhere(e Event) string {
 	return e.Sensor + " (" + e.Zone + ")"
 }
 
+// IntegrationName is a sensor integration's name as people know it.
+func IntegrationName(source string) string {
+	switch source {
+	case "acinfinity":
+		return "AC Infinity"
+	case "ecowitt":
+		return "Ecowitt"
+	case "homeassistant":
+		return "Home Assistant"
+	case "vivosun":
+		return "Vivosun"
+	}
+	return source
+}
+
+// integrationKey is the text key part for an integration alert: Home
+// Assistant uses a token, the others a sign-in.
+func integrationKey(e Event, resolved bool) string {
+	switch {
+	case resolved:
+		return "int_ok"
+	case e.Detail == IntegrationAuth && e.Measure == "homeassistant":
+		return "int_token"
+	case e.Detail == IntegrationAuth:
+		return "int_auth"
+	}
+	return "int_failing"
+}
+
 // Title is an event's short name; resolved says it's the back-to-normal one.
 func (w Words) Title(e Event, resolved bool) string {
+	if e.Kind == KindIntegration {
+		return w.fill("al_ev_"+integrationKey(e, resolved), map[string]string{"name": IntegrationName(e.Measure)})
+	}
 	vals := map[string]string{"measure": w.measure(e.Measure), "zone": e.Zone}
 	if e.Kind == KindSensor {
 		if resolved {
@@ -177,6 +209,9 @@ func (w Words) Title(e Event, resolved bool) string {
 
 // Line is the sentence under an event's title.
 func (w Words) Line(e Event, resolved bool) string {
+	if e.Kind == KindIntegration {
+		return w.fill("al_line_"+integrationKey(e, resolved), map[string]string{"name": IntegrationName(e.Measure)})
+	}
 	if e.Kind == KindSensor {
 		key := "al_line_sensor_" + e.Side
 		if resolved {
