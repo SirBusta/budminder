@@ -25,6 +25,8 @@ used three parts.
 
 ## [Unreleased]
 
+## [2.4] - 2026-11-08
+
 ### Added
 
 - Vivosun sensors (Beta): sign in with your Vivosun app account in **Settings > Integrations > Vivosun**, then use **Scan Vivosun** on **Manage sensors** to add your devices' sensors to a tent. BudMinder never changes a device's settings. A scan lists temperature, humidity and VPD, plus CO₂, root temperature, water temperature and water level on devices that measure them. To add equipment such as lights, fans, USB ports and outlets, or the VCure's compressor, humidifier and heater, check **Show equipment** in the scan. Equipment levels are charted on the **Environment** page like AC Infinity ports. Tested only with the VCure C80 so far.
