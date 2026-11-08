@@ -136,6 +136,7 @@ func (w *Watcher) PollVivosun(ctx context.Context) (contacted bool, err error) {
 			if !ok {
 				continue
 			}
+			v = vivosun.Value(d.Model, key, v)
 			for _, id := range ids {
 				if _, err := w.DB.Exec("INSERT INTO sensor_data (sensor_id, value) VALUES ($1, $2)", id, v); err != nil {
 					log.WithError(err).WithField("sensorID", id).Error("Error writing sensor data to database")

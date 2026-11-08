@@ -243,7 +243,7 @@ func homeTents(c *gin.Context, db *sql.DB, pollSeconds int, plants []HomePlant) 
 		if s.Climate != nil {
 			r.Climate = s.Climate.State
 		}
-		if strings.HasPrefix(s.Type, "ACIP.") {
+		if isPortType(s.Type) {
 			t.Ports = append(t.Ports, r)
 		} else if s.ShowHome {
 			t.Readings = append(t.Readings, r)

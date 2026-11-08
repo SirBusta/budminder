@@ -24,11 +24,12 @@
     // ---------- What each sensor is (shared: sensor-kinds.js) ----------
     const K = window.SensorKinds;
     const isPort = K.isPort, isOutside = K.isOutside;
-    const ORDER = { temp: 0, hum: 1, vpd: 2, co2: 3, soil: 4, ec: 5, light: 6, other: 7 };
+    const ONOFF = { on: t("en_on"), off: t("en_off") };
+    const ORDER = { temp: 0, hum: 1, vpd: 2, co2: 3, level: 4, soil: 5, ec: 6, light: 7, other: 8 };
     const OTHER_COLORS = ["#0ea5e9", "#14b8a6", "#64748b", "#eab308", "#ec4899"];
     function look(s, i) {
         const k = K.kind(s), out = isOutside(s);
-        const color = { temp: out ? "#f97316" : "#ef4444", hum: out ? "#a78bfa" : "#6366f1", vpd: "#10b981", co2: "#d946ef", soil: "#a16207", ec: "#0d9488", light: "#eab308" }[k] || OTHER_COLORS[i % OTHER_COLORS.length];
+        const color = { temp: out ? "#f97316" : "#ef4444", hum: out ? "#a78bfa" : "#6366f1", vpd: "#10b981", co2: "#d946ef", level: "#0ea5e9", soil: "#a16207", ec: "#0d9488", light: "#eab308" }[k] || OTHER_COLORS[i % OTHER_COLORS.length];
         const { unit, conv } = K.display(s, P.units);
         const span = { temp: unit === "°C" ? 2 : 4, hum: 10, vpd: 0.4, co2: 80, soil: 10 }[k] || 0;
         return { k, color, dp: K.decimals(s), unit, conv, span };
@@ -59,7 +60,7 @@
         const env = list.filter(s => !isPort(s)).map((s, i) => ({ ...s, ...look(s, i) }))
             .sort((a, b) => (isOutside(a) - isOutside(b)) || (ORDER[a.k] - ORDER[b.k]) || a.name.localeCompare(b.name));
         const devices = list.filter(isPort).sort((a, b) => a.type.localeCompare(b.type, undefined, { numeric: true }))
-            .map(s => ({ ...s, icon: K.portIcon(s.name) }));
+            .map(s => ({ ...s, icon: K.portIcon(s) }));
         return { env, devices };
     }
 
@@ -189,7 +190,7 @@
                     const v = valueAt(data[d.id], markX);
                     if (v == null) return;
                     const y = chart.scales.y.getPixelForValue(o.devices.length - 1 - i + 0.4);
-                    tag(ctx, v > 0 ? Math.round(v) + "%" : t("en_off"), x, y, d.color, area);
+                    tag(ctx, K.portText(d, v, ONOFF), x, y, d.color, area);
                 });
             }
             ctx.restore();
@@ -269,7 +270,7 @@
         if (p) out.push(tagBox(ctx, p.text, mx, p.y, area));
         if (o && o.devices) o.devices.forEach((d, i) => {
             const v = valueAt(data[d.id], markX);
-            if (v != null) out.push(tagBox(ctx, v > 0 ? Math.round(v) + "%" : t("en_off"), mx, chart.scales.y.getPixelForValue(o.devices.length - 1 - i + 0.4), area));
+            if (v != null) out.push(tagBox(ctx, K.portText(d, v, ONOFF), mx, chart.scales.y.getPixelForValue(o.devices.length - 1 - i + 0.4), area));
         });
         return out;
     }
@@ -552,7 +553,7 @@
         if (devices.length) {
             document.getElementById("sxLaneLabels").innerHTML = devices.map(d => {
                 const v = latest[d.id] ? latest[d.id].v : null;
-                return `<div class="sx-dev"><i class="fa-solid ${d.icon}"></i><span title="${esc(d.name)}">${esc(d.name)}</span><b>${v > 0 ? Math.round(v) + "%" : esc(t("en_off"))}</b></div>`;
+                return `<div class="sx-dev"><i class="fa-solid ${d.icon}"></i><span title="${esc(d.name)}">${esc(d.name)}</span><b>${v == null ? esc(t("en_off")) : esc(K.portText(d, v, ONOFF))}</b></div>`;
             }).join("");
             document.getElementById("sxLaneBox").style.height = (devices.length * 28 + 8) + "px";
             const n = devices.length;
@@ -564,7 +565,7 @@
                     const col = colors[i % colors.length], base = n - 1 - i;
                     return { label: d.name, stepped: true, borderColor: col, backgroundColor: col + "33", fill: { target: { value: base } },
                         borderWidth: 1.5, pointRadius: 0,
-                        data: (data[d.id] || []).map(p => ({ x: p.x, y: base + Math.max(0, Math.min(100, p.y)) / 100 * 0.78, raw: p.y })) };
+                        data: (data[d.id] || []).map(p => ({ x: p.x, y: base + K.portLevel(d, p.y) / 100 * 0.78, raw: p.y })) };
                 }) },
                 plugins: [alertMark, marker],
                 options: {

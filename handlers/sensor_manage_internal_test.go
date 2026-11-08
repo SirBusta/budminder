@@ -141,3 +141,13 @@ func TestEcowittFoundSensors(t *testing.T) {
 		t.Errorf("soil name = %q", got["Soil.1"].Name)
 	}
 }
+
+func TestIsPortType_ACIPortsAndVivosunEquipment(t *testing.T) {
+	t.Parallel()
+	for typ, want := range map[string]bool{"ACIP.2": true, "VS.light.lv": true, "VS.cure.comp": true,
+		"VS.pTemp": false, "VS.bTemp.out": false, "VS.waterLv": false, "ACI.1.0": false} {
+		if got := isPortType(typ); got != want {
+			t.Errorf("isPortType(%s) = %v", typ, got)
+		}
+	}
+}

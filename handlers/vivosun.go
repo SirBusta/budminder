@@ -249,10 +249,10 @@ func vivosunFound(ctx context.Context, client *vivosun.Client, tk vivosun.Tokens
 		if seen[d.Name] > 1 {
 			num = fmt.Sprintf(" (%d)", seen[d.Name])
 		}
-		for _, o := range vivosun.Offers(newest) {
-			v, home := newest[o.Key], o.Home
+		for _, o := range vivosun.Offers(d.Model, newest) {
+			v, home := o.Value, o.Home
 			found = append(found, foundSensor{Source: vivosun.Source, Device: d.ID, Type: o.Type,
-				Name: d.Name + " " + o.Suffix + num, Unit: o.Unit, Value: &v, Note: o.Note, Home: &home})
+				Name: d.Name + " " + o.Suffix + num, Unit: o.Unit, Value: &v, Note: o.Note, Home: &home, More: o.More})
 		}
 	}
 	store.SetVSDeviceNames(names)

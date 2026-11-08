@@ -23,8 +23,19 @@ A scan lists these VCure readings, each with a short note saying what it measure
 - **Inside:** temperature, humidity and VPD of the air inside the VCure, as shown on its screen.
 - **Room:** the same readings for the air in the room, outside the VCure. These start with **Home** off, so they do not show in the summary on the Today page.
 - **Electronics and cooling coil temperatures:** the VCure's circuit board and its cooling coil, not the air. These also start with **Home** off.
+- **Equipment:** whether the compressor is **On** or **Off**, and the level of the circulation fan, cooling coil fan, humidifier and heater (**Off** to 100%). These are listed only when you check **Show equipment**, and start with **Home** off.
 
-Wi-Fi signal, fan and compressor states are not listed.
+The Wi-Fi signal and the VCure's settings are not listed.
+
+## Other Vivosun devices
+
+Other devices have not been tested yet. A scan lists these readings when a device sends them:
+
+- **Air:** temperature, humidity and VPD from built-in sensors, probes and controllers, including the air under the VSeed's humidity dome. Readings of the air outside a device start with **Home** off.
+- **CO₂, root temperature, water temperature and water level.** Water readings start with **Home** off.
+- **Equipment:** the level of lights, fans, USB ports and outlets (**Off** to 100%), and each light's spectrum (color) setting. These are listed only when you check **Show equipment**, and start with **Home** off.
+
+Equipment you add is charted below the climate charts on the [Environment](/manual/environment) page.
 
 If two devices have the same name, BudMinder adds a number to the second device's readings (for example "VCure C80 temp (2)") so you can tell them apart.
 

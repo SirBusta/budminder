@@ -38,10 +38,14 @@ func TestPollVivosun_SavesTheNewestRowOnce(t *testing.T) {
 	inside := seedSensor(t, db, vivosun.Source, fakes.VivosunDeviceID, "VS.pTemp")
 	room := seedSensor(t, db, vivosun.Source, fakes.VivosunDeviceID, "VS.bTemp.out")
 	other := seedSensor(t, db, vivosun.Source, "some-other-device", "VS.pTemp")
+	comp := seedSensor(t, db, vivosun.Source, fakes.VivosunDeviceID, "VS.cure.comp")
+	fan := seedSensor(t, db, vivosun.Source, fakes.VivosunDeviceID, "VS.cure.fanCir")
 
 	older := fakes.VCureRow(now.Add(-2 * time.Minute).Unix())
 	older["pTemp"] = 2000
-	vs.SetRows(older, fakes.VCureRow(now.Add(-time.Minute).Unix()))
+	newest := fakes.VCureRow(now.Add(-time.Minute).Unix())
+	newest["cure.comp"], newest["cure.fanCir"] = 1, 100 // equipment is sent as it is, not x100
+	vs.SetRows(older, newest)
 
 	contacted, err := w.PollVivosun(context.Background())
 	require.NoError(t, err)
@@ -49,6 +53,8 @@ func TestPollVivosun_SavesTheNewestRowOnce(t *testing.T) {
 	assert.Equal(t, 1, countSensorData(t, db, inside), "only the newest row")
 	assert.InDelta(t, 22.5, latestValue(t, db, inside), 0.001)
 	assert.InDelta(t, 21.0, latestValue(t, db, room), 0.001, "room air is the b* reading")
+	assert.InDelta(t, 1, latestValue(t, db, comp), 0.001, "the compressor is on (1)")
+	assert.InDelta(t, 100, latestValue(t, db, fan), 0.001, "the fan runs at 100%")
 	assert.Equal(t, 0, countSensorData(t, db, other), "a device not on the account")
 	assert.Equal(t, map[string]string{fakes.VivosunDeviceID: "VCure C80"}, names)
 

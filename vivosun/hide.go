@@ -38,6 +38,13 @@ func hide(v any, email string) any {
 				o[k] = hidden
 			case partialIDs[n]:
 				o[k] = partial(str(val))
+				// The model token in a clientId isn't personal and tells
+				// which model sent the file.
+				if m := modelOf(str(val)); n == "clientid" && m != "" {
+					if _, taken := t["modelToken"]; !taken {
+						o["modelToken"] = m
+					}
+				}
 			default:
 				o[k] = hide(val, email)
 			}

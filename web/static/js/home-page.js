@@ -149,7 +149,7 @@
             const u = unit === "ppm" ? "" : /^[°%]/.test(unit) ? unit : unit ? " " + unit : "";
             return `<span${r.climate ? ` class="cl-state-${r.climate}"` : ""}><small>${esc(t(KIND_LABEL[k]))}</small> <b>${v}</b>${esc(u)}</span>`;
         });
-        const light = tent.ports.find(p => K.portIcon(p.name) === "fa-lightbulb" && p.value != null);
+        const light = tent.ports.find(p => K.portIcon(p) === "fa-lightbulb" && p.value != null);
         if (light) parts.push(`<span class="sep"></span><span class="hm-light ${light.value > 0 ? "on" : "off"}"><i class="fa-solid fa-lightbulb me-1"></i>${esc(t(light.value > 0 ? "hm_lights_on" : "hm_lights_off"))}</span>`);
         if (!parts.length) return tent.id ? `<span class="hm-empty-t">${esc(t("hm_no_sensors"))} · <a class="hm-link" href="/sensors/manage">${esc(t("hm_add_sensors"))}</a></span>` : "";
         return `<div class="hm-env">${parts.join("")}</div>`;

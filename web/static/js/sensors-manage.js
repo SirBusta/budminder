@@ -42,12 +42,13 @@
     }
     function typeLabel(s) {
         const k = K.kind(s);
-        if (k === "port") return t("sm_type_port", { n: s.type.split(".")[1] || "" });
+        if (k === "port") return s.source === "vivosun" ? t("sm_type_equip") : t("sm_type_port", { n: s.type.split(".")[1] || "" });
         return t("sm_type_" + k);
     }
+    const ONOFF = { on: t("sm_on"), off: t("sm_off") };
     function valueText(s) {
         if (s.value == null) return `<span class="sm-none">${esc(t("sm_no_reading"))}</span>`;
-        if (K.isPort(s)) return s.value > 0 ? `${Math.round(s.value)}<small> %</small>` : esc(t("sm_off"));
+        if (K.isPort(s)) { const v = K.portText(s, s.value, ONOFF); return /%$/.test(v) ? `${v.slice(0, -1)}<small> %</small>` : esc(v); }
         const { unit, conv } = K.display(s, P.units);
         const v = Number(conv(s.value)).toLocaleString(locale, { minimumFractionDigits: K.decimals(s), maximumFractionDigits: K.decimals(s) });
         return `${v}<small> ${esc(unit)}</small>`;
@@ -107,6 +108,7 @@
     const foundShown = f => (foundAll || !f.more) && (!foundQ || (f.name + " " + f.type + " " + typeLabel(f)).toLowerCase().includes(foundQ));
     function foundValue(f) {
         if (f.value == null) return "";
+        if (K.isPort(f)) return " · " + K.portText(f, f.value, ONOFF);
         const { unit, conv } = K.display(f, P.units);
         return " · " + Number(conv(f.value)).toLocaleString(locale, { maximumFractionDigits: K.decimals(f) }) + (unit ? " " + unit : "");
     }
@@ -116,12 +118,14 @@
         const guess = f => { const same = sensors.find(s => s.source === f.source && s.device === f.device && s.zone_id); return same ? same.zone_id : (zones[0] && zones[0].id); };
         const shown = found.map((f, i) => [f, i]).filter(([f]) => foundShown(f));
         const more = found.filter(f => f.more).length;
+        // Vivosun's extra rows are equipment, not batteries and power: their own words.
+        const equip = found.filter(f => f.more).every(f => f.source === "vivosun");
         const tools = found.length > 8 || more ? `<div class="sm-found-tools">
                 <div class="sm-search"><i class="fa-solid fa-filter"></i><input type="search" id="smFoundQ" value="${esc(foundQ)}" placeholder="${esc(t("sm_found_filter"))}" aria-label="${esc(t("sm_found_filter"))}"></div>
-                ${more ? `<label class="sm-check"><input type="checkbox" class="form-check-input m-0" id="smFoundAll" ${foundAll ? "checked" : ""}> ${esc(t("sm_found_show_all", { n: more }))}</label>` : ""}
+                ${more ? `<label class="sm-check"><input type="checkbox" class="form-check-input m-0" id="smFoundAll" ${foundAll ? "checked" : ""}> ${esc(t(equip ? "sm_vs_show_equip" : "sm_found_show_all", { n: more }))}</label>` : ""}
             </div>` : "";
         el.innerHTML = `<div class="sm-found"><h3><i class="fa-solid fa-circle-plus me-1"></i>${esc(t(found.length === 1 ? "sm_found_one" : "sm_found_n", { n: found.length }))}</h3>${tools}
-            ${shown.length ? "" : `<div class="sm-found-none">${esc(t("sm_found_nothing_shown"))}</div>`}
+            ${shown.length ? "" : `<div class="sm-found-none">${esc(t(more && equip ? "sm_vs_found_nothing_shown" : "sm_found_nothing_shown"))}</div>`}
             ${shown.map(([f, i]) => `<div class="sm-found-row">
                 <div class="nm"><b>${esc(f.name)}</b><small>${esc(sourceName(f.source))} · ${esc(deviceText(f))} · ${esc(typeLabel(f))}${esc(foundValue(f))}</small>${f.note ? `<small class="vs-note"><i class="fa-solid fa-circle-info me-1"></i>${esc(t(f.note))}</small>` : ""}</div>
                 <select class="form-select form-select-sm" id="smFz${i}" aria-label="${esc(t("sm_tent"))}">${zoneOptions(guess(f))}</select>
@@ -154,9 +158,9 @@
         </div>`;
     }
     // Within a tent: readings, then ports, then hidden; inside before outside.
-    const KIND_ORDER = { temp: 0, hum: 1, vpd: 2, co2: 3, soil: 4, ec: 5, light: 6, other: 7, port: 8 };
-    // Vivosun's electronics and cooling coil temperatures (not air) go last.
-    const notAir = s => /^VS\.(coreTemp|evapT)$/.test(s.type) ? 1 : 0;
+    const KIND_ORDER = { temp: 0, hum: 1, vpd: 2, co2: 3, level: 4, soil: 5, ec: 6, light: 7, other: 8, port: 9 };
+    // Vivosun: air readings, then water and root readings, then the electronics and cooling coil temperatures.
+    const notAir = s => /^VS\.(coreTemp|evapT)$/.test(s.type) ? 2 : /^VS\.(waterT|waterLv|rTemp)$/.test(s.type) ? 1 : 0;
     const rowOrder = (a, b) => (a.hidden - b.hidden) || (K.isPort(a) - K.isPort(b)) || (notAir(a) - notAir(b)) || (K.isOutside(a) - K.isOutside(b)) ||
         (KIND_ORDER[K.kind(a)] - KIND_ORDER[K.kind(b)]) || a.type.localeCompare(b.type, undefined, { numeric: true }) || a.name.localeCompare(b.name);
     function renderList() {

@@ -544,7 +544,13 @@ func parseSensorIDs(s string) ([]int, bool) {
 	return ids, len(ids) > 0 && len(ids) <= seriesMaxSensors
 }
 
-// sensorPortFlags reports which of the sensors are AC Infinity ports.
+// isPortType tells an AC Infinity port or a Vivosun device's equipment
+// (levels 0-100, charted as steps).
+func isPortType(t string) bool {
+	return strings.HasPrefix(t, "ACIP.") || vivosun.IsEquipmentType(t)
+}
+
+// sensorPortFlags reports which of the sensors are ports or equipment.
 func sensorPortFlags(db *sql.DB, ids []int) (map[int]bool, error) {
 	ph, args := inPlaceholders(ids)
 	rows, err := db.Query(`SELECT id, type FROM sensors WHERE id IN (`+ph+`)`, args...)
@@ -559,7 +565,7 @@ func sensorPortFlags(db *sql.DB, ids []int) (map[int]bool, error) {
 		if err := rows.Scan(&id, &t); err != nil {
 			return nil, err
 		}
-		out[id] = strings.HasPrefix(t, "ACIP.")
+		out[id] = isPortType(t)
 	}
 	return out, rows.Err()
 }

@@ -96,6 +96,18 @@ type Device struct {
 	Name     string
 	SceneID  int64
 	HasScene bool
+	// Model is the model token from clientId ("vivosun-VSCTLY18-..." ->
+	// "VSCTLY18"); "" when there is none (the VCure).
+	Model string
+}
+
+// modelOf reads the model token from a clientId.
+func modelOf(clientID string) string {
+	parts := strings.Split(clientID, "-")
+	if len(parts) < 3 || !strings.EqualFold(parts[0], "vivosun") {
+		return ""
+	}
+	return strings.ToUpper(parts[1])
 }
 
 // Row is one reading row: Vivosun's names with the values divided by 100
@@ -154,7 +166,7 @@ func parseDevices(env map[string]any) []Device {
 			if m == nil || str(m["deviceId"]) == "" {
 				continue
 			}
-			d := Device{ID: str(m["deviceId"]), Name: strings.TrimSpace(str(m["name"]))}
+			d := Device{ID: str(m["deviceId"]), Name: strings.TrimSpace(str(m["name"])), Model: modelOf(str(m["clientId"]))}
 			if d.Name == "" {
 				d.Name = "Vivosun"
 			}

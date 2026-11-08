@@ -154,7 +154,7 @@ func TestVivosun_ScanAndAdd(t *testing.T) {
 	vs.SetRows(fakes.VCureRow(time.Now().Add(-2*time.Minute).Unix()), fakes.VCureRow(time.Now().Add(-time.Minute).Unix()))
 	code, found, out = e.scanVivosun(t)
 	require.Equal(t, http.StatusOK, code, out)
-	assert.Len(t, found, 8, "inside and room temp/humidity/VPD, electronics, coil; no Wi-Fi, compressor or unplugged probe")
+	assert.Len(t, found, 9, "inside and room temp/humidity/VPD, electronics, coil, compressor; no Wi-Fi or unplugged probe")
 
 	in := found["VS.pTemp"]
 	require.NotNil(t, in)
@@ -170,6 +170,14 @@ func TestVivosun_ScanAndAdd(t *testing.T) {
 	assert.Equal(t, false, room["home"], "room air starts off the Home page")
 	assert.Equal(t, false, found["VS.coreTemp"]["home"])
 	assert.Equal(t, false, found["VS.evapT"]["home"])
+	comp := found["VS.cure.comp"]
+	require.NotNil(t, comp)
+	assert.Equal(t, "VCure C80 compressor", comp["name"])
+	assert.Equal(t, "on/off", comp["unit"])
+	assert.Equal(t, true, comp["more"], "equipment only with Show equipment")
+	assert.Equal(t, false, comp["home"])
+	assert.InDelta(t, 0, comp["value"], 0.001)
+	assert.Nil(t, in["more"], "readings are always listed")
 	assert.Equal(t, "VCure C80", e.server.ConfigStore.VSDeviceNames()[fakes.VivosunDeviceID], "a scan fills the device names")
 
 	add := func(s map[string]any) int {
@@ -190,7 +198,7 @@ func TestVivosun_ScanAndAdd(t *testing.T) {
 	assert.Equal(t, "plant", visibility(add(room)), "home:false keeps it off Home")
 
 	_, found, _ = e.scanVivosun(t)
-	assert.Len(t, found, 6, "added readings aren't offered again")
+	assert.Len(t, found, 7, "added readings aren't offered again")
 	assert.NotContains(t, found, "VS.pTemp")
 }
 
