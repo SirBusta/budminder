@@ -193,7 +193,7 @@ func TestDiscord_EmbedWithoutMentions(t *testing.T) {
 	require.Len(t, reqs, 1)
 	assert.Contains(t, reqs[0].Body, `"allowed_mentions":{"parse":[]}`)
 	assert.Contains(t, reqs[0].Body, `[View readings](http://bm/sensors#alert=5)`)
-	assert.Contains(t, reqs[0].Body, `"color":16096779`, "amber for a warning")
+	assert.Contains(t, reqs[0].Body, `"color":14427686`, "red for every alert: alerts have no levels")
 
 	f.SetStatus(404, `{"message": "Unknown Webhook", "code": 10015}`)
 	err := d.Notify(context.Background(), alerts.TestNotice("t", "x", "", ""))

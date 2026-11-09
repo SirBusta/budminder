@@ -3126,11 +3126,8 @@ th, td {
 #alCard .al-detail, #alRecent .al-detail { font-weight: 400; color: var(--sx-muted); }
 /* Recent alerts */
 .al-ev { list-style: none; margin: 0; padding: 0; }
-.al-ev li { display: flex; flex-wrap: wrap; gap: .3rem .9rem; justify-content: space-between; align-items: baseline; padding: .55rem .7rem; border-top: 1px solid var(--sx-line); border-left: 3px solid transparent; font-size: .85rem; }
+.al-ev li { display: flex; flex-wrap: wrap; gap: .3rem .9rem; justify-content: space-between; align-items: baseline; padding: .55rem .7rem; border-top: 1px solid var(--sx-line); border-left: 3px solid #dc2626; font-size: .85rem; }
 .al-ev li:first-child { border-top: 0; }
-.al-ev li.al-ev-critical { border-left-color: #dc2626; }
-.al-ev li.al-ev-warning { border-left-color: #d97706; }
-.al-ev li.al-ev-info { border-left-color: var(--sx-muted); }
 .al-ev li.ended { border-left-color: transparent; color: var(--sx-muted); }
 .al-ev-main { flex: 1 1 260px; min-width: 0; overflow-wrap: anywhere; }
 .al-ev-main b { display: block; }

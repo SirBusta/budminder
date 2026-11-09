@@ -220,7 +220,6 @@ func (t *Ntfy) Notify(ctx context.Context, n Notice) error {
 // Discord embed colors.
 const (
 	discordRed   = 0xdc2626
-	discordAmber = 0xf59e0b
 	discordGreen = 0x16a34a
 )
 
@@ -230,12 +229,9 @@ func (d *Discord) Notify(ctx context.Context, n Notice) error {
 	if k := d.Problem(); k != "" {
 		return fmt.Errorf("settings incomplete (%s)", k)
 	}
-	color := discordGreen
-	switch {
-	case n.Urgent && n.Severity == Critical:
+	color := discordGreen // only all clears
+	if n.Urgent {
 		color = discordRed
-	case n.Urgent:
-		color = discordAmber
 	}
 	desc := n.Text
 	if n.URL != "" {

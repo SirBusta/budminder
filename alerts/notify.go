@@ -125,12 +125,11 @@ const (
 // Email for email, Title/Text/URL for phone apps and Discord, Items for the
 // webhook.
 type Notice struct {
-	Title    string // the most serious alert's title, "... and N more"
+	Title    string // the first alert's title (kindOrder), "... and N more"
 	Text     string
 	URL      string // a tap opens this: the first alert's readings, or Settings > Alerts
 	LinkText string
 	Urgent   bool // a new alert or reminder; false when it's only all clears
-	Severity string
 	Items    []Item
 	Email    Message
 }
@@ -144,7 +143,7 @@ func BuildNotice(w Words, events []Event, link string) Notice {
 		if ri != rj {
 			return !ri // alerts before back-to-normal notices
 		}
-		return severityRank(sorted[i].Kind) < severityRank(sorted[j].Kind)
+		return kindOrder(sorted[i].Kind) < kindOrder(sorted[j].Kind)
 	})
 	var n Notice
 	var paras, lines []string
@@ -181,10 +180,6 @@ func BuildNotice(w Words, events []Event, link string) Notice {
 	if len(sorted) > 0 {
 		first = w.Title(sorted[0], sorted[0].Pending == NoticeResolved)
 		n.URL = n.Items[0].URL
-		n.Severity = Severity(sorted[0].Kind)
-		if sorted[0].Pending == NoticeResolved {
-			n.Severity = ""
-		}
 	}
 	subject := w.fill("al_subject", map[string]string{"title": first})
 	n.Title = first
@@ -211,7 +206,7 @@ func TestNotice(title, text, link, linkText string) Notice {
 	if link != "" {
 		u = link + "/settings#alerts"
 	}
-	return Notice{Title: title, Text: text, URL: u, LinkText: linkText, Urgent: true, Severity: Warning,
+	return Notice{Title: title, Text: text, URL: u, LinkText: linkText, Urgent: true,
 		Items: []Item{{Event: EventTest, Title: title, Text: text, StartedAt: time.Now().UTC().Truncate(time.Second), URL: u}},
 		Email: Simple(title, []string{text}, u, linkText)}
 }

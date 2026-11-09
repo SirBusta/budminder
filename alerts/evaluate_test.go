@@ -199,8 +199,8 @@ func TestWords_Offline(t *testing.T) {
 	if got := w.Title(e, true); got != "Back online" {
 		t.Errorf("no zone, resolved: %q", got)
 	}
-	if Severity(KindOffline) != Critical {
-		t.Error("offline is the most serious")
+	if kindOrder(KindOffline) >= kindOrder(KindStage) || kindOrder(KindIntegration) >= kindOrder(KindSensor) {
+		t.Error("offline and integration alerts come first in a notice")
 	}
 }
 

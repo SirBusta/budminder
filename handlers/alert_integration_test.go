@@ -60,7 +60,6 @@ func TestAlertEngine_IntegrationRefusedSignIn(t *testing.T) {
 	assert.Equal(t, alerts.IntegrationAuth, ev.Detail)
 	assert.Nil(t, ev.Value)
 	assert.WithinDuration(t, now.Add(-16*time.Minute), ev.Started, 2*time.Second)
-	assert.Equal(t, alerts.Critical, alerts.Severity(ev.Kind))
 	require.Len(t, f.Mail(), 1)
 	assert.Contains(t, f.Mail()[0].Data, "AC Infinity sign-in refused")
 

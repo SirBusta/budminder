@@ -484,7 +484,6 @@ func TestAlertEngine_SensorsOffline(t *testing.T) {
 	ev := offline(a.events(t))
 	require.NotNil(t, ev)
 	assert.Equal(t, "Tent temp", ev.Detail)
-	assert.Equal(t, alerts.Critical, alerts.Severity(ev.Kind))
 	require.Len(t, f.Mail(), 1)
 	assert.Contains(t, f.Mail()[0].Data, "Sensors offline in Tent")
 	assert.Contains(t, f.Mail()[0].Data, "No readings for 15 minutes from Tent temp.")

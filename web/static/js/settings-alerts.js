@@ -553,7 +553,7 @@
         ul.replaceChildren();
         for (const ev of list) {
             const li = document.createElement("li");
-            li.className = "al-ev-" + ev.severity + (ev.active ? "" : " ended") + (ev.chart ? " al-ev-go" : "");
+            li.className = (ev.active ? "" : "ended") + (ev.chart ? " al-ev-go" : "");
             if (ev.chart) {
                 li.dataset.go = ev.id;
                 li.tabIndex = 0;

@@ -25,13 +25,6 @@ const (
 	IntegrationFailing = "failing"
 )
 
-// Severities.
-const (
-	Critical = "critical"
-	Warning  = "warning"
-	Info     = "info"
-)
-
 // Sides of a limit. Light alerts use what the sensor saw; clock alerts use
 // which way the lights are off.
 const (
@@ -42,17 +35,6 @@ const (
 	SideEarly = "early"
 	SideLate  = "late"
 )
-
-// Severity returns a kind's severity.
-func Severity(kind string) string {
-	switch kind {
-	case KindOffline, KindIntegration:
-		return Critical
-	case KindStage, KindLight, KindSensor:
-		return Warning
-	}
-	return Info
-}
 
 // The one set of times every alert follows.
 const (

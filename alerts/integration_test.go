@@ -32,5 +32,4 @@ func TestIntegrationAlertText(t *testing.T) {
 		assert.Equal(t, c.title, w.Title(c.e, c.resolved))
 		assert.Equal(t, c.line, w.Line(c.e, c.resolved))
 	}
-	assert.Equal(t, alerts.Critical, alerts.Severity(alerts.KindIntegration))
 }

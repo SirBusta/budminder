@@ -40,7 +40,6 @@ type alertEventLists struct {
 // alertRow is one line of Recent alerts.
 type alertRow struct {
 	ID          int    `json:"id"`
-	Severity    string `json:"severity"`
 	Title       string `json:"title"`
 	Value       string `json:"value,omitempty"` // the reading when it started (limit and sensor alerts)
 	Line        string `json:"line"`
@@ -98,7 +97,7 @@ func alertRows(c *gin.Context, cleared bool) []alertRow {
 	w := alertWordsFor(c)
 	loc := requestLocation(c)
 	for _, ev := range events {
-		r := alertRow{ID: ev.ID, Severity: alerts.Severity(ev.Kind), Title: w.Title(ev, false), Active: ev.Resolved == nil, DeliveryKey: ev.Delivery,
+		r := alertRow{ID: ev.ID, Title: w.Title(ev, false), Active: ev.Resolved == nil, DeliveryKey: ev.Delivery,
 			Zone: ev.Zone, Type: alertType(ev), Chart: alerts.HasChart(ev.Kind)}
 		switch {
 		case alerts.HasReadings(ev.Kind):

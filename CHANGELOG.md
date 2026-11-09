@@ -33,6 +33,7 @@ used three parts.
 ### Changed
 
 - The **BudMinder address** used for links in alert notifications now has its own field below the list of notification methods. Recent alerts shows **Sent** and **Sending failed** instead of **Emailed** and **Email failed**.
+- Every active alert in **Recent alerts** now has a red stripe on its left edge, whatever the alert type.
 
 ## [2.4] - 2026-11-08
 

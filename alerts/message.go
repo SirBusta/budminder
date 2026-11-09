@@ -262,19 +262,22 @@ func (w Words) Line(e Event, resolved bool) string {
 	return w.fill(key, vals)
 }
 
-// severityRank sorts the most serious first.
-func severityRank(kind string) int {
-	switch Severity(kind) {
-	case Critical:
+// kindOrder lists alerts in one notice: what stops BudMinder watching readings
+// (sensors offline, integration problems) first, then limits, Light check and
+// sensor alerts, then the light schedule offset. Every alert is equally an
+// alert: there are no levels.
+func kindOrder(kind string) int {
+	switch kind {
+	case KindOffline, KindIntegration:
 		return 0
-	case Warning:
-		return 1
+	case KindClock:
+		return 2
 	}
-	return 2
+	return 1
 }
 
 // BuildMessage is one email for every pending notice in events. The subject
-// names the most serious.
+// names the first (kindOrder).
 func BuildMessage(w Words, events []Event, link string) Message {
 	sorted := append([]Event(nil), events...)
 	sort.SliceStable(sorted, func(i, j int) bool {
@@ -282,7 +285,7 @@ func BuildMessage(w Words, events []Event, link string) Message {
 		if ri != rj {
 			return !ri // alerts before back-to-normal notices
 		}
-		return severityRank(sorted[i].Kind) < severityRank(sorted[j].Kind)
+		return kindOrder(sorted[i].Kind) < kindOrder(sorted[j].Kind)
 	})
 	var paras []string
 	for _, e := range sorted {
