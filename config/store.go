@@ -53,6 +53,7 @@ type Store struct {
 	vsTokens             [2]string         // Vivosun access and login tokens
 	vsDevices            map[string]string // Vivosun device id -> name, from the last poll
 	vsBaseURL            string            // tests only: a stand-in for Vivosun's host ("" = Vivosun)
+	pushoverAPI          string            // tests only: a stand-in for Pushover's message address ("" = Pushover)
 	photoCompress        bool
 	photoQuality         int
 	health               map[string]IntegrationHealth
@@ -360,6 +361,20 @@ func (s *Store) SetVSBaseURL(v string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.vsBaseURL = v
+}
+
+// PushoverAPI is Pushover's message address for alert notifications: ""
+// means Pushover itself. Only tests set it.
+func (s *Store) PushoverAPI() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.pushoverAPI
+}
+
+func (s *Store) SetPushoverAPI(v string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.pushoverAPI = v
 }
 
 // VSDeviceNames returns a copy of the Vivosun device names seen by the last

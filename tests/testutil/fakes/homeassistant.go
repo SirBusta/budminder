@@ -22,6 +22,9 @@ type FakeHA struct {
 	States atomic.Value // []byte
 	// Hits counts /api/states requests.
 	Hits atomic.Int64
+	// Services is the /api/services body (the phone app's notify services);
+	// "[]" until a test sets it.
+	Services atomic.Value // []byte
 }
 
 // FakeHomeAssistant starts a FakeHA serving
@@ -30,6 +33,7 @@ func FakeHomeAssistant(t *testing.T, fixture string) *FakeHA {
 	t.Helper()
 	f := &FakeHA{}
 	f.States.Store(testutil.MustReadFixture(t, "homeassistant/"+fixture+".json"))
+	f.Services.Store([]byte("[]"))
 	f.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer "+HomeAssistantToken {
 			http.Error(w, "401: Unauthorized", http.StatusUnauthorized)
@@ -42,6 +46,8 @@ func FakeHomeAssistant(t *testing.T, fixture string) *FakeHA {
 		case "/api/states":
 			f.Hits.Add(1)
 			_, _ = w.Write(f.States.Load().([]byte))
+		case "/api/services":
+			_, _ = w.Write(f.Services.Load().([]byte))
 		default:
 			http.NotFound(w, r)
 		}

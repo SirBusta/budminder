@@ -62,7 +62,7 @@ func settingsLocation(store *config.Store) *time.Location {
 func dbTime(t time.Time) string { return t.UTC().Format(utils.LayoutDB) }
 
 const alertEventColumns = `id, kind, zone_id, zone_name, sensor_id, sensor_name, measure, side, value, limit_value, detail,
-	started_at, notified_at, resolved_at, delivery, delivery_error, pending, emailed, cleared, start_value, peak_value, limits`
+	started_at, notified_at, resolved_at, delivery, delivery_error, pending, emailed, cleared, start_value, peak_value, limits, retry_methods`
 
 func scanAlertEvents(rows *sql.Rows) ([]alerts.Event, error) {
 	defer rows.Close()
@@ -75,7 +75,7 @@ func scanAlertEvents(rows *sql.Rows) ([]alerts.Event, error) {
 		var emailed, cleared int
 		var limits string
 		if err := rows.Scan(&e.ID, &e.Kind, &e.ZoneID, &e.Zone, &sensor, &e.Sensor, &e.Measure, &e.Side, &value, &limit, &e.Detail,
-			&e.Started, &e.Notified, &resolved, &e.Delivery, &e.DeliveryError, &e.Pending, &emailed, &cleared, &start, &peak, &limits); err != nil {
+			&e.Started, &e.Notified, &resolved, &e.Delivery, &e.DeliveryError, &e.Pending, &emailed, &cleared, &start, &peak, &limits, &e.RetryMethods); err != nil {
 			return nil, err
 		}
 		e.SensorID, e.Value, e.Limit = sqlIntPtr(sensor), nullPtr(value), nullPtr(limit)
@@ -135,24 +135,29 @@ func recentReadings(db *sql.DB, sensorID int, unit, measure string, since time.T
 
 // alertRun is one Check.
 type alertRun struct {
-	e       *AlertEngine
-	mailOn  bool   // notifications are on and the Email settings are complete
-	notSent string // what an alert records when it isn't emailed
-	now     time.Time
-	open    []alerts.Event
-	live    map[string]bool    // open alerts that still apply, by alertKey
-	latest  map[string]float64 // the latest reading behind each, by alertKey
-	watched map[int]bool       // sensors that climate, lights or sensor alerts read
-	changed bool
+	e        *AlertEngine
+	notifyOn bool   // a notification method is on and complete
+	notSent  string // what an alert records when it isn't sent
+	now      time.Time
+	open     []alerts.Event
+	live     map[string]bool    // open alerts that still apply, by alertKey
+	latest   map[string]float64 // the latest reading behind each, by alertKey
+	watched  map[int]bool       // sensors that climate, lights or sensor alerts read
+	changed  bool
 }
 
-// notSentAs is what an alert records when it isn't emailed: paused when email
-// was set up and then turned off, off otherwise.
-func notSentAs(mail alerts.Email) string {
-	if !mail.On && mail.Host != "" {
+// notSentAs is what an alert records when it isn't sent: paused when a
+// notification method was set up and every one is off, off otherwise.
+func notSentAs(m *alerts.Methods) string {
+	if m.Paused() {
 		return alerts.DeliveryPaused
 	}
 	return alerts.DeliveryOff
+}
+
+// loadMethods reads every notification method's settings.
+func (e *AlertEngine) loadMethods() (alerts.Methods, error) {
+	return alerts.LoadMethods(e.DB, e.DataDir, e.Store.HAURL(), e.Store.HAToken(), e.Store.PushoverAPI())
 }
 
 func alertKey(kind string, zone int, measure, side string) string {
@@ -168,13 +173,13 @@ func (e *AlertEngine) Check(_ context.Context) {
 		return
 	}
 	run := &alertRun{e: e, now: e.Now(), open: open, live: map[string]bool{}, latest: map[string]float64{}, watched: map[int]bool{}}
-	mail, err := alerts.LoadEmail(e.DB, e.DataDir)
+	methods, err := e.loadMethods()
 	if err != nil {
-		log.WithError(err).Error("Failed to read the email settings")
+		log.WithError(err).Error("Failed to read the notification settings")
 		return
 	}
-	run.mailOn = mail.On && !mail.PasswordLost && mail.Problem() == ""
-	run.notSent = notSentAs(mail)
+	run.notifyOn = len(methods.Ready()) > 0
+	run.notSent = notSentAs(&methods)
 	if err := run.zones(); err != nil {
 		log.WithError(err).Error("Failed to check climate alerts")
 		return
@@ -680,7 +685,7 @@ func (r *alertRun) climateStillOpen(zone int) bool {
 // with notifications off it only keeps time.
 func (r *alertRun) applyRepeat(zone int, c alerts.Change, value any) {
 	var err error
-	if r.mailOn {
+	if r.notifyOn {
 		_, err = r.e.DB.Exec(`UPDATE alert_event SET value = COALESCE($1, value), notified_at = $2, delivery = $3,
 			pending = CASE WHEN pending = '' THEN $4 ELSE pending END
 			WHERE kind = $5 AND zone_id = $6 AND measure = $7 AND side = $8 AND resolved_at IS NULL`,
@@ -713,7 +718,7 @@ func (r *alertRun) apply(zone int, zoneName string, sensorID int, sensorName str
 	switch c.Action {
 	case alerts.Start:
 		pending, delivery := "", r.notSent
-		if r.mailOn {
+		if r.notifyOn {
 			pending, delivery = alerts.NoticeFired, alerts.DeliveryPending
 		}
 		started := r.now
@@ -744,17 +749,17 @@ func (r *alertRun) apply(zone int, zoneName string, sensorID int, sensorName str
 			startValue, peak, limits)
 	case alerts.End:
 		r.forget(c, zone)
-		// The all clear only follows an alert that was really emailed; one that
+		// The all clear only follows an alert that was really sent; one that
 		// never got out needs no second message.
-		notify := r.mailOn && !(c.Kind == alerts.KindStage && r.climateStillOpen(zone))
-		_, err = db.Exec(`UPDATE alert_event SET value = COALESCE($1, value), resolved_at = $2, retry_at = NULL,
+		notify := r.notifyOn && !(c.Kind == alerts.KindStage && r.climateStillOpen(zone))
+		_, err = db.Exec(`UPDATE alert_event SET value = COALESCE($1, value), resolved_at = $2, retry_at = NULL, retry_methods = '',
 			pending = CASE WHEN emailed = 1 AND $3 = 1 THEN $4 ELSE '' END,
 			delivery = CASE WHEN emailed = 1 AND $3 = 1 THEN $5 ELSE delivery END
 			WHERE kind = $6 AND zone_id = $7 AND measure = $8 AND side = $9 AND resolved_at IS NULL`,
 			value, dbTime(r.now), boolInt(notify), alerts.NoticeResolved, alerts.DeliveryPending, c.Kind, zone, c.Measure, c.Side)
 	case alerts.Close:
 		r.forget(c, zone)
-		_, err = db.Exec(`UPDATE alert_event SET resolved_at = $1, pending = '', retry_at = NULL,
+		_, err = db.Exec(`UPDATE alert_event SET resolved_at = $1, pending = '', retry_at = NULL, retry_methods = '',
 			delivery = CASE WHEN delivery = $2 THEN '' ELSE delivery END
 			WHERE kind = $3 AND zone_id = $4 AND measure = $5 AND side = $6 AND resolved_at IS NULL`,
 			dbTime(r.now), alerts.DeliveryPending, c.Kind, zone, c.Measure, c.Side)
@@ -792,7 +797,8 @@ func (e *AlertEngine) RunSender(ctx context.Context) {
 	}
 }
 
-// alertWords builds event text for email, in the language saved with the Email settings.
+// alertWords builds event text for notifications, in the language saved with
+// the notification settings.
 func (e *AlertEngine) alertWords(lang string) alerts.Words {
 	text := utils.TranslationService.GetTranslations(lang)
 	return alerts.Words{Units: e.Store.Units(), Loc: settingsLocation(e.Store), T: func(key string) string {
@@ -803,7 +809,9 @@ func (e *AlertEngine) alertWords(lang string) alerts.Words {
 	}}
 }
 
-// SendPending puts every notice that's due into one email.
+// SendPending puts every notice that's due into one notification and sends it
+// through every method that is on. When some methods fail, only those are
+// tried again 5 minutes later (retry_methods), so the others don't get it twice.
 func (e *AlertEngine) SendPending(ctx context.Context) {
 	log := logger.Log.WithField("func", "AlertEngine.SendPending")
 	now := e.Now()
@@ -823,36 +831,82 @@ func (e *AlertEngine) SendPending(ctx context.Context) {
 	}
 	lang, err := alerts.LoadLanguage(e.DB)
 	if err != nil {
-		log.WithError(err).Error("Failed to read the language for alert emails")
+		log.WithError(err).Error("Failed to read the language for alert notifications")
 		return
 	}
-	mark := func(q string, args ...any) {
-		ids := make([]string, len(events))
-		for i, ev := range events {
-			ids[i] = fmt.Sprint(ev.ID)
-		}
-		if _, err := e.DB.Exec(strings.Replace(q, "(IDS)", "("+strings.Join(ids, ",")+")", 1), args...); err != nil {
-			log.WithError(err).Error("Failed to record what happened to an alert email")
-		}
-	}
-	mail, err := alerts.LoadEmail(e.DB, e.DataDir)
+	methods, err := e.loadMethods()
 	if err != nil {
-		log.WithError(err).Error("Failed to read the email settings")
+		log.WithError(err).Error("Failed to read the notification settings")
 		return
 	}
-	if !mail.On || mail.PasswordLost || mail.Problem() != "" {
-		mark(`UPDATE alert_event SET pending = '', retry_at = NULL, delivery = $1 WHERE id IN (IDS)`, notSentAs(mail))
+	ready := methods.Ready()
+	if len(ready) == 0 {
+		e.markAlerts(events, `UPDATE alert_event SET pending = '', retry_at = NULL, retry_methods = '', delivery = $1 WHERE id IN (IDS)`, notSentAs(&methods))
 		return
 	}
-	link := ""
-	if mail.Link != "" {
-		link = mail.Link + "/settings#alerts"
+	// Notices waiting for the same methods go out together.
+	var order []string
+	groups := map[string][]alerts.Event{}
+	for _, ev := range events {
+		if _, ok := groups[ev.RetryMethods]; !ok {
+			order = append(order, ev.RetryMethods)
+		}
+		groups[ev.RetryMethods] = append(groups[ev.RetryMethods], ev)
 	}
-	if err := mail.Send(ctx, alerts.BuildMessage(e.alertWords(lang), events, link)); err != nil {
-		log.WithError(err).WithField("host", mail.Host).Warn("Alert email failed; trying again in 5 minutes")
-		mark(`UPDATE alert_event SET delivery = $1, delivery_error = $2, retry_at = $3 WHERE id IN (IDS)`,
-			alerts.DeliveryFailed, err.Error(), dbTime(now.Add(alertRetryAfter)))
+	w := e.alertWords(lang)
+	for _, key := range order {
+		e.sendGroup(ctx, w, &methods, ready, key, groups[key], now)
+	}
+}
+
+// sendGroup sends one notification for events to the ready methods that key
+// names ("" = all of them) and records what happened.
+func (e *AlertEngine) sendGroup(ctx context.Context, w alerts.Words, methods *alerts.Methods, ready []alerts.Notifier, key string, events []alerts.Event, now time.Time) {
+	log := logger.Log.WithField("func", "AlertEngine.SendPending")
+	want := map[string]bool{}
+	for _, m := range alerts.SplitList(key) {
+		want[m] = true
+	}
+	var targets []alerts.Notifier
+	for _, n := range ready {
+		if key == "" || want[n.Name()] {
+			targets = append(targets, n)
+		}
+	}
+	if len(targets) == 0 {
+		// The methods that failed were turned off since: nothing left to try.
+		e.markAlerts(events, `UPDATE alert_event SET pending = '', retry_at = NULL, retry_methods = '',
+			delivery = CASE WHEN emailed = 1 THEN $1 ELSE $2 END WHERE id IN (IDS)`, alerts.DeliverySent, notSentAs(methods))
 		return
 	}
-	mark(`UPDATE alert_event SET pending = '', retry_at = NULL, delivery = $1, delivery_error = '', emailed = 1 WHERE id IN (IDS)`, alerts.DeliverySent)
+	notice := alerts.BuildNotice(w, events, methods.Email.Link)
+	var failed, errs []string
+	worked := 0
+	for _, n := range targets {
+		if err := n.Notify(ctx, notice); err != nil {
+			log.WithError(err).WithField("method", n.Name()).Warn("Alert notification failed; trying again in 5 minutes")
+			failed = append(failed, n.Name())
+			errs = append(errs, alerts.MethodLabel(n.Name())+": "+err.Error())
+			continue
+		}
+		worked = 1
+	}
+	if len(failed) == 0 {
+		e.markAlerts(events, `UPDATE alert_event SET pending = '', retry_at = NULL, retry_methods = '', delivery = $1, delivery_error = '', emailed = 1 WHERE id IN (IDS)`, alerts.DeliverySent)
+		return
+	}
+	e.markAlerts(events, `UPDATE alert_event SET delivery = $1, delivery_error = $2, retry_at = $3, retry_methods = $4,
+		emailed = CASE WHEN $5 = 1 THEN 1 ELSE emailed END WHERE id IN (IDS)`,
+		alerts.DeliveryFailed, strings.Join(errs, "; "), dbTime(now.Add(alertRetryAfter)), strings.Join(failed, ","), worked)
+}
+
+// markAlerts runs an UPDATE whose "(IDS)" stands for the events' ids.
+func (e *AlertEngine) markAlerts(events []alerts.Event, q string, args ...any) {
+	ids := make([]string, len(events))
+	for i, ev := range events {
+		ids[i] = fmt.Sprint(ev.ID)
+	}
+	if _, err := e.DB.Exec(strings.Replace(q, "(IDS)", "("+strings.Join(ids, ",")+")", 1), args...); err != nil {
+		logger.Log.WithError(err).Error("Failed to record what happened to an alert notification")
+	}
 }

@@ -143,7 +143,7 @@ func TestDemo_NoExportsLogsOrBackups(t *testing.T) {
 	e := newDemo(t)
 	for _, p := range []string{"/activities/export/csv?plant_id=1", "/activities/export/xlsx?plant_id=1",
 		"/settings/logs", "/settings/logs/download", "/settings/backup/list", "/settings/backup/sqlite/download",
-		"/sensors/dumpACI", "/sensors/dumpVivosun", "/strains/cannadb/search?q=grape"} {
+		"/sensors/dumpACI", "/sensors/dumpVivosun", "/strains/cannadb/search?q=grape", "/settings/alerts/ha-phones"} {
 		resp := e.client.Get(p)
 		testutil.DrainAndClose(resp)
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode, p)
@@ -257,8 +257,10 @@ func TestDemo_PhotoSettingsButNotCompressingExisting(t *testing.T) {
 		{"POST", "/settings/photos/existing/resume"}, {"POST", "/settings/photos/existing/finish"},
 		{"DELETE", "/settings/photos/existing/backup"}, {"POST", "/settings/photos/existing/backup/open"},
 		{"POST", "/settings/photos/existing/backup/restore"},
-		// Alert emails would reach real mail servers.
-		{"POST", "/settings/alerts/email"}, {"POST", "/settings/alerts/email/test"},
+		// Alert notifications would reach real mail servers, phones and webhooks.
+		{"POST", "/settings/alerts/email"}, {"POST", "/settings/alerts/email/test"}, {"POST", "/settings/alerts/link"},
+		{"POST", "/settings/alerts/methods/pushover"}, {"POST", "/settings/alerts/methods/ntfy/test"},
+		{"POST", "/settings/alerts/methods/webhook"}, {"POST", "/settings/alerts/methods/discord/test"},
 	} {
 		code, out := e.json(t, r.method, r.path, map[string]any{"backup": true})
 		assertRefused(t, code, out, r.method+" "+r.path)

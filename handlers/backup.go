@@ -501,7 +501,7 @@ func runSQLiteFileRestore(svc *BackupService, db *sql.DB, data []byte, store *co
 		return
 	}
 
-	keepPassword := keepMailPassword(db)
+	keepPassword := keepAlertSecrets(db)
 	keepSeen := keepWhatsNewSeen(db)
 	if err := restoreSQLiteFrom(db, tmpPath); err != nil {
 		fieldLogger.WithError(err).Error("Failed to restore the database file")
@@ -696,7 +696,7 @@ func runRestore(svc *BackupService, payload BackupPayload, zipBody []byte, maxBa
 		return
 	}
 
-	keepPassword := keepMailPassword(db)
+	keepPassword := keepAlertSecrets(db)
 	keepSeen := keepWhatsNewSeen(db)
 
 	// Tables in deletion order (children first) to satisfy FK constraints.

@@ -25,8 +25,9 @@ type AlertSettingsData struct {
 	To          string // recipients, comma-separated
 	PasswordSet bool
 	EmailReady  bool // on and complete, so BudMinder can send
-	EmailSetUp  bool // a mail server has been entered, so off means paused
+	EmailSetUp  bool // a method has been set up (a mail server entered, ...), so off means paused
 	Rules       alertRulesPage
+	Methods     alertMethodsPage // the other notification methods
 	Events      alertEventLists
 }
 
@@ -81,6 +82,8 @@ func AlertSettingsPageData(c *gin.Context) AlertSettingsData {
 	d.Email = e
 
 	d.Rules = alertRulesPageData(c)
+	d.Methods = alertMethodsPageData(c)
+	d.EmailSetUp = d.Methods.AnySetUp
 	d.Events = alertEventLists{Recent: alertRows(c, false), Cleared: alertRows(c, true)}
 	return d
 }
@@ -262,6 +265,15 @@ func (r alertEmailRequest) email(db *sql.DB, dataDir string) (alerts.Email, erro
 		To:       alerts.SplitAddresses(r.To),
 		Link:     strings.TrimRight(strings.TrimSpace(r.Link), "/"),
 	}
+	// The BudMinder address has its own field since 2.5 (SaveAlertLinkHandler):
+	// a request without one keeps the saved address.
+	if e.Link == "" {
+		saved, err := GetSetting(db, alerts.SettingLinkAddress)
+		if err != nil {
+			return e, err
+		}
+		e.Link = saved
+	}
 	if e.Username == "" {
 		e.Password = ""
 	} else if e.Password == "" {
@@ -403,18 +415,23 @@ func TestAlertEmailHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": T(c, "al_test_sent")})
 }
 
-// keepMailPassword reads the saved mail password before a restore
-// replaces the settings table (backups leave it out) and returns a func
-// that puts it back if the restored settings have none.
-func keepMailPassword(db *sql.DB) func() {
-	saved, err := GetSetting(db, alerts.SettingEmailPassword)
-	return func() {
-		if err != nil || saved == "" {
-			return
+// keepAlertSecrets reads the saved mail password, notification tokens and
+// webhook URLs before a restore replaces the settings table (backups leave
+// them out) and returns a func that puts back each one the restored settings
+// have none of.
+func keepAlertSecrets(db *sql.DB) func() {
+	saved := map[string]string{}
+	for _, name := range alerts.SealedSettings {
+		if v, err := GetSetting(db, name); err == nil && v != "" {
+			saved[name] = v
 		}
-		if now, err := GetSetting(db, alerts.SettingEmailPassword); err == nil && now == "" {
-			if err := UpdateSetting(db, nil, alerts.SettingEmailPassword, saved); err != nil {
-				logger.Log.WithError(err).Warn("Could not keep the mail password after the restore")
+	}
+	return func() {
+		for name, v := range saved {
+			if now, err := GetSetting(db, name); err == nil && now == "" {
+				if err := UpdateSetting(db, nil, name, v); err != nil {
+					logger.Log.WithError(err).WithField("setting", name).Warn("Could not keep a notification secret after the restore")
+				}
 			}
 		}
 	}

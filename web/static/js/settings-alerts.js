@@ -229,8 +229,253 @@
     });
     drawRules();
 
+    // Notification methods besides email (handlers/alert_methods.go): each saves
+    // when a field changes (POST /settings/alerts/methods/<name>); Send test uses
+    // what's typed. MD is what the server knows (secrets only as saved or not),
+    // replaced after each save.
+    const MT = T.meth || {};
+    let MD = JSON.parse(($("alMethData") || {}).textContent || "{}");
+    MD.ready = MD.ready || {};
+    const secs = {};
+    card.querySelectorAll(".ax-meth").forEach(s => { secs[s.dataset.m] = s; });
+    const inSec = (m, sel) => secs[m].querySelector(sel);
+    const sw = m => inSec(m, "[data-on]");
+    const field = (m, f) => { const el = inSec(m, `[data-f="${f}"]`); return el ? el.value.trim() : ""; };
+    const fill = (s, vals) => Object.entries(vals).reduce((t, [k, v]) => t.split(`{${k}}`).join(v), s);
+    const PRI = {
+        pushover: { "0": [MT.priNormal, MT.po0], "1": [MT.priHigh, MT.po1], "2": [MT.priEmergency, MT.po2] },
+        ha: { normal: [MT.priNormal, MT.haNormal], critical: [MT.priCritical, MT.haCritical] },
+        ntfy: { "3": [MT.priDefault, MT.ntfy3], "4": [MT.priHigh, MT.ntfy4], "5": [MT.priUrgent, MT.ntfy5] },
+    };
+    const priName = m => { const p = PRI[m][inSec(m, "[data-pri]").value]; return p ? p[0] : ""; };
+    // haPhones: every phone the list shows (saved ones, then any a refresh found).
+    let haPhones = (MD.haPhones || []).map(p => ({ ...p, on: true }));
+    const methodSetUp = {
+        email: () => !!$("alHost").value.trim(),
+        pushover: () => !!field("pushover", "user") || MD.pushoverTokenSet,
+        ha: () => haPhones.some(p => p.on),
+        ntfy: () => !!MD.ntfyTopic,
+        discord: () => MD.discordURLSet,
+        webhook: () => MD.webhookURLSet,
+    };
+    // methodOn: switched on (and, for the other methods, complete when last saved).
+    const methodOn = m => m === "email" ? on.checked : sw(m).checked && !!MD.ready[m];
+    function methodStatus(m) {
+        if (m === "ha" && !MD.haConnected) return MT.haNotConnected;
+        if (m === "email") return on.checked ? T.sendingTo.replace("{to}", toLine()) : methodSetUp.email() ? T.mailOff : MT.notSetUp;
+        if (!sw(m).checked) return methodSetUp[m]() ? T.mailOff : MT.notSetUp;
+        if (!MD.ready[m]) return MT.incomplete;
+        const priority = PRI[m] ? priName(m) : "";
+        switch (m) {
+            case "pushover": {
+                const d = field("pushover", "devices");
+                return d ? fill(MT.sendingPo, { devices: d, priority }) : fill(MT.sendingPoAll, { priority });
+            }
+            case "ha": {
+                const chosen = haPhones.filter(p => p.on);
+                return chosen.length === 1 ? fill(MT.sendingHa, { phones: chosen[0].name, priority })
+                    : fill(MT.sendingHaN, { n: chosen.length, priority });
+            }
+            case "ntfy": return fill(MT.sendingNtfy, { topic: MD.ntfyTopic, priority });
+            case "discord": return MT.sendingDiscord;
+            case "webhook": return fill(MT.sendingWebhook, { host: MD.webhookHost });
+        }
+        return "";
+    }
+    function drawMethods() {
+        for (const m of Object.keys(secs)) {
+            const st = inSec(m, "[data-st]") || $("alMailSt");
+            st.textContent = methodStatus(m);
+            secs[m].classList.toggle("off-row", !(m === "email" ? on.checked : sw(m).checked));
+        }
+        // Saved / Not set badges, and Remove on the optional secrets.
+        card.querySelectorAll("[data-badge]").forEach(b => {
+            const set = !!MD[b.dataset.badge], optional = !!card.querySelector(`[data-remove="${b.dataset.badge}"]`);
+            b.className = "badge " + (set ? "bg-success" : "bg-secondary");
+            b.textContent = set ? T.saved : T.none;
+            b.hidden = optional && !set;
+            const input = card.querySelector(`[data-secret="${b.dataset.badge}"]`);
+            if (input) input.placeholder = set ? "••••••••" : "";
+        });
+        card.querySelectorAll("[data-remove]").forEach(r => { r.hidden = !MD[r.dataset.remove]; });
+        card.querySelectorAll("[data-pri-what]").forEach(t => {
+            const k = t.dataset.priWhat, p = PRI[k][inSec(k, "[data-pri]").value];
+            t.querySelector("span").innerHTML = p ? `<b>${esc(p[0])}:</b> ${esc(p[1])}` : "";
+        });
+        const ha = secs.ha;
+        ha.querySelector('[data-ha="yes"]').hidden = !MD.haConnected;
+        ha.querySelector('[data-ha="no"]').hidden = MD.haConnected;
+        sw("ha").disabled = !MD.haConnected && !sw("ha").checked;
+    }
+
+    // Home Assistant: the integrations link, and the phone list.
+    const intLink = `<a href="#integrations" data-goto="integrations">${esc(MT.intLink)}</a>`;
+    secs.ha.querySelector("[data-ha-note]").innerHTML = esc(MT.haNote).replace("{link}", intLink).replace("{url}", esc(MD.haURL || ""));
+    secs.ha.querySelector("[data-ha-connect]").innerHTML = esc(MT.haConnect).replace("{link}", intLink);
+    function drawPhones(msg) {
+        const list = secs.ha.querySelector("[data-list]");
+        list.replaceChildren();
+        for (const p of haPhones) {
+            const label = document.createElement("label");
+            const box = document.createElement("input");
+            box.type = "checkbox";
+            box.className = "form-check-input m-0";
+            box.checked = p.on;
+            box.addEventListener("change", () => { p.on = box.checked; saveMethod("ha"); });
+            const code = document.createElement("code");
+            code.textContent = p.id;
+            label.append(box, " " + p.name + " ", code);
+            list.append(label);
+        }
+        if (!haPhones.length || msg) {
+            const small = document.createElement("small");
+            small.textContent = msg || MT.haNoPhones;
+            list.append(small);
+        }
+    }
+    drawPhones();
+    secs.ha.querySelector("[data-refresh]").addEventListener("click", async () => {
+        const out = inSec("ha", "[data-out]");
+        try {
+            const r = await fetch("/settings/alerts/ha-phones", { headers: { Accept: "application/json" } });
+            const d = await r.json().catch(() => ({}));
+            if (!r.ok) throw Object.assign(new Error(d.error || T.failed), { demo: d.demo });
+            const found = d.phones || [];
+            const was = new Map(haPhones.map(p => [p.id, p]));
+            haPhones = found.map(p => ({ ...p, on: was.has(p.id) && was.get(p.id).on }));
+            for (const p of was.values()) if (p.on && !found.some(f => f.id === p.id)) haPhones.push(p);
+            out.className = "st-ha-result";
+            out.textContent = "";
+            drawPhones(found.length ? (found.length === 1 ? MT.haFoundOne : MT.haFound.replace("{n}", found.length)) : MT.haFoundNone);
+            if (haPhones.some(p => p.on)) saveMethod("ha"); // keeps the names fresh
+            drawMethods();
+        } catch (e) {
+            if (e.demo) return;
+            out.className = "st-ha-result bad";
+            out.textContent = e.message;
+        }
+    });
+
+    // ntfy: Generate a hard-to-guess topic.
+    inSec("ntfy", "[data-gen]").addEventListener("click", () => {
+        const abc = "abcdefghjkmnpqrstuvwxyz23456789", r = new Uint32Array(10);
+        crypto.getRandomValues(r);
+        inSec("ntfy", '[data-f="topic"]').value = "budminder-" + Array.from(r, x => abc[x % abc.length]).join("");
+        saveMethod("ntfy");
+    });
+
+    // The webhook's example request.
+    const hookEx = $("alHookExample");
+    if (hookEx) hookEx.textContent = JSON.stringify({
+        event: "start", title: "Temperature high in 3x3 Tent", text: "Temperature is 87 °F, at or above the High limit (86 °F). Since 1:18 PM.",
+        kind: "stage", zone: "3x3 Tent", measure: "temp", value: 87, limit: 86, unit: "°F",
+        started_at: "2026-11-08T21:18:00Z", url: location.origin + "/sensors#alert=42",
+    }, null, 2);
+
+    function methodBody(m, remove) {
+        const b = { on: sw(m).checked };
+        switch (m) {
+            case "pushover":
+                Object.assign(b, { user: field(m, "user"), token: inSec(m, '[data-f="token"]').value, devices: field(m, "devices"), priority: field(m, "priority") });
+                break;
+            case "ha": {
+                const chosen = haPhones.filter(p => p.on);
+                Object.assign(b, { phones: chosen.map(p => p.id), names: chosen.map(p => p.name), priority: field(m, "priority") });
+                break;
+            }
+            case "ntfy":
+                Object.assign(b, { server: field(m, "server"), topic: field(m, "topic"), token: inSec(m, '[data-f="token"]').value,
+                    priority: field(m, "priority"), remove_token: remove === "ntfyTokenSet" });
+                break;
+            case "discord":
+                b.url = inSec(m, '[data-f="url"]').value;
+                break;
+            case "webhook":
+                Object.assign(b, { url: inSec(m, '[data-f="url"]').value, auth: inSec(m, '[data-f="auth"]').value, remove_auth: remove === "webhookAuthSet" });
+                break;
+        }
+        return b;
+    }
+    function methodOut(m, text, ok) {
+        const out = inSec(m, "[data-out]");
+        out.className = "st-ha-result" + (ok === undefined ? "" : ok ? " ok" : " bad");
+        out.textContent = text || "";
+    }
+    function openMethod(m) {
+        secs[m].classList.add("open");
+        inSec(m, ".ax-meth-t").setAttribute("aria-expanded", "true");
+    }
+    function saveMethod(m, remove) {
+        const body = methodBody(m, remove);
+        if (!$("alLink").value.trim()) { $("alLink").value = location.origin; saveLink(); }
+        saving = saving.then(async () => {
+            try {
+                const d = await post(`/settings/alerts/methods/${m}`, body);
+                hideRefuse();
+                MD = d.methods || MD;
+                MD.ready = MD.ready || {};
+                secs[m].querySelectorAll("[data-secret]").forEach(i => { i.value = ""; });
+                methodOut(m, "");
+                flash();
+            } catch (e) {
+                // Turning a method on with something missing: leave it off.
+                if (body.on) sw(m).checked = false;
+                if (e.code === "nothing_set") {
+                    $("alRefuseText").innerHTML = fillLink(T.refuse);
+                    $("alRefuse").hidden = false;
+                } else if (!e.demo) {
+                    openMethod(m);
+                    methodOut(m, e.message, false);
+                }
+            }
+            drawState();
+        });
+        return saving;
+    }
+    for (const m of Object.keys(secs)) {
+        if (m === "email") continue;
+        secs[m].addEventListener("change", e => { if (e.target.matches("[data-on], [data-f]")) saveMethod(m); });
+        secs[m].addEventListener("keydown", e => {
+            if (e.key === "Enter" && e.target.matches("input[data-f]")) { e.preventDefault(); e.target.blur(); }
+        });
+        secs[m].querySelectorAll("[data-remove]").forEach(b => b.addEventListener("click", () => saveMethod(m, b.dataset.remove)));
+        const test = inSec(m, "[data-test]");
+        if (!test) continue;
+        test.addEventListener("click", async () => {
+            await saving;
+            test.disabled = true;
+            methodOut(m, T.sending);
+            try {
+                const d = await post(`/settings/alerts/methods/${m}/test`, methodBody(m));
+                methodOut(m, d.message, true);
+            } catch (e) {
+                methodOut(m, e.demo ? "" : e.message, e.demo ? undefined : false);
+            } finally {
+                test.disabled = false;
+            }
+        });
+    }
+
+    // BudMinder address: used by every method's links.
+    function saveLink() {
+        const res = $("alLinkResult");
+        saving = saving.then(async () => {
+            try {
+                await post("/settings/alerts/link", { link: $("alLink").value.trim() });
+                res.className = "st-ha-result";
+                res.textContent = "";
+                flash();
+            } catch (e) {
+                res.className = "st-ha-result" + (e.demo ? "" : " bad");
+                res.textContent = e.demo ? "" : e.message;
+            }
+        });
+        return saving;
+    }
+    $("alLink").addEventListener("change", saveLink);
+    $("alLink").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } });
+
     // What sends an alert notification: whether notifications are on, and what's missing.
-    const setUp = data.dataset.setUp === "true";
     const toLine = () => $("alTo").value.trim();
     const cardLink = `<a href="#grow" data-goto="grow" data-goto-card="climateCard">${esc(T.climateCard)}</a>`;
     const fillLink = s => esc(s).replace("{link}", cardLink);
@@ -238,19 +483,30 @@
         const c = window.bmClimate;
         return (c ? c.anyLimit() || c.anyLight() : true) || rules.some(r => r.enabled);
     }
+    const BY = { email: () => MT.byEmail.replace("{to}", toLine()), pushover: () => MT.byPushover, ha: () => MT.byHa,
+        ntfy: () => MT.byNtfy, discord: () => MT.byDiscord, webhook: () => MT.byWebhook };
+    function listWords(items) {
+        try {
+            return new Intl.ListFormat(document.documentElement.lang || "en", { type: "conjunction" }).format(items);
+        } catch {
+            return items.join(", ");
+        }
+    }
     function drawState() {
-        const el = $("alState"), any = anySet(), ok = on.checked && any;
+        const ons = Object.keys(secs).filter(methodOn);
+        const el = $("alState"), any = anySet(), ok = ons.length > 0 && any;
+        const setUp = Object.keys(secs).some(m => methodSetUp[m]());
         const warn = '<i class="fa-solid fa-triangle-exclamation"></i>';
         const jump = t => `<a href="#alMethods" data-al-jump="alMethods">${esc(t)}</a>`;
         el.classList.toggle("warn", !ok);
         el.classList.toggle("ok", ok);
         el.innerHTML = ok
-            ? `<i class="fa-solid fa-circle-check"></i><span>${esc(T.stOn.replace("{to}", toLine()))}</span>`
-            : on.checked ? `${warn}<span>${fillLink(T.stNoLimit)}</span>`
+            ? `<i class="fa-solid fa-circle-check"></i><span>${esc(T.stOn.replace("{methods}", listWords(ons.map(m => BY[m]()))))}</span>`
+            : ons.length ? `${warn}<span>${fillLink(T.stNoLimit)}</span>`
             : !any ? `${warn}<span>${fillLink(T.stOffNoLimit)}</span>`
             : setUp ? `${warn}<span>${esc(T.stPaused)} ${jump(T.stTurnOn)}</span>`
             : `${warn}<span>${esc(T.stOff)} ${jump(T.stSetUp)}</span>`;
-        $("alMailSt").textContent = on.checked ? T.sendingTo.replace("{to}", toLine()) : T.mailOff;
+        drawMethods();
         const title = $("clAlTitle");
         if (title) title.textContent = ok ? T.boxOn : T.boxOff;
     }

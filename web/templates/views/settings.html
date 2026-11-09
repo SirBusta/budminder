@@ -450,14 +450,16 @@
                     <div class="ax-znote" id="alZNote"></div>
                 </div>
 
-                {{/* Notification methods: Email is the only one so far. It starts closed; click the row to open its fields. */}}
+                {{/* Notification methods (mockup data/mockups/settings/alerts/methods/v2.html): every method that is on
+                     gets every notification. Rows start closed; click one to open its fields. Email is handled by
+                     handlers/alert_settings.go, the others by handlers/alert_methods.go; secrets never come to the page. */}}
                 <div class="st-card" id="alMethods">
                     <div class="st-card-h"><i class="fa-solid fa-paper-plane"></i><div><h3>{{ .lcl.al_meth_title }}</h3><p>{{ .lcl.al_meth_desc }}</p></div></div>
                     <div class="ax-meths" id="alCard">
                         <div class="ax-refuse" id="alRefuse" role="alert" hidden><i class="fa-solid fa-triangle-exclamation"></i><span id="alRefuseText"></span></div>
                         <section class="ax-meth" data-m="email">
                             <div class="ax-meth-h">
-                                <button type="button" class="ax-meth-t" aria-expanded="false"><i class="fa-solid fa-chevron-right ax-chev"></i><i class="fa-solid fa-envelope ax-mi"></i><span><b>{{ .lcl.al_email_title }}</b><small id="alMailSt"></small></span></button>
+                                <button type="button" class="ax-meth-t" aria-expanded="false"><i class="fa-solid fa-chevron-right ax-chev"></i><i class="fa-solid fa-envelope ax-mi tile tile-email"></i><span><b>{{ .lcl.al_email_title }}</b><small id="alMailSt"></small></span></button>
                                 <div class="form-check form-switch m-0 st-switch"><input class="form-check-input" type="checkbox" role="switch" aria-label="{{ .lcl.al_email_on }}" title="{{ .lcl.al_email_on }}" id="alOn" data-al {{ if .alerts.Email.On }}checked{{ end }}></div>
                             </div>
                             <div class="ax-meth-b">
@@ -518,17 +520,128 @@
                         <div class="st-row-r"><input type="text" class="form-control form-control-sm" id="alTo" value="{{ .alerts.To }}" maxlength="1000" autocomplete="off" spellcheck="false" data-al></div>
                     </div>
                     <div class="st-row">
-                        <div class="st-row-l"><label for="alLink">{{ .lcl.al_link }}</label><small>{{ .lcl.al_link_desc }}</small></div>
-                        <div class="st-row-r"><input type="url" class="form-control form-control-sm" id="alLink" value="{{ .alerts.Email.Link }}" maxlength="300" autocomplete="off" spellcheck="false" data-al></div>
-                    </div>
-                    <div class="st-row">
                         <div class="st-row-l"><small>{{ .lcl.al_help }}</small><small class="st-ha-result" id="alResult" role="status" aria-live="polite"></small></div>
                         <div class="st-row-r"><button type="button" class="st-btn light" id="alTest"><i class="fa-solid fa-paper-plane me-1"></i>{{ .lcl.al_test }}</button></div>
                     </div>
                             </div>
                         </section>
+
+                        <section class="ax-meth" data-m="pushover">
+                            <div class="ax-meth-h">
+                                <button type="button" class="ax-meth-t" aria-expanded="false"><i class="fa-solid fa-chevron-right ax-chev"></i><i class="fa-solid fa-mobile-screen ax-mi tile tile-pushover"></i><span><b>Pushover</b><small data-st></small></span></button>
+                                <div class="form-check form-switch m-0 st-switch"><input class="form-check-input" type="checkbox" role="switch" aria-label="{{ .lcl.al_po_on }}" title="{{ .lcl.al_po_on }}" data-on {{ if .alerts.Methods.PushoverOn }}checked{{ end }}></div>
+                            </div>
+                            <div class="ax-meth-b">
+                                <div class="al-tip" role="note"><i class="fa-solid fa-circle-info"></i><span>{{ .lcl.al_po_note }} <a href="https://pushover.net/apps/build" target="_blank" rel="noopener">{{ .lcl.al_po_open }}</a></span></div>
+                                <div class="st-row"><div class="st-row-l"><label for="alPoUser">{{ .lcl.al_po_user }}</label><small>{{ .lcl.al_po_user_desc }}</small></div>
+                                    <div class="st-row-r"><input type="text" class="form-control form-control-sm" id="alPoUser" data-f="user" value="{{ .alerts.Methods.PushoverUser }}" maxlength="30" autocomplete="off" spellcheck="false"></div></div>
+                                <div class="st-row"><div class="st-row-l"><label for="alPoToken">{{ .lcl.al_po_token }}</label><small>{{ .lcl.al_po_token_desc }}</small></div>
+                                    <div class="st-row-r d-flex align-items-center gap-2"><input type="password" class="form-control form-control-sm" id="alPoToken" data-f="token" data-secret="pushoverTokenSet" maxlength="30" autocomplete="new-password"><span class="badge" data-badge="pushoverTokenSet"></span></div></div>
+                                <div class="st-row"><div class="st-row-l"><label for="alPoDevices">{{ .lcl.al_po_devices }}</label><small>{{ .lcl.al_po_devices_desc }}</small></div>
+                                    <div class="st-row-r"><input type="text" class="form-control form-control-sm" id="alPoDevices" data-f="devices" value="{{ .alerts.Methods.PushoverDevices }}" maxlength="300" autocomplete="off" spellcheck="false"></div></div>
+                                <div class="st-row"><div class="st-row-l"><label for="alPoPri">{{ .lcl.al_priority }}</label><small>{{ .lcl.al_priority_desc }}</small></div>
+                                    <div class="st-row-r"><select class="form-select form-select-sm" id="alPoPri" data-f="priority" data-pri="pushover">
+                                        <option value="0"{{ if eq .alerts.Methods.PushoverPriority 0 }} selected{{ end }}>{{ .lcl.al_pri_normal }}</option>
+                                        <option value="1"{{ if eq .alerts.Methods.PushoverPriority 1 }} selected{{ end }}>{{ .lcl.al_pri_high }}</option>
+                                        <option value="2"{{ if eq .alerts.Methods.PushoverPriority 2 }} selected{{ end }}>{{ .lcl.al_pri_emergency }}</option>
+                                    </select></div></div>
+                                <div class="al-tip ax-pri-what" data-pri-what="pushover" role="note"><i class="fa-solid fa-circle-info"></i><span></span></div>
+                                <div class="st-row"><div class="st-row-l"><small class="st-ha-result" role="status" aria-live="polite" data-out></small></div>
+                                    <div class="st-row-r"><button type="button" class="st-btn light" data-test><i class="fa-solid fa-paper-plane me-1"></i><span>{{ .lcl.al_test_notif }}</span></button></div></div>
+                            </div>
+                        </section>
+
+                        <section class="ax-meth" data-m="ha">
+                            <div class="ax-meth-h">
+                                <button type="button" class="ax-meth-t" aria-expanded="false"><i class="fa-solid fa-chevron-right ax-chev"></i><i class="fa-solid fa-house-signal ax-mi tile tile-ha"></i><span><b>{{ .lcl.al_ha_title }}</b><small data-st></small></span></button>
+                                <div class="form-check form-switch m-0 st-switch"><input class="form-check-input" type="checkbox" role="switch" aria-label="{{ .lcl.al_ha_on }}" title="{{ .lcl.al_ha_on }}" data-on {{ if .alerts.Methods.HAOn }}checked{{ end }}></div>
+                            </div>
+                            <div class="ax-meth-b">
+                                <div data-ha="yes"{{ if not .alerts.Methods.HAConnected }} hidden{{ end }}>
+                                <div class="al-tip" role="note"><i class="fa-solid fa-circle-info"></i><span data-ha-note></span></div>
+                                <div class="st-row"><div class="st-row-l"><label>{{ .lcl.al_ha_phones }}</label><small>{{ .lcl.al_ha_phones_desc }}</small></div>
+                                    <div class="st-row-r"><div class="ax-phones" id="alHaPhones"><div class="ax-phones" data-list></div>
+                                        <button type="button" class="st-btn light sm align-self-start" data-refresh><i class="fa-solid fa-rotate me-1"></i><span>{{ .lcl.al_ha_refresh }}</span></button></div></div></div>
+                                <div class="st-row"><div class="st-row-l"><label for="alHaPri">{{ .lcl.al_priority }}</label><small>{{ .lcl.al_priority_desc }}</small></div>
+                                    <div class="st-row-r"><select class="form-select form-select-sm" id="alHaPri" data-f="priority" data-pri="ha">
+                                        <option value="normal"{{ if eq .alerts.Methods.HAPriority "normal" }} selected{{ end }}>{{ .lcl.al_pri_normal }}</option>
+                                        <option value="critical"{{ if eq .alerts.Methods.HAPriority "critical" }} selected{{ end }}>{{ .lcl.al_pri_critical }}</option>
+                                    </select></div></div>
+                                <div class="al-tip ax-pri-what" data-pri-what="ha" role="note"><i class="fa-solid fa-circle-info"></i><span></span></div>
+                                <div class="st-row"><div class="st-row-l"><small class="st-ha-result" role="status" aria-live="polite" data-out></small></div>
+                                    <div class="st-row-r"><button type="button" class="st-btn light" data-test><i class="fa-solid fa-paper-plane me-1"></i><span>{{ .lcl.al_test_notif }}</span></button></div></div>
+                                </div>
+                                <div data-ha="no"{{ if .alerts.Methods.HAConnected }} hidden{{ end }}>
+                                    <div class="al-tip warn" role="note"><i class="fa-solid fa-triangle-exclamation"></i><span data-ha-connect></span></div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="ax-meth" data-m="ntfy">
+                            <div class="ax-meth-h">
+                                <button type="button" class="ax-meth-t" aria-expanded="false"><i class="fa-solid fa-chevron-right ax-chev"></i><i class="fa-solid fa-bell ax-mi tile tile-ntfy"></i><span><b>ntfy</b><small data-st></small></span></button>
+                                <div class="form-check form-switch m-0 st-switch"><input class="form-check-input" type="checkbox" role="switch" aria-label="{{ .lcl.al_ntfy_on }}" title="{{ .lcl.al_ntfy_on }}" data-on {{ if .alerts.Methods.NtfyOn }}checked{{ end }}></div>
+                            </div>
+                            <div class="ax-meth-b">
+                                <div class="al-tip" role="note"><i class="fa-solid fa-circle-info"></i><span>{{ .lcl.al_ntfy_note }} <a href="https://ntfy.sh/#subscribe-phone" target="_blank" rel="noopener">{{ .lcl.al_ntfy_get }}</a></span></div>
+                                <div class="st-row"><div class="st-row-l"><label for="alNtfyServer">{{ .lcl.al_ntfy_server }}</label><small>{{ .lcl.al_ntfy_server_desc }}</small></div>
+                                    <div class="st-row-r"><input type="url" class="form-control form-control-sm" id="alNtfyServer" data-f="server" value="{{ .alerts.Methods.NtfyServer }}" maxlength="300" autocomplete="off" spellcheck="false"></div></div>
+                                <div class="st-row"><div class="st-row-l"><label for="alNtfyTopic">{{ .lcl.al_ntfy_topic }}</label><small>{{ .lcl.al_ntfy_topic_desc }}</small></div>
+                                    <div class="st-row-r d-flex gap-2"><input type="text" class="form-control form-control-sm" id="alNtfyTopic" data-f="topic" value="{{ .alerts.Methods.NtfyTopic }}" maxlength="64" autocomplete="off" spellcheck="false">
+                                        <button type="button" class="st-btn light" data-gen><i class="fa-solid fa-shuffle me-1"></i><span>{{ .lcl.al_ntfy_generate }}</span></button></div></div>
+                                <div class="st-row"><div class="st-row-l"><label for="alNtfyToken">{{ .lcl.al_ntfy_token }}</label><small>{{ .lcl.al_ntfy_token_desc }}</small></div>
+                                    <div class="st-row-r d-flex align-items-center gap-2"><input type="password" class="form-control form-control-sm" id="alNtfyToken" data-f="token" data-secret="ntfyTokenSet" data-optional maxlength="512" autocomplete="new-password"><span class="badge" data-badge="ntfyTokenSet"></span>
+                                        <button type="button" class="st-btn light sm" data-remove="ntfyTokenSet" hidden><span>{{ .lcl.al_remove }}</span></button></div></div>
+                                <div class="st-row"><div class="st-row-l"><label for="alNtfyPri">{{ .lcl.al_priority }}</label><small>{{ .lcl.al_priority_desc_ntfy }}</small></div>
+                                    <div class="st-row-r"><select class="form-select form-select-sm" id="alNtfyPri" data-f="priority" data-pri="ntfy">
+                                        <option value="3"{{ if eq .alerts.Methods.NtfyPriority 3 }} selected{{ end }}>{{ .lcl.al_pri_default }}</option>
+                                        <option value="4"{{ if eq .alerts.Methods.NtfyPriority 4 }} selected{{ end }}>{{ .lcl.al_pri_high }}</option>
+                                        <option value="5"{{ if eq .alerts.Methods.NtfyPriority 5 }} selected{{ end }}>{{ .lcl.al_pri_urgent }}</option>
+                                    </select></div></div>
+                                <div class="al-tip ax-pri-what" data-pri-what="ntfy" role="note"><i class="fa-solid fa-circle-info"></i><span></span></div>
+                                <div class="st-row"><div class="st-row-l"><small class="st-ha-result" role="status" aria-live="polite" data-out></small></div>
+                                    <div class="st-row-r"><button type="button" class="st-btn light" data-test><i class="fa-solid fa-paper-plane me-1"></i><span>{{ .lcl.al_test_notif }}</span></button></div></div>
+                            </div>
+                        </section>
+
+                        <section class="ax-meth" data-m="discord">
+                            <div class="ax-meth-h">
+                                <button type="button" class="ax-meth-t" aria-expanded="false"><i class="fa-solid fa-chevron-right ax-chev"></i><i class="fa-brands fa-discord ax-mi tile tile-discord"></i><span><b>Discord</b><small data-st></small></span></button>
+                                <div class="form-check form-switch m-0 st-switch"><input class="form-check-input" type="checkbox" role="switch" aria-label="{{ .lcl.al_discord_on }}" title="{{ .lcl.al_discord_on }}" data-on {{ if .alerts.Methods.DiscordOn }}checked{{ end }}></div>
+                            </div>
+                            <div class="ax-meth-b">
+                                <div class="st-row"><div class="st-row-l"><label for="alDiscordUrl">{{ .lcl.al_webhook_url }}</label><small>{{ .lcl.al_discord_url_desc }}</small></div>
+                                    <div class="st-row-r d-flex align-items-center gap-2"><input type="password" class="form-control form-control-sm" id="alDiscordUrl" data-f="url" data-secret="discordURLSet" maxlength="2048" autocomplete="new-password"><span class="badge" data-badge="discordURLSet"></span></div></div>
+                                <div class="st-row"><div class="st-row-l"><small class="st-ha-result" role="status" aria-live="polite" data-out></small></div>
+                                    <div class="st-row-r"><button type="button" class="st-btn light" data-test><i class="fa-solid fa-paper-plane me-1"></i><span>{{ .lcl.al_test_notif }}</span></button></div></div>
+                            </div>
+                        </section>
+
+                        <section class="ax-meth" data-m="webhook">
+                            <div class="ax-meth-h">
+                                <button type="button" class="ax-meth-t" aria-expanded="false"><i class="fa-solid fa-chevron-right ax-chev"></i><i class="fa-solid fa-code ax-mi tile tile-webhook"></i><span><b>{{ .lcl.al_webhook_title }}</b><small data-st></small></span></button>
+                                <div class="form-check form-switch m-0 st-switch"><input class="form-check-input" type="checkbox" role="switch" aria-label="{{ .lcl.al_webhook_on }}" title="{{ .lcl.al_webhook_on }}" data-on {{ if .alerts.Methods.WebhookOn }}checked{{ end }}></div>
+                            </div>
+                            <div class="ax-meth-b">
+                                <div class="al-tip" role="note"><i class="fa-solid fa-circle-info"></i><span>{{ .lcl.al_webhook_note }}</span></div>
+                                <div class="st-row"><div class="st-row-l"><label for="alHookUrl">{{ .lcl.al_webhook_url }}</label><small>{{ .lcl.al_webhook_url_desc }}</small></div>
+                                    <div class="st-row-r d-flex align-items-center gap-2"><input type="password" class="form-control form-control-sm" id="alHookUrl" data-f="url" data-secret="webhookURLSet" maxlength="2048" autocomplete="new-password"><span class="badge" data-badge="webhookURLSet"></span></div></div>
+                                <div class="st-row"><div class="st-row-l"><label for="alHookAuth">{{ .lcl.al_webhook_auth }}</label><small>{{ .lcl.al_webhook_auth_desc }}</small></div>
+                                    <div class="st-row-r d-flex align-items-center gap-2"><input type="password" class="form-control form-control-sm" id="alHookAuth" data-f="auth" data-secret="webhookAuthSet" data-optional maxlength="1000" autocomplete="new-password"><span class="badge" data-badge="webhookAuthSet"></span>
+                                        <button type="button" class="st-btn light sm" data-remove="webhookAuthSet" hidden><span>{{ .lcl.al_remove }}</span></button></div></div>
+                                <details class="ax-example"><summary>{{ .lcl.al_webhook_example }}</summary><pre id="alHookExample"></pre><small>{{ .lcl.al_webhook_event }}</small></details>
+                                <div class="st-row"><div class="st-row-l"><small class="st-ha-result" role="status" aria-live="polite" data-out></small></div>
+                                    <div class="st-row-r"><button type="button" class="st-btn light" data-test><i class="fa-solid fa-paper-plane me-1"></i><span>{{ .lcl.al_test_request }}</span></button></div></div>
+                            </div>
+                        </section>
                     </div>
-                    <div class="ax-planned"><span>{{ .lcl.al_meth_planned }}</span><span class="ax-pl"><i class="fa-solid fa-bell"></i>ntfy</span><span class="ax-pl"><i class="fa-solid fa-mobile-screen"></i>Pushover</span><span class="ax-pl"><i class="fa-brands fa-discord"></i>Discord</span><span class="ax-pl"><i class="fa-solid fa-house-signal"></i>Home Assistant</span><span>{{ .lcl.al_meth_others }}</span></div>
+                    <div class="ax-link-row">
+                        <div class="st-row">
+                            <div class="st-row-l"><label for="alLink">{{ .lcl.al_link }}</label><small>{{ .lcl.al_link_desc }}</small><small class="st-ha-result" id="alLinkResult" role="status" aria-live="polite"></small></div>
+                            <div class="st-row-r"><input type="url" class="form-control form-control-sm" id="alLink" value="{{ .alerts.Email.Link }}" maxlength="300" autocomplete="off" spellcheck="false"></div>
+                        </div>
+                    </div>
+                    <script type="application/json" id="alMethData">{{ .alerts.Methods }}</script>
                     <div class="ax-foot" id="alMethFoot">{{ .lcl.al_meth_foot }}</div>
                 </div>
 
@@ -596,7 +709,18 @@
                     "evNoMatchRecent": {{ .lcl.al_recent_no_match }}, "evNoMatchCleared": {{ .lcl.al_cleared_no_match }}, "evView": {{ .lcl.al_ev_view }},
                     "allZones": {{ .lcl.al_filter_all_zones }}, "allTypes": {{ .lcl.al_filter_all_types }},
                     "types": {"temp": {{ .lcl.al_measure_temp }}, "rh": {{ .lcl.al_measure_rh }}, "vpd": {{ .lcl.al_measure_vpd }}, "rule": {{ .lcl.al_rules_title }}, "light": {{ .lcl.al_type_light }}, "offline": {{ .lcl.al_type_offline }}, "integration": {{ .lcl.al_type_integration }}},
-                    "ruleBadValue": {{ .lcl.al_rule_bad_value }}, "ruleNoSensors": {{ .lcl.al_rule_no_sensors }}}</script>
+                    "ruleBadValue": {{ .lcl.al_rule_bad_value }}, "ruleNoSensors": {{ .lcl.al_rule_no_sensors }},
+                    "meth": {"notSetUp": {{ .lcl.al_not_set_up }}, "incomplete": {{ .lcl.al_incomplete }}, "haNotConnected": {{ .lcl.al_ha_not_connected }},
+                        "sendingPoAll": {{ .lcl.al_sending_po_all }}, "sendingPo": {{ .lcl.al_sending_po }}, "sendingHa": {{ .lcl.al_sending_ha }}, "sendingHaN": {{ .lcl.al_sending_ha_n }},
+                        "sendingNtfy": {{ .lcl.al_sending_ntfy }}, "sendingDiscord": {{ .lcl.al_sending_discord }}, "sendingWebhook": {{ .lcl.al_sending_webhook }},
+                        "priNormal": {{ .lcl.al_pri_normal }}, "priHigh": {{ .lcl.al_pri_high }}, "priEmergency": {{ .lcl.al_pri_emergency }}, "priCritical": {{ .lcl.al_pri_critical }},
+                        "priDefault": {{ .lcl.al_pri_default }}, "priUrgent": {{ .lcl.al_pri_urgent }},
+                        "po0": {{ .lcl.al_pri_po_0 }}, "po1": {{ .lcl.al_pri_po_1 }}, "po2": {{ .lcl.al_pri_po_2 }}, "haNormal": {{ .lcl.al_pri_ha_normal }}, "haCritical": {{ .lcl.al_pri_ha_critical }},
+                        "ntfy3": {{ .lcl.al_pri_ntfy_3 }}, "ntfy4": {{ .lcl.al_pri_ntfy_4 }}, "ntfy5": {{ .lcl.al_pri_ntfy_5 }},
+                        "intLink": {{ .lcl.al_int_link }}, "haNote": {{ .lcl.al_ha_note }}, "haConnect": {{ .lcl.al_ha_connect }}, "haNoPhones": {{ .lcl.al_ha_no_phones }},
+                        "haFoundOne": {{ .lcl.al_ha_found_one }}, "haFound": {{ .lcl.al_ha_found }}, "haFoundNone": {{ .lcl.al_ha_found_none }},
+                        "byEmail": {{ .lcl.al_by_email }}, "byPushover": {{ .lcl.al_by_pushover }}, "byHa": {{ .lcl.al_by_ha }}, "byNtfy": {{ .lcl.al_by_ntfy }},
+                        "byDiscord": {{ .lcl.al_by_discord }}, "byWebhook": {{ .lcl.al_by_webhook }}}}</script>
             </section>
 
             <!-- ============================= Photos ============================= -->

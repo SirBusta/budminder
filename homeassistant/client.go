@@ -1,7 +1,9 @@
 // Package homeassistant reads sensor states from a Home Assistant server
 // through its REST API (GET /api/ and GET /api/states, authenticated with a
-// long-lived access token). It is read-only: BudMinder never changes
-// anything in Home Assistant.
+// long-lived access token), and lists the phone app's notify services
+// (GET /api/services). It is read-only: BudMinder never changes anything in
+// Home Assistant. Alert notifications to the phone app are sent by package
+// alerts.
 //
 // The package is a leaf (standard library only) so both the Manage sensors
 // handlers (test connection, scan) and the watcher (polling) can use it.
@@ -15,6 +17,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -150,6 +153,62 @@ func (c *Client) States(ctx context.Context) ([]Entity, error) {
 	if err := json.Unmarshal(body, &out); err != nil {
 		return nil, ErrNotHomeAssistant
 	}
+	return out, nil
+}
+
+// Phone is a phone with the Home Assistant app: its notify service
+// (mobile_app_<name>) and a name to show.
+type Phone struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// Phones lists the notify services of the Home Assistant phone app
+// (GET /api/services), named after the phone's device tracker when there is
+// one (GET /api/states), e.g. "Dave's iPhone" for mobile_app_daves_iphone.
+func (c *Client) Phones(ctx context.Context) ([]Phone, error) {
+	body, err := c.get(ctx, "/api/services")
+	if err != nil {
+		return nil, err
+	}
+	var domains []struct {
+		Domain   string                     `json:"domain"`
+		Services map[string]json.RawMessage `json:"services"`
+	}
+	if err := json.Unmarshal(body, &domains); err != nil {
+		return nil, ErrNotHomeAssistant
+	}
+	var ids []string
+	for _, d := range domains {
+		if d.Domain != "notify" {
+			continue
+		}
+		for s := range d.Services {
+			if strings.HasPrefix(s, "mobile_app_") {
+				ids = append(ids, s)
+			}
+		}
+	}
+	names := map[string]string{}
+	if len(ids) > 0 {
+		if states, err := c.States(ctx); err == nil {
+			for _, e := range states {
+				if strings.HasPrefix(e.EntityID, "device_tracker.") && e.Attributes.FriendlyName != "" {
+					names[strings.TrimPrefix(e.EntityID, "device_tracker.")] = e.Attributes.FriendlyName
+				}
+			}
+		}
+	}
+	out := make([]Phone, 0, len(ids))
+	for _, id := range ids {
+		short := strings.TrimPrefix(id, "mobile_app_")
+		name := names[short]
+		if name == "" {
+			name = strings.ReplaceAll(short, "_", " ")
+		}
+		out = append(out, Phone{ID: id, Name: name})
+	}
+	sort.Slice(out, func(i, j int) bool { return strings.ToLower(out[i].Name) < strings.ToLower(out[j].Name) })
 	return out, nil
 }
 

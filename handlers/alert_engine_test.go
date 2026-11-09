@@ -319,6 +319,79 @@ func TestAlertEngine_FailedSendRetries(t *testing.T) {
 	assert.Empty(t, ev[0].DeliveryError)
 }
 
+// webhook turns the webhook method on, sending to f.
+func (a *alertEnv) webhook(t *testing.T, f *fakes.FakeNotify) {
+	t.Helper()
+	sealed, err := alerts.SealPassword(a.dataDir, f.URL+"/hook")
+	require.NoError(t, err)
+	testutil.UpsertSetting(t, a.db, alerts.SettingWebhookOn, "1")
+	testutil.UpsertSetting(t, a.db, alerts.SettingWebhookURL, sealed)
+}
+
+func TestAlertEngine_EveryMethodAndRetryOnlyTheOneThatFailed(t *testing.T) {
+	t.Parallel()
+	a := newAlertEnv(t)
+	f := fakes.NewFakeSMTP(t, fakes.SMTPPlain)
+	a.mail(t, f)
+	hook := fakes.NewFakeNotify(t)
+	a.webhook(t, hook)
+	hook.SetStatus(503, "")
+	a.held(t, a.temp, 95)
+	a.check()
+	a.send()
+
+	assert.Len(t, f.Mail(), 1, "email worked")
+	require.Len(t, hook.Requests(), 1)
+	ev := a.events(t)
+	require.Len(t, ev, 1)
+	assert.Equal(t, alerts.DeliveryFailed, ev[0].Delivery)
+	assert.Contains(t, ev[0].DeliveryError, "Webhook: HTTP 503")
+	assert.NotContains(t, ev[0].DeliveryError, hook.URL, "the address is a secret")
+	assert.Equal(t, "webhook", ev[0].RetryMethods)
+	assert.True(t, ev[0].Emailed, "it went out once, so an all clear follows")
+
+	hook.SetStatus(200, "")
+	a.exec(t, `UPDATE alert_event SET retry_at = $1`, time.Now().UTC().Add(-time.Minute).Format("2006-01-02 15:04:05"))
+	a.send()
+	assert.Len(t, f.Mail(), 1, "email isn't sent twice")
+	require.Len(t, hook.Requests(), 2)
+	assert.Contains(t, hook.Requests()[1].Body, `"event":"start"`)
+	ev = a.events(t)
+	assert.Equal(t, alerts.DeliverySent, ev[0].Delivery)
+	assert.Empty(t, ev[0].RetryMethods)
+
+	// The all clear goes to both.
+	a.settled(t, a.temp, 80)
+	a.check()
+	a.send()
+	assert.Len(t, f.Mail(), 2)
+	require.Len(t, hook.Requests(), 3)
+	assert.Contains(t, hook.Requests()[2].Body, `"event":"end"`)
+}
+
+func TestAlertEngine_WebhookAloneCountsAsOn(t *testing.T) {
+	t.Parallel()
+	a := newAlertEnv(t)
+	hook := fakes.NewFakeNotify(t)
+	a.webhook(t, hook)
+	a.held(t, a.temp, 95)
+	a.check()
+	a.send()
+	require.Len(t, hook.Requests(), 1)
+	ev := a.events(t)
+	assert.Equal(t, alerts.DeliverySent, ev[0].Delivery)
+
+	// Turned off with something set up: paused.
+	testutil.UpsertSetting(t, a.db, alerts.SettingWebhookOn, "0")
+	a.held(t, a.hum, 90)
+	a.check()
+	for _, e := range a.events(t) {
+		if e.Measure == "rh" {
+			assert.Equal(t, alerts.DeliveryPaused, e.Delivery)
+		}
+	}
+}
+
 func TestAlertEngine_ClosesQuietlyWhenItNoLongerApplies(t *testing.T) {
 	t.Parallel()
 	for name, change := range map[string]func(a *alertEnv, t *testing.T){

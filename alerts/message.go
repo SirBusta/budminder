@@ -46,8 +46,9 @@ type Event struct {
 	Delivery      string
 	DeliveryError string
 	Pending       string
-	Emailed       bool
-	Cleared       bool // moved to Recent alerts' Cleared tab
+	Emailed       bool   // a notification went out through at least one method
+	Cleared       bool   // moved to Recent alerts' Cleared tab
+	RetryMethods  string // methods a failed notice still goes to, comma-separated; "" = every method that is on
 
 	// Limit and sensor alerts since 2.3 (row.go): the reading when the alert
 	// started, the highest (high side) or lowest (low side) reading while it was

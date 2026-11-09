@@ -46,3 +46,6 @@ func SetPhotoCompressClock(s *PhotoCompressService, now func() time.Time) { s.no
 
 // SetPhotoCompressBeforePhoto runs f before each photo the service compresses.
 func SetPhotoCompressBeforePhoto(s *PhotoCompressService, f func()) { s.beforePhoto = f }
+
+// IsSecretSettingForTest says a backup leaves this settings row out.
+func IsSecretSettingForTest(name string) bool { return secretSettings[name] }

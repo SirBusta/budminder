@@ -25,7 +25,7 @@ BudMinder checks climate and lights only in zones with plants, and only with the
 |---|---|
 | **First 15 minutes** | Nothing is sent. One reading back in range resets the 15-minute count, so brief spikes are ignored. |
 | **At 15 minutes** | The first notification is sent. |
-| **Every 6 hours** | A reminder is sent until the problem ends. Every active alert is included in the same email. |
+| **Every 6 hours** | A reminder is sent until the problem ends. Each reminder lists every active alert. |
 | **After 30 minutes back in range** | One final all-clear is sent. If a zone has several climate alerts, you receive one all-clear when the last one ends. |
 
 **Lights are off schedule** is sent once, with no reminder or all-clear. It replaces **Lights did not turn on or off** while the lights stay about 1 hour off schedule.
@@ -33,9 +33,9 @@ BudMinder checks climate and lights only in zones with plants, and only with the
 - **Reaching a value counts.** A High limit of 1.50 kPa is reached at exactly 1.50.
 - **BudMinder waits after lights turn on or off.** It ignores climate readings for the first 10 minutes, so a climate alert can start no sooner than 25 minutes after the change.
 - **A sensor that stops sending readings** does not start or end a climate alert. After 15 minutes, BudMinder sends a **Sensors offline** alert notification.
-- **When an integration stops working** for 15 minutes, BudMinder sends an **Integration problem** alert notification. The alert ends when the integration has worked normally for 30 minutes, or at once with no notification if you turn the integration off or sign out of it. If the integration's sensors are used for climate, Light check or Sensor alerts, the same email usually also includes a **Sensors offline** alert.
-- **Alerts that start together** arrive in one email. If an email fails, BudMinder tries again every 5 minutes, and **Recent alerts** shows the mail server's error.
-- **Alerts end without an email** if you remove the limit, if you remove the sensor in **Edit Zone**, or if the zone has no plants left.
+- **When an integration stops working** for 15 minutes, BudMinder sends an **Integration problem** alert notification. The alert ends when the integration has worked normally for 30 minutes, or at once with no notification if you turn the integration off or sign out of it. If the integration's sensors are used for climate, Light check or Sensor alerts, the same notification usually also includes a **Sensors offline** alert.
+- **Alerts that start together** arrive in one notification. If a notification method fails, BudMinder tries that method again every 5 minutes, and **Recent alerts** shows the error. Methods that worked do not receive the notification twice.
+- **Alerts end without a notification** if you remove the limit, if you remove the sensor in **Edit Zone**, or if the zone has no plants left.
 
 ## Zone status
 
@@ -50,21 +50,32 @@ The green mark is the Target. The other mark is the current reading. Reload the 
 
 ## Notification methods
 
-Alert notifications are sent by email. Other methods are planned for a future release.
+BudMinder can send alert notifications by email, Pushover, the Home Assistant app, ntfy, Discord and a webhook. Each notification goes through every method that is turned on. Click a method to open its settings, fill them in, and send a test. When the test arrives, turn on the method's switch.
 
-Click **Email** to open its settings. Enter your **Mail server**, **Username**, **Password**, **From address** and **Send to** addresses, then click **Send test email**. If the test email arrives, turn on the switch on the **Email** row. Gmail and most other mail services require an app password, not your account password. The password is stored encrypted and is left out of backups.
+Before you can turn on a method, set a limit in **Climate targets and limits**, add a **Sensor alert**, or set up a **Light check** in **Edit Zone**. With every method off, alerts still appear under **Recent alerts**. Notifications use the language BudMinder was showing when you last changed a method's settings.
 
-Before you can turn on that switch, set a limit in **Climate targets and limits**, add a **Sensor alert**, or set up a **Light check** in **Edit Zone**. With email off, alerts still appear under **Recent alerts**. Emails use the language BudMinder was showing when you last changed the Email settings.
+Passwords, tokens and webhook URLs are stored encrypted and are left out of backups. Saved values are not shown again. To keep one, leave its box blank.
+
+In **BudMinder address**, below the list of methods, enter the address you use to open BudMinder, such as http://192.168.1.10:8080. Notifications link to that address. Tapping a phone notification opens the alert's readings on the Sensors page. The link opens only when your phone can reach that address, such as while connected to your home network or a VPN like Tailscale or WireGuard. Otherwise, the notification still arrives, but the page does not open. Phones cannot open a localhost address, such as http://localhost:8080, even at home. If BudMinder address shows one, replace it with the address other devices on your network use, such as http://192.168.1.10:8080.
+
+- **Email.** Enter your **Mail server**, **Username**, **Password**, **From address** and **Send to** addresses. Gmail and most other mail services require an app password, not your account password.
+- **Pushover.** An app for iPhone and Android, built for urgent notifications. It is a one-time purchase after a 30-day trial. Create an application for BudMinder on the Pushover website, then enter its **API token** and the **User key** from your Pushover dashboard. With **Emergency** priority, a notification repeats every 5 minutes for up to 3 hours until you acknowledge it in the Pushover app.
+- **Home Assistant app.** Set up the Home Assistant connection in **Settings → Integrations** first. Click **Refresh list**, then choose the phones where the Home Assistant app is signed in. With **Critical** priority, a notification sounds even when the phone is muted. On an iPhone, also allow Critical Alerts in the iPhone's Settings app, under Notifications → Home Assistant.
+- **ntfy.** A free app for iPhone and Android. Click **Generate** for a hard-to-guess topic, then subscribe to that topic in the ntfy app. On ntfy.sh, anyone who knows the topic can read your notifications. If you run your own ntfy server, set its upstream-base-url to https://ntfy.sh, or iPhones may receive notifications late or not at all.
+- **Discord.** In Discord, click **Edit Channel**, then **Integrations → Webhooks → New Webhook → Copy Webhook URL**, and paste the URL.
+- **Webhook.** For Node-RED, n8n and other services that accept a webhook. BudMinder sends each alert as JSON in a POST request. Its "event" field is start, reminder or end, or test when you click **Send test request**.
+
+**Priority** (Pushover, the Home Assistant app, and ntfy on Android) sets how strongly the first notification and reminders get your attention. All-clear notifications always use Normal priority (Default on ntfy). The line under **Priority** describes what the chosen priority does on your phone.
 
 ## Sensor alerts
 
 Use a Sensor alert to watch any sensor, such as CO2, a water tank level or a soil probe. Click **Add sensor alert**, then choose the sensor, **At or above** or **At or below**, and a value in the sensor's own unit.
 
-Use the switch to turn a Sensor alert off without deleting it. Editing a Sensor alert ends its active alert without an email. A new alert starts if the reading is still at or past the value. Sensor alerts are part of backups, and deleting a sensor deletes its alerts.
+Use the switch to turn a Sensor alert off without deleting it. Editing a Sensor alert ends its active alert without a notification. A new alert starts if the reading is still at or past the value. Sensor alerts are part of backups, and deleting a sensor deletes its alerts.
 
 ## Recent alerts
 
-Lists the last 50 alerts, active ones first, with how each was delivered: **Sending**, **Emailed**, **Email failed** or **Not sent: notifications are off**.
+Lists the last 50 alerts, active ones first, with how each was delivered: **Sending**, **Sent**, **Sending failed**, **Not sent: notifications are off** or **Not sent: notifications are paused**.
 
 Each alert shows the reading when it started, the highest or lowest reading while it was active, and the limit. If the limit changed during the alert, for example between lights on and lights off, each limit is listed. When alerts come from more than one zone or of more than one type, use **Zone** and **Type** to filter the list.
 

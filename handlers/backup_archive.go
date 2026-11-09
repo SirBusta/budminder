@@ -240,8 +240,16 @@ func ParseBackupArchive(archive []byte) (BackupPayload, error) {
 // login cookies: anyone holding a backup could otherwise make a valid
 // sign-in cookie for the live install. A restore without it keeps the
 // current key until the next start, which then makes a new one. The mail
-// password (Settings > Alerts) is kept through a restore (keepMailPassword).
-var secretSettings = map[string]bool{"session_secret": true, alerts.SettingEmailPassword: true}
+// password and the other notification methods' tokens and webhook URLs
+// (Settings > Alerts, alerts.SealedSettings) are kept through a restore
+// (keepAlertSecrets).
+var secretSettings = func() map[string]bool {
+	m := map[string]bool{"session_secret": true}
+	for _, s := range alerts.SealedSettings {
+		m[s] = true
+	}
+	return m
+}()
 
 func withoutSecretSettings(rows []map[string]interface{}) []map[string]interface{} {
 	kept := rows[:0]

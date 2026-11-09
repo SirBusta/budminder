@@ -152,6 +152,7 @@ var demoBlockedReads = map[string]bool{
 	"/settings/backup/sqlite/download": true,
 	"/sensors/dumpACI":                 true,
 	"/sensors/dumpVivosun":             true,
+	"/settings/alerts/ha-phones":       true,
 	"/strains/cannadb/search":          true,
 	"/api/overlay":                     true,
 }
@@ -631,8 +632,9 @@ var demoRules = map[string]demoRule{
 		}),
 	}},
 
-	// Settings > Alerts: mail settings and test emails have no rule, so they
-	// stay refused. Recent alerts' Clear, Restore and Clear All Ended send nothing.
+	// Settings > Alerts: notification methods (email, Pushover, the Home
+	// Assistant app, ntfy, Discord, webhook), their tests and the BudMinder
+	// address have no rule, so they stay refused. Recent alerts' Clear, Restore and Clear All Ended send nothing.
 	"POST /settings/alerts/events/:id/clear":   {fields: map[string]demoCheck{}},
 	"POST /settings/alerts/events/:id/restore": {fields: map[string]demoCheck{}},
 	"POST /settings/alerts/clear-ended":        {fields: map[string]demoCheck{"ids": dOpt(dIntList(recentAlertsShown))}},

@@ -24,6 +24,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 
+	"isley/alerts"
 	"isley/app"
 	"isley/config"
 	"isley/demo"
@@ -93,6 +94,7 @@ func main() {
 	// (e.g. the CannaDB import client).
 	handlers.Version = getVersion()
 	homeassistant.UserAgent = fmt.Sprintf("BudMinder/%s (+https://github.com/SirBusta/budminder)", handlers.Version)
+	alerts.UserAgent = homeassistant.UserAgent
 
 	port := env.Get("PORT")
 	if port == "" {
