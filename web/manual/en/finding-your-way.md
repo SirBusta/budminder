@@ -11,6 +11,8 @@ Every page has the same menu at the top.
 
 BudMinder works the same way on a phone. The menu wraps to fit smaller screens, and side-by-side panels stack vertically.
 
+To open BudMinder on your phone or tablet, go to **Settings → Phone & tablet** on your computer and scan the code with your phone's camera. The same page shows how to add BudMinder to your phone's home screen.
+
 ## Guest view
 
 If guest view is enabled under **Settings → General**, visitors can browse your plants, strains, photos and smoke reports without an account. They can only view in read-only mode, and the menu shows **Login** instead of **Logout**. Any change to guest view takes effect after BudMinder restarts.

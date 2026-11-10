@@ -87,6 +87,80 @@
                 </div>
             </section>
 
+            <!-- ========================= Phone & tablet ========================= -->
+            {{/* Address and QR code from handlers/phone.go; Change saves the same
+                 setting as Alerts' BudMinder address (js/settings-phone.js). */}}
+            <section class="st-sec" data-sec="phone" data-title="{{ .lcl.st_sec_phone }}" data-desc="{{ .lcl.st_sec_phone_desc }}" id="phSec"
+                     data-from-saved="{{ .lcl.ph_src_saved }}" data-from-browser="{{ .lcl.ph_src_browser }}" data-from-computer="{{ .lcl.ph_src_computer }}"
+                     data-copied="{{ .lcl.ph_copied }}" data-err-addr="{{ .lcl.ph_err_addr }}" data-err-local="{{ .lcl.ph_err_local }}" data-qr-empty="{{ .lcl.ph_qr_empty }}">
+                <h2 class="st-sec-h"><i class="fa-solid fa-mobile-screen"></i>{{ .lcl.st_sec_phone }}<a href="#phone" data-goto="phone">{{ .lcl.st_go_to_section }} <i class="fa-solid fa-arrow-right"></i></a></h2>
+
+                <div class="st-card" id="phOpenCard">
+                    <div class="st-card-h"><i class="fa-solid fa-qrcode"></i><div><h3>{{ .lcl.ph_open_title }}</h3>
+                        <p>{{ if .phone.Docker }}{{ .lcl.ph_open_desc_server }}{{ else if .phone.Remote }}{{ .lcl.ph_open_desc_computer }}{{ else }}{{ .lcl.ph_open_desc_this }}{{ end }}</p></div></div>
+                    <div class="ph-open" id="phOpen"{{ if .phone.NoNetwork }} hidden{{ end }}>
+                        <div class="ph-qr" id="phQr" role="img" aria-label="{{ .lcl.ph_qr_label }}">{{ .phone.QR }}</div>
+                        <div class="ph-steps">
+                            <ol>
+                                <li>{{ .lcl.ph_step_1 }}</li>
+                                <li>{{ .lcl.ph_step_2 }}</li>
+                                <li>{{ .lcl.ph_step_3 }}</li>
+                            </ol>
+                            <div class="ph-addr" id="phAddr"{{ if not .phone.Address }} hidden{{ end }}>
+                                <code id="phAddrText">{{ .phone.Address }}</code>
+                                <button type="button" class="st-btn light" id="phCopy"><i class="fa-solid fa-copy me-1"></i><span>{{ .lcl.ph_copy }}</span></button>
+                                <button type="button" class="st-btn light" id="phChange"><i class="fa-solid fa-pen me-1"></i><span>{{ .lcl.ph_change }}</span></button>
+                            </div>
+                            <small class="ph-src" id="phSrc" data-source="{{ .phone.Source }}"></small>
+                            <div class="ph-edit" id="phEdit"{{ if .phone.Address }} hidden{{ end }}>
+                                <input type="url" class="form-control form-control-sm" id="phInput" aria-label="{{ .lcl.ph_addr_label }}" maxlength="300" autocomplete="off" spellcheck="false">
+                                <button type="button" class="st-btn" id="phSave">{{ .lcl.ph_save }}</button>
+                                <button type="button" class="st-btn light" id="phCancel"{{ if not .phone.Address }} hidden{{ end }}>{{ .lcl.ph_cancel }}</button>
+                                <small class="ph-src w-100" id="phEditHint" role="status" aria-live="polite">{{ .lcl.ph_edit_hint }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ph-none" id="phNoNet"{{ if not .phone.NoNetwork }} hidden{{ end }}><i class="fa-solid fa-triangle-exclamation"></i><span>{{ .lcl.ph_no_net }}</span></div>
+                </div>
+
+                <div class="al-tip mb-3" id="phOnPhone" role="note" hidden><i class="fa-solid fa-circle-check"></i><span>{{ .lcl.ph_on_phone }}</span></div>
+
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-house"></i><div><h3>{{ .lcl.ph_home_title }}</h3><p>{{ .lcl.ph_home_desc }}</p></div></div>
+                    <div class="ph-home">
+                        <div class="ph-home-h">
+                            <b>{{ .lcl.ph_home_on }}</b>
+                            <span class="ph-tabs" role="tablist" id="phTabs"><button type="button" role="tab" data-p="android" class="on" aria-selected="true">{{ .lcl.ph_android }}</button><button type="button" role="tab" data-p="iphone" aria-selected="false">{{ .lcl.ph_iphone }}</button></span>
+                        </div>
+                        <ol id="phAndroid" role="tabpanel">
+                            <li>{{ .lcl.ph_and_1 }}</li>
+                            <li data-md="{{ .lcl.ph_and_2 }}" data-icon="fa-ellipsis-vertical" data-icon-label="{{ .lcl.ph_menu_label }}"></li>
+                            <li data-md="{{ .lcl.ph_and_3 }}"></li>
+                        </ol>
+                        <ol id="phIphone" role="tabpanel" hidden>
+                            <li>{{ .lcl.ph_ios_1 }}</li>
+                            <li data-md="{{ .lcl.ph_ios_2 }}" data-icon="fa-arrow-up-from-bracket" data-icon-label=""></li>
+                            <li data-md="{{ .lcl.ph_ios_3 }}"></li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="st-card">
+                    <div class="st-card-h"><i class="fa-solid fa-circle-question"></i><div><h3>{{ .lcl.ph_help_title }}</h3></div></div>
+                    <ul class="ph-help">
+                        <li>{{ .lcl.ph_help_wifi }}</li>
+                        {{ if .phone.Windows }}
+                        <li data-md="{{ .lcl.ph_help_firewall }}"></li>
+                        <li data-md="{{ .lcl.ph_help_private }}"></li>
+                        {{ end }}
+                        {{ if .phone.Docker }}<li>{{ .lcl.ph_help_docker }}</li>{{ end }}
+                        {{ if .phone.Windows }}<li data-md="{{ .lcl.ph_help_more }}" data-link="/manual/troubleshooting#my-phone-can-t-open-budminder-windows" data-link-text="{{ .lcl.ph_help_link }}"></li>{{ end }}
+                    </ul>
+                </div>
+
+                <div class="al-tip" role="note"><i class="fa-solid fa-house-signal"></i><span>{{ .lcl.ph_away }}</span></div>
+            </section>
+
             <!-- ========================== Integrations ========================== -->
             <section class="st-sec" data-sec="integrations" data-title="{{ .lcl.st_sec_integrations }}" data-desc="{{ .lcl.st_sec_integrations_desc }}">
                 <h2 class="st-sec-h"><i class="fa-solid fa-plug"></i>{{ .lcl.st_sec_integrations }}<a href="#integrations" data-goto="integrations">{{ .lcl.st_go_to_section }} <i class="fa-solid fa-arrow-right"></i></a></h2>
@@ -2931,6 +3005,7 @@
 <script src="/static/js/settings-page.js" defer></script>
 <script src="/static/js/settings-photos.js" defer></script>
 <script src="/static/js/settings-alerts.js" defer></script>
+<script src="/static/js/settings-phone.js" defer></script>
 
 <!--Embed the footer.html template at this location-->
 <script src="/static/js/smoke-settings.js" defer></script>

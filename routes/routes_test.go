@@ -168,6 +168,7 @@ func TestAddProtectedApiRoutes_RegistersAllExpectedRoutes(t *testing.T) {
 		{"POST", "/settings/climate"},
 		{"GET", "/settings/climate/zones"},
 		{"POST", "/settings/alerts/link"},
+		{"GET", "/settings/phone"},
 		{"POST", "/settings/alerts/methods/:method"},
 		{"POST", "/settings/alerts/methods/:method/test"},
 		{"GET", "/settings/alerts/ha-phones"},

@@ -409,6 +409,7 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.POST("/settings/alerts/email", handlers.SaveAlertEmailHandler)
 	r.POST("/settings/alerts/email/test", handlers.TestAlertEmailHandler)
 	r.POST("/settings/alerts/link", handlers.SaveAlertLinkHandler)
+	r.GET("/settings/phone", handlers.PhoneAddressHandler)
 	r.POST("/settings/alerts/methods/:method", handlers.SaveAlertMethodHandler)
 	r.POST("/settings/alerts/methods/:method/test", handlers.TestAlertMethodHandler)
 	r.GET("/settings/alerts/ha-phones", handlers.AlertHAPhonesHandler)
@@ -561,6 +562,7 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 			"smokeSettings":   handlers.LoadSmokeSettings(db),
 			"photos":          handlers.PhotoSettingsPageData(c),
 			"alerts":          handlers.AlertSettingsPageData(c),
+			"phone":           handlers.PhonePageData(c),
 			"climate":         handlers.ClimatePageData(c),
 			"streams":         handlers.GetStreams(db),
 			"loggedIn":        sessions.Default(c).Get("logged_in"),

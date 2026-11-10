@@ -413,7 +413,8 @@
     }
     function saveMethod(m, remove) {
         const body = methodBody(m, remove);
-        if (!$("alLink").value.trim()) { $("alLink").value = location.origin; saveLink(); }
+        // No address yet: the one Phone & tablet shows (never localhost when it can help it).
+        if (!$("alLink").value.trim()) { $("alLink").value = (window.bmPhone && window.bmPhone.address) || location.origin; saveLink(); }
         saving = saving.then(async () => {
             try {
                 const d = await post(`/settings/alerts/methods/${m}`, body);
@@ -565,6 +566,7 @@
                 res.className = "st-ha-result";
                 res.textContent = "";
                 flash();
+                document.dispatchEvent(new CustomEvent("bm:link-change")); // Phone & tablet shows it too
             } catch (e) {
                 res.className = "st-ha-result" + (e.demo ? "" : " bad");
                 res.textContent = e.demo ? "" : e.message;

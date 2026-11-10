@@ -6,7 +6,7 @@ BudMinder does not have an external password recovery or email reset system. If 
 
 ## My phone can't open BudMinder (Windows)
 
-Your phone must be on the same Wi-Fi as the computer running BudMinder. If it is and the page still won't load:
+Your phone must be on the same Wi-Fi as the computer running BudMinder. **Settings → Phone & tablet** shows the address to open and a code to scan. If the phone is on the same Wi-Fi and BudMinder still won't open:
 
 1. Right-click the BudMinder icon in the taskbar tray, choose **Open on your phone…** and click **Allow through firewall**. Windows asks you to confirm.
 2. If the phone still can't connect, Windows probably has your home Wi-Fi marked as **Public**. Windows' firewall is stricter on Public networks, and BudMinder is only allowed through on **Private** ones so strangers on a café or airport Wi-Fi can't reach it. Open **Settings → Network & Internet → Wi-Fi**, click your network and set **Network profile type** to **Private**. Then try the phone again.
