@@ -7,7 +7,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -137,6 +139,64 @@ func TestAlertMethodsHTTP_SendTest(t *testing.T) {
 	code, out = r.post(t, "/settings/alerts/methods/discord/test", map[string]any{"on": false, "url": "https://example.com/x"})
 	assert.Equal(t, http.StatusBadRequest, code)
 	assert.Contains(t, out["error"], "Discord")
+}
+
+func TestAlertMethodsHTTP_SendTestLater(t *testing.T) {
+	t.Parallel()
+	r := newAlertRoutes(t)
+	f := fakes.NewFakeNotify(t)
+	r.server.ConfigStore.SetPushoverAPI(f.URL + "/1/messages.json")
+	body := map[string]any{"on": false, "user": testPoUser, "token": testPoToken, "priority": "1"}
+
+	// "Send in 30 seconds" asks for at most 30.
+	for _, d := range []int{31, -1} {
+		body["delay"] = d
+		code, _ := r.post(t, "/settings/alerts/methods/pushover/test", body)
+		assert.Equal(t, http.StatusBadRequest, code, "delay %d", d)
+	}
+	assert.Empty(t, f.Requests(), "nothing sent")
+
+	// A bad field is refused at once, not after the wait.
+	body["delay"] = 30
+	body["user"] = "nope"
+	start := time.Now()
+	code, _ := r.post(t, "/settings/alerts/methods/pushover/test", body)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Less(t, time.Since(start), 5*time.Second)
+
+	body["delay"] = 1
+	body["user"] = testPoUser
+	start = time.Now()
+	code, out := r.post(t, "/settings/alerts/methods/pushover/test", body)
+	require.Equal(t, http.StatusOK, code, out)
+	assert.GreaterOrEqual(t, time.Since(start), time.Second, "waits before sending")
+	require.Len(t, f.Requests(), 1)
+}
+
+func TestAlertMethodsHTTP_NtfyChoices(t *testing.T) {
+	t.Parallel()
+	r := newAlertRoutes(t)
+	f := fakes.NewFakeNotify(t)
+
+	// Default (3) is no longer offered: Regular is 4, Wake me up 5.
+	code, out := r.post(t, "/settings/alerts/methods/ntfy", map[string]any{"on": true, "server": f.URL, "topic": "budminder-x1", "priority": "3"})
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, out["error"], "Reload the page")
+	code, out = r.post(t, "/settings/alerts/methods/ntfy", map[string]any{"on": true, "server": f.URL, "topic": "budminder-x1", "priority": "5"})
+	require.Equal(t, http.StatusOK, code, out)
+
+	// Saved as 3 before 2.5: shown and sent as Regular.
+	_, err := r.server.DB.Exec(`UPDATE settings SET value = '3' WHERE name = $1`, alerts.SettingNtfyPriority)
+	require.NoError(t, err)
+	page := r.settingsPage(t)
+	i := strings.Index(page, `data-m="ntfy"`)
+	require.Positive(t, i)
+	section := page[i:]
+	section = section[:strings.Index(section, "</section>")]
+	assert.Contains(t, section, `data-pri value="4"`)
+	m, err := alerts.LoadMethods(r.server.DB, r.server.DataDir, "", "", "")
+	require.NoError(t, err)
+	assert.Equal(t, 4, m.Ntfy.Priority)
 }
 
 func TestAlertMethodsHTTP_HomeAssistantPhones(t *testing.T) {

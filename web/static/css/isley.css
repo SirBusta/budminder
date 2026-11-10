@@ -5019,7 +5019,37 @@ body.bm-tour-open { overflow: hidden; }
 .ax-link-row .st-row { border-top: 0; }
 .ax-meth-b .st-row-r .input-group { flex-wrap: nowrap; }
 .ax-meth-b select.form-select-sm { min-width: 12rem; }
-.ax-pri-what b { font-weight: 700; }
+
+/* Notification methods: Regular / Wake me up, phone setup, show buttons (mockup data/mockups/settings/alerts/methods/v3.html) */
+.ax-badge { display: inline-block; margin-left: .35rem; padding: 0 .45rem; border-radius: 99px; background: rgba(22, 163, 74, .12); color: #15803d; font-size: .66rem; font-weight: 700; line-height: 1.2rem; vertical-align: 1px; white-space: nowrap; }
+[data-bs-theme="dark"] .ax-badge { color: #4ade80; }
+.ax-badge i { margin-right: .2rem; }
+.ax-intro { margin: 0 0 .7rem !important; }
+.ax-intro b { font-weight: 700; }
+.ax-choice { padding: .6rem 0 .2rem; border-top: 1px solid var(--sx-line); }
+.ax-choice-t { font-weight: 600; font-size: .9rem; display: block; }
+.ax-choice > small { display: block; color: var(--sx-muted); font-size: .78rem; margin-bottom: .45rem; }
+.ax-choice .fm-seg label { align-items: flex-start; }
+.ax-choice .fm-seg label i { margin-top: .15rem; }
+.ax-choice .fm-seg label:has(input:focus-visible) { outline: 2px solid var(--sx-acc); outline-offset: 2px; }
+.ax-setup { border: 1px solid var(--sx-line); border-radius: 10px; padding: .6rem .75rem; margin: .55rem 0 .3rem; font-size: .82rem; }
+.ax-setup[hidden] { display: none; }
+.ax-setup-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem; margin-bottom: .4rem; }
+.ax-setup-h b { font-size: .86rem; }
+.ax-tabs { display: inline-flex; background: var(--sx-seg); border-radius: 8px; padding: 2px; }
+.ax-tabs button { border: 0; background: transparent; color: var(--sx-muted); font-size: .78rem; font-weight: 600; padding: .15rem .65rem; border-radius: 6px; }
+.ax-tabs button.on { background: var(--sx-card); color: var(--sx-ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+.ax-setup ol { margin: 0; padding-left: 1.2rem; }
+.ax-setup ol li { margin: .15rem 0; }
+.ax-setup p { margin: 0 0 .3rem; }
+.ax-setup h5 { font-size: .8rem; font-weight: 700; margin: .5rem 0 .15rem; }
+.ax-setup h5:first-child { margin-top: 0; }
+.ax-setup .ax-none { color: var(--sx-muted); }
+.ax-test-btns { display: flex; flex-wrap: wrap; gap: .4rem; justify-content: flex-end; }
+.ax-pw { display: block; }
+.ax-pw .form-control { padding-right: 2.2rem; }
+.ax-pw button { width: 28px; height: 28px; right: .2rem; }
+@media (max-width: 767.98px) { .ax-pw { flex: 1; min-width: 0; } }
 
 /* Column headings centered over Low, Target and High */
 .ct-hdc { display: inline-grid; justify-items: center; }

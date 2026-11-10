@@ -28,7 +28,7 @@ used three parts.
 ### Added
 
 - **Integration problem** alerts: when AC Infinity or Vivosun refuses BudMinder's sign-in, Home Assistant refuses its access token, or an integration does not respond for 15 minutes, BudMinder sends an alert notification. For a refused sign-in or token, it says where to fix it. A reminder is sent every 6 hours, and an all-clear once the integration has worked for 30 minutes. They are listed under **Recent alerts** with the other alerts.
-- More ways to receive alert notifications: **Pushover**, the **Home Assistant app**, **ntfy**, **Discord** and a general **webhook** (JSON for Node-RED, n8n and similar), next to email in **Settings > Alerts > Notification methods**. Each notification goes through every method that is on. Pushover, the Home Assistant app and ntfy have a **Priority** setting, including priorities that sound when the phone is muted. Tokens and webhook URLs are stored encrypted and left out of backups. If one method fails, only that method is tried again.
+- More ways to receive alert notifications: **Pushover**, the **Home Assistant app**, **ntfy**, **Discord** and a general **webhook** (JSON for Node-RED, n8n and similar), next to email in **Settings > Alerts > Notification methods**. Each notification goes through every method that is on. With **Wake me up**, Pushover, the Home Assistant app and ntfy (Android only) sound even when the phone is muted or on Do Not Disturb, with setup steps for Android and iPhone and a **Send in 30 seconds** test. Tokens and webhook URLs are stored encrypted and left out of backups. If one method fails, only that method is tried again.
 
 ### Changed
 

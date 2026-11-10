@@ -1,0 +1,13 @@
+{{/* Settings > Alerts > Notification methods: the Regular / Wake me up choice,
+     the phone setup for Wake me up and the test buttons, shared by Pushover,
+     the Home Assistant app and ntfy (mockup data/mockups/settings/alerts/methods/v3.html).
+     settings-alerts.js draws the choice and the setup steps; the hidden
+     data-pri input next to this holds the app's own priority. */}}
+{{ define "alertWake" }}
+<div class="ax-choice" data-choice></div>
+<div class="ax-setup" data-setup hidden></div>
+<div class="st-row">
+    <div class="st-row-l"><small data-wake-hint hidden>{{ .lcl.al_wake_test_hint }}</small><small class="st-ha-result" role="status" aria-live="polite" data-out></small></div>
+    <div class="st-row-r ax-test-btns"><button type="button" class="st-btn light" data-delay hidden><i class="fa-solid fa-hourglass-half me-1"></i><span>{{ .lcl.al_test_delay }}</span></button><button type="button" class="st-btn light" data-test><i class="fa-solid fa-paper-plane me-1"></i><span>{{ .lcl.al_test_notif }}</span></button></div>
+</div>
+{{ end }}

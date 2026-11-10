@@ -123,7 +123,14 @@ type alertMethodRequest struct {
 	// Authorization header (optional secrets: a blank box keeps them).
 	RemoveToken bool `json:"remove_token"`
 	RemoveAuth  bool `json:"remove_auth"`
+	// Delay (Send test only) waits this many seconds, at most
+	// maxTestDelay, before sending: time to lock the phone and turn on Do
+	// Not Disturb ("Send in 30 seconds").
+	Delay int `json:"delay"`
 }
+
+// maxTestDelay is the longest wait a test may ask for.
+const maxTestDelay = 30
 
 // alertMethodFrom fills method name from the request over the saved settings
 // m. ok is false for an unknown method.
@@ -316,10 +323,12 @@ func SaveAlertMethodHandler(c *gin.Context) {
 }
 
 // TestAlertMethodHandler: POST /settings/alerts/methods/:method/test sends a
-// test notification with what's in the form, saved or not.
+// test notification with what's in the form, saved or not. With delay it
+// waits first; the wait and the send don't depend on the browser staying
+// connected, since the page may be open on the phone being locked.
 func TestAlertMethodHandler(c *gin.Context) {
 	var req alertMethodRequest
-	if err := c.ShouldBindJSON(&req); err != nil || req.On == nil || methodTooLong(req) {
+	if err := c.ShouldBindJSON(&req); err != nil || req.On == nil || methodTooLong(req) || req.Delay < 0 || req.Delay > maxTestDelay {
 		apiBadRequest(c, "api_invalid_request_payload")
 		return
 	}
@@ -339,7 +348,10 @@ func TestAlertMethodHandler(c *gin.Context) {
 		return
 	}
 	notice := alerts.TestNotice(T(c, "al_test_push_title"), T(c, "al_test_push_body"), m.Email.Link, T(c, "al_open_budminder"))
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	if req.Delay > 0 {
+		time.Sleep(time.Duration(req.Delay) * time.Second)
+	}
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(c.Request.Context()), 30*time.Second)
 	defer cancel()
 	failedKey := "al_test_failed_push"
 	if name == alerts.MethodWebhook {

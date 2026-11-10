@@ -37,7 +37,7 @@ const (
 	SettingNtfyServer   = "alert_ntfy_server"
 	SettingNtfyTopic    = "alert_ntfy_topic"
 	SettingNtfyToken    = "alert_ntfy_token"    // sealed
-	SettingNtfyPriority = "alert_ntfy_priority" // "3", "4" or "5"
+	SettingNtfyPriority = "alert_ntfy_priority" // "4" Regular or "5" Wake me up ("3" from before 2.5 reads as 4)
 
 	SettingDiscordOn  = "alert_discord_enabled"
 	SettingDiscordURL = "alert_discord_url" // sealed: the URL is the password
@@ -390,6 +390,11 @@ func LoadMethods(db *sql.DB, dataDir, haURL, haToken, pushoverAPI string) (Metho
 	}
 	m.Ntfy = Ntfy{On: vals[SettingNtfyOn] == "1", Server: vals[SettingNtfyServer], Topic: vals[SettingNtfyTopic], Token: open(SettingNtfyToken),
 		Priority: intOr(vals[SettingNtfyPriority], DefaultNtfyPriority)}
+	if m.Ntfy.Priority == 3 {
+		// Default, offered before the Regular / Wake me up choices (2.5), is
+		// shown and sent as Regular.
+		m.Ntfy.Priority = 4
+	}
 	if m.Ntfy.Server == "" {
 		m.Ntfy.Server = DefaultNtfyServer
 	}
@@ -439,7 +444,7 @@ type Pushover struct {
 	User     string
 	Token    string
 	Devices  string // comma-separated; "" = all
-	Priority int    // 0 Normal, 1 High, 2 Emergency
+	Priority int    // 0 Normal (Regular), 1 High (Wake me up), 2 Emergency (Wake me up and repeat)
 	API      string // tests: a stand-in for Pushover's address
 }
 
@@ -499,7 +504,7 @@ type Ntfy struct {
 	Server   string
 	Topic    string
 	Token    string
-	Priority int // 3 Default, 4 High, 5 Urgent
+	Priority int // 4 High (Regular), 5 Max (Wake me up); all clears use 3 Default
 }
 
 func (n *Ntfy) Name() string  { return MethodNtfy }
@@ -513,7 +518,7 @@ func (n *Ntfy) Problem() string {
 		return "al_err_ntfy_topic"
 	case len(n.Token) > 512 || strings.ContainsAny(n.Token, " \r\n"):
 		return "al_err_ntfy_token"
-	case n.Priority < 3 || n.Priority > 5:
+	case n.Priority < 4 || n.Priority > 5:
 		return "al_err_priority"
 	}
 	return ""

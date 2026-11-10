@@ -59,13 +59,33 @@ Passwords, tokens and webhook URLs are stored encrypted and are left out of back
 In **BudMinder address**, below the list of methods, enter the address you use to open BudMinder, such as http://192.168.1.10:8080. Notifications link to that address. Tapping a phone notification opens the alert's readings on the Sensors page. The link opens only when your phone can reach that address, such as while connected to your home network or a VPN like Tailscale or WireGuard. Otherwise, the notification still arrives, but the page does not open. Phones cannot open a localhost address, such as http://localhost:8080, even at home. If BudMinder address shows one, replace it with the address other devices on your network use, such as http://192.168.1.10:8080.
 
 - **Email.** Enter your **Mail server**, **Username**, **Password**, **From address** and **Send to** addresses. Gmail and most other mail services require an app password, not your account password.
-- **Pushover.** An app for iPhone and Android, built for urgent notifications. It is a one-time purchase after a 30-day trial. Create an application for BudMinder on the Pushover website, then enter its **API token** and the **User key** from your Pushover dashboard. With **Emergency** priority, a notification repeats every 5 minutes for up to 3 hours until you acknowledge it in the Pushover app.
-- **Home Assistant app.** Set up the Home Assistant connection in **Settings → Integrations** first. Click **Refresh list**, then choose the phones where the Home Assistant app is signed in. With **Critical** priority, a notification sounds even when the phone is muted. On an iPhone, also allow Critical Alerts in the iPhone's Settings app, under Notifications → Home Assistant.
-- **ntfy.** A free app for iPhone and Android. Click **Generate** for a hard-to-guess topic, then subscribe to that topic in the ntfy app. On ntfy.sh, anyone who knows the topic can read your notifications. If you run your own ntfy server, set its upstream-base-url to https://ntfy.sh, or iPhones may receive notifications late or not at all.
-- **Discord.** In Discord, click **Edit Channel**, then **Integrations → Webhooks → New Webhook → Copy Webhook URL**, and paste the URL.
-- **Webhook.** For Node-RED, n8n and other services that accept a webhook. BudMinder sends each alert as JSON in a POST request. Its "event" field is start, reminder or end, or test when you click **Send test request**.
+- **Pushover.** An app for iPhone and Android, built for urgent notifications. It is a one-time purchase after a 30-day trial. Create an application for BudMinder on the Pushover website, then enter its **API token** and the **User key** from your Pushover dashboard.
+- **Home Assistant app.** Set up the Home Assistant connection in **Settings → Integrations** first. Click **Refresh list**, then choose the phones where the Home Assistant app is signed in. When you sign in to the Android app, its "secure your remote connection" step may keep returning to the phone's location settings. Set the app's location permission to **Allow all the time**, or choose **Less secure** in that step.
+- **ntfy.** A free app for iPhone and Android. Click **Generate** for a hard-to-guess topic, then subscribe to that topic in the ntfy app. On ntfy.sh, anyone who knows the topic can read your notifications. If you run your own ntfy server, enter its address in **Server**, and set `upstream-base-url` to https://ntfy.sh in the server's settings, or iPhones may receive notifications late or not at all. While the ntfy app is open on screen, notifications arrive without sound.
+- **Discord.** In Discord, click **Edit Channel**, then **Integrations**. Click **Create Webhook**, or **Webhooks → New Webhook** if the channel already has webhooks. Then click **Copy Webhook URL** on the new webhook and paste the URL into **Webhook URL**. BudMinder messages never @mention anyone, so set the server's notifications to **All Messages**. Discord sends no phone notifications while the Discord app is running on your computer. Quit it there to get them on your phone. Discord notifications follow your phone's sound settings and cannot wake you.
+- **Webhook.** For Node-RED, n8n and other services that accept a webhook. BudMinder sends each alert as JSON in a POST request. The `event` field is `start`, `reminder` or `end`, or `test` when you click **Send test request**.
 
-**Priority** (Pushover, the Home Assistant app, and ntfy on Android) sets how strongly the first notification and reminders get your attention. All-clear notifications always use Normal priority (Default on ntfy). The line under **Priority** describes what the chosen priority does on your phone.
+### Wake me up
+
+Pushover, the Home Assistant app and ntfy (Android only) can sound even when your phone is muted or on Do Not Disturb. Under **Alert notifications** in the method's settings, choose:
+
+- **Regular**: sounds and vibrates like your other notifications. Silent when the phone is muted or on Do Not Disturb.
+- **Wake me up**: sounds even when the phone is muted or on Do Not Disturb. Needs a one-time setup on the phone.
+- **Wake me up and repeat** (Pushover only): also repeats every 5 minutes, for up to 3 hours, until you acknowledge it in the Pushover app.
+
+The choice applies to the first notification of an alert and to its reminders. All-clear notifications always arrive as regular notifications.
+
+When you choose Wake me up, setup steps for Android and iPhone appear in the method's settings:
+
+- **Pushover on Android**: in the Pushover app, tap **⋮** at the top right, then **Settings**, and turn on **Play high-priority as alarm**. Wake me up notifications then play at your phone's alarm volume. They sound unless alarms are turned off in your phone's Do Not Disturb settings.
+- **Pushover on iPhone**: in the Pushover app's **Settings**, turn on **Critical Alerts** for high priority (Wake me up) or emergency priority (Wake me up and repeat).
+- **Home Assistant app on Android**: nothing to set up. The app plays Wake me up notifications at alarm volume. They sound unless alarms are turned off in your phone's Do Not Disturb settings.
+- **Home Assistant app on iPhone**: in the iPhone's **Settings** app, go to **Notifications → Home Assistant** and turn on **Critical Alerts**.
+- **ntfy on a Samsung phone**: in the phone's **Settings**, go to **Notifications → Do not disturb → App notifications → Add apps** and choose **ntfy**. The phone then also lets all-clear notifications through Do Not Disturb. To silence them, go to **Settings → Apps → ntfy → Notifications → Notification categories**, tap **Default priority** (its name, not its switch) and choose **Silent**. If **Notification categories** is missing, go to **Settings → Notifications → Advanced settings** and turn on **Manage notification categories for each app**.
+- **ntfy on other Android phones**: in the phone's **Settings**, go to **Apps → ntfy → Notifications**, tap **Max priority** (its name, not its switch) and turn on **Override Do Not Disturb**.
+- **ntfy on iPhone**: ntfy cannot sound when an iPhone is muted or on Do Not Disturb. Use Pushover or the Home Assistant app instead.
+
+To check the setup, click **Send in 30 seconds**, then lock your phone and turn on Do Not Disturb. If the phone sounds, alerts will wake you.
 
 ## Sensor alerts
 

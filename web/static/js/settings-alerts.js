@@ -242,12 +242,22 @@
     const sw = m => inSec(m, "[data-on]");
     const field = (m, f) => { const el = inSec(m, `[data-f="${f}"]`); return el ? el.value.trim() : ""; };
     const fill = (s, vals) => Object.entries(vals).reduce((t, [k, v]) => t.split(`{${k}}`).join(v), s);
-    const PRI = {
-        pushover: { "0": [MT.priNormal, MT.po0], "1": [MT.priHigh, MT.po1], "2": [MT.priEmergency, MT.po2] },
-        ha: { normal: [MT.priNormal, MT.haNormal], critical: [MT.priCritical, MT.haCritical] },
-        ntfy: { "3": [MT.priDefault, MT.ntfy3], "4": [MT.priHigh, MT.ntfy4], "5": [MT.priUrgent, MT.ntfy5] },
+    // Regular / Wake me up (common/alert-wake.html): each choice is stored as
+    // the app's own priority in the method's hidden [data-pri] input.
+    const WAKE = MT.wake || {};
+    const CHOICES = {
+        pushover: [["regular", "0"], ["wake", "1"], ["repeat", "2"]],
+        ha: [["regular", "normal"], ["wake", "critical"]],
+        ntfy: [["regular", "4"], ["wake", "5"]],
     };
-    const priName = m => { const p = PRI[m][inSec(m, "[data-pri]").value]; return p ? p[0] : ""; };
+    const CHOICE_ICON = { regular: "fa-bell", wake: "fa-moon", repeat: "fa-repeat" };
+    const CHOICE_ST = { regular: WAKE.stRegular, wake: WAKE.stWake, repeat: WAKE.stRepeat };
+    const choiceOf = m => {
+        const v = inSec(m, "[data-pri]").value, c = CHOICES[m].find(x => x[1] === v);
+        return c ? c[0] : "regular";
+    };
+    // md: escaped text with **bold** (the al_wake_* keys).
+    const md = s => esc(s || "").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
     // haPhones: every phone the list shows (saved ones, then any a refresh found).
     let haPhones = (MD.haPhones || []).map(p => ({ ...p, on: true }));
     const methodSetUp = {
@@ -265,18 +275,18 @@
         if (m === "email") return on.checked ? T.sendingTo.replace("{to}", toLine()) : methodSetUp.email() ? T.mailOff : MT.notSetUp;
         if (!sw(m).checked) return methodSetUp[m]() ? T.mailOff : MT.notSetUp;
         if (!MD.ready[m]) return MT.incomplete;
-        const priority = PRI[m] ? priName(m) : "";
+        const choice = CHOICES[m] ? CHOICE_ST[choiceOf(m)] : "";
         switch (m) {
             case "pushover": {
                 const d = field("pushover", "devices");
-                return d ? fill(MT.sendingPo, { devices: d, priority }) : fill(MT.sendingPoAll, { priority });
+                return d ? fill(MT.sendingPo, { devices: d, choice }) : fill(MT.sendingPoAll, { choice });
             }
             case "ha": {
                 const chosen = haPhones.filter(p => p.on);
-                return chosen.length === 1 ? fill(MT.sendingHa, { phones: chosen[0].name, priority })
-                    : fill(MT.sendingHaN, { n: chosen.length, priority });
+                return chosen.length === 1 ? fill(MT.sendingHa, { phones: chosen[0].name, choice })
+                    : fill(MT.sendingHaN, { n: chosen.length, choice });
             }
-            case "ntfy": return fill(MT.sendingNtfy, { topic: MD.ntfyTopic, priority });
+            case "ntfy": return fill(MT.sendingNtfy, { topic: MD.ntfyTopic, choice });
             case "discord": return MT.sendingDiscord;
             case "webhook": return fill(MT.sendingWebhook, { host: MD.webhookHost });
         }
@@ -298,10 +308,6 @@
             if (input) input.placeholder = set ? "••••••••" : "";
         });
         card.querySelectorAll("[data-remove]").forEach(r => { r.hidden = !MD[r.dataset.remove]; });
-        card.querySelectorAll("[data-pri-what]").forEach(t => {
-            const k = t.dataset.priWhat, p = PRI[k][inSec(k, "[data-pri]").value];
-            t.querySelector("span").innerHTML = p ? `<b>${esc(p[0])}:</b> ${esc(p[1])}` : "";
-        });
         const ha = secs.ha;
         ha.querySelector('[data-ha="yes"]').hidden = !MD.haConnected;
         ha.querySelector('[data-ha="no"]').hidden = MD.haConnected;
@@ -376,16 +382,16 @@
         const b = { on: sw(m).checked };
         switch (m) {
             case "pushover":
-                Object.assign(b, { user: field(m, "user"), token: inSec(m, '[data-f="token"]').value, devices: field(m, "devices"), priority: field(m, "priority") });
+                Object.assign(b, { user: field(m, "user"), token: inSec(m, '[data-f="token"]').value, devices: field(m, "devices"), priority: inSec(m, "[data-pri]").value });
                 break;
             case "ha": {
                 const chosen = haPhones.filter(p => p.on);
-                Object.assign(b, { phones: chosen.map(p => p.id), names: chosen.map(p => p.name), priority: field(m, "priority") });
+                Object.assign(b, { phones: chosen.map(p => p.id), names: chosen.map(p => p.name), priority: inSec(m, "[data-pri]").value });
                 break;
             }
             case "ntfy":
                 Object.assign(b, { server: field(m, "server"), topic: field(m, "topic"), token: inSec(m, '[data-f="token"]').value,
-                    priority: field(m, "priority"), remove_token: remove === "ntfyTokenSet" });
+                    priority: inSec(m, "[data-pri]").value, remove_token: remove === "ntfyTokenSet" });
                 break;
             case "discord":
                 b.url = inSec(m, '[data-f="url"]').value;
@@ -439,22 +445,116 @@
             if (e.key === "Enter" && e.target.matches("input[data-f]")) { e.preventDefault(); e.target.blur(); }
         });
         secs[m].querySelectorAll("[data-remove]").forEach(b => b.addEventListener("click", () => saveMethod(m, b.dataset.remove)));
-        const test = inSec(m, "[data-test]");
+        const test = inSec(m, "[data-test]"), delay = inSec(m, "[data-delay]");
         if (!test) continue;
-        test.addEventListener("click", async () => {
+        // Send in 30 seconds: the server waits, the page counts down meanwhile.
+        const sendTest = async wait => {
             await saving;
             test.disabled = true;
-            methodOut(m, T.sending);
+            if (delay) delay.disabled = true;
+            let left = wait, timer = 0;
+            if (wait) {
+                methodOut(m, fill(WAKE.countdown, { n: left }), true);
+                timer = setInterval(() => {
+                    left -= 1;
+                    methodOut(m, left > 0 ? fill(WAKE.countdown, { n: left }) : T.sending, left > 0 || undefined);
+                    if (left <= 0) clearInterval(timer);
+                }, 1000);
+            } else {
+                methodOut(m, T.sending);
+            }
             try {
-                const d = await post(`/settings/alerts/methods/${m}/test`, methodBody(m));
-                methodOut(m, d.message, true);
+                const d = await post(`/settings/alerts/methods/${m}/test`, { ...methodBody(m), delay: wait });
+                methodOut(m, wait ? WAKE.sent : d.message, true);
             } catch (e) {
                 methodOut(m, e.demo ? "" : e.message, e.demo ? undefined : false);
             } finally {
+                clearInterval(timer);
                 test.disabled = false;
+                if (delay) delay.disabled = false;
             }
+        };
+        test.addEventListener("click", () => sendTest(0));
+        if (delay) delay.addEventListener("click", () => sendTest(30));
+    }
+
+    // The Regular / Wake me up choice and the phone setup steps.
+    const phoneTab = {};
+    const iPhone = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const ol = (...keys) => `<ol>${keys.map(k => `<li>${md(WAKE[k])}</li>`).join("")}</ol>`;
+    const SETUP = {
+        pushover: {
+            android: () => ol("poAnd1", "poAnd2") + `<p class="mt-1">${md(WAKE.poAndNote)}</p>`,
+            iphone: c => ol("poIos1", c === "repeat" ? "poIos2Repeat" : "poIos2"),
+        },
+        ha: {
+            android: () => `<p class="ax-none">${md(WAKE.haAnd)}</p>`,
+            iphone: () => ol("haIos1", "haIos2"),
+        },
+        ntfy: {
+            android: () => `<h5>${md(WAKE.ntfySamsung)}</h5>` + ol("ntfySam1", "ntfySam2") + `<p class="mt-1">${md(WAKE.ntfySamNote)}</p>` +
+                `<h5>${md(WAKE.ntfyOther)}</h5>` + ol("ntfyOth1", "ntfyOth2"),
+            iphone: () => `<p class="ax-none">${md(WAKE.ntfyIos)}</p>`,
+        },
+    };
+    function drawWake(m) {
+        const now = choiceOf(m), wake = now !== "regular";
+        const box = inSec(m, "[data-choice]");
+        box.innerHTML = `<span class="ax-choice-t" id="alWakeT-${m}">${esc(WAKE.label)}</span><small>${esc(WAKE.clears)}</small>` +
+            `<div class="fm-seg" role="radiogroup" aria-labelledby="alWakeT-${m}">` + CHOICES[m].map(([k]) =>
+                `<label class="${k === now ? "on" : ""}"><input type="radio" name="alWake-${m}" value="${k}"${k === now ? " checked" : ""}>` +
+                `<i class="fa-solid ${CHOICE_ICON[k]}"></i><span><b>${esc(WAKE[k])}</b><small>${esc(WAKE[k + "Note"])}</small></span></label>`).join("") + `</div>`;
+        const setup = inSec(m, "[data-setup]"), p = phoneTab[m] || (iPhone ? "iphone" : "android");
+        setup.hidden = !wake;
+        setup.innerHTML = !wake ? "" : `<div class="ax-setup-h"><b>${esc(WAKE.setupTitle)}</b><span class="ax-tabs" role="tablist">` +
+            ["android", "iphone"].map(t => `<button type="button" role="tab" aria-selected="${t === p}" data-phone-tab="${t}" class="${t === p ? "on" : ""}">` +
+                `<i class="fa-brands fa-${t === "android" ? "android" : "apple"} me-1"></i>${esc(WAKE[t])}</button>`).join("") +
+            `</span></div><div role="tabpanel">${SETUP[m][p](now)}</div>`;
+        inSec(m, "[data-wake-hint]").hidden = !wake;
+        inSec(m, "[data-delay]").hidden = !wake;
+    }
+    for (const m of Object.keys(CHOICES)) {
+        if (!secs[m]) continue;
+        drawWake(m);
+        inSec(m, "[data-choice]").addEventListener("change", e => {
+            const c = CHOICES[m].find(x => x[0] === e.target.value);
+            if (!c) return;
+            inSec(m, "[data-pri]").value = c[1];
+            drawWake(m);
+            drawMethods();
+            saveMethod(m);
+        });
+        inSec(m, "[data-setup]").addEventListener("click", e => {
+            const t = e.target.closest("[data-phone-tab]");
+            if (!t) return;
+            phoneTab[m] = t.dataset.phoneTab;
+            drawWake(m);
+            inSec(m, `[data-phone-tab="${phoneTab[m]}"]`).focus();
         });
     }
+
+    // Text with **bold** (the tip above the methods).
+    card.querySelectorAll("[data-md]").forEach(el => { el.innerHTML = md(el.dataset.md); });
+
+    // A show/hide button on every hidden field (API token, passwords, URLs).
+    card.querySelectorAll('input[type="password"]').forEach(input => {
+        const wrap = document.createElement("span");
+        wrap.className = "fm-pw ax-pw";
+        input.replaceWith(wrap);
+        const b = document.createElement("button");
+        b.type = "button";
+        b.title = MT.show;
+        b.setAttribute("aria-label", MT.show);
+        b.innerHTML = '<i class="fa-regular fa-eye"></i>';
+        b.addEventListener("click", () => {
+            const show = input.type === "password";
+            input.type = show ? "text" : "password";
+            b.title = show ? MT.hide : MT.show;
+            b.setAttribute("aria-label", b.title);
+            b.querySelector("i").className = show ? "fa-regular fa-eye-slash" : "fa-regular fa-eye";
+        });
+        wrap.append(input, b);
+    });
 
     // BudMinder address: used by every method's links.
     function saveLink() {
