@@ -160,7 +160,7 @@ func TestGetActivitiesAndMetrics_CarryLock(t *testing.T) {
 		switch a.Name {
 		case "Water", "Feed", "Note", "Height":
 			assert.True(t, a.Lock, a.Name)
-		case "Training", "Defoliate":
+		case "Training", "Defoliate", "Top Dress":
 			assert.False(t, a.Lock, a.Name)
 		}
 	}

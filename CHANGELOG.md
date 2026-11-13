@@ -32,6 +32,7 @@ used three parts.
 - **Settings > Phone & tablet**: scan a code with your phone's camera to open BudMinder, copy or change the BudMinder address, add BudMinder to your home screen on Android and iPhone, and see what to check when a phone cannot connect.
 - **Needs attention settings** on the Today page (the **Settings** link next to **Needs attention**): choose which reminders the list shows, and after how many days watering, feeding and photos are due. The Watering and Feeding days also set the tag colors on the Plants page. Click **×** on a line to hide it until tomorrow, or until something changes, such as the plant being watered. Hidden lines are listed under **Hidden**, where **Show again** brings them back.
 - **Repeating tasks**, the second tab of the same window: add tasks such as refilling a reservoir or emptying a dehumidifier, and choose how often each repeats and which tents it is for. A task shows on the list when it is due, and **Done** restarts the count. A built-in **Burp curing jars** task, off by default, reminds you to burp the jars of plants in the Curing stage.
+- A new **Top Dress** activity for logging top dressing in a plant's notebook. Write what you added in the note. If you already have an activity named like Top dressing, BudMinder does not add a second one.
 
 ### Changed
 

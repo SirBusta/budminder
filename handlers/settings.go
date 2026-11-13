@@ -635,6 +635,7 @@ var ActivityIcons = []string{
 	"fa-seedling", "fa-leaf", "fa-bug", "fa-spray-can", "fa-temperature-half", "fa-sun",
 	"fa-fan", "fa-bucket", "fa-faucet-drip", "fa-shower", "fa-vial", "fa-mortar-pestle",
 	"fa-scale-balanced", "fa-wind", "fa-recycle", "fa-eye", "fa-camera", "fa-tag",
+	"fa-trowel",
 }
 
 var ActivityColors = []string{
