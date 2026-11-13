@@ -331,9 +331,8 @@
     async function fetchDump() {
         const status = document.getElementById("smDumpStatus"), out = document.getElementById("smDumpContent");
         status.textContent = t("sm_fetching"); out.textContent = "";
-        // Vivosun's file always has personal details hidden.
-        const url = dumpSrc === "vs" ? "/sensors/dumpVivosun"
-            : "/sensors/dumpACI?redact=" + (document.getElementById("smDumpRedact").checked ? "true" : "false");
+        // Both files always have personal details hidden (server side).
+        const url = dumpSrc === "vs" ? "/sensors/dumpVivosun" : "/sensors/dumpACI";
         try {
             const resp = await fetch(url, { cache: "no-store" });
             if (!resp.ok) throw new Error();
@@ -346,8 +345,7 @@
     function openDump(src) {
         dumpSrc = src;
         document.getElementById("smDumpTitle").textContent = t(src === "vs" ? "sm_vs_dump_title" : "sm_dump_title_aci");
-        document.getElementById("smDumpHelp").classList.toggle("d-none", src !== "vs");
-        document.getElementById("smDumpRedactWrap").classList.toggle("d-none", src === "vs");
+        document.getElementById("smDumpHelp").textContent = t(src === "vs" ? "sm_vs_dump_help" : "sm_aci_dump_help");
         bootstrap.Modal.getOrCreateInstance(document.getElementById("smDump")).show();
         return fetchDump();
     }
@@ -417,7 +415,6 @@
         }
     });
     document.addEventListener("change", e => {
-        if (e.target.id === "smDumpRedact") return fetchDump();
         if (["smSrc", "smHidden"].includes(e.target.id)) return renderList();
         if (e.target.id === "smFoundAll") { foundAll = e.target.checked; return renderFound(); }
         const m = /^smFz(\d+)$/.exec(e.target.id);

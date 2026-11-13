@@ -255,18 +255,13 @@ func prettyMarshalSorted(v interface{}, indent string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// New handler: DumpACInfinityJSON
+// DumpACInfinityJSON returns, for troubleshooting, what AC Infinity sends
+// about the account's devices, account details always hidden by the same
+// rules as the Vivosun file (GET /sensors/dumpACI). There is no way to turn
+// the hiding off: owners download this file to email or post it.
 func DumpACInfinityJSON(c *gin.Context) {
 	fieldLogger := logger.Log.WithField("func", "DumpACInfinityJSON")
 	fieldLogger.Info("Dumping raw AC Infinity JSON response")
-
-	// Determine whether to redact sensitive fields (default: true)
-	redact := true
-	if v := c.Query("redact"); v != "" {
-		if strings.ToLower(v) == "false" || v == "0" {
-			redact = false
-		}
-	}
 
 	aciToken := ConfigStoreFromContext(c).ACIToken()
 	if aciToken == "" {
@@ -306,77 +301,28 @@ func DumpACInfinityJSON(c *gin.Context) {
 		return
 	}
 
-	// Try to unmarshal into a generic structure using UseNumber so we preserve numeric formatting.
-	var data interface{}
-	decoder := json.NewDecoder(bytes.NewReader(respBody))
-	decoder.UseNumber()
-	if err := decoder.Decode(&data); err != nil {
-		// Not valid JSON: fall back to returning raw body
-		fieldLogger.WithError(err).Warn("Response is not valid JSON; returning raw body")
-		c.Data(http.StatusOK, "application/json; charset=utf-8", respBody)
-		return
-	}
-
-	// Keys to redact
-	redactKeys := map[string]struct{}{
-		"devId":       {},
-		"devCode":     {},
-		"devMacAddr":  {},
-		"appEmail":    {},
-		"devTimeZone": {},
-		"zoneId":      {},
-		"wifiName":    {},
-	}
-
-	// recursive redaction
-	var redactFunc func(interface{})
-	redactFunc = func(v interface{}) {
-		switch t := v.(type) {
-		case map[string]interface{}:
-			for k, val := range t {
-				if _, ok := redactKeys[k]; ok {
-					// Replace with a standard string marker
-					t[k] = "[REDACTED]"
-					continue
-				}
-				// Recurse into nested values
-				switch val.(type) {
-				case map[string]interface{}, []interface{}:
-					redactFunc(val)
-				}
-			}
-		case []interface{}:
-			for _, item := range t {
-				switch item.(type) {
-				case map[string]interface{}, []interface{}:
-					redactFunc(item)
-				}
-			}
-		}
-	}
-
-	if redact {
-		redactFunc(data)
-		prettyBytes, err := prettyMarshalSorted(data, "  ")
-		if err != nil {
-			fieldLogger.WithError(err).Warn("Failed to marshal redacted JSON; returning raw body")
-			c.Data(http.StatusOK, "application/json; charset=utf-8", respBody)
-			return
-		}
-
-		c.Data(http.StatusOK, "application/json; charset=utf-8", prettyBytes)
-		return
-	}
-
-	// Non-redacted: pretty print with sorted keys for consistent ordering
-	prettyBytes, err := prettyMarshalSorted(data, "  ")
+	email, _ := GetSetting(DBFromContext(c), "aci.email")
+	out, err := hideACIDump(respBody, email)
 	if err != nil {
-		fieldLogger.WithError(err).Warn("Failed to marshal pretty JSON; returning raw body")
-		c.Data(http.StatusOK, "application/json; charset=utf-8", respBody)
+		// Not JSON (an error page, say): never pass it on unhidden.
+		fieldLogger.WithError(err).Warn("AC Infinity's answer is not valid JSON")
+		apiError(c, http.StatusBadGateway, "api_error_reading_response")
 		return
 	}
+	c.Data(http.StatusOK, "application/json; charset=utf-8", out)
+}
 
-	c.Data(http.StatusOK, "application/json; charset=utf-8", prettyBytes)
+// hideACIDump returns AC Infinity's answer as sorted, indented JSON with
+// account details hidden (utils.HideJSON, the rules of the Vivosun file).
+// An answer that isn't JSON is an error.
+func hideACIDump(body []byte, email string) ([]byte, error) {
+	var data any
+	d := json.NewDecoder(bytes.NewReader(body))
+	d.UseNumber() // keep numbers as AC Infinity wrote them
+	if err := d.Decode(&data); err != nil {
+		return nil, err
+	}
+	return prettyMarshalSorted(utils.HideJSON(data, email, nil), "  ")
 }
 
 func ScanEcoWittSensors(c *gin.Context) {

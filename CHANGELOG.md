@@ -25,6 +25,10 @@ used three parts.
 
 ## [Unreleased]
 
+### Changed
+
+- The raw AC Infinity data under **Manage sensors** > **Troubleshooting** now always has personal details removed, including sign-in tokens, user IDs and IP addresses. The **Hide personal details** checkbox is gone.
+
 ## [2.6] - 2026-11-13
 
 ### Fixed
