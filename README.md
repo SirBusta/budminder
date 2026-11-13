@@ -70,7 +70,7 @@ Every plant gets its own page and notebook.
 
 ### Today
 
-Open BudMinder and see what needs doing: plants you haven't watered or fed in a while, seeds getting old, and every tent's live temperature, humidity, VPD and CO₂ next to its camera and plants. Log water or feeding right from a plant's card.
+Open BudMinder and see what needs doing: plants you haven't watered or fed in a while, seeds getting old, and every tent's live temperature, humidity, VPD and CO₂ next to its camera and plants. Log water or feeding right from a plant's card. Choose which reminders show and when they are due, and add repeating tasks such as refilling a reservoir.
 
 <img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/home.webp" alt="The Today page: a needs-attention list, then each tent with its live readings, camera snapshot and plant cards">
 
@@ -82,11 +82,13 @@ Every sensor in a tent on one timeline, from the last hour to the last week or a
 
 ### Alerts (Beta)
 
-Get an email when a temperature, humidity or VPD reading reaches a Low or High limit, the lights turn on or off outside their schedule, any sensor reaches a value you set, or sensors go offline. Limits can differ for each growth stage and for lights on and lights off.
+Get a notification when a temperature, humidity or VPD reading reaches a Low or High limit, the lights turn on or off outside their schedule, any sensor reaches a value you set, sensors go offline, or an integration such as AC Infinity stops responding. Limits can differ for each growth stage and for lights on and lights off.
 
-Brief spikes are ignored. The first email is sent after 15 minutes out of range, then a reminder every 6 hours if the problem continues, and one all-clear after 30 minutes back in range. Every alert is also listed under Recent alerts in Settings > Alerts, even with email turned off. Other ways to receive alerts, such as ntfy, Pushover, Discord and Home Assistant, are planned for a future release.
+Notifications can go by email, Pushover, the Home Assistant app, ntfy, Discord or a webhook. Pushover, the Home Assistant app and ntfy (Android only) have a Wake me up choice that sounds even when your phone is muted or on Do Not Disturb.
 
-<sub>Alerts are still being tested. Do not rely on them as your only safety check. Feedback is appreciated: [budminder.app@gmail.com](mailto:budminder.app@gmail.com)</sub>
+Brief spikes are ignored. The first notification is sent after 15 minutes out of range, then a reminder every 6 hours if the problem continues, and one all-clear after 30 minutes back in range. Every alert is also listed under Recent alerts in Settings > Alerts, even with notifications turned off.
+
+<sub>Alerts are still being tested. Do not rely on them as your only safety check. Phone notifications have been tested only on Android so far. Feedback is appreciated: [budminder.app@gmail.com](mailto:budminder.app@gmail.com)</sub>
 
 <img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/alerts.webp" alt="The Settings &gt; Alerts page, showing the four kinds of alert (climate, lights, sensor alerts and sensors offline) and how often notifications are sent: after 15 minutes, every 6 hours, and an all-clear after 30 minutes in range.">
 
@@ -116,7 +118,7 @@ A complete evaluation suite for home harvests and dispensary pickups. Rate appea
 
 ### Vivosun (Beta)
 
-**Your Vivosun readings, in your journal.** Sign in with your Vivosun app account, then add your devices' temperature, humidity and VPD readings to your tents, alongside your other sensors. Add a sensor alert to get an email when a reading reaches a value you set. BudMinder only reads your devices and never changes their settings. If a device is missing or a reading looks wrong, the setup steps below explain how to send a data file so the problem can be fixed.
+**Your Vivosun readings, in your journal.** Sign in with your Vivosun app account, then add your devices' temperature, humidity and VPD readings to your tents, alongside your other sensors. Add a sensor alert to get a notification when a reading reaches a value you set. BudMinder only reads your devices and never changes their settings. If a device is missing or a reading looks wrong, the setup steps below explain how to send a data file so the problem can be fixed.
 
 ### More
 
@@ -135,6 +137,8 @@ A complete evaluation suite for home harvests and dispensary pickups. Rate appea
 </table>
 
 ### On your phone
+
+Every page works on a phone or tablet. Settings > Phone & tablet shows a QR code that opens BudMinder on your phone, and steps to add it to your home screen. Your phone needs to be on your home Wi-Fi; to use BudMinder anywhere else, see **Using BudMinder away from home** further down.
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/phone-home.webp" alt="The Today page on a phone" width="260">&nbsp;&nbsp;&nbsp;

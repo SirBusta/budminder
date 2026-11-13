@@ -58,6 +58,7 @@ var figureKeys = map[string][]string{
 var whatsNewReleases = []whatsNewRelease{
 	{
 		Version: "2.5",
+		Date:    "2026-11-12",
 		Features: []whatsNewFeatureDef{
 			{Icon: "fa-bell", Link: "/settings#alerts", Points: 3, Beta: true, NoNote: true},
 			{Icon: "fa-list-check", Link: "/", Points: 3},
