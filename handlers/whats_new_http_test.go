@@ -132,17 +132,18 @@ func TestWhatsNew_NoCard(t *testing.T) {
 // its own doesn't get in the way.
 func TestWhatsNew_SkippedReleaseShowsWithTheRealFromVersion(t *testing.T) {
 	t.Parallel()
-	_, c, _ := whatsNewServer(t, "2.5", "1.9.0", true)
+	_, c, _ := whatsNewServer(t, "2.6", "1.9.0", true)
 
 	got := readWhatsNew(t, c, "/")
 	require.NotNil(t, got)
 	assert.Equal(t, "1.9.0", got.From)
-	assert.Equal(t, "2.5", got.To)
-	require.Len(t, got.Cards, 4)
-	assert.Equal(t, "2.4", got.Cards[0].Version, "newest first")
-	assert.Equal(t, "2.3", got.Cards[1].Version)
-	assert.Equal(t, "2.2", got.Cards[2].Version)
-	assert.Equal(t, "2.0", got.Cards[3].Version)
+	assert.Equal(t, "2.6", got.To)
+	require.Len(t, got.Cards, 5)
+	assert.Equal(t, "2.5", got.Cards[0].Version, "newest first")
+	assert.Equal(t, "2.4", got.Cards[1].Version)
+	assert.Equal(t, "2.3", got.Cards[2].Version)
+	assert.Equal(t, "2.2", got.Cards[3].Version)
+	assert.Equal(t, "2.0", got.Cards[4].Version)
 }
 
 // A Beta feature with its own note (Vivosun in 2.4) sends it; one without
@@ -163,6 +164,24 @@ func TestWhatsNew_BetaFeatureCarriesItsOwnNote(t *testing.T) {
 	assert.True(t, alerts.Beta)
 	assert.Empty(t, alerts.BetaNote)
 	assert.Empty(t, alerts.BetaAfter)
+}
+
+// 2.5's notification methods carry the Beta tag without a note: Settings shows it.
+func TestWhatsNew_BetaTagWithoutANote(t *testing.T) {
+	t.Parallel()
+	_, c, _ := whatsNewServer(t, "2.5", "2.4", true)
+
+	got := readWhatsNew(t, c, "/")
+	require.NotNil(t, got)
+	require.Len(t, got.Cards, 1)
+	f := got.Cards[0].Features[0]
+	assert.True(t, f.Beta)
+	assert.True(t, f.NoNote)
+	assert.Empty(t, f.BetaNote)
+	assert.Len(t, got.Cards[0].Features, 2)
+	assert.Len(t, got.Cards[0].Other, 3)
+	assert.Len(t, got.Cards[0].Fixes, 1)
+	assert.False(t, got.Cards[0].Features[1].Beta)
 }
 
 // 2.2 to 2.3: the Recent alerts card, with its picture's words and units.

@@ -45,6 +45,7 @@ type whatsNewFeatureDef struct {
 	Link   string
 	Points int
 	Beta   bool   // adds the Beta tag and the note with the feedback address
+	NoNote bool   // with Beta: the tag only, no note (Settings shows it)
 	Figure string // a drawn picture under the title (whats-new.js), with its words from figureKeys
 }
 
@@ -55,6 +56,15 @@ var figureKeys = map[string][]string{
 
 // whatsNewReleases is newest first.
 var whatsNewReleases = []whatsNewRelease{
+	{
+		Version: "2.5",
+		Features: []whatsNewFeatureDef{
+			{Icon: "fa-bell", Link: "/settings#alerts", Points: 3, Beta: true, NoNote: true},
+			{Icon: "fa-list-check", Link: "/", Points: 3},
+		},
+		Other: 3,
+		Fixes: 1,
+	},
 	{
 		Version: "2.4",
 		Date:    "2026-11-08",
@@ -103,6 +113,7 @@ type WhatsNewFeature struct {
 	BetaNote string   `json:"beta_note,omitempty"` // the feature's own Beta note (_f1_beta); none: the alerts note
 	// BetaAfter follows the feedback address (_f1_beta_after), e.g. that a file sent has no personal details.
 	BetaAfter string `json:"beta_after,omitempty"`
+	NoNote    bool   `json:"beta_no_note,omitempty"` // the Beta tag without a note
 	Figure    string `json:"figure,omitempty"`
 }
 
@@ -201,7 +212,8 @@ func (r whatsNewRelease) card(lcl map[string]string) WhatsNewCard {
 			feature.Points = append(feature.Points, lcl[fmt.Sprintf("%sp%d", k, p)])
 		}
 		feature.After = lcl[k+"after"]
-		if f.Beta {
+		feature.NoNote = f.Beta && f.NoNote
+		if f.Beta && !f.NoNote {
 			feature.BetaNote = lcl[k+"beta"]
 			feature.BetaAfter = lcl[k+"beta_after"]
 		}
