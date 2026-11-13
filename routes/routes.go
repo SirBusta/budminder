@@ -306,6 +306,11 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.PUT("/plant/:id/day/:date", handlers.SavePlantDayHandler)
 	r.DELETE("/plant/:id/day/:date", handlers.DeletePlantDayHandler)
 	r.POST("/plants/day", handlers.LogPlantsDayHandler)
+	// Today page, Needs attention: settings window, hidden lines, tasks done.
+	r.POST("/home/attention/settings", handlers.SaveAttentionHandler)
+	r.POST("/home/attention/hide", handlers.HideAttentionHandler)
+	r.POST("/home/attention/show", handlers.ShowAttentionHandler)
+	r.POST("/home/attention/done", handlers.DoneAttentionHandler)
 	r.POST("/plant/:plantID/images/upload", handlers.UploadPlantImages)
 	// Writes a new image into uploads, so never open to guests.
 	r.POST("/decorateImage", utils.DecorateImageHandler)

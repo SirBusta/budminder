@@ -92,7 +92,8 @@
     function ago(d) { return d === 0 ? t("pl_today") : d === 1 ? t("pl_day_ago") : t("pl_days_ago", { n: d }); }
     function wf(kind, d) {
         if (d == null) return "";
-        const lim = kind === "water" ? [3, 6] : [10, 18];
+        // Due / Overdue days from the Today page's Needs attention settings.
+        const lim = (D.care_days || {})[kind] || (kind === "water" ? [3, 6] : [10, 18]);
         const cls = d >= lim[1] ? "over" : d >= lim[0] ? "due" : "ok";
         const icon = kind === "water" ? "fa-droplet" : "fa-flask";
         const title = t(kind === "water" ? "pl_watered" : "pl_fed", { when: ago(d) });
@@ -156,10 +157,10 @@
         const living = plants.filter(p => p.group === "living");
         const flowering = living.filter(p => p.stage === "Flower").length;
         const soon = living.filter(p => p.harvest && p.harvest[0] <= 21).length;
-        const thirsty = living.filter(p => p.water != null && p.water >= 3).length;
+        const thirsty = living.filter(p => p.water != null && p.water >= ((D.care_days || {}).water || [3])[0]).length;
         // A summary chip: the translated text with its number in bold.
         const chip = (key, v, cls = "", icon = "") => v
-            ? `<span class="${cls}">${icon}${esc(t(key, { n: "#N#" })).replace("#N#", `<b>${v}</b>`)}</span>` : "";
+            ? `<span class="${cls}">${icon}${esc(t(key, { n: "#N#", d: ((D.care_days || {}).water || [3])[0] })).replace("#N#", `<b>${v}</b>`)}</span>` : "";
         document.getElementById("plSum").innerHTML = S.group === "living" && living.length
             ? chip("pl_sum_growing", living.length) + chip("pl_sum_flower", flowering) + chip("pl_sum_harvest_soon", soon) +
               chip("pl_sum_thirsty", thirsty, "warn", `<i class="fa-solid fa-droplet me-1"></i>`)

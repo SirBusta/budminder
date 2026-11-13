@@ -6,15 +6,47 @@ Today is your main dashboard. It shows pending tasks, followed by each tent with
 
 - {1} **Log activity** opens the logging window to record watering, feeding, plant training, measurements or notes for any plant.
 - {2} **Add photos** lets you upload new photos directly to a plant.
-- {3} **Each line highlights an item that requires action.** BudMinder alerts you to:
-  - plants not watered in 3 days or more (marked red after 6 days)
-  - plants not fed in 10 days or more (marked red after 18 days)
+- {3} **Each line is something to check or do.** By default, the list shows:
+  - plants not watered in 3 days or more (red from 6 days)
+  - plants not fed in 10 days or more (red from 18 days)
   - plants without a new photo in 14 days
-  - sensors that have stopped reporting, or integrations (AC Infinity, Vivosun, Ecowitt or Home Assistant) that have disconnected or require re-authentication
+  - sensors that have stopped reporting, and integrations (AC Infinity, Vivosun, Ecowitt or Home Assistant) that stop responding or need you to sign in again
   - strains with seeds older than 2 years
-- {4} **Action buttons let you resolve items quickly.** Clicking **Watered it** or **Fed it** opens the log window prefilled with the plant, the selected activity and today's date. Other lines provide direct shortcuts such as **Add photo**, **Check sensors**, **Sign in again** or **Open Seed Vault**.
+  - [repeating tasks](#repeating-tasks) that are due
+- {4} **Action buttons let you resolve items quickly.** **Watered it** or **Fed it** opens the logging window with the plant, the activity and today's date already filled in. Other lines provide direct shortcuts such as **Add photo**, **Check sensors**, **Sign in again** or **Open Seed Vault**.
 
 When everything is fine, the list says **Nothing needs attention right now**.
+
+### Hiding a line
+
+Click **×** at the end of a line:
+
+- **Remind me tomorrow** hides the line until the next day.
+- **Hide until…** hides it until the item changes: for example, until the plant is watered or the sensor reports again. If the problem returns later, so does the line.
+
+Hidden lines are listed under **Hidden**, below the list. **Show again** brings a line back. Right after you hide a line, **Undo** at the bottom of the page reverses it.
+
+### Needs attention settings
+
+Click **Settings** next to the Needs attention heading to choose what the list includes.
+
+- The **Reminders** tab turns each type of reminder on or off and sets its days. Watering and Feeding have two numbers: **Due** (amber) and **Overdue** (red). These numbers also color the watering and feeding indicators in each tent and on the Plants page, even when the reminder is off. Integration problems are always on.
+- The **Repeating tasks** tab is where you add and edit tasks. See [Repeating tasks](#repeating-tasks).
+
+Changes take effect when you click **Save**.
+
+## Repeating tasks
+
+Repeating tasks remind you of work you do on a schedule, such as refilling a reservoir or emptying a dehumidifier.
+
+1. Click **Settings** next to the Needs attention heading, then open the **Repeating tasks** tab.
+2. Click **Add task**, then choose a suggestion or type a name, and set how often the task repeats.
+3. If you have more than one tent, choose which tents the task is for. Each tent keeps its own count.
+4. Click **Save task**, then **Save**.
+
+A task appears in the list on the day it is due and turns red once it is late. Click **Done** to restart the count from today. In the **×** menu, **Skip this time** also restarts the count, and **Remind me tomorrow** hides the task until the next day. Tasks are not recorded in plant journals. To keep a record, log an activity.
+
+**Burp curing jars** is a built-in task for plants in the Curing stage. It is off by default: turn it on in the **Repeating tasks** tab. When it is on, it reminds you every day for the first 14 days of curing, then every 7 days. You can change both numbers. One line covers every plant that is due, and **Burped** marks them all done.
 
 ## Tents
 

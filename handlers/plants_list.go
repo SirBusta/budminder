@@ -195,7 +195,8 @@ func PlantsPageData(c *gin.Context, loggedIn bool, lang string, translations map
 	return gin.H{
 		"plants":    plants,
 		"stages":    plantStages(DBFromContext(c), translations),
-		"today":     time.Now().Format(dayLayout),
+		"today":     attentionToday(c),
+		"care_days": careDays(LoadAttentionSettings(DBFromContext(c))),
 		"logged_in": loggedIn,
 		"lang":      lang,
 		"t":         t,

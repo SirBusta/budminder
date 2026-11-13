@@ -116,16 +116,20 @@ func HomePageData(c *gin.Context, loggedIn bool, lang string, translations map[s
 			t[k] = v
 		}
 	}
+	today := attentionToday(c)
+	settings := LoadAttentionSettings(db)
 	data := gin.H{
-		"plants":    plants,
-		"tents":     tents,
-		"recent":    recent,
-		"types":     GetActivities(db),
-		"metrics":   GetMetrics(db),
-		"stages":    plantStages(db, translations),
-		"units":     utils.NormalizeUnits(store.Units()),
-		"poll":      store.PollingInterval(),
-		"today":     time.Now().Format(dayLayout),
+		"plants":  plants,
+		"tents":   tents,
+		"recent":  recent,
+		"types":   GetActivities(db),
+		"metrics": GetMetrics(db),
+		"stages":  plantStages(db, translations),
+		"units":   utils.NormalizeUnits(store.Units()),
+		"poll":    store.PollingInterval(),
+		"today":   today,
+		// Watered / Fed tag colors (the Needs attention settings' days).
+		"care_days": careDays(settings),
 		"now":       time.Now().UnixMilli(),
 		"logged_in": loggedIn,
 		"lang":      lang,
@@ -137,10 +141,20 @@ func HomePageData(c *gin.Context, loggedIn bool, lang string, translations map[s
 		if err := db.QueryRow("SELECT COUNT(*) FROM strain").Scan(&strains); err == nil {
 			data["strain_count"] = strains
 		}
-		data["old_seed_batches"] = countOldSeedBatches(db, time.Now())
+		oldSeeds := oldSeedStrains(db, time.Now())
+		data["old_seeds"] = oldSeeds
+		data["old_seed_batches"] = len(oldSeeds)
 		data["integrations"] = IntegrationStatuses(db, store)
+		data["attention"] = attentionPageData(c, db, all, today)
 	}
 	return data, nil
+}
+
+// careDays is the Watering and Feeding Due/Overdue days for tag colors,
+// {"water": [due, over], "feed": [due, over]}; they apply even when the
+// reminder type is off.
+func careDays(s AttentionSettings) gin.H {
+	return gin.H{"water": []int{s.Water.Due, s.Water.Over}, "feed": []int{s.Feed.Due, s.Feed.Over}}
 }
 
 // HomeDataHandler serves HomePageData for the page's refresh (GET /home/data).
@@ -326,16 +340,4 @@ func recentKey(d types.NotebookDay) string {
 		fmt.Fprintf(&b, "%d=%g,", m.MetricID, m.Value)
 	}
 	return b.String()
-}
-
-// countOldSeedBatches counts strains with seeds in stock that were added
-// more than homeOldSeedYears ago.
-func countOldSeedBatches(db *sql.DB, now time.Time) int {
-	cutoff := now.AddDate(-homeOldSeedYears, 0, 0).Format(dayLayout)
-	var n int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM strain WHERE seed_count > 0 AND seeds_added_on IS NOT NULL AND seeds_added_on <> '' AND seeds_added_on < $1`, cutoff).Scan(&n); err != nil {
-		logger.Log.WithField("func", "countOldSeedBatches").WithError(err).Error("Error counting old seeds")
-		return 0
-	}
-	return n
 }

@@ -44,6 +44,7 @@ import (
 	"isley/climate"
 	"isley/config"
 	"isley/logger"
+	"isley/utils"
 )
 
 const (
@@ -497,6 +498,48 @@ var (
 	}
 )
 
+// dMatch accepts a string of up to max bytes matching re.
+func dMatch(re *regexp.Regexp, max int) demoCheck {
+	return func(_ *gin.Context, v any) (any, error) {
+		s, ok := v.(string)
+		if !ok || len(s) > max || !re.MatchString(s) {
+			return nil, errDemo
+		}
+		return v, nil
+	}
+}
+
+// demoTaskName accepts a suggested task name in any of BudMinder's
+// languages, or the name of a task already saved.
+func demoTaskName(c *gin.Context, v any) (any, error) {
+	s, ok := v.(string)
+	if !ok {
+		return nil, errDemo
+	}
+	s = strings.Join(strings.Fields(s), " ")
+	for _, lang := range utils.AvailableLanguages {
+		tr := utils.TranslationService.GetTranslations(lang)
+		for _, p := range AttentionTaskPresets {
+			if tr[p.Key] == s {
+				return v, nil
+			}
+		}
+	}
+	for _, t := range loadAttentionTasks(DBFromContext(c)) {
+		if t.Name == s {
+			return v, nil
+		}
+	}
+	return nil, errDemo
+}
+
+func demoTaskIcon(_ *gin.Context, v any) (any, error) {
+	if s, ok := v.(string); ok && attentionIcon(s) == s {
+		return v, nil
+	}
+	return nil, errDemo
+}
+
 func demoTagKind(c *gin.Context, v any) (any, error) {
 	s, ok := v.(string)
 	if _, known := smokeTagKinds[s]; !ok || !known {
@@ -552,6 +595,31 @@ func demoRecordedBreeder(_ *gin.Context, v any) (any, error) {
 
 var demoRules = map[string]demoRule{
 	// Notebook: tick activities, enter numbers, pick a sample note.
+	// Today page, Needs attention: the settings window (task names only from
+	// the suggestions or tasks already saved), hidden lines, Done / Undo.
+	"POST /home/attention/settings": {fields: map[string]demoCheck{
+		"settings": dObject(map[string]demoCheck{
+			"water":   dObject(map[string]demoCheck{"on": dBool, "due": dInt(1, attentionMaxDays), "over": dInt(1, attentionMaxDays)}),
+			"feed":    dObject(map[string]demoCheck{"on": dBool, "due": dInt(1, attentionMaxDays), "over": dInt(1, attentionMaxDays)}),
+			"photo":   dObject(map[string]demoCheck{"on": dBool, "days": dInt(1, attentionMaxDays)}),
+			"seeds":   dObject(map[string]demoCheck{"on": dBool}),
+			"sensors": dObject(map[string]demoCheck{"on": dBool}),
+			"burp":    dObject(map[string]demoCheck{"on": dBool, "daily": dInt(1, attentionMaxDays), "then": dInt(1, attentionMaxDays)}),
+		}),
+		"tasks": dList(attentionMaxTasks, map[string]demoCheck{
+			"id": dInt(0, 1<<31-1), "name": demoTaskName, "icon": demoTaskIcon,
+			"every": dInt(1, attentionMaxEvery), "zones": dIntList(50),
+		}),
+	}},
+	"POST /home/attention/hide": {fields: map[string]demoCheck{
+		"key": dMatch(attentionKeyRE, 60), "how": dOneOf("tomorrow", "until"), "basis": dMatch(attentionBasisRE, 4000),
+	}},
+	"POST /home/attention/show": {fields: map[string]demoCheck{"key": dMatch(attentionKeyRE, 60)}},
+	"POST /home/attention/done": {fields: map[string]demoCheck{
+		"task_id": dOpt(demoID), "zone_id": dOpt(demoID), "day": dOpt(dDate(false)),
+		"burp": dOpt(dList(500, map[string]demoCheck{"plant_id": demoID, "day": dDate(true)})),
+	}},
+
 	"POST /plants/day": {fields: merge(demoDayFields, map[string]demoCheck{
 		"plant_ids": dIntList(50), "date": dDate(false),
 	})},

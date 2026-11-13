@@ -21,8 +21,11 @@
     </div>
 
     {{ if .loggedIn }}
-    <div class="hm-sec-h"><h2><i class="fa-solid fa-bell me-2"></i>{{ .lcl.hm_attention }}</h2><span class="n" id="hmAlertCount"></span></div>
+    <div class="hm-sec-h"><h2><i class="fa-solid fa-bell me-2"></i>{{ .lcl.hm_attention }}</h2><span class="n" id="hmAlertCount"></span>
+        <button type="button" class="hm-link hm-link-btn na-set" data-bs-toggle="modal" data-bs-target="#naDlg"><i class="fa-solid fa-sliders me-1"></i>{{ .lcl.hm_na_settings }}</button></div>
     <div class="hm-alerts" id="hmAlerts"></div>
+    <button type="button" class="na-hid-tog" id="naHidTog" aria-expanded="false" aria-controls="naHidden" hidden></button>
+    <div class="hm-alerts na-hidden" id="naHidden" hidden></div>
     {{ end }}
 
     <div id="hmTents"></div>
@@ -50,6 +53,25 @@
         </div>
     </div>
 </div>
+
+<!-- Needs attention settings: reminder types and their days, and repeating
+     tasks. The body is drawn by home-page.js. -->
+<div class="modal fade" id="naDlg" tabindex="-1" aria-labelledby="naDlgTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content hm-dialog sx na-dlg">
+            <div class="modal-header">
+                <h5 class="modal-title" id="naDlgTitle"><i class="fa-solid fa-sliders me-2"></i>{{ .lcl.hm_na_title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ .lcl.title_close }}"></button>
+            </div>
+            <div class="modal-body" id="naBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ .lcl.hm_cancel }}</button>
+                <button type="button" class="btn btn-success" id="naSave"><i class="fa-solid fa-check me-1"></i>{{ .lcl.hm_save }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="na-toast" id="naToast" role="status" hidden><span id="naToastText"></span><button type="button" id="naUndo">{{ .lcl.hm_na_undo }}</button></div>
 
 <!-- Add photos: the shared upload window, with a plant picker added on top. -->
 <input type="hidden" id="plantId" value="">

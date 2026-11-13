@@ -135,6 +135,10 @@ func TestAddProtectedApiRoutes_RegistersAllExpectedRoutes(t *testing.T) {
 		{"PUT", "/plant/:id/day/:date"},
 		{"DELETE", "/plant/:id/day/:date"},
 		{"POST", "/plants/day"},
+		{"POST", "/home/attention/settings"},
+		{"POST", "/home/attention/hide"},
+		{"POST", "/home/attention/show"},
+		{"POST", "/home/attention/done"},
 
 		// Sensors
 		{"POST", "/sensors/scanACI"},

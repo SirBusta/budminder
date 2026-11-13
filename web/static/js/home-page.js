@@ -21,10 +21,12 @@
     const $ = id => document.getElementById(id);
     const toast = (msg, level) => window.uiMessages ? uiMessages.showToast(msg, level || "success") : alert(msg);
 
-    // Days without water / feed before "due" (amber) and "overdue" (red);
-    // the same as the Plants page.
-    const DUE = { water: [3, 6], feed: [10, 18] };
-    const PHOTO_DAYS = 14;
+    // Needs attention settings (signed in only) and the days without water /
+    // feed before "due" (amber) and "overdue" (red), also used by the Plants
+    // page; the tag colors follow the days even when a reminder type is off.
+    const NA = () => D.attention || {};
+    const NS = () => NA().settings || { water: { on: true }, feed: { on: true }, photo: { on: true, days: 14 }, seeds: { on: true }, sensors: { on: true }, burp: { on: false } };
+    const careDays = kind => (D.care_days || {})[kind] || (kind === "water" ? [3, 6] : [10, 18]);
     const STAGE_LOOK = {
         Germinating: ["fa-seedling", "#a3b18a"], Planted: ["fa-bucket", "#8fbc5a"], Seedling: ["fa-leaf", "#84cc16"],
         Veg: ["fa-tree", "#16a34a"], Flower: ["fa-cannabis", "#9333ea"], Drying: ["fa-wind", "#d97706"],
@@ -61,7 +63,7 @@
         }));
         byId = Object.fromEntries(plants.map(p => [p.id, p]));
     }
-    const level = (kind, d) => d == null ? "none" : d >= DUE[kind][1] ? "over" : d >= DUE[kind][0] ? "due" : "ok";
+    const level = (kind, d) => d == null ? "none" : d >= careDays(kind)[1] ? "over" : d >= careDays(kind)[0] ? "due" : "ok";
     const types = () => D.types || [];
     const waterType = () => types().find(a => a.is_watering && !a.is_feeding) || types().find(a => a.is_watering);
     const feedType = () => types().find(a => a.is_feeding);
@@ -93,48 +95,178 @@
     const num = v => Number(v).toLocaleString(locale, { maximumFractionDigits: 2 });
 
     // ---------- Needs attention ----------
+    // Each line has a key (what a hide is saved under) and a basis: what it
+    // was drawn from, so "Hide until watered" etc. end when that changes.
+    // A subset basis (sensors, seeds) is a list: the line stays hidden while
+    // every item now is one that was there when it was hidden.
+    function listHtml(names) {
+        try {
+            return new Intl.ListFormat(locale, { type: "conjunction" }).formatToParts(names)
+                .map(p => p.type === "element" ? `<b>${esc(p.value)}</b>` : esc(p.value)).join("");
+        } catch (e) { return names.map(n => `<b>${esc(n)}</b>`).join(", "); }
+    }
+    const zones = () => NA().zones || [];
+    const zoneName = id => (zones().find(z => z.id === id) || {}).name || "";
+    // Curing plants whose jars are due a burp: daily for the first days of
+    // curing, then every few days, counted from the last burp (or the day
+    // the plant entered Curing).
+    function burpDue() {
+        const B = NS().burp, burped = NA().burped || {};
+        return (NA().curing || []).filter(p => p.since).map(p => {
+            const cday = days(p.since, D.today) + 1, every = cday <= B.daily ? 1 : B.then;
+            const b = burped[p.id], last = b && b > p.since ? b : p.since;
+            return { ...p, cday, due: days(last, D.today) >= every };
+        }).filter(p => p.due);
+    }
     function alerts() {
-        const out = [];
+        const out = [], S = NS();
         const name = p => `<b>${esc(p.name)}</b>`;
         plants.forEach(p => {
             const lw = level("water", p.water);
-            if (lw === "over" || lw === "due") out.push({ lv: lw === "over" ? "over" : "warn", icon: "fa-droplet", txt: t("hm_alert_water", { plant: "#P#", n: p.water }).replace("#P#", name(p)), act: `<button class="hm-btn-s primary" data-log="${p.id}" data-kind="water"><i class="fa-solid fa-droplet me-1"></i>${esc(t("hm_watered_it"))}</button>` });
+            if (S.water.on && (lw === "over" || lw === "due")) out.push({ key: "water:" + p.id, basis: p.last_water || "", until: "water", lv: lw === "over" ? "over" : "warn", icon: "fa-droplet", txt: t("hm_alert_water", { plant: "#P#", n: p.water }).replace("#P#", name(p)), act: `<button class="hm-btn-s primary" data-log="${p.id}" data-kind="water"><i class="fa-solid fa-droplet me-1"></i>${esc(t("hm_watered_it"))}</button>` });
             const lf = level("feed", p.feed);
-            if (lf === "over" || lf === "due") out.push({ lv: lf === "over" ? "over" : "warn", icon: "fa-flask", txt: t("hm_alert_feed", { plant: "#P#", n: p.feed }).replace("#P#", name(p)), act: `<button class="hm-btn-s primary" data-log="${p.id}" data-kind="feed"><i class="fa-solid fa-flask me-1"></i>${esc(t("hm_fed_it"))}</button>` });
+            if (S.feed.on && (lf === "over" || lf === "due")) out.push({ key: "feed:" + p.id, basis: p.last_feed || "", until: "feed", lv: lf === "over" ? "over" : "warn", icon: "fa-flask", txt: t("hm_alert_feed", { plant: "#P#", n: p.feed }).replace("#P#", name(p)), act: `<button class="hm-btn-s primary" data-log="${p.id}" data-kind="feed"><i class="fa-solid fa-flask me-1"></i>${esc(t("hm_fed_it"))}</button>` });
         });
+        // Burp curing jars: one line for every plant due.
+        if (S.burp.on) {
+            const due = burpDue();
+            if (due.length) out.push({ key: "burp", task: true, lv: "warn", icon: "fa-jar", cls: "task",
+                txt: due.length === 1 ? esc(t("hm_na_burp_one", { plant: "#P#", n: due[0].cday })).replace("#P#", name(due[0])) : esc(t("hm_na_burp_many", { plants: "#P#" })).replace("#P#", listHtml(due.map(p => p.name))),
+                act: `<button class="hm-btn-s primary" data-done="burp"><i class="fa-solid fa-check me-1"></i>${esc(t("hm_na_burped"))}</button>` });
+        }
+        // Repeating tasks: a line per tent once due, red when late.
+        const inTent = zones().length > 1;
+        (NA().tasks || []).forEach(tk => Object.entries(tk.zones || {}).forEach(([zid, last]) => {
+            const d = days(last, D.today);
+            if (d < tk.every) return;
+            const late = d - tk.every, sfx = inTent ? "_in" : "";
+            const k = late === 0 ? "hm_na_task_due" : late === 1 ? "hm_na_task_late_one" : "hm_na_task_late";
+            out.push({ key: `task:${tk.id}:${zid}`, task: true, every: tk.every, lv: late ? "over" : "warn", icon: tk.icon || "fa-repeat", cls: "task",
+                txt: esc(t(k + sfx, { task: "#T#", tent: zoneName(+zid), n: late })).replace("#T#", `<b>${esc(tk.name)}</b>`),
+                act: `<button class="hm-btn-s primary" data-done="task:${tk.id}:${zid}"><i class="fa-solid fa-check me-1"></i>${esc(t("hm_na_done"))}</button>` });
+        }));
         // An integration that refuses BudMinder or doesn't answer (stale
-        // readings alone are covered by the per-tent line below).
+        // readings alone are covered by the per-tent line below). Always on.
         const NAMES = { acinfinity: "AC Infinity", ecowitt: "Ecowitt", homeassistant: "Home Assistant", vivosun: "Vivosun" };
         Object.entries(D.integrations || {}).forEach(([src, st]) => {
             if (st.state !== "auth" && st.state !== "failing") return;
             const key = st.state === "auth" ? ({ acinfinity: "hm_alert_aci_auth", vivosun: "hm_alert_vs_auth" }[src] || "hm_alert_int_auth") : "hm_alert_int_failing";
             const txt = t(key, { name: NAMES[src] || src, ago: st.since ? ago(st.since) : "—" });
             const act = st.state === "auth" ? `<a class="hm-link" href="/settings#integrations">${esc(t("hm_sign_in_again"))}</a>` : `<a class="hm-link" href="/sensors/manage">${esc(t("hm_check_sensors"))}</a>`;
-            out.push({ lv: "over", icon: "fa-plug-circle-exclamation", txt: esc(txt), act });
+            out.push({ key: "int:" + src.toLowerCase().replace(/[^a-z]/g, ""), basis: st.state + "@" + (st.since || 0), until: "int", lv: "over", icon: "fa-plug-circle-exclamation", txt: esc(txt), act });
         });
         // Sensors that stopped reporting: one line per tent.
-        (D.tents || []).forEach(tent => {
+        if (S.sensors.on) (D.tents || []).forEach(tent => {
             const stale = [...tent.readings, ...tent.ports, ...(tent.quiet || [])].filter(r => r.stale && r.last_at);
             if (!stale.length) return;
             const oldest = Math.min(...stale.map(r => r.last_at)), where = tent.name || t("hm_no_tent");
             const txt = stale.length === 1 ? t("hm_alert_stale", { sensor: stale[0].name, tent: where, ago: ago(oldest) })
                 : t("hm_alert_stale_n", { n: stale.length, tent: where, ago: ago(oldest) });
-            out.push({ lv: "warn", icon: "fa-satellite-dish", txt: esc(txt), act: `<a class="hm-link" href="/sensors/manage">${esc(t("hm_check_sensors"))}</a>` });
+            out.push({ key: "sensor:" + tent.id, basis: stale.map(r => r.id + "@" + r.last_at).join(","), subset: true, until: stale.length === 1 ? "sensor" : "sensors", lv: "warn", icon: "fa-satellite-dish", txt: esc(txt), act: `<a class="hm-link" href="/sensors/manage">${esc(t("hm_check_sensors"))}</a>` });
         });
-        if (D.old_seed_batches > 0) out.push({ lv: "warn", icon: "fa-vault", cls: "vault", txt: esc(t(D.old_seed_batches === 1 ? "hm_alert_seeds_one" : "hm_alert_seeds", { n: D.old_seed_batches })), act: `<a class="hm-link" href="/strains#vault">${esc(t("hm_open_vault"))}</a>` });
-        plants.forEach(p => {
-            const none = p.photoDays == null && p.day >= PHOTO_DAYS, old = p.photoDays != null && p.photoDays >= PHOTO_DAYS;
-            if (none || old) out.push({ lv: "info", icon: "fa-camera", txt: (none ? t("hm_alert_no_photo", { plant: "#P#" }) : t("hm_alert_photo", { plant: "#P#", n: p.photoDays })).replace("#P#", name(p)), act: `<button class="hm-btn-s" data-photos="${p.id}"><i class="fa-solid fa-camera me-1"></i>${esc(t("hm_add_photo"))}</button>` });
+        const seeds = D.old_seeds || [];
+        if (S.seeds.on && seeds.length) out.push({ key: "seeds", basis: seeds.map(s => s.id + "@" + s.added).join(","), subset: true, until: "seeds", lv: "warn", icon: "fa-vault", cls: "vault", txt: esc(t(seeds.length === 1 ? "hm_alert_seeds_one" : "hm_alert_seeds", { n: seeds.length })), act: `<a class="hm-link" href="/strains#vault">${esc(t("hm_open_vault"))}</a>` });
+        if (S.photo.on) plants.forEach(p => {
+            const none = p.photoDays == null && p.day >= S.photo.days, old = p.photoDays != null && p.photoDays >= S.photo.days;
+            if (none || old) out.push({ key: "photo:" + p.id, basis: p.photo_date || "none", until: "photo", lv: "info", icon: "fa-camera", txt: (none ? t("hm_alert_no_photo", { plant: "#P#" }) : t("hm_alert_photo", { plant: "#P#", n: p.photoDays })).replace("#P#", name(p)), act: `<button class="hm-btn-s" data-photos="${p.id}"><i class="fa-solid fa-camera me-1"></i>${esc(t("hm_add_photo"))}</button>` });
         });
         return out;
     }
+
+    // How a line is hidden now ("tomorrow" or "until"), or null.
+    function hiddenHow(a) {
+        const h = (NA().hidden || {})[a.key];
+        if (!h) return null;
+        if (h.how === "tomorrow") return h.until > D.today ? "tomorrow" : null;
+        if (a.task) return null;
+        if (a.subset) {
+            const had = new Set((h.basis || "").split(","));
+            return a.basis.split(",").every(x => had.has(x)) ? "until" : null;
+        }
+        return h.basis === a.basis ? "until" : null;
+    }
+    const UNTIL = { water: "hm_na_until_water", feed: "hm_na_until_feed", photo: "hm_na_until_photo", sensor: "hm_na_until_sensor", sensors: "hm_na_until_sensors", int: "hm_na_until_int", seeds: "hm_na_until_seeds" };
+    const HIDDEN_AS = { water: "hm_na_hidden_water", feed: "hm_na_hidden_feed", photo: "hm_na_hidden_photo", sensor: "hm_na_hidden_sensor", sensors: "hm_na_hidden_sensors", int: "hm_na_hidden_int", seeds: "hm_na_hidden_seeds" };
+    function lineMenu(a) {
+        const k = esc(a.key);
+        const second = a.task
+            ? `<li><button type="button" class="dropdown-item" data-skip="${k}"><i class="fa-solid fa-forward"></i>${esc(t("hm_na_skip"))}</button></li>`
+            : `<li><button type="button" class="dropdown-item" data-hide="${k}" data-how="until"><i class="fa-solid fa-eye-slash"></i>${esc(t(UNTIL[a.until]))}</button></li>`;
+        return `<div class="dropdown"><button type="button" class="hm-x" data-bs-toggle="dropdown" aria-expanded="false" aria-label="${esc(t("hm_na_hide"))}" title="${esc(t("hm_na_hide"))}"><i class="fa-solid fa-xmark"></i></button>
+            <ul class="dropdown-menu dropdown-menu-end"><li><button type="button" class="dropdown-item" data-hide="${k}" data-how="tomorrow"><i class="fa-solid fa-clock"></i>${esc(t("hm_na_tomorrow"))}</button></li>${second}</ul></div>`;
+    }
+    let showHidden = false, lineByKey = {};
     function renderAlerts() {
         const box = $("hmAlerts");
         if (!box) return;
-        const list = alerts();
-        $("hmAlertCount").textContent = list.length ? String(list.length) : t("hm_all_clear");
-        box.innerHTML = list.map(a => `<div class="hm-alert ${a.lv}"><span class="ai ${a.cls || ""}"><i class="fa-solid ${a.icon}"></i></span><span class="tx">${a.txt}</span><span class="acts">${a.act}</span></div>`).join("")
+        const all = alerts();
+        lineByKey = Object.fromEntries(all.map(a => [a.key, a]));
+        all.forEach(a => { a.hidden = hiddenHow(a); });
+        const vis = all.filter(a => !a.hidden), hid = all.filter(a => a.hidden);
+        $("hmAlertCount").textContent = vis.length ? String(vis.length) : t("hm_all_clear");
+        box.innerHTML = vis.map(a => `<div class="hm-alert ${a.lv}"><span class="ai ${a.cls || ""}"><i class="fa-solid ${esc(a.icon)}"></i></span><span class="tx">${a.txt}</span><span class="acts">${a.act}</span>${lineMenu(a)}</div>`).join("")
             || `<div class="hm-alert info"><span class="ai"><i class="fa-solid fa-check"></i></span><span class="tx">${esc(t("hm_nothing"))}</span></div>`;
+        const tog = $("naHidTog"), list = $("naHidden");
+        if (!hid.length) showHidden = false;
+        tog.hidden = !hid.length;
+        tog.setAttribute("aria-expanded", String(showHidden));
+        tog.innerHTML = `<i class="fa-solid fa-eye-slash me-1"></i>${esc(t("hm_na_hidden_n", { n: hid.length }))}<i class="fa-solid fa-chevron-down"></i>`;
+        list.hidden = !showHidden;
+        list.innerHTML = hid.map(a => `<div class="hm-alert ${a.lv}"><span class="ai ${a.cls || ""}"><i class="fa-solid ${esc(a.icon)}"></i></span><span class="tx"><span>${a.txt}</span><small>${esc(t(a.hidden === "tomorrow" ? "hm_na_hidden_tomorrow" : HIDDEN_AS[a.until]))}</small></span><span class="acts"><button class="hm-btn-s" data-unhide="${esc(a.key)}"><i class="fa-solid fa-eye me-1"></i>${esc(t("hm_na_show_again"))}</button></span></div>`).join("");
+    }
+
+    // ---------- Needs attention: hiding lines, Done and Undo ----------
+    async function post(url, body) {
+        const resp = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw new Error(data.error || t("hm_save_failed"));
+        return data;
+    }
+    let undoFn = null, undoTimer = 0;
+    function undoToast(text, undo) {
+        $("naToastText").textContent = text;
+        undoFn = undo || null;
+        $("naUndo").hidden = !undo;
+        $("naToast").hidden = false;
+        clearTimeout(undoTimer);
+        undoTimer = setTimeout(() => { $("naToast").hidden = true; undoFn = null; }, 8000);
+    }
+    const fail = e => toast(e.message || t("hm_save_failed"), "danger");
+    async function setHidden(url, body) {
+        const r = await post(url, body);
+        D.attention.hidden = r.hidden || {};
+        renderAlerts();
+    }
+    async function hideLine(key, how) {
+        const a = lineByKey[key];
+        if (!a) return;
+        try {
+            await setHidden("/home/attention/hide", { key, how, basis: how === "until" ? a.basis || "" : "" });
+            undoToast(t(how === "tomorrow" ? "hm_na_hidden_tomorrow" : HIDDEN_AS[a.until]), () => setHidden("/home/attention/show", { key }).catch(fail));
+        } catch (e) { fail(e); }
+    }
+    async function doneLine(key, skip) {
+        try {
+            if (key === "burp") {
+                const due = burpDue();
+                if (!due.length) return;
+                const set = list => { D.attention.burped = D.attention.burped || {}; list.forEach(b => { if (b.day) D.attention.burped[b.plant_id] = b.day; else delete D.attention.burped[b.plant_id]; }); renderAlerts(); };
+                const body = due.map(p => ({ plant_id: p.id, day: D.today }));
+                const r = await post("/home/attention/done", { burp: body });
+                set(body);
+                const prev = (r.previous || []).map(x => ({ plant_id: x.plant_id, day: x.day || "" }));
+                undoToast(t(skip ? "hm_na_burp_skipped" : "hm_na_burp_done"), () => post("/home/attention/done", { burp: prev }).then(() => set(prev)).catch(fail));
+                return;
+            }
+            const [, tid, zid] = key.split(":").map(Number);
+            const tk = (NA().tasks || []).find(x => x.id === tid);
+            if (!tk) return;
+            const set = day => { tk.zones[zid] = day; renderAlerts(); };
+            const r = await post("/home/attention/done", { task_id: tid, zone_id: zid, day: D.today });
+            set(D.today);
+            const msg = tk.every === 1 ? (skip ? "hm_na_skipped_one" : "hm_na_marked_done_one") : (skip ? "hm_na_skipped" : "hm_na_marked_done");
+            undoToast(t(msg, { n: tk.every }), () => post("/home/attention/done", { task_id: tid, zone_id: zid, day: r.previous }).then(() => set(r.previous)).catch(fail));
+        } catch (e) { fail(e); }
     }
 
     // ---------- Tents ----------
@@ -339,8 +471,228 @@
         bootstrap.Modal.getOrCreateInstance(modal).show();
     }
 
+    // ---------- Needs attention settings window ----------
+    // A working copy (W) is edited and only saved by the window's Save:
+    // reminder types with their days, and the repeating tasks.
+    let W = null, editing = null, formTents = [], formIcon = "fa-repeat";
+    const clone = o => JSON.parse(JSON.stringify(o));
+    const presetName = p => t(p.key);
+    function numIn(k, v, aria, max, id) {
+        return `<input type="number" class="form-control" min="1" max="${max || 90}" ${id ? `id="${id}"` : `data-k="${k}"`} value="${v == null ? "" : esc(v)}" aria-label="${esc(t(aria))}">`;
+    }
+    // A sentence with a number box in it, e.g. "Due after [3] days".
+    const withInput = (key, input) => esc(t(key, { input: "#I#" })).replace("#I#", input);
+    // Icon colors: Water and Feed use their activity type's color (as on the
+    // plant page's notebook), the others fixed colors.
+    const NA_COLORS = { photo: "#f59e0b", seeds: "#64748b", sensors: "#0891b2", int: "#dc2626", burp: "#16a34a" };
+    function naColor(type) {
+        const a = type === "water" ? waterType() : type === "feed" ? feedType() : null;
+        return (a && a.color) || NA_COLORS[type] || (type === "water" ? "#2f80ed" : "#27ae60");
+    }
+    const naIco = (type, icon) => `<span class="hm-ico" style="--c:${esc(naColor(type))}"><i class="fa-solid ${icon}"></i></span>`;
+    function typeBox(type, icon, extra) {
+        const on = W.S[type].on;
+        return `<div class="na-type${on ? "" : " off"}" data-type="${type}">
+            <label class="fm-sw form-switch" for="na_${type}"><span><b>${naIco(type, icon)}${esc(t("hm_na_" + type))}</b><small>${esc(t("hm_na_" + type + "_note"))}</small></span><input type="checkbox" class="form-check-input" role="switch" id="na_${type}"${on ? " checked" : ""}></label>
+            ${extra || ""}</div>`;
+    }
+    const careRow = type => `<div class="na-days">
+        <label><span class="dot due"></span>${withInput("hm_na_due_after", numIn("due", W.S[type].due, `hm_na_aria_${type}_due`))}</label>
+        <label><span class="dot over"></span>${withInput("hm_na_over_after", numIn("over", W.S[type].over, `hm_na_aria_${type}_over`))}</label>
+        <span class="na-err" hidden></span></div>`;
+    function drawDialog() {
+        const noZones = !zones().length;
+        $("naBody").innerHTML = `
+            <div class="na-tabs" role="tablist" id="naTabs"><button type="button" role="tab" data-p="rem" class="on" aria-selected="true">${esc(t("hm_na_tab_rem"))}</button><button type="button" role="tab" data-p="tasks" aria-selected="false">${esc(t("hm_na_tab_tasks"))}</button></div>
+            <div class="na-pane" id="naPaneRem">
+                <p class="na-intro mb-2">${esc(t("hm_na_rem_intro"))}</p>
+                ${typeBox("water", "fa-droplet", careRow("water"))}
+                ${typeBox("feed", "fa-flask", careRow("feed"))}
+                ${typeBox("photo", "fa-camera", `<div class="na-days"><label>${withInput("hm_na_photo_after", numIn("days", W.S.photo.days, "hm_na_aria_photo"))}</label><span class="na-err" hidden></span></div>`)}
+                ${typeBox("seeds", "fa-vault")}
+                ${typeBox("sensors", "fa-satellite-dish")}
+                <div class="na-lock"><span><b>${naIco("int", "fa-plug-circle-exclamation")}${esc(t("hm_na_int"))}</b><small>${esc(t("hm_na_int_note"))}</small></span>
+                    <span class="tag"><i class="fa-solid fa-lock me-1"></i>${esc(t("hm_na_always_on"))}</span></div>
+                <p class="na-foot">${esc(t("hm_na_foot"))}</p>
+            </div>
+            <div class="na-pane" id="naPaneTasks" hidden>
+                <p class="na-intro mb-2">${esc(t("hm_na_tasks_intro"))}</p>
+                ${typeBox("burp", "fa-jar", `<div class="na-days"><label>${withInput("hm_na_burp_daily", numIn("daily", W.S.burp.daily, "hm_na_aria_burp_daily"))}</label><label>${withInput("hm_na_burp_then", numIn("then", W.S.burp.then, "hm_na_aria_burp_then"))}</label><span class="na-err" hidden></span></div>`)}
+                <div class="na-h">${esc(t("hm_na_your_tasks"))}</div>
+                <div id="naTaskList"></div>
+                <div class="na-form" id="naForm" hidden>
+                    <label class="lbl" for="naTName">${esc(t("hm_na_task"))}</label>
+                    <input type="text" class="form-control form-control-sm" id="naTName" maxlength="60" autocomplete="off">
+                    <div class="na-chips" id="naChips" aria-label="${esc(t("hm_na_suggestions"))}"></div>
+                    <label class="na-every" for="naTEvery">${withInput("hm_na_repeat_every", numIn("", "", "hm_na_aria_every", 365, "naTEvery"))}</label>
+                    <small class="hint">${esc(t("hm_na_every_hint"))}</small>
+                    <div id="naTTentsWrap"><span class="lbl mt-3">${esc(t("hm_na_tents"))}</span><div class="na-chips mt-0" id="naTTents"></div></div>
+                    <span class="na-err" id="naTErr" hidden></span>
+                    <div class="na-form-acts">
+                        <button type="button" class="na-del" id="naTDel" hidden><i class="fa-solid fa-trash me-1"></i>${esc(t("hm_na_delete_task"))}</button>
+                        <span class="sp"></span>
+                        <button type="button" class="btn btn-light btn-sm" id="naTCancel">${esc(t("hm_cancel"))}</button>
+                        <button type="button" class="btn btn-success btn-sm" id="naTSave">${esc(t("hm_na_save_task"))}</button>
+                    </div>
+                </div>
+                ${noZones ? `<p class="na-empty">${esc(t("hm_na_no_zones"))}</p>` : `<button type="button" class="st-btn light" id="naAdd"><i class="fa-solid fa-plus me-1"></i>${esc(t("hm_na_add_task"))}</button>`}
+            </div>`;
+        ["water", "feed", "photo", "burp"].forEach(ty => document.querySelectorAll(`.na-type[data-type="${ty}"] .na-days input`).forEach(i => { i.disabled = !W.S[ty].on; }));
+        drawTasks();
+    }
+    function tab(p) {
+        document.querySelectorAll("#naTabs [data-p]").forEach(b => { const on = b.dataset.p === p; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); });
+        $("naPaneRem").hidden = p !== "rem";
+        $("naPaneTasks").hidden = p !== "tasks";
+    }
+    const everyText = n => n === 1 ? t("hm_na_every_one") : t("hm_na_every_n", { n });
+    function drawTasks() {
+        const many = zones().length > 1;
+        $("naTaskList").innerHTML = W.tasks.map((tk, i) => {
+            const where = many ? " · " + Object.keys(tk.zones).map(z => zoneName(+z)).filter(Boolean).join(", ") : "";
+            return `<div class="na-task"><span class="ic"><i class="fa-solid ${esc(tk.icon || "fa-repeat")}"></i></span><span class="nm"><b>${esc(tk.name)}</b><small>${esc(everyText(tk.every) + where)}</small></span>
+                <button type="button" class="ed" data-edit="${i}" aria-label="${esc(t("hm_na_edit", { task: tk.name }))}" title="${esc(t("hm_na_edit_title"))}"><i class="fa-solid fa-pen"></i></button></div>`;
+        }).join("") || `<div class="na-empty">${esc(t("hm_na_no_tasks"))}</div>`;
+    }
+    function drawFormTents() {
+        $("naTTents").innerHTML = zones().map(z => {
+            const on = formTents.includes(z.id);
+            return `<button type="button" class="hm-chip${on ? " on" : ""}" data-tent="${z.id}" aria-pressed="${on}"><i class="fa-solid fa-tent"></i>${esc(z.name)}</button>`;
+        }).join("");
+    }
+    function openForm(i) {
+        const tk = i == null ? null : W.tasks[i];
+        editing = i == null ? -1 : i;
+        $("naTName").value = tk ? tk.name : "";
+        $("naTEvery").value = tk ? tk.every : "";
+        formIcon = tk ? tk.icon || "fa-repeat" : "fa-repeat";
+        formTents = tk ? Object.keys(tk.zones).map(Number) : zones().length === 1 ? [zones()[0].id] : [];
+        const presets = NA().presets || [];
+        $("naChips").innerHTML = tk ? "" : presets.map((p, n) => `<button type="button" class="hm-chip" data-preset="${n}"><i class="fa-solid ${esc(p.icon)}"></i>${esc(presetName(p))}</button>`).join("");
+        $("naChips").hidden = !!tk;
+        $("naTTentsWrap").hidden = zones().length < 2;
+        drawFormTents();
+        $("naTDel").hidden = !tk;
+        $("naTErr").hidden = true;
+        $("naForm").hidden = false;
+        if ($("naAdd")) $("naAdd").hidden = true;
+        $("naSave").disabled = true;
+        $("naTName").focus();
+    }
+    function closeForm() {
+        editing = null;
+        $("naForm").hidden = true;
+        if ($("naAdd")) $("naAdd").hidden = false;
+        $("naSave").disabled = false;
+    }
+    function saveForm() {
+        const name = $("naTName").value.trim().replace(/\s+/g, " "), every = Number($("naTEvery").value), err = $("naTErr");
+        const msg = !name ? "hm_na_err_name" : !(Number.isInteger(every) && every >= 1 && every <= 365) ? "hm_na_err_every" : !formTents.length ? "hm_na_err_tents" : "";
+        if (msg) { err.textContent = t(msg); err.hidden = false; return; }
+        const old = editing >= 0 ? W.tasks[editing] : null, zonesNow = {};
+        formTents.forEach(z => { zonesNow[z] = old && old.zones[z] ? old.zones[z] : D.today; });
+        const tk = { id: old ? old.id : 0, name, icon: formIcon, every, zones: zonesNow };
+        if (old) W.tasks[editing] = tk; else W.tasks.push(tk);
+        closeForm();
+        drawTasks();
+    }
+    // Due must come before Overdue; every box 1 to 90 days.
+    function checkDays(type) {
+        const box = document.querySelector(`.na-type[data-type="${type}"]`), err = box.querySelector(".na-err");
+        if (!box.querySelector(".form-check-input").checked) { if (err) err.hidden = true; return true; }
+        const ins = [...box.querySelectorAll(".na-days input")], ok = v => Number.isInteger(v) && v >= 1 && v <= 90;
+        const vals = ins.map(i => Number(i.value)), range = vals.every(ok);
+        const order = !(type === "water" || type === "feed") || vals[1] > vals[0];
+        const bad = !range || !order;
+        if (err) { err.textContent = t(range ? "hm_na_err_over" : "hm_na_err_days"); err.hidden = !bad; }
+        ins.forEach((i, n) => i.classList.toggle("is-bad", bad && (!range ? !ok(vals[n]) : n === 1)));
+        return !bad;
+    }
+    async function saveDialog() {
+        const S = clone(W.S);
+        let ok = true;
+        ["water", "feed", "photo", "seeds", "sensors", "burp"].forEach(type => {
+            const box = document.querySelector(`.na-type[data-type="${type}"]`);
+            S[type].on = box.querySelector(".form-check-input").checked;
+            if (box.querySelector(".na-days")) ok = checkDays(type) && ok;
+            if (S[type].on) box.querySelectorAll(".na-days input").forEach(i => { S[type][i.dataset.k] = Number(i.value); });
+        });
+        if (!ok) { tab(document.querySelector("#naPaneRem .na-err:not([hidden])") ? "rem" : "tasks"); return; }
+        const btn = $("naSave");
+        btn.disabled = true;
+        try {
+            const r = await post("/home/attention/settings", { settings: S, tasks: W.tasks.map(tk => ({ id: tk.id, name: tk.name, icon: tk.icon, every: tk.every, zones: Object.keys(tk.zones).map(Number) })) });
+            D.attention.settings = r.settings;
+            D.attention.tasks = r.tasks;
+            D.care_days = { water: [r.settings.water.due, r.settings.water.over], feed: [r.settings.feed.due, r.settings.feed.over] };
+            bootstrap.Modal.getInstance($("naDlg")).hide();
+            render();
+        } catch (e) { fail(e); } finally { btn.disabled = false; }
+    }
+    const dlg = $("naDlg");
+    if (dlg) {
+        dlg.addEventListener("show.bs.modal", () => {
+            W = { S: clone(NS()), tasks: clone(NA().tasks || []) };
+            editing = null;
+            drawDialog();
+            $("naSave").disabled = false;
+        });
+        dlg.addEventListener("change", e => {
+            const sw = e.target.closest(".fm-sw .form-check-input");
+            if (!sw) return;
+            const box = sw.closest(".na-type");
+            box.classList.toggle("off", !sw.checked);
+            box.querySelectorAll(".na-days input").forEach(i => { i.disabled = !sw.checked; });
+            if (!sw.checked) { const err = box.querySelector(".na-err"); if (err) err.hidden = true; box.querySelectorAll(".is-bad").forEach(i => i.classList.remove("is-bad")); }
+        });
+        dlg.addEventListener("input", e => {
+            const box = e.target.closest(".na-type");
+            if (box && box.querySelector(".na-err") && !box.querySelector(".na-err").hidden) checkDays(box.dataset.type);
+            if (e.target.id === "naTName") {
+                // A suggestion's name keeps its icon; any other name gets the plain one.
+                const v = e.target.value.trim().toLowerCase(), presets = NA().presets || [];
+                const hit = presets.findIndex(p => presetName(p).toLowerCase() === v);
+                formIcon = hit >= 0 ? presets[hit].icon : "fa-repeat";
+                document.querySelectorAll("#naChips [data-preset]").forEach(c => c.classList.toggle("on", +c.dataset.preset === hit));
+            }
+        });
+        dlg.addEventListener("click", e => {
+            const g = sel => e.target.closest(sel);
+            let el;
+            if ((el = g("#naTabs [data-p]"))) { tab(el.dataset.p); return; }
+            if (g("#naAdd")) { openForm(null); return; }
+            if ((el = g("[data-edit]"))) { openForm(+el.dataset.edit); return; }
+            if ((el = g("[data-preset]"))) {
+                const p = (NA().presets || [])[+el.dataset.preset];
+                $("naTName").value = presetName(p);
+                $("naTEvery").value = p.days;
+                formIcon = p.icon;
+                document.querySelectorAll("#naChips [data-preset]").forEach(c => c.classList.toggle("on", c === el));
+                return;
+            }
+            if ((el = g("[data-tent]"))) {
+                const id = +el.dataset.tent;
+                formTents = formTents.includes(id) ? formTents.filter(x => x !== id) : formTents.concat(id);
+                drawFormTents();
+                return;
+            }
+            if (g("#naTCancel")) { closeForm(); return; }
+            if (g("#naTDel")) { W.tasks.splice(editing, 1); closeForm(); drawTasks(); return; }
+            if (g("#naTSave")) { saveForm(); return; }
+            if (g("#naSave")) saveDialog();
+        });
+    }
+
     // ---------- Events ----------
     document.addEventListener("click", e => {
+        const hd = e.target.closest("[data-hide]");
+        if (hd) { hideLine(hd.dataset.hide, hd.dataset.how); return; }
+        const uh = e.target.closest("[data-unhide]");
+        if (uh) { setHidden("/home/attention/show", { key: uh.dataset.unhide }).catch(fail); return; }
+        const dn = e.target.closest("[data-done], [data-skip]");
+        if (dn) { doneLine(dn.dataset.done || dn.dataset.skip, !!dn.dataset.skip); return; }
+        if (e.target.closest("#naHidTog")) { showHidden = !showHidden; renderAlerts(); return; }
+        if (e.target.closest("#naUndo")) { const f = undoFn; undoFn = null; $("naToast").hidden = true; if (f) f(); return; }
         const lg = e.target.closest("[data-log]");
         if (lg) {
             const pid = lg.dataset.log ? [+lg.dataset.log] : [];
@@ -369,7 +721,7 @@
 
     // ---------- Refresh: readings and alerts follow new data ----------
     async function refresh(force) {
-        if (!force && (document.hidden || playingCam != null || document.querySelector(".modal.show"))) return;
+        if (!force && (document.hidden || playingCam != null || document.querySelector(".modal.show, #hmAlerts .dropdown-menu.show"))) return;
         try {
             const resp = await fetch("/home/data", { cache: "no-store" });
             if (!resp.ok) return;
