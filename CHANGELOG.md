@@ -28,6 +28,7 @@ used three parts.
 ### Fixed
 
 - With **Watering** or **Feeding** turned off in **Needs attention settings** on the Today page, the matching day tags on the Plants and Today pages no longer turn yellow or red. The tags are gray and still show the days since the last watering or feeding.
+- Demo: clicking a sample alert under **Recent alerts** opened an empty chart. Each sample alert now opens a chart with its readings. Normal installs were not affected.
 
 ## [2.5] - 2026-11-12
 

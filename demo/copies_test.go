@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"isley/alerts"
 	"isley/config"
 	"isley/demo"
 	"isley/tests/testutil"
@@ -149,6 +150,45 @@ func TestRollDates_KeepsTheGrowAtTheSamePoint(t *testing.T) {
 	require.NoError(t, err)
 	assert.Zero(t, days, "once a day")
 	assert.Equal(t, "2026-01-11", one(`SELECT CAST(start_dt AS TEXT) FROM plant WHERE id = $1`, plant))
+}
+
+// TestRollDates_MovesRecentAlerts: the demo's sample alerts move with the
+// grow, or they fall behind the two days of readings their charts need.
+func TestRollDates_MovesRecentAlerts(t *testing.T) {
+	t.Parallel()
+	db := testutil.NewTestDB(t)
+	exec := func(q string, args ...any) {
+		t.Helper()
+		_, err := db.Exec(q, args...)
+		require.NoError(t, err)
+	}
+	limitAt := time.Date(2026, 1, 2, 2, 12, 0, 0, time.UTC)
+	exec(`INSERT INTO alert_event (kind, zone_id, measure, side, started_at, notified_at, resolved_at, limits)
+		VALUES ('stage', 1, 'temp', 'high', '2026-01-02 02:27:00', '2026-01-02 02:27:00', '2026-01-02 03:21:00', $1)`,
+		alerts.EncodeLimits([]alerts.LimitUsed{{V: 30, At: limitAt, Lights: "on", Stage: "flower"}}))
+	exec(`INSERT INTO alert_event (kind, zone_id, measure, side, started_at, notified_at)
+		VALUES ('offline', 2, '', '', '2026-01-02 22:31:00', '2026-01-02 22:31:00')`)
+	exec(`INSERT INTO settings (name, value) VALUES ('demo_dates_on', '2026-01-03')`)
+
+	days, err := demo.RollDates(db, time.Date(2026, 1, 13, 15, 0, 0, 0, time.Local))
+	require.NoError(t, err)
+	require.Equal(t, 10, days)
+
+	var started, notified, resolved, limits string
+	require.NoError(t, db.QueryRow(`SELECT CAST(started_at AS TEXT), CAST(notified_at AS TEXT), CAST(resolved_at AS TEXT), limits
+		FROM alert_event WHERE kind = 'stage'`).Scan(&started, &notified, &resolved, &limits))
+	assert.Equal(t, "2026-01-12 02:27:00", started)
+	assert.Equal(t, "2026-01-12 02:27:00", notified)
+	assert.Equal(t, "2026-01-12 03:21:00", resolved)
+	list := alerts.DecodeLimits(limits)
+	require.Len(t, list, 1)
+	assert.True(t, list[0].At.Equal(limitAt.AddDate(0, 0, 10)), "the limit's time moves too: %v", list[0].At)
+	assert.Equal(t, "flower", list[0].Stage)
+
+	var openResolved sql.NullString
+	require.NoError(t, db.QueryRow(`SELECT CAST(started_at AS TEXT), resolved_at FROM alert_event WHERE kind = 'offline'`).Scan(&started, &openResolved))
+	assert.Equal(t, "2026-01-12 22:31:00", started)
+	assert.False(t, openResolved.Valid, "an alert with no end keeps none")
 }
 
 func TestRollDates_SnapshotWithoutItsDay(t *testing.T) {

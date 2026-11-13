@@ -9,8 +9,8 @@
 //
 // The grow itself stays at the same point forever: once a day the base's
 // dates (plant starts, stage changes, notebook days, photos, seed and smoke
-// dates) move forward by the days that passed, so it is always "Day 76,
-// watered yesterday". Only the calendar dates shown move along.
+// dates, Recent alerts) move forward by the days that passed, so it is always
+// "Day 76, watered yesterday". Only the calendar dates shown move along.
 //
 // Sensor readings stay live: every minute the base and each copy repeat each
 // sensor's reading from a day earlier, as the demo build does. Only two days
@@ -34,6 +34,7 @@ import (
 	"sync"
 	"time"
 
+	"isley/alerts"
 	"isley/config"
 	"isley/handlers"
 	"isley/logger"
@@ -177,6 +178,12 @@ var rolledColumns = []struct{ table, col string }{
 	{"strain_pack", "added_on"},
 	{"smoke_report", "smoked_on"},
 	{"smoke_report", "harvested_on"},
+	// Recent alerts: the build places them where the replayed readings cross
+	// the limit, so they keep matching the charts (readings repeat daily).
+	{"alert_event", "started_at"},
+	{"alert_event", "notified_at"},
+	{"alert_event", "resolved_at"},
+	{"alert_event", "retry_at"},
 }
 
 // datesOnSetting records the local day the demo's dates are set to.
@@ -225,10 +232,52 @@ func RollDates(db *sql.DB, today time.Time) (int, error) {
 			}
 		}
 	}
+	if err := rollAlertLimits(tx, days); err != nil {
+		return 0, err
+	}
 	if err := saveDatesOn(tx, day); err != nil {
 		return 0, err
 	}
 	return days, tx.Commit()
+}
+
+// rollAlertLimits moves the times inside each alert's list of limits
+// (alert_event.limits, JSON) forward by days.
+func rollAlertLimits(tx *sql.Tx, days int) error {
+	rows, err := tx.Query(`SELECT id, limits FROM alert_event WHERE limits IS NOT NULL AND limits != ''`)
+	if err != nil {
+		return fmt.Errorf("demo: read alert limits: %w", err)
+	}
+	type row struct {
+		id     int64
+		limits string
+	}
+	var all []row
+	for rows.Next() {
+		var r row
+		if err := rows.Scan(&r.id, &r.limits); err != nil {
+			rows.Close()
+			return err
+		}
+		all = append(all, r)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, r := range all {
+		list := alerts.DecodeLimits(r.limits)
+		if len(list) == 0 {
+			continue
+		}
+		for i := range list {
+			list[i].At = list[i].At.AddDate(0, 0, days)
+		}
+		if _, err := tx.Exec(`UPDATE alert_event SET limits = $1 WHERE id = $2`, alerts.EncodeLimits(list), r.id); err != nil {
+			return fmt.Errorf("demo: roll alert limits: %w", err)
+		}
+	}
+	return nil
 }
 
 type execer interface {
