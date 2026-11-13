@@ -63,7 +63,9 @@
         }));
         byId = Object.fromEntries(plants.map(p => [p.id, p]));
     }
-    const level = (kind, d) => d == null ? "none" : d >= careDays(kind)[1] ? "over" : d >= careDays(kind)[0] ? "due" : "ok";
+    // A reminder type turned off in Needs attention settings shows gray, with no Due/Overdue color.
+    const careOff = kind => ((D.care_days || {}).off || []).includes(kind);
+    const level = (kind, d) => d == null ? "none" : careOff(kind) ? "off" : d >= careDays(kind)[1] ? "over" : d >= careDays(kind)[0] ? "due" : "ok";
     const types = () => D.types || [];
     const waterType = () => types().find(a => a.is_watering && !a.is_feeding) || types().find(a => a.is_watering);
     const feedType = () => types().find(a => a.is_feeding);
@@ -624,7 +626,8 @@
             const r = await post("/home/attention/settings", { settings: S, tasks: W.tasks.map(tk => ({ id: tk.id, name: tk.name, icon: tk.icon, every: tk.every, zones: Object.keys(tk.zones).map(Number) })) });
             D.attention.settings = r.settings;
             D.attention.tasks = r.tasks;
-            D.care_days = { water: [r.settings.water.due, r.settings.water.over], feed: [r.settings.feed.due, r.settings.feed.over] };
+            D.care_days = { water: [r.settings.water.due, r.settings.water.over], feed: [r.settings.feed.due, r.settings.feed.over],
+                off: ["water", "feed"].filter(k => !r.settings[k].on) };
             bootstrap.Modal.getInstance($("naDlg")).hide();
             render();
         } catch (e) { fail(e); } finally { btn.disabled = false; }

@@ -43,8 +43,9 @@ func (e *attentionEnv) post(t *testing.T, path string, body any) (int, map[strin
 type attentionData struct {
 	Today    string `json:"today"`
 	CareDays struct {
-		Water []int `json:"water"`
-		Feed  []int `json:"feed"`
+		Water []int    `json:"water"`
+		Feed  []int    `json:"feed"`
+		Off   []string `json:"off"`
 	} `json:"care_days"`
 	OldSeeds  []struct{ ID int } `json:"old_seeds"`
 	Attention *struct {
@@ -110,6 +111,7 @@ func TestAttention_DefaultsAndGuests(t *testing.T) {
 	assert.False(t, d.Attention.Settings.Burp.On, "burping starts off")
 	assert.Equal(t, []int{3, 6}, d.CareDays.Water)
 	assert.Equal(t, []int{10, 18}, d.CareDays.Feed)
+	assert.Empty(t, d.CareDays.Off, "both reminder types start on")
 	assert.Empty(t, d.Attention.Tasks)
 	assert.Len(t, d.Attention.Presets, 11)
 
@@ -135,6 +137,7 @@ func TestAttention_SaveSettingsAndTasks(t *testing.T) {
 	d := getAttention(t, e.client)
 	assert.Equal(t, 2, d.Attention.Settings.Water.Due)
 	assert.Equal(t, []int{2, 5}, d.CareDays.Water, "the Plants page and tags follow the saved days")
+	assert.Equal(t, []string{"feed"}, d.CareDays.Off, "Feeding off: its tags lose their Due/Overdue colors")
 	require.Len(t, d.Attention.Tasks, 2)
 	first := d.Attention.Tasks[0]
 	assert.Equal(t, "Empty dehumidifier", first.Name, "spaces are tidied")

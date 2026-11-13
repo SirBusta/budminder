@@ -3421,6 +3421,7 @@ th, td {
 .pl-wf.ok { background: #dcfce7; color: #166534; }
 .pl-wf.due { background: #fef3c7; color: #92400e; }
 .pl-wf.over { background: #fee2e2; color: #b91c1c; }
+.pl-wf.off { background: #f1f5f9; color: #475569; } /* reminder type turned off */
 .pl-hv { display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; font-weight: 600; white-space: nowrap; opacity: .85; }
 .pl-hv i { color: #d97706; }
 .pl-qa { border: 1px solid var(--pl-line); background: var(--pl-card); color: var(--pl-ink); border-radius: 8px; font-size: .76rem; font-weight: 600; padding: .26rem .6rem; display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; text-decoration: none; }
@@ -3435,6 +3436,7 @@ th, td {
 [data-bs-theme="dark"] .pl-wf.ok { background: rgba(74, 222, 128, .14); color: #86efac; }
 [data-bs-theme="dark"] .pl-wf.due { background: rgba(251, 191, 36, .14); color: #fcd34d; }
 [data-bs-theme="dark"] .pl-wf.over { background: rgba(248, 113, 113, .15); color: #fca5a5; }
+[data-bs-theme="dark"] .pl-wf.off { background: rgba(148, 163, 184, .14); color: #cbd5e1; }
 [data-bs-theme="dark"] .pl-noph { background: linear-gradient(135deg, #14261c, #183a25); color: #2f6b45; }
 
 .pl-rows { background: var(--pl-card); border-radius: 16px; box-shadow: var(--pl-shadow); overflow: hidden; color: var(--pl-ink); }
@@ -3546,6 +3548,7 @@ th, td {
 .hm-care.ok { background: #e0f2fe; color: #075985; }
 .hm-care.due { background: #fef3c7; color: #92400e; }
 .hm-care.over { background: #fee2e2; color: #b91c1c; }
+.hm-care.off { background: #f1f5f9; color: #475569; } /* reminder type turned off */
 .hm-care.none { background: var(--hm-seg); color: var(--hm-faint); }
 .hm-stage { --c: #64748b; display: inline-flex; align-items: center; gap: .3rem; font-size: .74rem; font-weight: 800; color: var(--c); white-space: nowrap; }
 .hm-stage::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
@@ -3555,6 +3558,7 @@ th, td {
 [data-bs-theme="dark"] .hm-care.ok { background: rgba(56, 189, 248, .14); color: #7dd3fc; }
 [data-bs-theme="dark"] .hm-care.due { background: rgba(251, 191, 36, .14); color: #fcd34d; }
 [data-bs-theme="dark"] .hm-care.over { background: rgba(248, 113, 113, .15); color: #fca5a5; }
+[data-bs-theme="dark"] .hm-care.off { background: rgba(148, 163, 184, .14); color: #cbd5e1; }
 [data-bs-theme="dark"] .hm-alert.over .ai { background: rgba(248, 113, 113, .15); color: #fca5a5; }
 [data-bs-theme="dark"] .hm-alert.warn .ai { background: rgba(251, 191, 36, .14); color: #fcd34d; }
 [data-bs-theme="dark"] .hm-alert.info .ai { background: rgba(56, 189, 248, .14); color: #7dd3fc; }

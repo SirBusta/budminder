@@ -151,10 +151,18 @@ func HomePageData(c *gin.Context, loggedIn bool, lang string, translations map[s
 }
 
 // careDays is the Watering and Feeding Due/Overdue days for tag colors,
-// {"water": [due, over], "feed": [due, over]}; they apply even when the
-// reminder type is off.
+// {"water": [due, over], "feed": [due, over], "off": ["feed"]}. A reminder
+// type that is off is listed in "off": its tags show no Due/Overdue color
+// (a grower who never feeds doesn't want a red Feed tag on every plant).
 func careDays(s AttentionSettings) gin.H {
-	return gin.H{"water": []int{s.Water.Due, s.Water.Over}, "feed": []int{s.Feed.Due, s.Feed.Over}}
+	off := []string{}
+	if !s.Water.On {
+		off = append(off, "water")
+	}
+	if !s.Feed.On {
+		off = append(off, "feed")
+	}
+	return gin.H{"water": []int{s.Water.Due, s.Water.Over}, "feed": []int{s.Feed.Due, s.Feed.Over}, "off": off}
 }
 
 // HomeDataHandler serves HomePageData for the page's refresh (GET /home/data).
