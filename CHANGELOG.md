@@ -27,6 +27,7 @@ used three parts.
 
 ### Changed
 
+- A zone with plants and sensors but no climate sensors chosen in **Edit Zone** gets no climate alerts. BudMinder now shows an amber warning for such a zone on **Climate targets and limits**, in **Edit Zone**, on **Settings > Alerts** and in the Today page's **Needs attention** list. **Choose sensors** opens that zone's **Edit Zone** window at its climate sensors.
 - The raw AC Infinity data under **Manage sensors** > **Troubleshooting** now always has personal details removed, including sign-in tokens, user IDs and IP addresses. The **Hide personal details** checkbox is gone.
 
 ## [2.6] - 2026-11-13

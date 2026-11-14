@@ -411,7 +411,7 @@
         secs[m].classList.add("open");
         inSec(m, ".ax-meth-t").setAttribute("aria-expanded", "true");
     }
-    function saveMethod(m, remove) {
+    function saveMethod(m, remove, flipped) {
         const body = methodBody(m, remove);
         // No address yet: the one Phone & tablet shows (never localhost when it can help it).
         if (!$("alLink").value.trim()) { $("alLink").value = (window.bmPhone && window.bmPhone.address) || location.origin; saveLink(); }
@@ -424,6 +424,7 @@
                 secs[m].querySelectorAll("[data-secret]").forEach(i => { i.value = ""; });
                 methodOut(m, "");
                 flash();
+                if (flipped) ncNote(m, body.on ? T.ncOn : null);
             } catch (e) {
                 // Turning a method on with something missing: leave it off.
                 if (body.on) sw(m).checked = false;
@@ -441,7 +442,7 @@
     }
     for (const m of Object.keys(secs)) {
         if (m === "email") continue;
-        secs[m].addEventListener("change", e => { if (e.target.matches("[data-on], [data-f]")) saveMethod(m); });
+        secs[m].addEventListener("change", e => { if (e.target.matches("[data-on], [data-f]")) saveMethod(m, undefined, e.target.matches("[data-on]")); });
         secs[m].addEventListener("keydown", e => {
             if (e.key === "Enter" && e.target.matches("input[data-f]")) { e.preventDefault(); e.target.blur(); }
         });
@@ -467,6 +468,7 @@
             try {
                 const d = await post(`/settings/alerts/methods/${m}/test`, { ...methodBody(m), delay: wait });
                 methodOut(m, wait ? WAKE.sent : d.message, true);
+                ncNote(m, T.ncTest);
             } catch (e) {
                 methodOut(m, e.demo ? "" : e.message, e.demo ? undefined : false);
             } finally {
@@ -600,20 +602,44 @@
         const setUp = Object.keys(secs).some(m => methodSetUp[m]());
         const warn = '<i class="fa-solid fa-triangle-exclamation"></i>';
         const jump = t => `<a href="#alMethods" data-al-jump="alMethods">${esc(t)}</a>`;
-        el.classList.toggle("warn", !ok);
-        el.classList.toggle("ok", ok);
+        const nc = ncZones().length ? " " + ncLines(null) : "";
+        el.classList.toggle("warn", !ok || !!nc);
+        el.classList.toggle("ok", ok && !nc);
         el.innerHTML = ok
-            ? `<i class="fa-solid fa-circle-check"></i><span>${esc(T.stOn.replace("{methods}", listWords(ons.map(m => BY[m]()))))}</span>`
-            : ons.length ? `${warn}<span>${fillLink(T.stNoLimit)}</span>`
-            : !any ? `${warn}<span>${fillLink(T.stOffNoLimit)}</span>`
-            : setUp ? `${warn}<span>${esc(T.stPaused)} ${jump(T.stTurnOn)}</span>`
-            : `${warn}<span>${esc(T.stOff)} ${jump(T.stSetUp)}</span>`;
+            ? `${nc ? warn : '<i class="fa-solid fa-circle-check"></i>'}<span>${esc(T.stOn.replace("{methods}", listWords(ons.map(m => BY[m]()))))}${nc}</span>`
+            : ons.length ? `${warn}<span>${fillLink(T.stNoLimit)}${nc}</span>`
+            : !any ? `${warn}<span>${fillLink(T.stOffNoLimit)}${nc}</span>`
+            : setUp ? `${warn}<span>${esc(T.stPaused)} ${jump(T.stTurnOn)}${nc}</span>`
+            : `${warn}<span>${esc(T.stOff)} ${jump(T.stSetUp)}${nc}</span>`;
         drawMethods();
         const title = $("clAlTitle");
         if (title) title.textContent = ok ? T.boxOn : T.boxOff;
     }
+    // Zones whose climate limits are never checked (no climate sensors chosen
+    // in Edit zone; settings-climate.js knows which): one line per zone.
+    const ncZones = () => (window.bmClimate && window.bmClimate.unchecked ? window.bmClimate.unchecked() : []);
+    const ncLines = lead => ncZones().map((z, i) =>
+        `${esc(fill(i || !lead ? T.ncUntil : lead, { zone: z.name }))} <a href="#" data-choose-zone="${z.id}">${esc(T.ncChoose)}</a>`).join("<br>");
+    // ncNote: under a method just turned on (lead T.ncOn) or tested (T.ncTest); null hides it.
+    function ncNote(m, lead) {
+        let el = secs[m].querySelector(".nc-methnote");
+        const show = !!lead && ncZones().length > 0;
+        if (!show) { if (el) el.hidden = true; return; }
+        if (!el) {
+            el = document.createElement("div");
+            el.className = "ax-refuse nc-methnote";
+            el.setAttribute("role", "status");
+            secs[m].append(el);
+        }
+        el.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><span>${ncLines(lead)}</span>`;
+        el.hidden = false;
+    }
     function hideRefuse() { $("alRefuse").hidden = true; }
-    document.addEventListener("bm:climate-change", () => { hideRefuse(); drawState(); });
+    document.addEventListener("bm:climate-change", () => {
+        hideRefuse();
+        drawState();
+        if (!ncZones().length) card.querySelectorAll(".nc-methnote").forEach(el => { el.hidden = true; });
+    });
     $("alWhat").closest("section").addEventListener("click", e => {
         const a = e.target.closest("[data-al-jump]");
         if (!a) return;
@@ -735,7 +761,7 @@
     drawEvents();
 
     let saving = Promise.resolve();
-    function save() {
+    function save(flipped) {
         const body = form();
         if (!$("alLink").value.trim()) $("alLink").value = body.link;
         saving = saving.then(async () => {
@@ -746,6 +772,7 @@
                 setBadge(d.passwordSet);
                 show("");
                 flash();
+                if (flipped) ncNote("email", body.on ? T.ncOn : null);
             } catch (e) {
                 // Turning email on with something missing: leave it off.
                 if (body.on) on.checked = false;
@@ -765,7 +792,7 @@
         return saving;
     }
 
-    card.addEventListener("change", e => { if (e.target.matches("[data-al]")) save(); });
+    card.addEventListener("change", e => { if (e.target.matches("[data-al]")) save(e.target === on); });
     card.addEventListener("keydown", e => {
         if (e.key === "Enter" && e.target.matches("input[data-al]")) { e.preventDefault(); e.target.blur(); }
     });
@@ -857,6 +884,7 @@
         try {
             const d = await post("/settings/alerts/email/test", form());
             show(d.message, true);
+            ncNote("email", T.ncTest);
         } catch (e) {
             if (!e.demo) show(e.message, false, e.hint);
             else show("");

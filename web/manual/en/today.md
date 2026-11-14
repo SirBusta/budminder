@@ -12,8 +12,9 @@ Today is your main dashboard. It shows pending tasks, followed by each tent with
   - plants without a new photo in 14 days
   - sensors that have stopped reporting, and integrations (AC Infinity, Vivosun, Ecowitt or Home Assistant) that stop responding or need you to sign in again
   - strains with seeds older than 2 years
+  - zones with plants and sensors but no climate sensors chosen in **Edit Zone**, which get no climate alerts
   - [repeating tasks](#repeating-tasks) that are due
-- {4} **Action buttons let you resolve items quickly.** **Watered it** or **Fed it** opens the logging window with the plant, the activity and today's date already filled in. Other lines provide direct shortcuts such as **Add photo**, **Check sensors**, **Sign in again** or **Open Seed Vault**.
+- {4} **Action buttons let you resolve items quickly.** **Watered it** or **Fed it** opens the logging window with the plant, the activity and today's date already filled in. Other lines provide direct shortcuts such as **Add photo**, **Check sensors**, **Sign in again**, **Choose sensors** or **Open Seed Vault**.
 
 When everything is fine, the list says **Nothing needs attention right now**.
 
@@ -30,7 +31,7 @@ Hidden lines are listed under **Hidden**, below the list. **Show again** brings 
 
 Click **Settings** next to the Needs attention heading to choose what the list includes.
 
-- The **Reminders** tab turns each type of reminder on or off and sets its days. Watering and Feeding have two numbers: **Due** (amber) and **Overdue** (red). These numbers also color the watering and feeding indicators in each tent and on the Plants page, even when the reminder is off. Integration problems are always on.
+- The **Reminders** tab turns each type of reminder on or off and sets its days. Watering and Feeding have two numbers: **Due** (amber) and **Overdue** (red). These numbers also color the watering and feeding indicators in each tent and on the Plants page, even when the reminder is off. The list always shows integration problems and zones with no climate sensors chosen.
 - The **Repeating tasks** tab is where you add and edit tasks. See [Repeating tasks](#repeating-tasks).
 
 Changes take effect when you click **Save**.

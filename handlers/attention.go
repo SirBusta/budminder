@@ -326,6 +326,8 @@ func attentionPageData(c *gin.Context, db *sql.DB, all []PlantListRow, today str
 		"burped":   burped,
 		"curing":   curing,
 		"presets":  AttentionTaskPresets,
+		// Zones that get no climate alerts: no climate sensors chosen.
+		"climate": ClimateUnchecked(db, ListManagedSensors(db, ConfigStoreFromContext(c).PollingInterval()), requestLocation(c)),
 	}
 }
 

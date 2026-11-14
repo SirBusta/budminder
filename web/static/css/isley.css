@@ -5188,3 +5188,40 @@ body.bm-tour-open { overflow: hidden; }
 /* Recent alerts */
 .ax-ev-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .4rem; margin: .4rem 0 .5rem; }
 .ax-ev-bar span { font-weight: 700; margin-left: .15rem; }
+
+/* Zones whose climate limits are never checked (no climate sensors chosen in
+   Edit zone): amber warnings on Grow setup, Edit zone, Alerts and Today
+   (settings-climate.js, settings-alerts.js, home-page.js). */
+.nc-banner { display: flex; gap: .6rem; align-items: flex-start; margin: .2rem 0 .8rem; padding: .6rem .8rem; border-radius: 10px; background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; font-size: .86rem; }
+.nc-banner[hidden] { display: none; }
+.nc-banner > i { font-size: 1.05rem; margin-top: .15rem; }
+.nc-banner b { display: block; font-size: .92rem; }
+.nc-banner .nc-t b { display: inline; }
+.nc-banner a, .nc-amber a { color: inherit; font-weight: 700; white-space: nowrap; }
+[data-bs-theme="dark"] .nc-banner { background: rgba(217, 119, 6, .16); color: #fcd34d; border-color: rgba(252, 211, 77, .35); }
+.nc-amber { color: #b45309; font-weight: 600; }
+[data-bs-theme="dark"] .nc-amber { color: #fcd34d; }
+.ct-zs-r.nc-row { background: #fffbeb; }
+[data-bs-theme="dark"] .ct-zs-r.nc-row { background: rgba(217, 119, 6, .12); }
+.ct-lv li.nc-amber { list-style: none; margin-left: -1.1rem; }
+.ax-zone-h > .ax-pill.nc-amber { color: #b45309; }
+[data-bs-theme="dark"] .ax-zone-h > .ax-pill.nc-amber { color: #fcd34d; }
+.ax-pill a { font-weight: 700; }
+.nc-saved { position: sticky; bottom: .75rem; z-index: 5; display: flex; gap: .55rem; align-items: flex-start; margin: .7rem 0 0; padding: .55rem .75rem; border-radius: 10px; background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; font-size: .85rem; box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+.nc-saved[hidden] { display: none; }
+.nc-saved a { color: inherit; font-weight: 700; white-space: nowrap; }
+.nc-saved > button { margin-left: auto; border: 0; background: none; color: inherit; padding: 0 .2rem; }
+[data-bs-theme="dark"] .nc-saved { background: #3a2a0a; color: #fcd34d; border-color: rgba(252, 211, 77, .35); }
+.nc-hl { border-radius: 10px; padding-left: .5rem; padding-right: .5rem; margin-left: -.5rem; margin-right: -.5rem; }
+.nc-hl.flash { animation: ncFlash 1.8s ease-out 1; }
+@keyframes ncFlash { 0% { box-shadow: 0 0 0 4px rgba(245, 158, 11, .85); background: rgba(254, 243, 199, .9); } 100% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0); background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .nc-hl.flash { animation: none; box-shadow: 0 0 0 3px rgba(245, 158, 11, .7); } }
+.nc-dznote { display: flex; gap: .5rem; align-items: flex-start; margin: .2rem 0 .6rem; padding: .45rem .65rem; border-radius: 8px; background: #fffbeb; color: #92400e; font-size: .82rem; }
+.nc-dznote[hidden] { display: none; }
+[data-bs-theme="dark"] .nc-dznote { background: rgba(217, 119, 6, .16); color: #fcd34d; }
+.ax-refuse.nc-methnote { margin: .3rem .75rem .6rem; color: #92400e; }
+.nc-methnote a { color: inherit; font-weight: 700; }
+[data-bs-theme="dark"] .ax-refuse.nc-methnote { color: #fcd34d; }
+.hm-alert .ai.nc { background: #fef3c7; color: #b45309; }
+[data-bs-theme="dark"] .hm-alert .ai.nc { background: rgba(251, 191, 36, .14); color: #fcd34d; }
+a.hm-btn-s { text-decoration: none; }

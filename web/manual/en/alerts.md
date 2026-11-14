@@ -17,7 +17,7 @@ BudMinder sends you an alert notification when a zone's climate, lights or senso
 
 Set limits in [Climate targets and limits](/manual/grow-setup#climate-targets-and-limits), in **Settings → Grow setup**. Temperature and humidity start with wide limits for each stage. VPD starts with Targets and no limits, so BudMinder sends no VPD alert notification until you set a limit.
 
-BudMinder checks climate and lights only in zones with plants, and only with the sensors chosen in **Edit Zone**. A sensor that never sent a reading does not count as offline.
+BudMinder checks climate and lights only in zones with plants, and only with the sensors chosen in **Edit Zone**. Assigning a sensor to a zone is not enough. A zone with no climate sensors chosen gets no climate alerts. Settings and the Today page show an amber warning for such a zone, with a **Choose sensors** link that opens its **Edit Zone** window. A sensor that never sent a reading does not count as offline.
 
 ## How often alert notifications are sent
 

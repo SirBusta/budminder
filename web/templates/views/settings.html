@@ -374,6 +374,8 @@
 
                 <div class="st-card" id="climateCard">
                     <div class="st-card-h"><i class="fa-solid fa-temperature-half"></i><div><h3>{{ .lcl.cl_title }}</h3><p>{{ .lcl.cl_desc }}</p></div></div>
+                    {{/* Zones whose limits are never checked (no climate sensors chosen): drawn by settings-climate.js. */}}
+                    <div class="nc-banner" id="clNcBanner" role="status" hidden><i class="fa-solid fa-triangle-exclamation"></i><div></div></div>
                     <div class="ct-bar">
                         <div class="sx-seg" id="clMeasure" role="group" aria-label="{{ .lcl.cl_title }}">
                             <button type="button" data-m="vpd" class="on">{{ .lcl.cl_vpd }}</button>
@@ -387,6 +389,8 @@
                         </div>
                     </div>
                     <div class="ct-grid" id="clGrid"></div>
+                    <div class="nc-saved" id="clNcSaved" role="status" hidden><i class="fa-solid fa-triangle-exclamation mt-1"></i><div></div>
+                        <button type="button" id="clNcSavedX" aria-label="{{ .lcl.cl_nc_close }}" title="{{ .lcl.cl_nc_close }}"><i class="fa-solid fa-xmark"></i></button></div>
                     <div class="ct-limnote d-none" id="clLimNote"><i class="fa-solid fa-circle-info me-1"></i>{{ .lcl.cl_limits_note }}</div>
                     <div class="ct-limnote d-none" id="clStageNote"><i class="fa-solid fa-circle-info me-1"></i>{{ .lcl.cl_vpd_note }}</div>
                     <div class="ct-limnote key"><i class="fa-solid fa-circle-info me-1"></i>{{ .lcl.cl_guide_note }}</div>
@@ -759,7 +763,7 @@
                     "stOn": {{ .lcl.al_st_on }}, "stNoLimit": {{ .lcl.al_st_no_limit }}, "stOff": {{ .lcl.al_st_off }}, "stSetUp": {{ .lcl.al_st_set_up }},
                     "stPaused": {{ .lcl.al_st_paused }}, "stTurnOn": {{ .lcl.al_st_turn_on }}, "stOffNoLimit": {{ .lcl.al_st_off_no_limit }},
                     "refuse": {{ .lcl.al_refuse }}, "climateCard": {{ .lcl.cl_title }}, "sendingTo": {{ .lcl.al_sending_to }}, "mailOff": {{ .lcl.al_mail_off }},
-                    "boxOn": {{ .lcl.cl_al_title_on }}, "boxOff": {{ .lcl.cl_al_title_off }},
+                    "boxOn": {{ .lcl.cl_al_title_on }}, "boxOff": {{ .lcl.cl_al_title_off }}, "ncOn": {{ .lcl.al_nc_on }}, "ncTest": {{ .lcl.al_nc_test }}, "ncUntil": {{ .lcl.cl_nc_until }}, "ncChoose": {{ .lcl.cl_nc_choose }},
                     "evClear": {{ .lcl.al_clear }}, "evRestore": {{ .lcl.al_restore }}, "evNoRecent": {{ .lcl.al_recent_empty }}, "evNoCleared": {{ .lcl.al_cleared_empty }},
                     "evNoMatchRecent": {{ .lcl.al_recent_no_match }}, "evNoMatchCleared": {{ .lcl.al_cleared_no_match }}, "evView": {{ .lcl.al_ev_view }},
                     "allZones": {{ .lcl.al_filter_all_zones }}, "allTypes": {{ .lcl.al_filter_all_types }},
@@ -1419,9 +1423,10 @@
                         <p class="dz-note d-none" id="dzStageLeft"></p>
                     </div>
 
-                    <div class="dz-sec">
+                    <div class="dz-sec nc-hl" id="dzClimate">
                         <h4><i class="fa-solid fa-gauge"></i>{{ .lcl.cl_zone_sensors }}</h4>
                         <p>{{ .lcl.cl_zone_sensors_desc }}</p>
+                        <div class="nc-dznote" id="dzNcNote" hidden><i class="fa-solid fa-triangle-exclamation mt-1"></i><span>{{ .lcl.cl_nc_dz_note }}</span></div>
                         <div id="dzRd">
                             <div class="dz-f"><label for="editZoneVpdTempSensor">{{ .lcl.cl_temperature }}</label><select class="form-select form-select-sm" id="editZoneVpdTempSensor"></select></div>
                             <div class="dz-f"><label for="editZoneVpdHumSensor">{{ .lcl.cl_humidity }}</label><select class="form-select form-select-sm" id="editZoneVpdHumSensor"></select></div>
@@ -1466,7 +1471,9 @@
     "stretch": {{ .lcl.cl_stretch }}, "bloom": {{ .lcl.cl_bloom }}, "ripen": {{ .lcl.cl_ripen }},
     "weeksFrom": {{ .lcl.cl_weeks_from }}, "weekOn": {{ .lcl.cl_week_on }}, "inStage": {{ .lcl.cl_in_stage_now }},
     "zoneNow": {{ .lcl.cl_zone_now }}, "week": {{ .lcl.cl_week_n }}, "flowerPhase": {{ .lcl.cl_flower_phase }},
-    "pvNone": {{ .lcl.cl_pv_none }}, "zsNone": {{ .lcl.cl_zs_none }}, "calcVpd": {{ .lcl.cl_calc_vpd }}, "editZone": {{ .lcl.edit_zone }},
+    "pvNone": {{ .lcl.cl_pv_none }}, "zsNone": {{ .lcl.cl_zs_none }},
+    "ncChoose": {{ .lcl.cl_nc_choose }}, "ncTitle": {{ .lcl.cl_nc_title }}, "ncText": {{ .lcl.cl_nc_text }}, "ncRow": {{ .lcl.cl_nc_row }},
+    "ncNoSensors": {{ .lcl.cl_nc_no_sensors }}, "ncSaved": {{ .lcl.cl_nc_saved }}, "ncUntil": {{ .lcl.cl_nc_until }}, "ncPill": {{ .lcl.cl_nc_pill }}, "calcVpd": {{ .lcl.cl_calc_vpd }}, "editZone": {{ .lcl.edit_zone }},
     "noSchedule": {{ .lcl.cl_no_schedule }}, "lightChecked": {{ .lcl.cl_light_checked }}, "schedShort": {{ .lcl.cl_sched_short }}, "hours": {{ .lcl.cl_hours }},
     "clock": {{ .lcl.cl_clock }}, "none": {{ .lcl.cl_none }},
     "liveMismatchOn": {{ .lcl.cl_live_mismatch_on }}, "liveMismatchOff": {{ .lcl.cl_live_mismatch_off }}, "liveSince": {{ .lcl.cl_live_since }},

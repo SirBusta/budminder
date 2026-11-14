@@ -157,6 +157,12 @@
             const act = st.state === "auth" ? `<a class="hm-link" href="/settings#integrations">${esc(t("hm_sign_in_again"))}</a>` : `<a class="hm-link" href="/sensors/manage">${esc(t("hm_check_sensors"))}</a>`;
             out.push({ key: "int:" + src.toLowerCase().replace(/[^a-z]/g, ""), basis: st.state + "@" + (st.since || 0), until: "int", lv: "over", icon: "fa-plug-circle-exclamation", txt: esc(txt), act });
         });
+        // A zone that gets no climate alerts: plants and sensors, but no climate
+        // sensors chosen in Edit zone (ClimateUnchecked). Always on; the line
+        // goes once a sensor is chosen.
+        (NA().climate || []).forEach(z => out.push({ key: "climate:" + z.id, basis: "none", until: "climate", lv: "warn", icon: "fa-temperature-half", cls: "nc",
+            txt: esc(t("hm_na_climate", { zone: "#Z#" })).replace("#Z#", `<b>${esc(z.name)}</b>`),
+            act: `<a class="hm-btn-s primary" href="/settings?zone=${z.id}#grow"><i class="fa-solid fa-gauge me-1"></i>${esc(t("hm_na_choose_sensors"))}</a>` }));
         // Sensors that stopped reporting: one line per tent.
         if (S.sensors.on) (D.tents || []).forEach(tent => {
             const stale = [...tent.readings, ...tent.ports, ...(tent.quiet || [])].filter(r => r.stale && r.last_at);
@@ -187,8 +193,8 @@
         }
         return h.basis === a.basis ? "until" : null;
     }
-    const UNTIL = { water: "hm_na_until_water", feed: "hm_na_until_feed", photo: "hm_na_until_photo", sensor: "hm_na_until_sensor", sensors: "hm_na_until_sensors", int: "hm_na_until_int", seeds: "hm_na_until_seeds" };
-    const HIDDEN_AS = { water: "hm_na_hidden_water", feed: "hm_na_hidden_feed", photo: "hm_na_hidden_photo", sensor: "hm_na_hidden_sensor", sensors: "hm_na_hidden_sensors", int: "hm_na_hidden_int", seeds: "hm_na_hidden_seeds" };
+    const UNTIL = { water: "hm_na_until_water", feed: "hm_na_until_feed", photo: "hm_na_until_photo", sensor: "hm_na_until_sensor", sensors: "hm_na_until_sensors", int: "hm_na_until_int", seeds: "hm_na_until_seeds", climate: "hm_na_until_climate" };
+    const HIDDEN_AS = { water: "hm_na_hidden_water", feed: "hm_na_hidden_feed", photo: "hm_na_hidden_photo", sensor: "hm_na_hidden_sensor", sensors: "hm_na_hidden_sensors", int: "hm_na_hidden_int", seeds: "hm_na_hidden_seeds", climate: "hm_na_hidden_climate" };
     function lineMenu(a) {
         const k = esc(a.key);
         const second = a.task

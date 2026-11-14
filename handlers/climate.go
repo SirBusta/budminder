@@ -805,8 +805,10 @@ type climatePageZone struct {
 	Now      ZoneClimate               `json:"now"`
 	Options  []climateSensorOption     `json:"sensor_options"`
 	Readings map[string]climateReading `json:"readings"`
-	Light    *zoneLightStatus          `json:"light,omitempty"`
-	Alerts   []zoneAlert               `json:"alerts"`
+	// Choosable: a temperature, humidity or VPD sensor in the zone to choose.
+	Choosable bool             `json:"choosable"`
+	Light     *zoneLightStatus `json:"light,omitempty"`
+	Alerts    []zoneAlert      `json:"alerts"`
 	// The chosen sensors' oldest latest reading, for Zone status.
 	LastAt    int64  `json:"last_at"` // epoch ms; 0 = none yet
 	LastClock string `json:"last_clock,omitempty"`
@@ -947,6 +949,7 @@ func ClimatePageData(c *gin.Context) ClimatePage {
 			}
 		}
 		pz.lastReading(byID, loc)
+		pz.Choosable = climateChoosable(id, sensors)
 		if z.LightSensorID != nil {
 			pz.Light = zoneLight(db, z, zones[id], unitOf[*z.LightSensorID], open, time.Now(), loc)
 		}

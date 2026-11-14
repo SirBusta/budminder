@@ -45,6 +45,11 @@
     const phaseOf = w => w <= weeks[0] ? "stretch" : w <= weeks[1] ? "bloom" : "ripen";
     // Zones whose readings are compared: a stage and at least one climate sensor.
     const watched = ZONES.filter(z => z.now && z.now.stage && z.now.stage.stage && Object.keys(z.now.sensors || {}).length);
+    // Zones whose limits are never checked: plants, temperature, humidity or
+    // VPD sensors to choose from, none chosen, and a Low or High limit in use
+    // (ClimateUnchecked in handlers/climate_unchecked.go). Shown in amber.
+    const unchecked = () => anyLimit() ? ZONES.filter(z => z.now.stage.stage && !Object.keys(z.now.sensors || {}).length && z.choosable) : [];
+    const chooseLink = z => `<a href="#" data-choose-zone="${z.id}">${esc(T.ncChoose)}</a>`;
     function rowOf(z, k) {
         const st = z.now.stage.stage;
         if (st !== "flower" || !phases[k]) return { stage: st, phase: "" };
@@ -246,10 +251,12 @@
                 : a.delivery === "off" ? T.zNotSent : a.delivery === "paused" ? T.zNotSentPaused : a.delivery === "failed" ? T.zFailed : a.delivery === "pending" ? T.zSending : "";
             return `<span class="ax-pill bad"><i class="fa-solid fa-circle-exclamation me-1"></i>${esc(words.join(" "))} ${esc(how)}</span>`;
         }
+        if (unchecked().includes(z)) return ncPill(z);
         const any = Object.keys(z.now.sensors).some(k => { const r = rangeFor(z, k); return r[0] != null || r[2] != null; });
         return any || z.light_sensor_id ? `<span class="ax-pill ok"><i class="fa-solid fa-circle-check me-1"></i>${esc(T.pillOk)}</span>`
             : `<span class="ax-pill"><i class="fa-solid fa-circle-minus me-1"></i>${esc(T.pillNone)}</span>`;
     }
+    const ncPill = z => `<span class="ax-pill nc-amber"><i class="fa-solid fa-triangle-exclamation me-1"></i>${esc(T.ncPill)} ${chooseLink(z)}</span>`;
     function zoneBar(k, r, v) {
         const pos = scale(k, r, v), [lo, t, hi] = r, f = x => x.toFixed(UNIT[k].dp);
         return `<div class="ax-bw"><div class="ax-b${v == null ? " none" : ""}">${layers(k, r, pos)}</div>` +
@@ -270,7 +277,10 @@
         const lightTxt = lit ? ` · <i class="fa-solid ${z.now.lights_on ? "fa-sun" : "fa-moon"}"></i> ${esc(z.now.lights_on ? T.lightsOn : T.lightsOff)}` : "";
         const sensors = Object.keys(z.now.sensors || {});
         if (!sensors.length && !z.light_sensor_id) {
-            return `<div class="ax-zone"><div class="ax-zone-h">${name}<span>${esc(stageTxt)}</span><span class="ax-pill"><i class="fa-solid fa-circle-minus me-1"></i>${esc(T.zNoSensors)} ${zoneLink(z)}</span></div></div>`;
+            const pill = unchecked().includes(z) ? ncPill(z)
+                : z.choosable ? `<span class="ax-pill"><i class="fa-solid fa-circle-minus me-1"></i>${esc(T.zNoSensors)} ${zoneLink(z)}</span>`
+                : `<span class="ax-pill"><i class="fa-solid fa-circle-minus me-1"></i>${esc(T.ncNoSensors)}</span>`;
+            return `<div class="ax-zone"><div class="ax-zone-h">${name}<span>${esc(stageTxt)}</span>${pill}</div></div>`;
         }
         let h = `<div class="ax-zone"><div class="ax-zone-h">${name}<span>${esc(stageTxt)}${lightTxt}</span>${zonePill(z)}</div>`;
         for (const k of MEASURES) {
@@ -312,19 +322,54 @@
     });
 
     // What Settings → Alerts needs to say whether anything can send a notification.
+    // A Low or High limit in a row in use (anyLimit in handlers/climate.go).
+    function anyLimit() {
+        for (const k of ["temp", "rh"]) if (limitsOnly(k) && (limits[k][0] != null || limits[k][1] != null)) return true;
+        return Object.entries(rows).some(([rk, v]) => {
+            const [stage, phase, k, lights] = rk.split("|");
+            if (limitsOnly(k) || (v[0] == null && v[2] == null)) return false;
+            if (lights === "off" && stage !== "drying" && !split[k]) return false;
+            return stage !== "flower" || (phase !== "") === phases[k];
+        });
+    }
     window.bmClimate = {
-        anyLimit() {
-            for (const k of ["temp", "rh"]) if (limitsOnly(k) && (limits[k][0] != null || limits[k][1] != null)) return true;
-            return Object.entries(rows).some(([rk, v]) => {
-                const [stage, phase, k, lights] = rk.split("|");
-                if (limitsOnly(k) || (v[0] == null && v[2] == null)) return false;
-                if (lights === "off" && stage !== "drying" && !split[k]) return false;
-                return stage !== "flower" || (phase !== "") === phases[k];
-            });
-        },
+        anyLimit,
         anyLight: () => ZONES.some(z => z.light_sensor_id && z.light_schedule && Object.keys(z.light_schedule).length),
+        // Zones whose limits are never checked, and opening Edit zone at their climate sensors.
+        unchecked: () => unchecked().map(z => ({ id: z.id, name: z.name })),
+        chooseSensors: id => chooseSensors(id),
     };
-    const changed = () => { drawZones(); document.dispatchEvent(new CustomEvent("bm:climate-change")); };
+
+    // ---------- zones with no climate sensors chosen ----------
+    // The card's banner and a line in its Alert notifications box, per zone.
+    function drawWarnings() {
+        const list = unchecked(), ban = $("clNcBanner");
+        ban.hidden = !list.length;
+        ban.lastElementChild.innerHTML = list.length === 1
+            ? `<b>${esc(fill(T.ncTitle, { zone: list[0].name }))}</b>${esc(T.ncText)} ${chooseLink(list[0])}`
+            : list.map(z => `<div class="nc-t"><b>${esc(fill(T.ncTitle, { zone: z.name }))}</b> ${chooseLink(z)}</div>`).join("") + esc(T.ncText);
+        const ul = $("clAlerts").querySelector(".ct-lv");
+        ul.querySelectorAll(".nc-amber").forEach(li => li.remove());
+        ul.insertAdjacentHTML("beforeend", list.map(z =>
+            `<li class="nc-amber"><i class="fa-solid fa-triangle-exclamation me-1"></i>${esc(fill(T.ncUntil, { zone: z.name }))} ${chooseLink(z)}</li>`).join(""));
+        if (!list.length) $("clNcSaved").hidden = true;
+    }
+    // After a save: a message under the grid that stays until closed.
+    function showSaved() {
+        const list = unchecked(), box = $("clNcSaved");
+        box.hidden = !list.length;
+        if (!list.length) return;
+        box.children[1].innerHTML = list.map((z, i) => `<div>${esc(fill(i ? T.ncUntil : T.ncSaved, { zone: z.name }))} ${chooseLink(z)}</div>`).join("");
+    }
+    $("clNcSavedX").addEventListener("click", () => { $("clNcSaved").hidden = true; });
+    document.addEventListener("click", e => {
+        const a = e.target.closest("[data-choose-zone]");
+        if (!a) return;
+        e.preventDefault();
+        chooseSensors(+a.dataset.chooseZone);
+    });
+
+    const changed = () => { drawZones(); sensorsList(); drawWarnings(); document.dispatchEvent(new CustomEvent("bm:climate-change")); };
 
     // ---------- saving ----------
     let timer = null;
@@ -349,6 +394,7 @@
             if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || T.failed); }
             const saved = $("stSaved");
             if (saved) { saved.classList.add("show"); setTimeout(() => saved.classList.remove("show"), 1800); }
+            showSaved();
             refreshZones();
         }).catch(e => window.uiMessages && uiMessages.showToast(e.message || T.failed, "danger"));
     }
@@ -395,7 +441,7 @@
 
     // ---------- climate sensors by zone ----------
     function sensorsList() {
-        const box = $("clZs");
+        const box = $("clZs"), nc = unchecked();
         box.querySelectorAll(".ct-zs-r").forEach(r => r.remove());
         ZONES.forEach(z => {
             const names = [];
@@ -405,17 +451,20 @@
             if (z.vpd_source === "calc" && (z.now.sensors || {}).vpd) names.push(T.calcVpd);
             const row = document.createElement("div");
             row.className = "ct-zs-r";
+            const amber = !names.length && nc.includes(z);
+            row.classList.toggle("nc-row", amber);
             row.innerHTML = `<b>${esc(z.name)}</b>` + (names.length
                 ? `<span><i class="fa-solid fa-circle-check cl-g me-1"></i>${esc(names.join(", "))}</span>`
-                : `<span class="text-muted"><i class="fa-solid fa-circle-minus me-1"></i>${esc(T.zsNone)}</span>`) +
-                `<a href="#" data-zone-open="${z.id}">${esc(T.editZone)}</a>`;
+                : amber ? `<span class="nc-amber"><i class="fa-solid fa-triangle-exclamation me-1"></i>${esc(T.ncRow)}</span>`
+                : `<span class="text-muted"><i class="fa-solid fa-circle-minus me-1"></i>${esc(z.now.stage.stage && !z.choosable ? T.ncNoSensors : T.zsNone)}</span>`) +
+                (amber ? chooseLink(z) : `<a href="#" data-zone-open="${z.id}">${esc(T.editZone)}</a>`);
             box.appendChild(row);
         });
-        box.addEventListener("click", e => {
-            const a = e.target.closest("[data-zone-open]");
-            if (a) { e.preventDefault(); openZone(+a.dataset.zoneOpen); }
-        });
     }
+    $("clZs").addEventListener("click", e => {
+        const a = e.target.closest("[data-zone-open]");
+        if (a) { e.preventDefault(); openZone(+a.dataset.zoneOpen); }
+    });
 
     // ---------- zones table ----------
     const clock = t => (t || "").replace(/^0(\d)/, "$1");
@@ -562,6 +611,7 @@
         options($("editZoneVpdTempSensor"), temps, z.vpd_temp_sensor_id, T.none);
         options($("editZoneVpdHumSensor"), hums, z.vpd_humidity_sensor_id, T.none);
         options($("dzVpdSensor"), vpds, z.vpd_sensor_id, null);
+        $("dzNcNote").hidden = !unchecked().includes(z);
         $("dzVpdSrc").querySelector('[data-v="sensor"]').disabled = !vpds.length;
         $("dzVpdHint").textContent = vpds.length ? T.vpdHintSensor : T.vpdHintNone;
         $("editZoneLeafOffset").value = z.leaf_temp_offset != null ? z.leaf_temp_offset : -2;
@@ -569,6 +619,25 @@
         setSrc(sched ? "sched" : "none");
         bootstrap.Modal.getOrCreateInstance(zoneModalEl).show();
     }
+    // Choose sensors: Edit zone scrolled to its climate sensors, with one
+    // short highlight (a still frame under reduced motion).
+    function chooseSensors(id) {
+        if (!zoneById(id)) return;
+        zoneModalEl.addEventListener("shown.bs.modal", () => {
+            const sec = $("dzClimate");
+            sec.scrollIntoView({ block: "start" });
+            sec.classList.remove("flash");
+            void sec.offsetWidth;
+            sec.classList.add("flash");
+            const first = $("editZoneVpdTempSensor");
+            if (first.offsetParent) first.focus({ preventScroll: true });
+        }, { once: true });
+        openZone(id);
+    }
+    zoneModalEl.addEventListener("hidden.bs.modal", () => $("dzClimate").classList.remove("flash"));
+    // The Today page's Choose sensors opens /settings?zone=<id>#grow.
+    const askedZone = parseInt(new URLSearchParams(location.search).get("zone"), 10);
+    if (askedZone) document.addEventListener("DOMContentLoaded", () => chooseSensors(askedZone));
     document.querySelectorAll(".zone-row").forEach(row => row.addEventListener("click", () => {
         const z = JSON.parse(row.getAttribute("data-zone"));
         openZone(z.ID != null ? z.ID : z.id);
@@ -618,7 +687,6 @@
     });
 
     render();
-    sensorsList();
     zonesTable();
     changed();
 })();
