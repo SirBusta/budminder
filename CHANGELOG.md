@@ -25,6 +25,8 @@ used three parts.
 
 ## [Unreleased]
 
+## [2.7] - 2026-11-14
+
 ### Changed
 
 - A zone with plants and sensors but no climate sensors chosen in **Edit Zone** gets no climate alerts. BudMinder now shows an amber warning for such a zone on **Climate targets and limits**, in **Edit Zone**, on **Settings > Alerts** and in the Today page's **Needs attention** list. **Choose sensors** opens that zone's **Edit Zone** window at its climate sensors.
