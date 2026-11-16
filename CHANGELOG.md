@@ -25,6 +25,10 @@ used three parts.
 
 ## [Unreleased]
 
+### Fixed
+
+- The light reading from AC Infinity's CO2 sensor now shows 0-100%. It showed 0-10 before. After the update, BudMinder converts its past readings, any sensor alert on it and any **Light check** that uses it, and sets its unit to **%** if the unit was empty or "on/off".
+
 ## [2.7] - 2026-11-14
 
 ### Changed
