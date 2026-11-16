@@ -63,7 +63,7 @@
         }));
         byId = Object.fromEntries(plants.map(p => [p.id, p]));
     }
-    // A reminder type turned off in Needs attention settings shows gray, with no Due/Overdue color.
+    // A reminder type turned off in Needs attention settings shows no tag (care()).
     const careOff = kind => ((D.care_days || {}).off || []).includes(kind);
     const level = (kind, d) => d == null ? "none" : careOff(kind) ? "off" : d >= careDays(kind)[1] ? "over" : d >= careDays(kind)[0] ? "due" : "ok";
     const types = () => D.types || [];
@@ -72,6 +72,7 @@
 
     // ---------- Building blocks ----------
     function care(kind, d) {
+        if (careOff(kind)) return ""; // reminder type off: no tag (owner's decision 2026-11-16)
         const icon = kind === "water" ? "fa-droplet" : "fa-flask";
         const txt = d == null ? t(kind === "water" ? "hm_not_watered" : "hm_not_fed")
             : d === 0 ? t(kind === "water" ? "hm_watered_today" : "hm_fed_today")

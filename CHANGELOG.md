@@ -25,6 +25,11 @@ used three parts.
 
 ## [Unreleased]
 
+### Changed
+
+- With **Watering** or **Feeding** turned off in **Needs attention settings** on the Today page, the Plants and Today pages no longer show the matching day tags. The **Water** and **Feed** buttons still show.
+- The **Lights on** lightbulb on the Today page is now bright yellow.
+
 ### Fixed
 
 - The light reading from AC Infinity's CO2 sensor now shows 0-100%. It showed 0-10 before. After the update, BudMinder converts its past readings, any sensor alert on it and any **Light check** that uses it, and sets its unit to **%** if the unit was empty or "on/off".

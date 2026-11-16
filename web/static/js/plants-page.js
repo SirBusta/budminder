@@ -92,11 +92,11 @@
     function ago(d) { return d === 0 ? t("pl_today") : d === 1 ? t("pl_day_ago") : t("pl_days_ago", { n: d }); }
     const careOff = kind => ((D.care_days || {}).off || []).includes(kind);
     function wf(kind, d) {
-        if (d == null) return "";
         // Due / Overdue days from the Today page's Needs attention settings.
-        // A reminder type turned off there shows gray, with no Due/Overdue color.
+        // A reminder type turned off there shows no tag (owner's decision 2026-11-16).
+        if (d == null || careOff(kind)) return "";
         const lim = (D.care_days || {})[kind] || (kind === "water" ? [3, 6] : [10, 18]);
-        const cls = careOff(kind) ? "off" : d >= lim[1] ? "over" : d >= lim[0] ? "due" : "ok";
+        const cls = d >= lim[1] ? "over" : d >= lim[0] ? "due" : "ok";
         const icon = kind === "water" ? "fa-droplet" : "fa-flask";
         const title = t(kind === "water" ? "pl_watered" : "pl_fed", { when: ago(d) });
         return `<span class="pl-wf ${cls}" title="${esc(title)}" aria-label="${esc(title)}"><i class="fa-solid ${icon}"></i>${d === 0 ? esc(t("pl_today")) : d + "d"}</span>`;
