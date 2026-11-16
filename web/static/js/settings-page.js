@@ -178,6 +178,11 @@
                 badge.textContent = L.tokenSet;
                 badge.className = "badge bg-success";
             }
+            // Alerts' Home Assistant app method shows whether it's connected.
+            document.dispatchEvent(new CustomEvent("bm:ha-change", { detail: {
+                url: body.homeassistant.url,
+                connected: !!body.homeassistant.url && val("haTokenBadge").classList.contains("bg-success"),
+            } }));
         }).catch(() => {
             if (window.uiMessages) uiMessages.showToast(L.saveFailed || "Failed to save settings", "danger");
         }));

@@ -316,8 +316,21 @@
 
     // Home Assistant: the integrations link, and the phone list.
     const intLink = `<a href="#integrations" data-goto="integrations">${esc(MT.intLink)}</a>`;
-    secs.ha.querySelector("[data-ha-note]").innerHTML = esc(MT.haNote).replace("{link}", intLink).replace("{url}", esc(MD.haURL || ""));
+    const drawHANote = () => {
+        secs.ha.querySelector("[data-ha-note]").innerHTML = esc(MT.haNote).replace("{link}", intLink).replace("{url}", esc(MD.haURL || ""));
+    };
+    drawHANote();
     secs.ha.querySelector("[data-ha-connect]").innerHTML = esc(MT.haConnect).replace("{link}", intLink);
+    // Connected or changed in Integrations on this page (settings-page.js):
+    // no reload needed. Ready follows the server's rule (alerts.HAApp.Problem).
+    document.addEventListener("bm:ha-change", e => {
+        const d = e.detail || {};
+        MD.haConnected = !!d.connected;
+        MD.haURL = d.url || "";
+        MD.ready.ha = MD.haConnected && !!MD.haOn && (MD.haPhones || []).length > 0;
+        drawHANote();
+        drawState();
+    });
     function drawPhones(msg) {
         const list = secs.ha.querySelector("[data-list]");
         list.replaceChildren();
