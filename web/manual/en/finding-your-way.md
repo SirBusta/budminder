@@ -1,8 +1,8 @@
 Every page has the same menu at the top.
 
-![The top menu: Home, Plants, Strains, Sensors, Smoke, Settings, Help and Logout, then the language and theme buttons](fig:top-menu)
+![The top menu: Home, Plants, Strains, Sensors, Smoke, Tools, Settings, Help and Logout, then the language and theme buttons](fig:top-menu)
 
-- {1} **The pages.** Home opens the Today dashboard, followed by Plants, Strains, Sensors, Smoke and Settings. The active page is highlighted in green with a bar underneath.
+- {1} **The pages.** Home opens the Today dashboard, followed by Plants, Strains, Sensors, Smoke, Tools and Settings. The active page is highlighted in green with a bar underneath.
 - {2} **Help** opens this manual directly to the section for your current page.
 - {3} **Language.** BudMinder supports English, German, Spanish and French. Your choice is saved in your browser, so each person can choose their own.
 - {4} **Light or dark.** Switches between the light and dark themes. This choice is also saved in your browser. To follow your computer's setting instead, select **Auto** under **Settings → General**.

@@ -25,6 +25,10 @@ used three parts.
 
 ## [Unreleased]
 
+### Added
+
+- **Tools** in the top menu, starting with a **VPD chart**. It shows the leaf VPD for each air temperature and humidity, colored by common ranges for Seedling, Veg and Flower. Choose a zone to mark its current temperature and humidity, and try a different leaf temperature offset.
+
 ### Changed
 
 - With **Watering** or **Feeding** turned off in **Needs attention settings** on the Today page, the Plants and Today pages no longer show the matching day tags. The **Water** and **Feed** buttons still show.

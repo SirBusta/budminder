@@ -37,6 +37,9 @@
       {"slug": "your-own-sensors", "title": "Your own sensors"},
       {"slug": "tent-cameras", "title": "Tent cameras"}
     ]},
+    {"title": "Tools", "sections": [
+      {"slug": "vpd-chart", "title": "VPD chart", "paths": ["/tools", "/tools/vpd"]}
+    ]},
     {"title": "Settings", "sections": [
       {"slug": "settings-general", "title": "General", "paths": ["/settings"]},
       {"slug": "grow-setup", "title": "Grow setup"},

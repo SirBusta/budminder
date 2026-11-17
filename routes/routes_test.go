@@ -241,6 +241,8 @@ func TestAddProtectedRoutes_RegistersAuthGatedHTML(t *testing.T) {
 		{"GET", "/strain/:id/edit"},
 		{"GET", "/settings"},
 		{"GET", "/sensors"},
+		{"GET", "/tools"},
+		{"GET", "/tools/vpd"},
 		{"GET", "/activities/export/csv"},
 		{"GET", "/activities/export/xlsx"},
 	}, "AddProtectedRoutes")

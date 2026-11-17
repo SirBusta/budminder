@@ -615,6 +615,26 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 		})
 	})
 
+	// Tools (menu): only the VPD chart so far, so /tools opens it.
+	r.GET("/tools", func(c *gin.Context) { c.Redirect(http.StatusFound, "/tools/vpd") })
+	r.GET("/tools/vpd", func(c *gin.Context) {
+		lang := utils.GetLanguage(c)
+		translations := utils.TranslationService.GetTranslations(lang)
+		currentPath, _ := c.Get("currentPath")
+		c.HTML(http.StatusOK, "views/tools-vpd.html", gin.H{
+			"pageData":        handlers.VPDChartPageData(c, translations),
+			"title":           "VPD chart",
+			"currentPath":     currentPath,
+			"version":         version,
+			"loggedIn":        sessions.Default(c).Get("logged_in"),
+			"lcl":             translations,
+			"languages":       utils.AvailableLanguages,
+			"currentLanguage": lang,
+			"csrfToken":       c.GetString("csrf_token"),
+			"cspNonce":        c.GetString("cspNonce"),
+		})
+	})
+
 	// Manage sensors: scan, tents, where each reading shows.
 	r.GET("/sensors/manage", func(c *gin.Context) {
 		lang := utils.GetLanguage(c)

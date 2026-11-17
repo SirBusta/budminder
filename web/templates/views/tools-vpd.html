@@ -1,0 +1,47 @@
+{{ define "views/tools-vpd.html"}}
+
+{{ template "common/header.html" .}}
+{{ template "common/header2.html" .}}
+
+<!-- Tools > VPD chart (mockup data/mockups/tools/vpd/v3.html): a leaf VPD
+     chart with fixed color ranges per stage. Drawn by
+     /static/js/tools-vpd.js from the JSON in data-page. -->
+<div class="container-xxl sx vp-page" id="vpPage" data-page='{{ json .pageData }}'>
+    <div class="vp-head"><span class="crumb">{{ .lcl.title_tools }}</span><h1>{{ .lcl.vp_title }}</h1></div>
+
+    <div class="st-card">
+        <div class="vp-ctl">
+            <label for="vpZone">{{ .lcl.vp_zone }}</label>
+            <div>
+                <select id="vpZone" class="form-select form-select-sm"></select>
+                <div class="vp-now mt-1" id="vpNow"></div>
+            </div>
+            <span class="vp-lbl" id="vpStageL">{{ .lcl.vp_stage }}</span>
+            <div><div class="sx-seg" id="vpStage" role="group" aria-labelledby="vpStageL"></div></div>
+            <label for="vpOff">{{ .lcl.cl_leaf_offset }}</label>
+            <div class="vp-off">
+                <span class="stp"><button type="button" id="vpOffDn" aria-label="{{ .lcl.vp_lower }}"><i class="fa-solid fa-minus" aria-hidden="true"></i></button><input id="vpOff" inputmode="decimal"><button type="button" id="vpOffUp" aria-label="{{ .lcl.vp_raise }}"><i class="fa-solid fa-plus" aria-hidden="true"></i></button></span>
+                <span id="vpOffU"></span>
+                <small id="vpOffSrc"></small>
+            </div>
+        </div>
+        <details class="vp-why">
+            <summary>{{ .lcl.vp_why }}</summary>
+            <p>{{ .lcl.vp_why1 }}</p>
+            <p id="vpWhy2"></p>
+        </details>
+    </div>
+
+    <div class="st-card">
+        <div class="vp-title" id="vpTitle"></div>
+        <div class="vp-tw" id="vpTw" tabindex="0"><table class="vp-t" id="vpT"></table></div>
+        <div class="vp-strip" id="vpStrip"></div>
+        <div class="ct-limnote mt-2"><i class="fa-solid fa-circle-info me-1" aria-hidden="true"></i>{{ .lcl.vp_guide }}</div>
+    </div>
+</div>
+
+<script src="/static/js/tools-vpd.js"></script>
+
+{{ template "common/footer.html" .}}
+
+{{ end }}
