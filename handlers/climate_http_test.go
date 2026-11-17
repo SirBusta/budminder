@@ -52,7 +52,7 @@ func TestClimate_FilledFromOldVPDRanges(t *testing.T) {
 	}
 	// An untouched 019 range gets the defaults: a Target and no limits.
 	r := targetOf(t, cs, climate.Seedling, "", climate.VPD, "off")
-	assert.InDelta(t, 0.8, *r.Target, 1e-9)
+	assert.InDelta(t, 0.7, *r.Target, 1e-9)
 	assert.Nil(t, r.Low)
 	assert.Nil(t, r.High)
 	// VPD's values for each Flower phase and for lights off.

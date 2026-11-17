@@ -96,7 +96,7 @@ func fToC(f float64) float64 { return math.Round((f-32)*5/9*10000) / 10000 }
 // A new install's VPD Targets, [lights on, lights off]. VPD has no limits out
 // of the box. Flower as one stage uses Full bloom's values.
 var climateDefaultVPD = map[string][2]float64{
-	climate.Seedling: {0.8, 0.8}, climate.Veg: {1.0, 1.0}, climate.Flower: {1.3, 1.2},
+	climate.Seedling: {0.7, 0.7}, climate.Veg: {1.0, 1.0}, climate.Flower: {1.3, 1.2},
 	climate.Stretch: {1.2, 1.2}, climate.Bloom: {1.3, 1.2}, climate.Ripen: {1.5, 1.2},
 }
 

@@ -29,6 +29,7 @@ used three parts.
 
 - With **Watering** or **Feeding** turned off in **Needs attention settings** on the Today page, the Plants and Today pages no longer show the matching day tags. The **Water** and **Feed** buttons still show.
 - The **Lights on** lightbulb on the Today page is now bright yellow.
+- In **Settings > Grow setup**, new installs now start with a **Seedling** VPD Target of 0.7 kPa instead of 0.8. Existing installs keep their current Targets.
 
 ### Fixed
 
