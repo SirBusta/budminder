@@ -2867,6 +2867,14 @@ wn_2_5_o1: "BudMinder envoie désormais une notification d’alerte quand AC Inf
 wn_2_5_o2: "Paramètres > Téléphone et tablette affiche un code QR qui ouvre BudMinder sur votre téléphone, et explique comment ajouter BudMinder à l’écran d’accueil."
 wn_2_5_o3: "Les carnets des plantes ont une nouvelle activité, Top Dress. Indiquez dans la note ce que vous avez ajouté."
 wn_2_5_x1: "Les pages Aujourd'hui et Plantes comptent désormais les jours dans le fuseau horaire choisi dans Paramètres > Général : une plante arrosée aujourd’hui n’apparaît plus comme arrosée hier."
+wn_2_8_f1_title: "Tableau VPD"
+wn_2_8_f1_text: "Cliquez sur Outils dans le menu du haut pour ouvrir le nouveau tableau VPD. Il indique le VPD foliaire pour chaque température et humidité de l’air, avec des couleurs selon des plages couramment publiées pour Semis, Végétatif et Floraison."
+wn_2_8_f1_p1: "Choisissez une zone pour voir sa mesure actuelle dans le tableau, avec les couleurs de son stade de croissance"
+wn_2_8_f1_p2: "Modifiez l’écart de température des feuilles pour voir comment les valeurs changent. La modification s’applique uniquement au tableau"
+wn_2_8_f1_after: "Les couleurs sont seulement indicatives. Les notifications d’alerte utilisent les limites basse et haute de Paramètres > Culture."
+wn_2_8_f1_link: "Ouvrir le tableau VPD"
+wn_2_8_o1: "Quand Arrosage ou Fertilisation est désactivé dans les paramètres de « À surveiller » sur la page Aujourd'hui, les pages Plantes et Aujourd'hui n’affichent plus les étiquettes Arrosée ou Nourrie."
+wn_2_8_x1: "La mesure de lumière du capteur de CO₂ d’AC Infinity s’affiche désormais de 0 à 100 % au lieu de 0 à 10. BudMinder convertit à la nouvelle échelle ses mesures passées et toute valeur réglée pour lui dans Alertes de capteurs ou Vérification de l'éclairage."
 
 # Vivosun (Beta)
 st_vs_desc: "Lit les capteurs de vos appareils Vivosun. BudMinder ne modifie jamais les réglages d'un appareil."

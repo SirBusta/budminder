@@ -57,6 +57,14 @@ var figureKeys = map[string][]string{
 // whatsNewReleases is newest first.
 var whatsNewReleases = []whatsNewRelease{
 	{
+		Version: "2.8",
+		Features: []whatsNewFeatureDef{
+			{Icon: "fa-toolbox", Link: "/tools/vpd", Points: 2},
+		},
+		Other: 1,
+		Fixes: 1,
+	},
+	{
 		Version: "2.5",
 		Date:    "2026-11-12",
 		Features: []whatsNewFeatureDef{

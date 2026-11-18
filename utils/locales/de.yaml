@@ -2869,6 +2869,14 @@ wn_2_5_o1: "BudMinder sendet jetzt eine Alarmbenachrichtigung, wenn AC Infinity,
 wn_2_5_o2: "Einstellungen > Telefon & Tablet zeigt einen QR-Code, der BudMinder auf Ihrem Telefon öffnet, und wie Sie BudMinder zum Startbildschirm hinzufügen."
 wn_2_5_o3: "Die Notizbücher der Pflanzen haben eine neue Aktivität: Top Dress. Notieren Sie in der Notiz, was Sie hinzugefügt haben."
 wn_2_5_x1: "Die Seiten Heute und Pflanzen zählen Tage jetzt in der Zeitzone aus Einstellungen > Allgemein, sodass eine heute gegossene Pflanze nicht mehr als gestern gegossen erscheint."
+wn_2_8_f1_title: "VPD-Tabelle"
+wn_2_8_f1_text: "Klicken Sie im oberen Menü auf Werkzeuge, um die neue VPD-Tabelle zu öffnen. Sie zeigt den Blatt-VPD für jede Lufttemperatur und Luftfeuchte, eingefärbt nach häufig veröffentlichten Bereichen für Sämling, Vegetativ und Blüte."
+wn_2_8_f1_p1: "Wählen Sie eine Zone, um ihren aktuellen Messwert in der Tabelle zu sehen, mit den Farben ihrer Wachstumsphase"
+wn_2_8_f1_p2: "Ändern Sie die Blatttemperatur-Abweichung, um zu sehen, wie sich die Werte verschieben. Die Änderung gilt nur für die Tabelle"
+wn_2_8_f1_after: "Die Farben sind nur eine Orientierung. Alarmbenachrichtigungen nutzen die unteren und oberen Grenzwerte unter Einstellungen > Anbau."
+wn_2_8_f1_link: "VPD-Tabelle öffnen"
+wn_2_8_o1: "Wenn Gießen oder Düngen in den Einstellungen für „Braucht Aufmerksamkeit“ auf der Seite Heute ausgeschaltet ist, zeigen die Seiten Pflanzen und Heute die Hinweise „Gegossen“ und „Gedüngt“ nicht mehr an."
+wn_2_8_x1: "Der Lichtwert des CO₂-Sensors von AC Infinity wird jetzt als 0–100 % statt 0–10 angezeigt. BudMinder rechnet seine bisherigen Messwerte und alle dafür eingestellten Werte in Sensor-Warnungen oder der Lichtprüfung auf die neue Skala um."
 
 # Vivosun (Beta)
 st_vs_desc: "Liest die Sensoren deiner Vivosun-Geräte. BudMinder ändert nie die Einstellungen eines Geräts."

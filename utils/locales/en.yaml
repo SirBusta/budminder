@@ -2823,6 +2823,14 @@ wn_2_5_o1: "BudMinder now sends an alert notification when AC Infinity, Vivosun 
 wn_2_5_o2: "Settings > Phone & tablet shows a QR code that opens BudMinder on your phone, and how to add BudMinder to your home screen."
 wn_2_5_o3: "Plant notebooks have a new Top Dress activity. Write what you added in its note."
 wn_2_5_x1: "The Today and Plants pages now count days in the time zone chosen in Settings > General, so a plant watered earlier today no longer shows as watered yesterday."
+wn_2_8_f1_title: "VPD chart"
+wn_2_8_f1_text: "Click Tools in the top menu to open the new VPD chart. It shows the leaf VPD for each air temperature and humidity, colored by commonly published ranges for Seedling, Veg and Flower."
+wn_2_8_f1_p1: "Choose a zone to see its current reading on the chart, with the colors for its growth stage"
+wn_2_8_f1_p2: "Change the leaf temperature offset to see how it shifts the values. The change applies to the chart only"
+wn_2_8_f1_after: "The colors are a guide only. Alert notifications use the Low and High limits in Settings > Grow setup."
+wn_2_8_f1_link: "Open the VPD chart"
+wn_2_8_o1: "When Watering or Feeding is turned off in Needs attention settings on the Today page, the Plants and Today pages no longer show the Watered or Fed tags."
+wn_2_8_x1: "The light reading from AC Infinity's CO₂ sensor now shows 0-100% instead of 0-10. BudMinder converts its past readings, and any value set for it in Sensor alerts or Light check, to the new scale."
 
 # Vivosun (Beta)
 st_vs_desc: "Reads the sensors on your Vivosun devices. BudMinder never changes a device's settings."

@@ -2867,6 +2867,14 @@ wn_2_5_o1: "BudMinder ahora envía una notificación de alerta cuando AC Infinit
 wn_2_5_o2: "Configuraciones > Teléfono y tableta muestra un código QR que abre BudMinder en su teléfono, y cómo añadir BudMinder a la pantalla de inicio."
 wn_2_5_o3: "Los cuadernos de las plantas tienen una nueva actividad, Top Dress. Escriba en la nota lo que añadió."
 wn_2_5_x1: "Las páginas Hoy y Plantas ahora cuentan los días en la zona horaria elegida en Configuraciones > General, así que una planta regada hoy ya no aparece como regada ayer."
+wn_2_8_f1_title: "Tabla de VPD"
+wn_2_8_f1_text: "Haga clic en Herramientas en el menú superior para abrir la nueva tabla de VPD. Muestra el VPD de hoja para cada temperatura y humedad del aire, con colores según rangos publicados con frecuencia para Plántula, Vegetativo y Floración."
+wn_2_8_f1_p1: "Elija una zona para ver su lectura actual en la tabla, con los colores de su etapa de crecimiento"
+wn_2_8_f1_p2: "Cambie la diferencia de temperatura de la hoja para ver cómo cambian los valores. El cambio solo afecta a la tabla"
+wn_2_8_f1_after: "Los colores son solo una guía. Las notificaciones de alerta usan los límites bajo y alto de Configuraciones > Cultivo."
+wn_2_8_f1_link: "Abrir la tabla de VPD"
+wn_2_8_o1: "Cuando Riego o Fertilización está desactivado en los ajustes de «Requiere atención» de la página Hoy, las páginas Plantas y Hoy ya no muestran las etiquetas Regada o Fertilizada."
+wn_2_8_x1: "La lectura de luz del sensor de CO₂ de AC Infinity ahora va de 0 a 100 % en lugar de 0 a 10. BudMinder convierte a la nueva escala sus lecturas anteriores y cualquier valor configurado para él en Alertas de sensores o Comprobación de luz."
 
 # Vivosun (Beta)
 st_vs_desc: "Lee los sensores de tus dispositivos Vivosun. BudMinder nunca cambia los ajustes de un dispositivo."
