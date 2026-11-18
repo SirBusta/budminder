@@ -25,6 +25,8 @@ used three parts.
 
 ## [Unreleased]
 
+## [2.8] - 2026-11-17
+
 ### Added
 
 - **Tools** in the top menu, starting with a **VPD chart**. It shows the leaf VPD for each air temperature and humidity, colored by common ranges for Seedling, Veg and Flower. Choose a zone to mark its current temperature and humidity, and try a different leaf temperature offset.
