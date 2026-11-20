@@ -1,4 +1,4 @@
-Export a plant's notebook as a spreadsheet file to archive, print, analyze or share offline.
+Export a plant's notebook or your sensor readings as a spreadsheet file to archive, print, analyze or share offline.
 
 ## Exporting a notebook
 
@@ -13,3 +13,7 @@ The resulting file contains one row for each logged day, formatted with standard
 Toggle the notebook view to **All plants**, select your target group using the top filter menu (a specific tent zone, all active plants or your complete grow archive) and click **Export**. The generated spreadsheet consolidates logs across all selected plants, allowing easy sorting and filtering by plant name or cultivar.
 
 > **Tip:** An export spreadsheet is designed for offline reading and analysis; it cannot be imported back into BudMinder to restore a database. To safeguard your records, use the [backup](/manual/backup-and-restore) tool.
+
+## Sensor readings
+
+To save sensor readings as a CSV or Excel file, use **Export readings** on the Environment page. See [Exporting readings](/manual/environment#exporting-readings).

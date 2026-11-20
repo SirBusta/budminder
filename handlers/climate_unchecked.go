@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"isley/logger"
+	"isley/utils"
 )
 
 // A zone whose climate limits are never checked: it has plants and
@@ -34,32 +35,72 @@ var (
 // ("hum") or VPD ("vpd"), or "" for anything else. It follows SensorKinds.kind
 // in web/static/js/sensor-kinds.js, which Edit zone uses to fill its pickers.
 func climateKind(typ, name, unit string) string {
+	switch k := sensorKind(typ, name, unit); k {
+	case "temp", "hum", "vpd":
+		return k
+	}
+	return ""
+}
+
+// sensorKind is SensorKinds.kind (web/static/js/sensor-kinds.js): port, other,
+// level, light, temp, vpd, co2, ec, soil or hum. Keep the two in step.
+func sensorKind(typ, name, unit string) string {
 	if isPortType(typ) {
-		return ""
+		return "port"
 	}
 	u := strings.ToLower(unit)
 	ty := typ + " " + name
 	switch {
 	case climateKindBattery.MatchString(ty):
-		return ""
+		return "other"
 	case typ == "VS.waterLv" || climateKindLevel.MatchString(name):
-		return ""
+		return "level"
 	case u == "lx" || climateKindLight.MatchString(ty):
-		return ""
+		return "light"
 	case strings.Contains(u, "°") || climateKindTempU.MatchString(u) || climateKindTemp.MatchString(ty) && !strings.Contains(u, "%"):
 		return "temp"
 	case u == "kpa" || climateKindVPD.MatchString(ty):
 		return "vpd"
 	case u == "ppm" || climateKindCO2.MatchString(ty):
-		return ""
+		return "co2"
 	case climateKindEC.MatchString(u + " " + typ):
-		return ""
+		return "ec"
 	case climateKindSoil.MatchString(ty):
-		return ""
+		return "soil"
 	case u == "%" || climateKindHum.MatchString(ty):
 		return "hum"
 	}
-	return ""
+	return "other"
+}
+
+// sensorDecimals is SensorKinds.decimals: how many decimals a reading shows.
+func sensorDecimals(kind string) int {
+	switch kind {
+	case "vpd", "ec":
+		return 2
+	case "co2", "level", "light", "port":
+		return 0
+	}
+	return 1
+}
+
+// sensorDisplay is SensorKinds.display: the unit a sensor's readings show in
+// and the conversion from the stored value (°C <-> °F follows Settings >
+// Measurement units; stored values never change).
+func sensorDisplay(kind, unit, units string) (string, func(float64) float64) {
+	same := func(v float64) float64 { return v }
+	if kind != "temp" {
+		return unit, same
+	}
+	imperial := utils.NormalizeUnits(units) != utils.UnitsMetric
+	lu := strings.ToLower(unit)
+	if imperial && strings.Contains(lu, "c") {
+		return "°F", func(v float64) float64 { return v*9/5 + 32 }
+	}
+	if !imperial && strings.Contains(lu, "f") {
+		return "°C", func(v float64) float64 { return (v - 32) * 5 / 9 }
+	}
+	return unit, same
 }
 
 // climateChoosable says whether a zone has a sensor Edit zone offers as a

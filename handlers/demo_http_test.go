@@ -143,7 +143,8 @@ func TestDemo_NoExportsLogsOrBackups(t *testing.T) {
 	e := newDemo(t)
 	for _, p := range []string{"/activities/export/csv?plant_id=1", "/activities/export/xlsx?plant_id=1",
 		"/settings/logs", "/settings/logs/download", "/settings/backup/list", "/settings/backup/sqlite/download",
-		"/sensors/dumpACI", "/sensors/dumpVivosun", "/strains/cannadb/search?q=grape", "/settings/alerts/ha-phones"} {
+		"/sensors/dumpACI", "/sensors/dumpVivosun", "/strains/cannadb/search?q=grape", "/settings/alerts/ha-phones",
+		"/sensors/export?ids=1&from=2026-11-01T00:00&to=2026-11-02T00:00", "/sensors/export/preview?ids=1&from=2026-11-01T00:00&to=2026-11-02T00:00"} {
 		resp := e.client.Get(p)
 		testutil.DrainAndClose(resp)
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode, p)

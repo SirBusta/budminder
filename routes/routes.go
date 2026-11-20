@@ -325,6 +325,9 @@ func AddProtectedApiRoutes(r *gin.RouterGroup) {
 	r.PUT("/sensors/:id", handlers.UpdateSensorHandler)
 	r.POST("/sensors/add", handlers.AddScannedSensorHandler)
 	r.GET("/sensors/series", handlers.SensorSeriesHandler)
+	// Export readings (Environment page): the window's preview and the file.
+	r.GET("/sensors/export/preview", handlers.SensorExportPreviewHandler)
+	r.GET("/sensors/export", handlers.SensorExportHandler)
 
 	// Debug endpoint to dump raw AC Infinity API response
 	r.GET("/sensors/dumpACI", handlers.DumpACInfinityJSON)
@@ -601,8 +604,12 @@ func AddProtectedRoutes(r *gin.RouterGroup, version string) {
 		lang := utils.GetLanguage(c)
 		translations := utils.TranslationService.GetTranslations(lang)
 		currentPath, _ := c.Get("currentPath")
+		pageData := handlers.SensorsPageData(c, "en_", lang, translations)
+		if sessions.Default(c).Get("logged_in") != nil {
+			pageData["export"] = handlers.SensorExportPageData(c)
+		}
 		c.HTML(http.StatusOK, "views/sensors.html", gin.H{
-			"pageData":        handlers.SensorsPageData(c, "en_", lang, translations),
+			"pageData":        pageData,
 			"title":           "Environment",
 			"currentPath":     currentPath,
 			"version":         version,

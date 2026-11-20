@@ -14,7 +14,8 @@
         </div>
         <div class="sx-top-r">
             <div class="sx-seg" id="sxZones" role="group" aria-label="{{ .lcl.en_tent_switch }}"></div>
-            <a href="/sensors/manage" class="sx-link"><i class="fa-solid fa-sliders me-1"></i>{{ .lcl.en_manage }}</a>
+            {{ if and .loggedIn (not demoMode) }}<span class="sx-links"><button type="button" class="sx-link" id="exOpen"><i class="fa-solid fa-file-arrow-down me-1"></i>{{ .lcl.en_ex_link }}</button><a href="/sensors/manage" class="sx-link"><i class="fa-solid fa-sliders me-1"></i>{{ .lcl.en_manage }}</a></span>{{ else }}
+            <a href="/sensors/manage" class="sx-link"><i class="fa-solid fa-sliders me-1"></i>{{ .lcl.en_manage }}</a>{{ end }}
         </div>
     </div>
 
@@ -35,6 +36,72 @@
 <script src="/static/vendor/chartjs/chartjs-adapter-date-fns.bundle.min.js"></script>
 <script src="/static/js/sensor-kinds.js"></script>
 <script src="/static/js/sensors-page.js"></script>
+{{ if and .loggedIn (not demoMode) }}
+<!-- Export readings (sensors-export.js; mockup data/mockups/sensors/export/v6.html) -->
+<div class="modal fade sx" id="exModal" tabindex="-1" aria-labelledby="exTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content sp-dialog ex-dlg">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exTitle"><i class="fa-solid fa-file-arrow-down me-2"></i>{{ .lcl.en_ex_title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ .lcl.en_ex_close }}"></button>
+            </div>
+            <div class="modal-body">
+                <div class="ex-sec">
+                    <h6>{{ .lcl.en_ex_span }}</h6>
+                    <div class="ex-dates">
+                        <label>{{ .lcl.en_from }} <input type="datetime-local" id="exFrom"></label>
+                        <label>{{ .lcl.en_to }} <input type="datetime-local" id="exTo"></label>
+                    </div>
+                    <div class="ex-quick"><div class="sx-seg" id="exQuick" role="group" aria-label="{{ .lcl.en_ex_span }}">
+                        <button type="button" data-q="7">{{ .lcl.en_ex_q7 }}</button><button type="button" data-q="30">{{ .lcl.en_ex_q30 }}</button><button type="button" data-q="all">{{ .lcl.en_ex_qall }}</button>
+                    </div></div>
+                    <div class="ex-help" id="exSpan"></div>
+                    <div class="ex-warn" id="exRet" hidden></div>
+                </div>
+
+                <div class="ex-sec">
+                    <div class="ex-sec-h"><h6>{{ .lcl.en_ex_sensors }}</h6><label class="ex-showh" id="exShowWrap" hidden><input type="checkbox" class="form-check-input" role="switch" id="exShowHidden"><span id="exShowTxt"></span></label></div>
+                    <div id="exZones"></div>
+                </div>
+
+                <div class="ex-sec">
+                    <h6>{{ .lcl.en_ex_interval }}</h6>
+                    <div class="sx-seg" id="exInt" role="group" aria-label="{{ .lcl.en_ex_interval }}"></div>
+                    <div class="ex-help" id="exIntHelp"></div>
+                </div>
+
+                <div class="ex-sec">
+                    <h6>{{ .lcl.en_ex_layout }}</h6>
+                    <div class="fm-seg" id="exLayout">
+                        <label data-v="rows"><input type="radio" name="exLayout" value="rows"><i class="fa-solid fa-bars"></i><span><b>{{ .lcl.en_ex_rows }}</b><small>{{ .lcl.en_ex_rows_note }}</small></span></label>
+                        <label data-v="cols"><input type="radio" name="exLayout" value="cols"><i class="fa-solid fa-table-columns"></i><span><b>{{ .lcl.en_ex_cols }}</b><small id="exColsNote"></small></span></label>
+                    </div>
+                </div>
+
+                <div class="ex-sec">
+                    <h6>{{ .lcl.en_ex_format }}</h6>
+                    <div class="fm-seg" id="exFormat">
+                        <label data-v="csv"><input type="radio" name="exFormat" value="csv"><i class="fa-solid fa-file-csv"></i><span><b>{{ .lcl.en_ex_csv }}</b><small>{{ .lcl.en_ex_csv_note }}</small></span></label>
+                        <label data-v="xlsx"><input type="radio" name="exFormat" value="xlsx"><i class="fa-solid fa-file-excel"></i><span><b>{{ .lcl.en_ex_xlsx }}</b><small>{{ .lcl.en_ex_xlsx_note }}</small></span></label>
+                    </div>
+                </div>
+
+                <div class="ex-sec">
+                    <h6>{{ .lcl.en_ex_preview }}</h6>
+                    <div class="ex-sum" id="exSum"></div>
+                    <div class="ex-warn bad" id="exBad" hidden></div>
+                    <div class="ex-prev"><table id="exPrev"></table></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ .lcl.en_ex_cancel }}</button>
+                <button type="button" class="btn btn-success" id="exGo"><i class="fa-solid fa-download me-1"></i>{{ .lcl.en_ex_download }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/static/js/sensors-export.js"></script>
+{{ end }}
 
 {{ template "common/footer.html" .}}
 

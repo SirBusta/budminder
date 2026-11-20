@@ -153,6 +153,8 @@ var demoBlockedReads = map[string]bool{
 	"/settings/backup/sqlite/download": true,
 	"/sensors/dumpACI":                 true,
 	"/sensors/dumpVivosun":             true,
+	"/sensors/export":                  true,
+	"/sensors/export/preview":          true,
 	"/settings/alerts/ha-phones":       true,
 	"/strains/cannadb/search":          true,
 	"/api/overlay":                     true,
