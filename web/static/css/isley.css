@@ -3612,6 +3612,7 @@ th, td {
 .hm-tent-h h2 { font-size: 1.05rem; font-weight: 800; margin: 0; display: flex; align-items: center; gap: .45rem; }
 .hm-tent-h h2 i { color: var(--hm-acc); }
 .hm-tent-h > .hm-link { margin-left: auto; }
+.hm-tent.bare .hm-tent-h { border-radius: 14px; border-bottom: 0; }
 .hm-tent-b { background: var(--hm-soft); border-radius: 0 0 14px 14px; padding: .8rem; box-shadow: var(--hm-shadow); }
 .hm-env { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; font-size: .84rem; color: var(--hm-muted); }
 .hm-env b { color: var(--hm-ink); font-size: .95rem; }

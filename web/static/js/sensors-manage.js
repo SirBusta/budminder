@@ -258,6 +258,7 @@
                 <div class="col-5"><label class="form-label small mb-0" for="smEUnit">${esc(t("sm_unit"))}</label>
                     <input class="form-control" id="smEUnit" maxlength="50" value="${esc(s.unit)}" title="${esc(t("sm_unit_help"))}"></div>
             </div>
+            <div class="small text-muted mb-2" id="smEUnitNote" hidden></div>
             <div class="form-label small fw-semibold mb-1 mt-1">${esc(t("sm_shows_on"))}</div>
             <label class="form-check"><input type="checkbox" class="form-check-input" id="smEEnv" ${s.show_env ? "checked" : ""}> <span class="form-check-label">${esc(t("sm_show_env"))}</span></label>
             <label class="form-check"><input type="checkbox" class="form-check-input" id="smEHome" ${s.show_home ? "checked" : ""}> <span class="form-check-label">${esc(t("sm_show_home"))}</span></label>
@@ -267,6 +268,16 @@
             <div class="small text-muted mt-1">${esc(t("sm_linked_help"))}</div>
             <div class="text-danger small mt-2 d-none" id="smEErr"></div>`;
         renderDelete(false);
+        // The box is the unit the sensor sends; pages show temperatures in the Settings units.
+        // Say so when the two differ, or "°C" next to "Now 67.8 °F" looks wrong.
+        const unitBox = document.getElementById("smEUnit"), unitNote = document.getElementById("smEUnitNote");
+        const syncUnitNote = () => {
+            const from = unitBox.value.trim(), to = K.display({ ...s, unit: from }, P.units).unit;
+            unitNote.hidden = !from || to === from;
+            unitNote.textContent = unitNote.hidden ? "" : t("sm_unit_shown", { from, to });
+        };
+        unitBox.addEventListener("input", syncUnitNote);
+        syncUnitNote();
         const hidBox = document.getElementById("smEHid");
         const syncHidden = () => ["smEEnv", "smEHome"].forEach(id => { document.getElementById(id).disabled = hidBox.checked; });
         hidBox.addEventListener("change", syncHidden);

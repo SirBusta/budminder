@@ -242,21 +242,34 @@ func addHomePlantExtras(db *sql.DB, plants []HomePlant) error {
 
 // homeTents builds a section per tent that has growing plants, with its
 // Home-visible readings, ports, cameras and any other sensor that stopped
-// reporting; plants without a tent come last.
+// reporting; plants without a tent come next. A tent with no growing plants
+// gets a section too when one of its readings is ticked for the Home page
+// (a curing box, a drying room): those come last.
 func homeTents(c *gin.Context, db *sql.DB, pollSeconds int, plants []HomePlant) []HomeTent {
 	byZone := map[int]*HomeTent{}
 	var order []int
+	add := func(id int, name string) *HomeTent {
+		t := &HomeTent{ID: id, Name: name, Readings: []HomeReading{}, Ports: []HomeReading{}, Quiet: []HomeReading{}, Cameras: []HomeCamera{}, Plants: []int{}}
+		byZone[id] = t
+		order = append(order, id)
+		return t
+	}
 	for _, p := range plants {
 		t := byZone[p.ZoneID]
 		if t == nil {
-			t = &HomeTent{ID: p.ZoneID, Name: p.Zone, Readings: []HomeReading{}, Ports: []HomeReading{}, Quiet: []HomeReading{}, Cameras: []HomeCamera{}, Plants: []int{}}
-			byZone[p.ZoneID] = t
-			order = append(order, p.ZoneID)
+			t = add(p.ZoneID, p.Zone)
 		}
 		t.Plants = append(t.Plants, p.ID)
 	}
 
-	for _, s := range withClimate(db, ListManagedSensors(db, pollSeconds), requestLocation(c)) {
+	sensors := withClimate(db, ListManagedSensors(db, pollSeconds), requestLocation(c))
+	for _, s := range sensors {
+		if byZone[s.ZoneID] == nil && s.ZoneID != 0 && !s.Hidden && s.ShowHome && !isPortType(s.Type) && s.Value != nil {
+			add(s.ZoneID, s.Zone)
+		}
+	}
+
+	for _, s := range sensors {
 		t := byZone[s.ZoneID]
 		if t == nil || s.ZoneID == 0 || s.Hidden {
 			continue
@@ -293,9 +306,19 @@ func homeTents(c *gin.Context, db *sql.DB, pollSeconds int, plants []HomePlant) 
 	for _, id := range order {
 		out = append(out, *byZone[id])
 	}
+	// Tents with plants, then "No tent", then tents with only readings.
+	rank := func(t HomeTent) int {
+		switch {
+		case len(t.Plants) == 0:
+			return 2
+		case t.ID == 0:
+			return 1
+		}
+		return 0
+	}
 	sort.SliceStable(out, func(i, j int) bool {
-		if (out[i].ID == 0) != (out[j].ID == 0) {
-			return out[j].ID == 0 // "No tent" last
+		if ri, rj := rank(out[i]), rank(out[j]); ri != rj {
+			return ri < rj
 		}
 		return strings.ToLower(out[i].Name) < strings.ToLower(out[j].Name)
 	})

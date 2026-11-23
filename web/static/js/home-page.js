@@ -322,21 +322,24 @@
             </div></div>`;
     }
     function renderTents() {
+        // Tents without plants are listed only for their Home page readings (handlers/home.go).
         const tents = D.tents || [];
-        if (!tents.length) {
+        let none = "";
+        if (!tents.some(x => x.plants.length)) {
             // Every grow starts from a strain: with none yet, that's the first step.
             const firstStrain = LOGGED_IN && D.strain_count === 0;
             const acts = !LOGGED_IN ? "" : firstStrain
                 ? `<div class="hm-none-acts"><a class="hm-btn" href="/strains"><i class="fa-solid fa-seedling me-1"></i>${esc(t("hm_add_first_strain"))}</a><button type="button" class="hm-btn light" data-tour-start="1"><i class="fa-solid fa-play me-1"></i>${esc(t("hm_take_tour"))}</button></div>`
                 : `<a class="hm-btn" href="/plant/new"><i class="fa-solid fa-plus me-1"></i>${esc(t("hm_add_plant"))}</a>`;
-            $("hmTents").innerHTML = `<div class="hm-none"><i class="fa-solid fa-seedling"></i><p>${esc(t(firstStrain ? "hm_first_strain" : "hm_no_plants"))}</p>${acts}</div>`;
-            return;
+            none = `<div class="hm-none"><i class="fa-solid fa-seedling"></i><p>${esc(t(firstStrain ? "hm_first_strain" : "hm_no_plants"))}</p>${acts}</div>`;
         }
-        $("hmTents").innerHTML = tents.map(tent => {
+        $("hmTents").innerHTML = none + tents.map(tent => {
             const icon = /outdoor|outside/i.test(tent.name) ? "fa-tree" : tent.id ? "fa-tent" : "fa-circle-question";
             const charts = tent.id && (tent.readings.length || tent.ports.length) ? `<a class="hm-link" href="/sensors#zone=${tent.id}">${esc(t("hm_charts"))} <i class="fa-solid fa-chart-line ms-1"></i></a>` : "";
-            return `<section class="hm-tent"><div class="hm-tent-h"><h2><i class="fa-solid ${icon}"></i>${esc(tent.name || t("hm_no_tent"))}</h2>${envLine(tent)}${charts}</div>
-                <div class="hm-tent-b"><div class="hm-grid">${tent.cameras.map(cameraTile).join("")}${tent.plants.map(id => byId[id]).filter(Boolean).map(plantCard).join("")}</div></div></section>`;
+            const body = tent.cameras.length || tent.plants.length
+                ? `<div class="hm-tent-b"><div class="hm-grid">${tent.cameras.map(cameraTile).join("")}${tent.plants.map(id => byId[id]).filter(Boolean).map(plantCard).join("")}</div></div>` : "";
+            return `<section class="hm-tent${body ? "" : " bare"}"><div class="hm-tent-h"><h2><i class="fa-solid ${icon}"></i>${esc(tent.name || t("hm_no_tent"))}</h2>${envLine(tent)}${charts}</div>
+                ${body}</section>`;
         }).join("");
     }
 
@@ -357,7 +360,7 @@
 
     function render() {
         derive();
-        const spaces = (D.tents || []).filter(x => x.id).length;
+        const spaces = (D.tents || []).filter(x => x.id && x.plants.length).length;
         $("hmSub").textContent = `${fmtDate(D.today, { weekday: "long", month: "long", day: "numeric" })} · ${t(plants.length === 1 ? "hm_sub_one" : "hm_sub", { n: plants.length, m: spaces })}`;
         renderAlerts();
         renderTents();

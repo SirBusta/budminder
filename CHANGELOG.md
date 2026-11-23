@@ -29,6 +29,14 @@ used three parts.
 
 - Sensors: **Export readings** on the Environment page saves sensor readings as a CSV or Excel file, with every reading or the average, lowest and highest for each 15 minutes, 30 minutes, hour or day.
 
+### Changed
+
+- The **Today** page now shows a zone without growing plants, such as a curing box, when one of its sensors has **Home page (tent summary)** checked in **Manage sensors**. The zone appears as a single bar with its readings.
+
+### Fixed
+
+- The **Edit sensor** window now explains when its **Unit** box differs from the unit BudMinder shows readings in, for example a sensor that sends °C while **Measurement units** is set to Imperial.
+
 ## [2.8] - 2026-11-17
 
 ### Added

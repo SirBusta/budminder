@@ -201,6 +201,55 @@ func TestHomeData_QuietSensorsOffTheSummary(t *testing.T) {
 	assert.Equal(t, quiet, d.Tents[0].Quiet[0].ID)
 }
 
+// A tent with no growing plants is listed for its Home page readings, after
+// the tents with plants; one whose sensors are off Home, hidden, ports only
+// or without a reading is not.
+func TestHomeData_TentWithOnlyReadings(t *testing.T) {
+	t.Parallel()
+	db := testutil.NewTestDB(t)
+	server := testutil.NewTestServer(t, db)
+	testutil.SeedAdmin(t, db, homePassword)
+	c, token := server.LoginAndFetchCSRF(t, homePassword, "/settings")
+	e := &sensorEnv{db: db, server: server, client: c, token: token}
+
+	grow := testutil.SeedZone(t, db, "Zeta Tent")
+	cure := testutil.SeedZone(t, db, "Alpha Cure")
+	offHome := testutil.SeedZone(t, db, "Off Home")
+	portsOnly := testutil.SeedZone(t, db, "Ports Only")
+	noReading := testutil.SeedZone(t, db, "No Reading")
+	livingPlant(t, e, "Plant", grow, "Veg")
+	livingPlant(t, e, "Dead one", cure, "Dead")
+
+	sensor := func(zone int, kind, vis string, reading bool) int {
+		id := testutil.SeedSensor(t, db, "acinfinity", "D", kind)
+		e.exec(t, `UPDATE sensors SET zone_id = $1, visibility = $2 WHERE id = $3`, zone, vis, id)
+		if reading {
+			e.exec(t, `INSERT INTO sensor_data (sensor_id, value) VALUES ($1, 20)`, id)
+		}
+		return id
+	}
+	cureTemp := sensor(cure, "ACI.1.0", "zone_plant", true)
+	cureRoom := sensor(cure, "ACI.2.0", "plant", true)
+	curePort := sensor(cure, "ACIP.1", "plant", true)
+	sensor(offHome, "ACI.1.0", "plant", true)
+	sensor(offHome, "ACI.2.0", "hide", true)
+	sensor(portsOnly, "ACIP.1", "zone_plant", true)
+	sensor(noReading, "ACI.1.0", "zone_plant", false)
+
+	code, d := getHomeData(t, c)
+	require.Equal(t, http.StatusOK, code)
+	require.Len(t, d.Tents, 2)
+	assert.Equal(t, "Zeta Tent", d.Tents[0].Name, "tents with plants first")
+	only := d.Tents[1]
+	assert.Equal(t, "Alpha Cure", only.Name)
+	assert.Empty(t, only.Plants)
+	require.Len(t, only.Readings, 1)
+	assert.Equal(t, cureTemp, only.Readings[0].ID)
+	require.Len(t, only.Ports, 1)
+	assert.Equal(t, curePort, only.Ports[0].ID)
+	assert.NotEqual(t, cureRoom, only.Readings[0].ID)
+}
+
 func TestHomeData_GuestRules(t *testing.T) {
 	t.Parallel()
 	// Without guest mode: login needed.
