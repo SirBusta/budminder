@@ -28,6 +28,7 @@ used three parts.
 ### Added
 
 - Sensors: **Export readings** on the Environment page saves sensor readings as a CSV or Excel file, with every reading or the average, lowest and highest for each 15 minutes, 30 minutes, hour or day.
+- Plants: the photo viewer can zoom up to 300%. Scroll, double-click, pinch or double-tap to zoom, then drag to move around the photo. The zoom buttons sit under the photo, and **Delete photo** moved to the far right, away from the thumbnails.
 
 ### Changed
 

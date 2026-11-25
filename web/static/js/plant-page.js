@@ -460,20 +460,36 @@
         const el = modal("ppViewer", `<div class="modal-dialog modal-fullscreen"><div class="modal-content">
             <div class="pp-vtop"><span id="ppVCap"></span><span class="acts">
                 <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="modal" aria-label="${esc(tr("pp_close"))}"></button></span></div>
-            <div class="pp-vbody"><button class="pp-vnav prev" id="ppVPrev" aria-label="${esc(tr("pp_previous"))}"><i class="fa-solid fa-chevron-left"></i></button>
-                <img id="ppVImg" alt=""><button class="pp-vnav next" id="ppVNext" aria-label="${esc(tr("pp_next"))}"><i class="fa-solid fa-chevron-right"></i></button></div>
-            ${LOGGED_IN ? `<div class="pp-vacts"><button class="btn btn-sm btn-outline-light" id="ppVDecorate"><i class="fa-solid fa-wand-magic-sparkles me-1"></i>${esc(tr("pp_decorate"))}</button>
-                <button class="btn btn-sm btn-outline-danger" id="ppVDelete"><i class="fa-solid fa-trash me-1"></i>${esc(tr("pp_delete_photo"))}</button></div>` : ""}
+            <div class="pp-vbody"><div class="pp-vstage" id="ppVStage"><img id="ppVImg" alt="" draggable="false"></div>
+                <button class="pp-vnav prev" id="ppVPrev" aria-label="${esc(tr("pp_previous"))}"><i class="fa-solid fa-chevron-left"></i></button>
+                <button class="pp-vnav next" id="ppVNext" aria-label="${esc(tr("pp_next"))}"><i class="fa-solid fa-chevron-right"></i></button>
+                <div class="pp-vhint gone" id="ppVHint"></div></div>
+            <div class="pp-vacts">${LOGGED_IN ? `<button class="btn btn-sm btn-outline-light deco" id="ppVDecorate"><i class="fa-solid fa-wand-magic-sparkles me-1"></i>${esc(tr("pp_decorate"))}</button>` : ""}
+                <span class="pp-vzoom">
+                    <button type="button" id="ppVOut" title="${esc(tr("pp_zoom_out_tip"))}" aria-label="${esc(tr("pp_zoom_out"))}"><i class="fa-solid fa-minus"></i></button>
+                    <span class="pct" id="ppVPct">100%</span>
+                    <button type="button" id="ppVIn" title="${esc(tr("pp_zoom_in_tip"))}" aria-label="${esc(tr("pp_zoom_in"))}"><i class="fa-solid fa-plus"></i></button>
+                    <span class="sep wide"></span>
+                    <button type="button" class="wide" id="ppVFit" title="${esc(tr("pp_zoom_fit_tip"))}">${esc(tr("pp_zoom_fit"))}</button>
+                    <button type="button" class="wide" id="ppVOne" title="${esc(tr("pp_zoom_actual_tip"))}">100%</button>
+                </span>
+                ${LOGGED_IN ? `<button class="btn btn-sm btn-outline-danger del" id="ppVDelete"><i class="fa-solid fa-trash me-1"></i>${esc(tr("pp_delete_photo"))}</button>` : ""}</div>
             <div class="pp-vstrip" id="ppVStrip"></div></div></div>`, "pp-viewer");
         if (!el.dataset.wired) {
             el.dataset.wired = "1";
             $("ppVPrev").addEventListener("click", () => stepViewer(-1));
             $("ppVNext").addEventListener("click", () => stepViewer(1));
             document.addEventListener("keydown", e => {
-                if (!el.classList.contains("show")) return;
+                if (!el.classList.contains("show") || e.ctrlKey || e.metaKey || e.altKey) return;
+                const a = document.activeElement;
+                if (a && a.closest(".modal") && !el.contains(a)) return; // e.g. the delete confirmation
                 if (e.key === "ArrowLeft") stepViewer(-1);
-                if (e.key === "ArrowRight") stepViewer(1);
+                else if (e.key === "ArrowRight") stepViewer(1);
+                else if (e.key === "+" || e.key === "=") vZoom.step(1);
+                else if (e.key === "-" || e.key === "_") vZoom.step(-1);
+                else if (e.key === "0") vZoom.fit();
             });
+            vZoom.wire(el);
             if (LOGGED_IN) {
                 $("ppVDecorate").addEventListener("click", () => {
                     const thumb = document.querySelector(`#ppThumbs .thumbnail-img[data-id="${vList[vIdx].id}"]`);
@@ -492,11 +508,121 @@
         }
         vList = list; vIdx = idx;
         showViewer();
+        vZoom.hint();
         bootstrap.Modal.getOrCreateInstance(el).show();
     }
+    // Zoom in the viewer: fitted (never smaller) up to 300% of the photo's own pixels.
+    // Wheel zooms at the pointer, double-click/tap switches Fit <-> 100%, drag moves,
+    // two fingers pinch. A new photo always opens fitted.
+    const vZoom = (() => {
+        const MAX = 3;
+        let stage, img, scale = 1, x = 0, y = 0, fitScale = 1, hintTimer = null, pending = true;
+        const zoomed = () => scale > fitScale * 1.001;
+        function fitOf() {
+            const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
+            return Math.min(stage.clientWidth * 0.92 / w, stage.clientHeight / h, 1);
+        }
+        // A zoomed photo can't be pushed off the screen; one smaller than the screen stays centered.
+        function clamp() {
+            const w = img.naturalWidth * scale, h = img.naturalHeight * scale, W = stage.clientWidth, H = stage.clientHeight;
+            x = w <= W ? (W - w) / 2 : Math.min(0, Math.max(W - w, x));
+            y = h <= H ? (H - h) / 2 : Math.min(0, Math.max(H - h, y));
+        }
+        function apply() {
+            clamp();
+            img.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+            $("ppVPct").textContent = Math.round(scale * 100) + "%";
+            $("ppVOut").disabled = !zoomed();
+            $("ppVIn").disabled = scale >= MAX - 1e-6;
+            $("ppVFit").classList.toggle("on", !zoomed());
+            $("ppVOne").classList.toggle("on", Math.abs(scale - 1) < 1e-3);
+            stage.classList.toggle("zoomed", zoomed());
+        }
+        function fit() {
+            if (!img.naturalWidth || !stage.clientWidth) return;
+            fitScale = scale = fitOf();
+            pending = false;
+            apply();
+            img.style.visibility = "";
+        }
+        function zoomTo(s, cx = stage.clientWidth / 2, cy = stage.clientHeight / 2) {
+            if (!img.naturalWidth) return;
+            s = Math.min(MAX, Math.max(fitScale, s));
+            x = cx - (cx - x) * (s / scale);
+            y = cy - (cy - y) * (s / scale);
+            scale = s;
+            apply();
+        }
+        const step = (d, cx, cy) => zoomTo(scale * (d > 0 ? 1.25 : 1 / 1.25), cx, cy);
+        const toggleAt = (cx, cy) => { if (zoomed()) fit(); else zoomTo(Math.max(1, fitScale * 2), cx, cy); };
+        const local = e => { const r = stage.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+        function wire() {
+            stage = $("ppVStage"); img = $("ppVImg");
+            img.addEventListener("load", fit);
+            $("ppVIn").addEventListener("click", () => step(1));
+            $("ppVOut").addEventListener("click", () => step(-1));
+            $("ppVFit").addEventListener("click", fit);
+            $("ppVOne").addEventListener("click", () => zoomTo(1));
+            stage.addEventListener("wheel", e => { e.preventDefault(); const p = local(e); step(e.deltaY < 0 ? 1 : -1, p.x, p.y); }, { passive: false });
+            stage.addEventListener("dblclick", e => { const p = local(e); toggleAt(p.x, p.y); });
+            // Pointers: one moves a zoomed photo, two pinch; a quick second tap is a double-tap.
+            const pts = new Map();
+            let drag = null, pinch = null, lastTap = 0;
+            stage.addEventListener("pointerdown", e => {
+                if (e.pointerType === "mouse" && e.button !== 0) return;
+                stage.setPointerCapture(e.pointerId);
+                pts.set(e.pointerId, local(e));
+                if (pts.size === 2) {
+                    const [a, b] = [...pts.values()];
+                    pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, s: scale };
+                    drag = null;
+                } else if (pts.size === 1) {
+                    if (e.pointerType !== "mouse") {
+                        const now = Date.now();
+                        if (now - lastTap < 300) { const p = local(e); toggleAt(p.x, p.y); lastTap = 0; return; }
+                        lastTap = now;
+                    }
+                    if (zoomed()) { drag = { sx: e.clientX - x, sy: e.clientY - y }; stage.classList.add("dragging"); }
+                }
+            });
+            stage.addEventListener("pointermove", e => {
+                if (!pts.has(e.pointerId)) return;
+                pts.set(e.pointerId, local(e));
+                if (pinch && pts.size === 2) {
+                    const [a, b] = [...pts.values()];
+                    zoomTo(pinch.s * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d, (a.x + b.x) / 2, (a.y + b.y) / 2);
+                } else if (drag) { x = e.clientX - drag.sx; y = e.clientY - drag.sy; apply(); }
+            });
+            const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; if (!pts.size) { drag = null; stage.classList.remove("dragging"); } };
+            stage.addEventListener("pointerup", up);
+            stage.addEventListener("pointercancel", up);
+            // The stage has no size until the window opens, and changes with the browser window.
+            new ResizeObserver(() => {
+                if (pending || !zoomed()) { fit(); return; }
+                if (!stage.clientWidth) return;
+                fitScale = fitOf();
+                apply();
+            }).observe(stage);
+        }
+        // A new photo: hide it until it is placed, fitted.
+        function load(src) {
+            img.style.visibility = "hidden";
+            pending = true;
+            if (img.getAttribute("src") === src && img.complete && img.naturalWidth) fit();
+            else img.src = src;
+        }
+        function hint() {
+            const h = $("ppVHint");
+            h.textContent = tr(matchMedia("(pointer: coarse)").matches ? "pp_zoom_hint_touch" : "pp_zoom_hint_mouse");
+            h.classList.remove("gone");
+            clearTimeout(hintTimer);
+            hintTimer = setTimeout(() => h.classList.add("gone"), 3500);
+        }
+        return { wire, load, fit, step, hint };
+    })();
     function showViewer() {
         const p = vList[vIdx];
-        $("ppVImg").src = p.path;
+        vZoom.load(p.path);
         $("ppVImg").alt = p.description || "";
         const who = p.plant && allMode ? esc((metaOf(p.plant) || {}).name || "") + " · " : "";
         $("ppVCap").innerHTML = `<strong>${who}${esc(fmt(p.date, { weekday: "short", month: "short", day: "numeric", year: "numeric" }))}</strong>${p.description ? " · " + esc(p.description) : ""} <span class="ms-2 opacity-75">${vIdx + 1} / ${vList.length}</span>`;

@@ -19,13 +19,14 @@ Your most recent upload becomes the featured hero image at the top of the plant'
 
 Click any photo to open the full-screen gallery viewer.
 
-![The photo viewer: the date, the arrows, Decorate and Delete photo, and the thumbnails](fig:photo-viewer)
+![The photo viewer: the date, the arrows, Decorate, zoom, Delete photo and the thumbnails](fig:photo-viewer)
 
 - {1} **Date and index:** shows the date the photo was taken and its index number within that day's gallery.
 - {2} **Navigation:** click the left and right arrows to browse photos, or use the left and right arrow keys on your keyboard.
 - {3} **Decorate:** adds custom text overlays and brand logos to a copy of the photo. See below.
-- {4} **Delete photo:** permanently deletes the photo after confirmation. This action cannot be undone.
-- {5} **Thumbnails:** quick-select gallery strip of all photos taken that day. Click any thumbnail to jump to it.
+- {4} **Zoom:** scroll or double-click to zoom, then drag to move around the photo. On a phone or tablet, pinch or double-tap. The **−** and **+** buttons zoom out and in, **Fit** shows the whole photo, and **100%** shows it at actual size. On the keyboard, **+** and **−** zoom and **0** shows the whole photo.
+- {5} **Delete photo:** permanently deletes the photo after confirmation. This action cannot be undone.
+- {6} **Thumbnails:** quick-select gallery strip of all photos taken that day. Click any thumbnail to jump to it.
 
 Close the photo viewer by clicking the X icon in the top right corner, or press the Esc key.
 

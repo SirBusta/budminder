@@ -2752,12 +2752,34 @@ th, td {
 .pp-vtop { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .75rem 1rem; font-size: .9rem; flex-wrap: wrap; }
 .pp-vtop .acts { display: flex; gap: .4rem; align-items: center; }
 .pp-vbody { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; min-height: 0; }
-.pp-vbody img { max-width: 92%; max-height: 100%; object-fit: contain; border-radius: 6px; }
-.pp-vnav { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .12); color: #fff; }
+.pp-vnav { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .12); color: #fff; z-index: 2; }
 .pp-vnav.prev { left: 1rem; }
 .pp-vnav.next { right: 1rem; }
-/* Decorate / Delete under the photo, away from the close button at the top. */
-.pp-vacts { display: flex; gap: .6rem; justify-content: center; padding: .6rem .75rem 0; }
+/* Zoom: the photo is placed by transform inside the stage (fitted, up to 300%). */
+.pp-vstage { position: absolute; inset: 0; overflow: hidden; touch-action: none; cursor: zoom-in; }
+.pp-vstage.zoomed { cursor: grab; }
+.pp-vstage.dragging { cursor: grabbing; }
+.pp-vstage img { position: absolute; left: 0; top: 0; max-width: none; max-height: none; transform-origin: 0 0; border-radius: 6px; user-select: none; -webkit-user-drag: none; }
+.pp-vhint { position: absolute; left: 50%; bottom: .6rem; transform: translateX(-50%); z-index: 2; font-size: .75rem; color: #cbd5e1; background: rgba(0, 0, 0, .55); border-radius: 999px; padding: .2rem .7rem; pointer-events: none; white-space: nowrap; transition: opacity .3s; }
+.pp-vhint.gone { opacity: 0; }
+.pp-vzoom { display: inline-flex; align-items: center; gap: .15rem; background: rgba(255, 255, 255, .08); border-radius: 8px; padding: .15rem; }
+.pp-vzoom button { border: 0; background: transparent; color: #e8ebf0; border-radius: 6px; font-size: .8rem; min-width: 30px; height: 28px; padding: 0 .45rem; }
+.pp-vzoom button:hover:not(:disabled) { background: rgba(255, 255, 255, .14); }
+.pp-vzoom button:disabled { opacity: .35; }
+.pp-vzoom button.on { background: rgba(45, 212, 191, .22); color: #5eead4; }
+.pp-vzoom .pct { min-width: 3.3em; text-align: center; font-variant-numeric: tabular-nums; font-size: .8rem; opacity: .85; }
+.pp-vzoom .sep { width: 1px; height: 18px; background: rgba(255, 255, 255, .18); margin: 0 .15rem; }
+/* One row under the photo: Decorate far left, zoom centered, Delete far right (away from the thumbnails). */
+.pp-vacts { display: grid; grid-template-columns: 1fr auto 1fr; grid-template-areas: "deco zoom del"; align-items: center; gap: .6rem; padding: .6rem 1rem 0; }
+.pp-vacts .deco { grid-area: deco; justify-self: start; }
+.pp-vacts .pp-vzoom { grid-area: zoom; }
+.pp-vacts .del { grid-area: del; justify-self: end; }
+/* Phone: Decorate and Delete under the photo, zoom centered above the thumbnails. */
+@media (max-width: 575.98px) {
+    .pp-vzoom .wide { display: none; }
+    .pp-vacts { grid-template-columns: 1fr 1fr; grid-template-areas: "deco del" "zoom zoom"; }
+    .pp-vacts .pp-vzoom { justify-self: center; }
+}
 .pp-vstrip { display: flex; gap: .4rem; justify-content: center; padding: .75rem; overflow-x: auto; }
 .pp-vstrip img { height: 54px; border-radius: 4px; opacity: .5; cursor: pointer; }
 .pp-vstrip img.active { opacity: 1; outline: 2px solid #2dd4bf; }
