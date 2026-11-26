@@ -8,12 +8,29 @@
 {{ $r := .v.R }}{{ $h := .v.Hidden }}{{ $lcl := .lcl }}
 <div class="container-xxl sd sr" id="smokeReport" data-id="{{ $r.ID }}" data-lang="{{ .currentLanguage }}"
      data-confirm="{{ .lcl.sr_delete_confirm }}" data-delete="{{ .lcl.sr_delete }}">
-    <nav aria-label="breadcrumb" class="mt-1">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/smoke">{{ .lcl.sr_title }}</a></li>
-            <li class="breadcrumb-item active" aria-current="page">{{ $r.StrainName }}{{ if $r.SmokedOn }} · <span data-date="{{ $r.SmokedOn }}">{{ $r.SmokedOn }}</span>{{ end }}</li>
-        </ol>
-    </nav>
+    {{/* Breadcrumb left, the report's buttons right (mockup data/mockups/smoke/actions/v1.html, version B). */}}
+    <div class="sr-bar">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/smoke">{{ .lcl.sr_title }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ $r.StrainName }}{{ if $r.SmokedOn }} · <span data-date="{{ $r.SmokedOn }}">{{ $r.SmokedOn }}</span>{{ end }}</li>
+            </ol>
+        </nav>
+        {{ if .loggedIn }}
+        <div class="sd-acts sr-acts">
+            <a class="sd-btn" href="/smoke/{{ $r.ID }}/edit"><i class="fa-solid fa-pen"></i>{{ .lcl.sr_edit }}</a>
+            <button type="button" class="sd-btn light" id="srExport"><i class="fa-solid fa-file-export"></i>{{ .lcl.sr_export }}</button>
+            <div class="dropdown">
+                <button type="button" class="sd-btn light icon" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ .lcl.sr_more_actions }}" title="{{ .lcl.sr_more_actions }}"><i class="fa-solid fa-ellipsis"></i></button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    {{ if $r.PlantID }}<li><a class="dropdown-item" href="/smoke/new?plant_id={{ $r.PlantID }}"><i class="fa-solid fa-plus"></i>{{ fill .lcl.sr_new_for_plant "name" $r.PlantName }}</a></li>
+                    <li><hr class="dropdown-divider"></li>{{ end }}
+                    <li><button type="button" class="dropdown-item danger" id="srDelete"><i class="fa-solid fa-trash"></i>{{ .lcl.sr_delete }}</button></li>
+                </ul>
+            </div>
+        </div>
+        {{ end }}
+    </div>
 
     <div class="sr-prod">
         <div>
@@ -76,13 +93,6 @@
             </div>
             {{ end }}
 
-            {{ if .loggedIn }}
-            <div class="sd-acts">
-                <a class="sd-btn" href="/smoke/{{ $r.ID }}/edit"><i class="fa-solid fa-pen"></i>{{ .lcl.sr_edit }}</a>
-                {{ if $r.PlantID }}<a class="sd-btn light" href="/smoke/new?plant_id={{ $r.PlantID }}"><i class="fa-solid fa-plus"></i>{{ fill .lcl.sr_new_for_plant "name" $r.PlantName }}</a>{{ end }}
-                <button type="button" class="sd-btn light text-danger" id="srDelete"><i class="fa-solid fa-trash"></i>{{ .lcl.sr_delete }}</button>
-            </div>
-            {{ end }}
         </div>
     </div>
 
@@ -128,7 +138,7 @@
                     {{ if and $r.Container (not (index $h "container")) }}<tr><td>{{ .lcl.sr_f_container }}</td><td>{{ $r.Container }}</td></tr>{{ end }}
                     {{ if and $r.Medium (not (index $h "medium")) }}<tr><td>{{ .lcl.sr_f_medium }}</td><td>{{ $r.Medium }}</td></tr>{{ end }}
                     {{ if and $r.Nutrients (not (index $h "nutrients")) }}<tr><td>{{ .lcl.sr_f_nutrients }}</td><td>{{ $r.Nutrients }}</td></tr>{{ end }}
-                    {{ if and $r.DaysToHarvest (not (index $h "days_to_harvest")) }}<tr><td>{{ .lcl.sr_f_days_to_harvest }}</td><td>{{ fill .lcl.sr_days "n" (deref $r.DaysToHarvest) }}</td></tr>{{ end }}
+                    {{ if and $r.DaysToHarvest (not (index $h "days_to_harvest")) }}<tr><td>{{ if .v.Clone }}{{ .lcl.sr_f_clone_to_harvest }}{{ else }}{{ .lcl.sr_f_days_to_harvest }}{{ end }}</td><td>{{ fill .lcl.sr_days "n" (deref $r.DaysToHarvest) }}</td></tr>{{ end }}
                     {{ if and $r.DryDays (not (index $h "dry_cure")) }}<tr><td>{{ .lcl.sr_f_dry }}</td><td>{{ fill .lcl.sr_days "n" (deref $r.DryDays) }}</td></tr>{{ end }}
                     {{ if and $r.CureDays (not (index $h "dry_cure")) }}<tr><td>{{ .lcl.sr_f_cure }}</td><td>{{ fill .lcl.sr_days "n" (deref $r.CureDays) }}</td></tr>{{ end }}
                     {{ if and .v.Method (not (index $h "method")) }}<tr><td>{{ .lcl.sr_f_method }}</td><td>{{ .v.Method }}</td></tr>{{ end }}
@@ -176,6 +186,11 @@
 </div>
 
 <script src="/static/js/smoke-report.js" defer></script>
+{{ with .export }}
+<link rel="stylesheet" href="/static/css/smoke-export.css">
+<script type="application/json" id="srExportData">{{ . }}</script>
+<script src="/static/js/smoke-export.js" defer></script>
+{{ end }}
 {{ template "common/footer.html" .}}
 
 {{ end }}

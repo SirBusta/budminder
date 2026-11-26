@@ -57,7 +57,11 @@ func addSmokeBasicRoutes(r *gin.RouterGroup, version string) {
 			c.Redirect(http.StatusFound, "/smoke")
 			return
 		}
-		smokePage(c, version, "views/smoke-report.html", "Smoke Report", gin.H{"v": view})
+		extra := gin.H{"v": view}
+		if sessions.Default(c).Get("logged_in") != nil { // the Export button is for signed-in users, like Edit
+			extra["export"] = handlers.BuildSmokeExport(handlers.DBFromContext(c), utils.TranslationService.GetTranslations(lang), view)
+		}
+		smokePage(c, version, "views/smoke-report.html", "Smoke Report", extra)
 	})
 }
 

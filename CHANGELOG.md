@@ -29,9 +29,12 @@ used three parts.
 
 - Sensors: **Export readings** on the Environment page saves sensor readings as a CSV or Excel file, with every reading or the average, lowest and highest for each 15 minutes, 30 minutes, hour or day.
 - Plants: the photo viewer can zoom up to 300%. Scroll, double-click, pinch or double-tap to zoom, then drag to move around the photo. The zoom buttons sit under the photo, and **Delete photo** moved to the far right, away from the thumbnails.
+- Smoke reports: **Export** saves a report as a one-page, magazine-style layout in one of two styles, **Humidor** or **Botanical**, as a PNG image for sharing or a PDF for printing. Long notes continue on a second page, and PDF pages leave room for a three-hole punch.
 
 ### Changed
 
+- Smoke reports for a plant started from a clone say **Clone to harvest** instead of **Germination to harvest**.
+- A smoke report's buttons moved to the top right, beside the breadcrumb: **Edit**, **Export** and a **⋯** menu with **New report for** and **Delete**.
 - The **Today** page now shows a zone without growing plants, such as a curing box, when one of its sensors has **Home page (tent summary)** checked in **Manage sensors**. The zone appears as a single bar with its readings.
 
 ### Fixed

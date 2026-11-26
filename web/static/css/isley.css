@@ -5348,3 +5348,20 @@ table.vp-t { border-collapse: separate; border-spacing: 0; font-size: .7rem; fon
   .vp-strip > div { flex: 1 1 30%; }
   .vp-tw { max-height: 60vh; }
 }
+
+/* Smoke report page: breadcrumb left, the report's buttons right (mockup data/mockups/smoke/actions/v1.html,
+   version B, owner's choice 2026-11-26). Every button the same height and padding with a real 1px border:
+   Edit solid, the others white with a light gray border. Delete and New report for live in the ⋯ menu. */
+.sr-bar { display: flex; align-items: center; justify-content: space-between; gap: .6rem 1rem; flex-wrap: wrap; margin: .25rem 0 .9rem; }
+.sr-bar .breadcrumb { margin: 0; }
+.sr-acts { align-items: center; gap: .5rem; }
+.sr-acts .sd-btn { box-sizing: border-box; height: 38px; padding: 0 .9rem; line-height: 1; border: 1px solid var(--sd-acc); box-shadow: none; }
+.sr-acts .sd-btn.light { background: #fff; color: var(--sd-ink); border-color: #d1d5db; box-shadow: none; }
+.sr-acts .sd-btn.light:hover, .sr-acts .sd-btn.light[aria-expanded="true"] { background: #fff; border-color: var(--sd-acc); color: var(--sd-acc); box-shadow: none; }
+.sr-acts .sd-btn.icon { width: 42px; padding: 0; justify-content: center; }
+[data-bs-theme="dark"] .sr-acts .sd-btn.light, [data-bs-theme="dark"] .sr-acts .sd-btn.light:hover { background: var(--sd-card); }
+[data-bs-theme="dark"] .sr-acts .sd-btn.light { border-color: #3a4249; }
+.sr-acts .dropdown-menu { font-size: .86rem; border-radius: 10px; }
+.sr-acts .dropdown-item i { width: 1.2em; margin-right: .35rem; text-align: center; }
+.sr-acts .dropdown-item.danger { color: #b42318; }
+[data-bs-theme="dark"] .sr-acts .dropdown-item.danger { color: #f87171; }

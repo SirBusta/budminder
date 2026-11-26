@@ -135,7 +135,9 @@
         const rows = [["harvested", "harvested_on", "sr_f_harvested", "date"], ["grow_space", "grow_space", "sr_f_grow_space"], ["lights", "lights", "sr_f_lights"],
             ["container", "container", "sr_f_container"], ["medium", "medium", "sr_f_medium"], ["nutrients", "nutrients", "sr_f_nutrients"],
             ["days_to_harvest", "days_to_harvest", "sr_f_days_to_harvest", "number"], ["dry_cure", "dry_days", "sr_f_dry", "number"], ["dry_cure", "cure_days", "sr_f_cure", "number"]];
-        const f = rows.filter(r => shown(r[0])).map(([, k, l, t]) => field(k, tr(l) + (t === "number" && k !== "days_to_harvest" ? "" : ""), t || "text", t === "number" ? `min="0" step="1"` : "")).join("");
+        // A plant started from a clone counts from the cutting: "Clone to harvest".
+        const clone = S.source === "grown" && ((D.plants || []).find(p => p.id === S.plant_id) || {}).clone;
+        const f = rows.filter(r => shown(r[0])).map(([, k, l, t]) => field(k, tr(k === "days_to_harvest" && clone ? "sr_f_clone_to_harvest" : l), t || "text", t === "number" ? `min="0" step="1"` : "")).join("");
         return f ? `<div class="sd-card sr-c sr-c-grow"><h2 class="sd-h"><span class="sr-ic"><i class="fa-solid fa-clipboard-list"></i></span>${esc(tr("sr_grow_info"))}<a class="sd-h-r" href="/settings#grow"><i class="fa-solid fa-sliders me-1"></i>${esc(tr("sr_customize"))}</a></h2><div class="grid">${f}</div></div>` : "";
     }
     function scoresSection() {

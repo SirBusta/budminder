@@ -42,6 +42,7 @@ type SmokePlantOption struct {
 	Zone      string `json:"zone"`
 	Status    string `json:"status"`
 	Harvested string `json:"harvested"` // YYYY-MM-DD, "" while still growing
+	Clone     bool   `json:"clone"`     // started from a clone: "Clone to harvest"
 }
 
 // SmokePrefill is what BudMinder knows about a plant for a new report.
@@ -111,19 +112,21 @@ func SmokePlantOptions(db *sql.DB) []SmokePlantOption {
 		return []SmokePlantOption{}
 	}
 	breeders := map[int]string{}
-	if rows, err := db.Query(`SELECT p.id, COALESCE(b.name, '') FROM plant p LEFT JOIN strain s ON s.id = p.strain_id LEFT JOIN breeder b ON b.id = s.breeder_id`); err == nil {
+	clones := map[int]bool{}
+	if rows, err := db.Query(`SELECT p.id, COALESCE(b.name, ''), COALESCE(p.clone, 0) FROM plant p LEFT JOIN strain s ON s.id = p.strain_id LEFT JOIN breeder b ON b.id = s.breeder_id`); err == nil {
 		for rows.Next() {
-			var id int
+			var id, clone int
 			var b string
-			if rows.Scan(&id, &b) == nil {
+			if rows.Scan(&id, &b, &clone) == nil {
 				breeders[id] = b
+				clones[id] = clone != 0
 			}
 		}
 		rows.Close()
 	}
 	var harvested, growing []SmokePlantOption
 	for _, p := range plants {
-		o := SmokePlantOption{ID: p.ID, Name: p.Name, Strain: p.Strain, Breeder: breeders[p.ID], Zone: p.Zone, Status: p.Status,
+		o := SmokePlantOption{ID: p.ID, Name: p.Name, Strain: p.Strain, Breeder: breeders[p.ID], Zone: p.Zone, Status: p.Status, Clone: clones[p.ID],
 			Harvested: stageDate(p.History, "drying", "curing", "success")}
 		if strings.EqualFold(p.Status, "dead") {
 			continue
@@ -664,6 +667,7 @@ type SmokeReportView struct {
 	PriceText    string
 	PPGText      string
 	Grown        bool
+	Clone        bool // the report's plant started from a clone: "Clone to harvest"
 }
 
 // SmokeScoreRow is one score bar.
@@ -745,6 +749,11 @@ func BuildSmokeReportView(db *sql.DB, lcl map[string]string, id int) (SmokeRepor
 	}
 
 	v.Grown = r.Source != smokeSourceBought
+	if v.Grown && r.PlantID != nil {
+		var clone int
+		_ = db.QueryRow(`SELECT COALESCE(clone, 0) FROM plant WHERE id = $1`, *r.PlantID).Scan(&clone)
+		v.Clone = clone != 0
+	}
 	v.OverallText, v.OverallClass = smokeScoreText(r.Overall)
 	for i := 1; i <= 10; i++ {
 		d := ""
