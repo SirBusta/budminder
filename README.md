@@ -110,6 +110,10 @@ A complete evaluation suite for home harvests and dispensary pickups. Rate appea
 
 <img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/smoke-report.webp" alt="A smoke report for home-grown Grape OG: a photo of two dried buds, an overall score of 7.8 out of 10, THC, CBD and cure time, top effects and smells, bars for the bud quality, taste, smell and effects scores, and the grow details BudMinder filled in from the plant">
 
+Export any report as a magazine-like sheet in the **Humidor** or **Botanical** style. Save a PNG image to share, or a PDF to print. Long notes continue on a second page.
+
+<img src="https://raw.githubusercontent.com/SirBusta/budminder/main/docs/images/readme/smoke-export.webp" width="600" alt="The same Grape OG smoke report in two export styles, fanned like playing cards: the dark brown and gold Humidor sheet in front of the dark green Botanical sheet, which has a large photo of the buds across the top.">
+
 ### Home Assistant
 
 **No sensor left behind.** Connect BudMinder to Home Assistant to pull climate readings from any device you run, from Zigbee and ESPHome probes to Govee and SwitchBot units. A quick scan shows your grow-relevant sensors so you can add them straight to your tents, right alongside your AC Infinity, Vivosun and Ecowitt data. It operates completely read-only, leaving your smart home configuration safe and unchanged.
