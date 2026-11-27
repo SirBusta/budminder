@@ -14,8 +14,8 @@ Runs in **Docker** (preferred), for example on Unraid, a Synology NAS or a Raspb
 <a href="#macos-step-by-step"><img src="https://img.shields.io/badge/macOS-download%20%28beta%29-16a34a?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzODQgNTM0Ij48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMzE5IDI4MVEzMTggMjI2IDM2OSAxOTZRMzQwIDE1NiAyODQgMTUxUTI2NyAxNTAgMjUwIDE1NVEyMzMgMTYwIDIyMCAxNjVRMjA0IDE3MSAxOTYgMTcyUTE4NSAxNzEgMTY4IDE2NFExNDQgMTU0IDExOSAxNTJRNzUgMTUzIDQxIDE4NlE2IDIxOSA0IDI4NlE0IDMyNSAxOCAzNjdRMjUgMzg2IDQxIDQxNlE1NyA0NDUgNzkgNDY4UTEwMSA0OTEgMTI2IDQ5MlExNDIgNDkxIDE1OCA0ODRRMTc2IDQ3NSAyMDEgNDc0UTIyNSA0NzUgMjQyIDQ4M1EyNTggNDkxIDI3OCA0OTJRMzAyIDQ5MCAzMjMgNDY5UTM0NCA0NDcgMzU5IDQyMFEzNzQgMzkyIDM4MCAzNzNRMzM1IDM0OCAzMjYgMzE3UTMxNyAyODcgMzE5IDI4MVEzMTkgMjgxIDMxOSAyODFaTTI2MiAxMTdRMjgxIDkyIDI4NSA3MlEyODggNTMgMjg2IDQ0UTI4NiA0NCAyODYgNDRRMjY4IDQ1IDI0OSA1NVEyMzEgNjUgMjE4IDc5UTE5MSAxMDkgMTkzIDE1MVEyMzIgMTUyIDI2MiAxMTdaIi8%2BPC9zdmc%2B&logoColor=white" alt="macOS: download (beta)"></a>
 <a href="#linux-step-by-step"><img src="https://img.shields.io/badge/Linux-download-16a34a?logo=linux&logoColor=white" alt="Linux: download"></a>
 
-[![Latest release](https://img.shields.io/github/v/release/SirBusta/budminder?color=16a34a&label=release)](https://github.com/SirBusta/budminder/releases)
-[![Downloads](https://img.shields.io/github/downloads/SirBusta/budminder/total?color=16a34a)](https://github.com/SirBusta/budminder/releases)
+[![Latest release](https://budminder.app/badges/release.svg)](https://github.com/SirBusta/budminder/releases)
+[![Downloads](https://budminder.app/badges/downloads.svg)](https://github.com/SirBusta/budminder/releases)
 [![Docker image](https://img.shields.io/badge/docker-ghcr.io%2Fsirbusta%2Fbudminder-16a34a?logo=docker&logoColor=white)](https://github.com/SirBusta/budminder/pkgs/container/budminder)
 [![License: MIT](https://img.shields.io/badge/license-MIT-16a34a)](LICENSE)
 
