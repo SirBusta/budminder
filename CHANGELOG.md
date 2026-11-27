@@ -25,6 +25,8 @@ used three parts.
 
 ## [Unreleased]
 
+## [2.9] - 2026-11-26
+
 ### Added
 
 - Sensors: **Export readings** on the Environment page saves sensor readings as a CSV or Excel file, with every reading or the average, lowest and highest for each 15 minutes, 30 minutes, hour or day.
