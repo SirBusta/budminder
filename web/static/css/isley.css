@@ -4979,6 +4979,9 @@ body.bm-tour-open { overflow: hidden; }
 .wn-dots i.on { background: var(--bt-green); }
 .wn-foot-l { display: flex; align-items: center; gap: 10px; margin-right: auto; }
 
+/* A card's screenshot (whats-new.js, mockup data/mockups/whatsnew/v5.html): full width, the same in both themes. */
+.wn-shot { display: block; width: 100%; height: auto; margin: 8px 0 12px; border-radius: 6px; box-shadow: 0 4px 14px rgba(15, 23, 42, .22); }
+[data-bs-theme="dark"] .wn-shot { box-shadow: 0 4px 14px rgba(0, 0, 0, .55); }
 /* A card's drawn picture (whats-new.js, mockup data/mockups/whatsnew/v3.html):
    shapes in theme colors, played once when the card opens, still under reduced motion. */
 .wn-fig { display: block; width: 100%; height: auto; margin: 8px 0 10px; border-radius: 12px; font-family: inherit;

@@ -29,7 +29,7 @@ const (
 // whatsNewRelease is one release's card. Its text is in the translations,
 // keyed from the version: wn_2_0_f1_title, _f1_text, _f1_link for feature 1,
 // plus _f1_p1... for its bullet points and _f1_after for text below them;
-// wn_2_0_o1 for other change 1,
+// _f1_img_alt for a screenshot's description; wn_2_0_o1 for other change 1,
 // wn_2_0_x1 for bug fix 1. Date (YYYY-MM-DD) is set when the release is cut. A
 // release with no entry here has no card.
 type whatsNewRelease struct {
@@ -47,6 +47,10 @@ type whatsNewFeatureDef struct {
 	Beta   bool   // adds the Beta tag and the note with the feedback address
 	NoNote bool   // with Beta: the tag only, no note (Settings shows it)
 	Figure string // a drawn picture under the title (whats-new.js), with its words from figureKeys
+	// Image is a screenshot under the title, full width (a path under /static/img/whatsnew/),
+	// described by _f1_img_alt. ImageW and ImageH are its size, so the card doesn't jump while it loads.
+	Image          string
+	ImageW, ImageH int
 }
 
 // figureKeys are the translations each picture's words come from.
@@ -56,6 +60,17 @@ var figureKeys = map[string][]string{
 
 // whatsNewReleases is newest first.
 var whatsNewReleases = []whatsNewRelease{
+	{
+		Version: "2.9",
+		Date:    "", // set when 2.9 is released
+		Features: []whatsNewFeatureDef{
+			{Icon: "fa-file-export", Link: "/smoke", Image: "/static/img/whatsnew/2.9-smoke-export.webp", ImageW: 1040, ImageH: 1346},
+			{Icon: "fa-file-arrow-down", Link: "/sensors", Points: 2},
+			{Icon: "fa-magnifying-glass-plus", Link: "/plants"},
+		},
+		Other: 3,
+		Fixes: 1,
+	},
 	{
 		Version: "2.8",
 		Date:    "2026-11-17",
@@ -125,6 +140,10 @@ type WhatsNewFeature struct {
 	BetaAfter string `json:"beta_after,omitempty"`
 	NoNote    bool   `json:"beta_no_note,omitempty"` // the Beta tag without a note
 	Figure    string `json:"figure,omitempty"`
+	Image     string `json:"image,omitempty"`
+	ImageAlt  string `json:"image_alt,omitempty"`
+	ImageW    int    `json:"image_w,omitempty"`
+	ImageH    int    `json:"image_h,omitempty"`
 }
 
 // WhatsNewCard is one release's card, in the visitor's language.
@@ -222,6 +241,9 @@ func (r whatsNewRelease) card(lcl map[string]string) WhatsNewCard {
 			feature.Points = append(feature.Points, lcl[fmt.Sprintf("%sp%d", k, p)])
 		}
 		feature.After = lcl[k+"after"]
+		if f.Image != "" {
+			feature.Image, feature.ImageAlt, feature.ImageW, feature.ImageH = f.Image, lcl[k+"img_alt"], f.ImageW, f.ImageH
+		}
 		feature.NoNote = f.Beta && f.NoNote
 		if f.Beta && !f.NoNote {
 			feature.BetaNote = lcl[k+"beta"]

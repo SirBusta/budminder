@@ -209,6 +209,37 @@ func TestWhatsNew_From22ShowsThe23CardWithItsPicture(t *testing.T) {
 	assert.False(t, got.Metric, "imperial by default")
 }
 
+// 2.8 to 2.9: three features; the first carries a screenshot that the app serves.
+func TestWhatsNew_From28ShowsThe29CardWithItsScreenshot(t *testing.T) {
+	t.Parallel()
+	_, c, _ := whatsNewServer(t, "2.9", "2.8", true)
+
+	got := readWhatsNew(t, c, "/")
+	require.NotNil(t, got)
+	require.Len(t, got.Cards, 1)
+	card := got.Cards[0]
+	assert.Equal(t, "2.9", card.Version)
+	require.Len(t, card.Features, 3)
+	f := card.Features[0]
+	assert.Equal(t, "Smoke report export", f.Title)
+	assert.Equal(t, "/smoke", f.Link)
+	assert.Empty(t, f.Points)
+	assert.Empty(t, f.Figure)
+	assert.Equal(t, "/static/img/whatsnew/2.9-smoke-export.webp", f.Image)
+	assert.NotEmpty(t, f.ImageAlt)
+	assert.Positive(t, f.ImageW)
+	assert.Positive(t, f.ImageH)
+	assert.Len(t, card.Features[1].Points, 2)
+	assert.Empty(t, card.Features[1].Image, "only the feature that has one")
+	assert.Len(t, card.Other, 3)
+	assert.Len(t, card.Fixes, 1)
+
+	resp := c.Get(f.Image)
+	defer testutil.DrainAndClose(resp)
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "the screenshot ships with the program")
+	assert.Equal(t, "image/webp", resp.Header.Get("Content-Type"))
+}
+
 func TestWhatsNew_PictureFollowsMetricUnits(t *testing.T) {
 	t.Parallel()
 	db := testutil.NewTestDB(t)
@@ -279,6 +310,9 @@ func TestWhatsNew_TextInEveryLanguage(t *testing.T) {
 				assert.NotEmpty(t, f.LinkText, "%s %s", lang, card.Version)
 				for _, s := range f.Points {
 					assert.NotEmpty(t, s, "%s %s", lang, card.Version)
+				}
+				if f.Image != "" {
+					assert.NotEmpty(t, f.ImageAlt, "%s %s screenshot", lang, card.Version)
 				}
 				for _, k := range handlers.WhatsNewFigureKeys(f.Figure) {
 					assert.NotEmpty(t, lcl[k], "%s %s picture %s", lang, card.Version, k)

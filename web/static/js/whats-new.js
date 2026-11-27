@@ -99,6 +99,7 @@
 
     const feature = f => `<li><span class="wn-ic"><i class="fa-solid ${esc(f.icon)}" aria-hidden="true"></i></span><div><b>${esc(f.title)}${f.beta ? ` <em class="st-beta">${esc(t("al_beta"))}</em>` : ""}</b>
         ${FIGURES[f.figure] ? FIGURES[f.figure]() : ""}
+        ${f.image ? `<img class="wn-shot" src="${esc(f.image)}" width="${+f.image_w || ""}" height="${+f.image_h || ""}" alt="${esc(f.image_alt)}" decoding="async">` : ""}
         <p>${esc(f.text)}</p>
         ${f.points && f.points.length ? `<ul class="wn-points">${f.points.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
         ${f.after ? `<p>${esc(f.after)}</p>` : ""}
